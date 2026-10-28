@@ -28,6 +28,7 @@ struct RetainedResources<'db> {
 #[derive(Debug)]
 pub struct MetadataStorage<'db, 'library> {
     pub(crate) database: &'db Database<'library>,
+    pub(crate) work_cancel: WorkCancellation,
     retained: Mutex<Vec<RetainedResources<'db>>>,
     #[cfg(test)]
     pub(crate) creation_fault: bool,
@@ -41,12 +42,28 @@ pub enum RetainedKind {
     Directory,
 }
 impl<'db, 'library> MetadataStorage<'db, 'library> {
+    pub fn for_work(database: &'db Database<'library>, work_cancel: WorkCancellation) -> Self {
+        Self {
+            work_cancel,
+            ..Self::new(database)
+        }
+    }
     pub fn new(database: &'db Database<'library>) -> Self {
         Self {
             database,
+            work_cancel: WorkCancellation::default(),
             retained: Mutex::new(Vec::new()),
             #[cfg(test)]
             creation_fault: false,
+        }
+    }
+    pub fn for_job(
+        database: &'db Database<'library>,
+        job: &librairii_app::native_jobs::Cancellation,
+    ) -> Self {
+        Self {
+            work_cancel: WorkCancellation::for_job(job),
+            ..Self::new(database)
         }
     }
     pub fn retained_failures(&self) -> Vec<RetainedKind> {
@@ -120,8 +137,18 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
         }
         let name = EntryName::parse(name)?;
         let database: &'db Database<'library> = self.database;
-        let mut files = database.metadata_files()?;
-        let guard = files.try_custody()?;
+        let mut files = profile_admission(cancel, || database.metadata_files())?;
+        let guard = loop {
+            if cancel.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            match files.try_custody() {
+                Err(StorageError::CustodyBusy) => {
+                    std::thread::sleep(std::time::Duration::from_millis(2))
+                }
+                other => break other?,
+            }
+        };
         if let Some(id) = official
             && let Err(error) = files.official_artwork(&guard, id)
         {
@@ -387,6 +414,48 @@ mod tests {
                     )?,
                     TransactionOutcome::Committed(_)
                 ));
+                // The actual worker token must interrupt a cache publication
+                // waiting on another native custody owner, even while its
+                // current-thread HTTP executor cannot poll an async timer.
+                let asset = ArtworkAsset::checked(
+                    include_bytes!("../../../librairii-adapters/tests/fixtures/artwork/cover.png")
+                        .to_vec(),
+                    MediaType::Png,
+                )?;
+                let flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let cancellable =
+                    MetadataStorage::for_work(&db, WorkCancellation::for_worker(flag.clone()));
+                let files = db.metadata_files()?;
+                let guard = files.try_custody()?;
+                std::thread::scope(
+                    |scope| -> std::result::Result<(), Box<dyn std::error::Error>> {
+                        let (sent, received) = std::sync::mpsc::sync_channel(1);
+                        let cache = &cancellable;
+                        let image = &asset;
+                        let join = scope.spawn(move || {
+                            let result = cache.persist_artwork(
+                                opaque,
+                                image,
+                                "2026-10-21T12:00:02Z",
+                                None,
+                                None,
+                            );
+                            let _sent = sent.send(result);
+                        });
+                        std::thread::sleep(std::time::Duration::from_millis(20));
+                        flag.store(true, std::sync::atomic::Ordering::Release);
+                        let result = received.recv_timeout(std::time::Duration::from_secs(1));
+                        drop(guard);
+                        join.join().map_err(|_| "cache worker panicked")?;
+                        assert!(
+                            matches!(result, Ok(Err(StorageError::Cancelled))),
+                            "cache custody wait ignored its actual worker cancellation"
+                        );
+                        Ok(())
+                    },
+                )?;
+                assert!(cancellable.retained_failures().is_empty());
+                assert!(db.read_registered_artwork(opaque)?.cached.is_none());
             }
             store.creation_fault = true;
             if artwork {

@@ -1,0 +1,126 @@
+import { Button, ComboBox, ScrollView, VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+export struct ShelfReviewRow {index:int,uuid:string,title:string,detail:string,choice:int,removal:bool,can-remove:bool,warning:bool,broken:bool}
+export struct ShelfReviewData {
+    open:bool,busy:bool,committing:bool,stale:bool,kind:int,section:int,epoch:int,
+    title:string,summary:string,status:string,notice:string,source-summary:string,counts:string,apply-summary:string,
+    rows:[ShelfReviewRow],apply-label:string,can-apply:bool,can-keep-all:bool,can-bulk-remove:bool,
+    previous:bool,next:bool,previous-shelf:bool,next-shelf:bool,mismatch:bool,
+    preview-uuid:string,preview-title:string,preview-author:string,preview-description:string,preview-warning:string,preview-cover:image,preview-broken:bool,
+}
+component Label inherits Text {vertical-stretch: 0;color: Palette.foreground;wrap: word-wrap;}
+component DecisionRow inherits VerticalBox {
+    in property <ShelfReviewRow> entry;
+    in property <bool> french;
+    in property <bool> active;
+    in property <int> epoch;
+    in property <int> restore-epoch;
+    in property <string> restore-key;
+    in property <ShelfReviewData> data;
+    callback choose(string,int);
+    callback inspect(string);
+    callback focused(string,length,length);
+    changed epoch => {choice.current-index=root.entry.choice;}
+    changed restore-epoch => {if root.restore-key==root.entry.uuid {choice.focus();root.focused(root.entry.uuid,choice.absolute-position.y,choice.height);}else if root.restore-key=="p/"+root.entry.uuid {preview.focus();root.focused("p/"+root.entry.uuid,preview.absolute-position.y,preview.height);}}
+    padding: 0px;spacing: 4px;
+    HorizontalBox {padding: 0px;spacing: 8px;
+        Image {width: 48px;height: 48px;source: root.data.preview-uuid==root.entry.uuid && root.data.preview-cover.width>0 ? root.data.preview-cover : @image-url("../assets/library.svg");image-fit: contain;opacity: root.entry.broken ? 0.45 : 1;}
+        VerticalBox {padding: 0px;spacing: 2px;
+            Label {text: root.entry.title;font-weight: 600;}
+            Label {text: root.entry.uuid;}
+            Label {text: root.entry.detail;}
+        }
+    }
+    choice := ComboBox {
+        visible: !root.entry.warning;height: self.visible ? 32px : 0px;
+        enabled: root.active && !root.entry.warning;
+        model: root.entry.removal ? (root.entry.can-remove ? (root.french ? ["Pas maintenant", "Conserver", "Retirer et exclure"] : ["Not now", "Keep", "Remove and exclude"]) : (root.french ? ["Pas maintenant", "Conserver"] : ["Not now", "Keep"])) : (root.french ? ["Pas maintenant", "Ajouter", "Exclure"] : ["Not now", "Add", "Exclude"]);
+        current-index: root.entry.choice;
+        accessible-label: root.entry.title + " · " + root.entry.uuid + " · " + root.entry.detail;
+        selected(_)=>{root.choose(root.entry.uuid,self.current-index);}
+        changed has-focus=>{if self.has-focus {root.focused(root.entry.uuid,self.absolute-position.y,self.height);}}
+    }
+    preview := Button {
+        visible: !root.entry.warning;height: self.visible ? 32px : 0px;enabled: root.active && !root.entry.warning;
+        text: root.french ? "Aperçu de l’histoire" : "Story preview";accessible-label: self.text + " · " + root.entry.title + " · " + root.entry.uuid;
+        clicked=>{root.inspect(root.entry.uuid);}
+        changed has-focus=>{if self.has-focus {root.focused("p/"+root.entry.uuid,self.absolute-position.y,self.height);}}
+    }
+    if root.data.preview-uuid==root.entry.uuid && !root.entry.warning: VerticalBox {padding: 8px;spacing: 4px;
+        Label {text: root.data.preview-title;font-weight: 600;}
+        Image {height: root.data.preview-cover.width>0 ? 96px : 0px;source: root.data.preview-cover;image-fit: contain;opacity: root.data.preview-broken ? 0.45 : 1;}
+        Label {text: root.data.preview-warning;}
+        Label {text: root.data.preview-author;}
+        Label {text: root.data.preview-description;}
+    }
+}
+export component ShelfReviewPane inherits FocusScope {
+    in property <ShelfReviewData> data;
+    in property <bool> french;
+    in property <bool> interactive: true;
+    in property <bool> focus-active;
+    changed height => {if root.focus-active && root.interactive {root.focus-current();}}
+    changed width => {if root.focus-active && root.interactive {root.focus-current();}}
+    callback exclusions();callback refresh();callback close();callback apply();callback keep-all();callback acknowledge();
+    callback section(int);callback page(int);callback shelf(int);callback choose(string,int);callback bulk(int);callback inspect(string);callback focused();
+    out property <string> focused-uuid;
+    out property <length> focused-y;
+    out property <length> focused-height;
+    out property <length> viewport-y: scroll.absolute-position.y;
+    out property <length> viewport-height: scroll.visible-height;
+    out property <bool> refresh-focused: refresh.has-focus;
+    private property <string> focus-key: "refresh";
+    private property <int> restore-epoch;
+    public function activate() {root.focus-key="refresh";root.focus-current();}
+    public function focus-current() {
+        if root.focus-key=="exclusions" {exclusions.focus();root.note-focus("exclusions",exclusions.absolute-position.y,exclusions.height);}else if root.focus-key=="refresh" {refresh.focus();root.note-focus("refresh",refresh.absolute-position.y,refresh.height);}else if root.focus-key=="apply" {apply.focus();root.note-focus("apply",apply.absolute-position.y,apply.height);}else if root.focus-key=="close" {close.focus();root.note-focus("close",close.absolute-position.y,close.height);}else if root.focus-key=="keep" {keep-all.focus();root.note-focus("keep",keep-all.absolute-position.y,keep-all.height);}else if root.focus-key=="ack" {ack.focus();root.note-focus("ack",ack.absolute-position.y,ack.height);}else if root.focus-key=="bulk0" {bulk-now.focus();root.note-focus("bulk0",bulk-now.absolute-position.y,bulk-now.height);}else if root.focus-key=="bulk1" {bulk-approve.focus();root.note-focus("bulk1",bulk-approve.absolute-position.y,bulk-approve.height);}else if root.focus-key=="bulk2" {bulk-remove.focus();root.note-focus("bulk2",bulk-remove.absolute-position.y,bulk-remove.height);}else if root.focus-key=="additions" {additions.focus();root.note-focus("additions",additions.absolute-position.y,additions.height);}else if root.focus-key=="removals" {removals.focus();root.note-focus("removals",removals.absolute-position.y,removals.height);}else if root.focus-key=="warnings" {warnings.focus();root.note-focus("warnings",warnings.absolute-position.y,warnings.height);}else if root.focus-key=="previous" {previous.focus();root.note-focus("previous",previous.absolute-position.y,previous.height);}else if root.focus-key=="next" {next.focus();root.note-focus("next",next.absolute-position.y,next.height);}else if root.focus-key=="previous-shelf" {previous-shelf.focus();root.note-focus("previous-shelf",previous-shelf.absolute-position.y,previous-shelf.height);}else if root.focus-key=="next-shelf" {next-shelf.focus();root.note-focus("next-shelf",next-shelf.absolute-position.y,next-shelf.height);}else{root.restore-epoch+=1;}
+    }
+    function reveal(y:length,h:length) {
+        let top=scroll.absolute-position.y;
+        scroll.content-y=max(min(0px,scroll.visible-height - scroll.content-height),min(0px,scroll.content-y+(y<top ? top - y : y+h>top+scroll.visible-height ? top+scroll.visible-height - y - h : 0px)));
+    }
+    function note-focus(key:string,y:length,h:length) {root.focused-uuid="";root.focused-y=y;root.focused-height=h;root.focus-key=key;root.focused();root.reveal(y,h);}
+    accessible-role: groupbox;accessible-label: root.data.title;
+    key-pressed(event)=>{
+        if event.text==Key.Escape && !root.data.committing {root.close();return accept;}
+        if event.text==Key.PageDown {scroll.content-y=max(scroll.visible-height - scroll.content-height,scroll.content-y - scroll.visible-height);return accept;}
+        if event.text==Key.PageUp {scroll.content-y=min(0px,scroll.content-y+scroll.visible-height);return accept;}
+        return reject;
+    }
+    Text {x:0px;y:0px;height:20px;width:parent.width;text:root.data.title;color:Palette.foreground;font-weight:600;overflow:elide;}
+    scroll := ScrollView {y:24px;width: parent.width;height: max(0px,parent.height - 24px);content-width: self.visible-width;content-height: layout.preferred-height;
+        layout := VerticalBox {height: self.preferred-height;padding: 8px;spacing: 8px;
+            Label {text: root.data.summary;}
+            Label {text: root.data.status;accessible-live-region: polite;}
+            Label {text: root.data.notice;accessible-live-region: polite;}
+            Label {text: root.data.source-summary;}
+            Label {text: root.french ? "Aucune décision n’est approuvée par défaut. Les histoires approuvées restent indépendantes des suggestions." : "No decision is approved by default. Approved stories remain separate from suggestions.";}
+            refresh := Button {enabled: root.interactive && !root.data.busy;text: root.french ? "Actualiser et renouveler les décisions" : "Refresh and renew decisions";clicked=>{root.refresh();}changed has-focus=>{if self.has-focus {root.note-focus("refresh",self.absolute-position.y,self.height);}}}
+            exclusions := Button {enabled: root.interactive && !root.data.busy;text: root.french ? "Gérer les exclusions…" : "Manage exclusions…";clicked=>{root.exclusions();}changed has-focus=>{if self.has-focus {root.note-focus("exclusions",self.absolute-position.y,self.height);}}}
+            ack := Button {visible: root.data.mismatch;height: self.visible ? 32px : 0px;enabled: root.interactive && !root.data.busy;text: root.french ? "Masquer cet avertissement de correspondance" : "Dismiss this mismatch warning";clicked=>{root.acknowledge();}changed has-focus=>{if self.has-focus {root.note-focus("ack",self.absolute-position.y,self.height);}}}
+            HorizontalBox {padding: 0px;
+                previous-shelf := Button {visible: root.data.kind==2;width: self.visible ? self.preferred-width : 0px;enabled: root.interactive && !root.data.busy && root.data.previous-shelf;text: root.french ? "Étagère précédente" : "Previous Shelf";clicked=>{root.shelf(-1);}changed has-focus=>{if self.has-focus {root.note-focus("previous-shelf",self.absolute-position.y,self.height);}}}
+                next-shelf := Button {visible: root.data.kind==2;width: self.visible ? self.preferred-width : 0px;enabled: root.interactive && !root.data.busy && root.data.next-shelf;text: root.french ? "Étagère suivante" : "Next Shelf";clicked=>{root.shelf(1);}changed has-focus=>{if self.has-focus {root.note-focus("next-shelf",self.absolute-position.y,self.height);}}}
+            }
+            VerticalBox {padding: 0px;spacing: 4px;visible: root.data.kind!=3;height: self.visible ? self.preferred-height : 0px;
+                additions := Button {visible: root.data.kind==0;height: self.visible ? 32px : 0px;enabled: root.interactive && !root.data.busy;text: root.french ? "Ajouts" : "Additions";clicked=>{root.section(0);}changed has-focus=>{if self.has-focus {root.note-focus("additions",self.absolute-position.y,self.height);}}}
+                removals := Button {enabled: root.interactive && !root.data.busy;text: root.data.kind==0 ? (root.french ? "Retraits et conservation" : "Removals and Keep") : (root.french ? "Membres concernés" : "Affected members");clicked=>{root.section(1);}changed has-focus=>{if self.has-focus {root.note-focus("removals",self.absolute-position.y,self.height);}}}
+                warnings := Button {enabled: root.interactive && !root.data.busy;text: root.french ? "Avertissements" : "Warnings";clicked=>{root.section(2);}changed has-focus=>{if self.has-focus {root.note-focus("warnings",self.absolute-position.y,self.height);}}}
+            }
+            Label {text: root.data.counts;}
+            keep-all := Button {visible: root.data.can-keep-all;height: self.visible ? self.preferred-height : 0px;enabled: root.interactive && !root.data.busy && !root.data.stale;text: root.data.kind==2 ? (root.french ? "Conserver toutes les histoires concernées sur chaque Étagère" : "Keep all affected stories on every Shelf") : (root.french ? "Conserver toutes les histoires concernées" : "Keep all affected stories");clicked=>{root.keep-all();}changed has-focus=>{if self.has-focus {root.note-focus("keep",self.absolute-position.y,self.height);}}}
+            VerticalBox {visible: root.data.section!=2 && root.data.kind!=3;height: self.visible ? self.preferred-height : 0px;padding: 0px;spacing: 4px;
+                bulk-now := Button {enabled: root.interactive && !root.data.busy && !root.data.stale;text: root.french ? "Tout différer dans ce groupe" : "Not now for this entire group";clicked=>{root.bulk(0);}changed has-focus=>{if self.has-focus {root.note-focus("bulk0",self.absolute-position.y,self.height);}}}
+                bulk-approve := Button {enabled: root.interactive && !root.data.busy && !root.data.stale;text: root.data.section==0 ? (root.french ? "Ajouter toutes les candidates de ce groupe" : "Add all candidates in this group") : (root.french ? "Conserver tous les membres de ce groupe" : "Keep all members in this group");clicked=>{root.bulk(1);}changed has-focus=>{if self.has-focus {root.note-focus("bulk1",self.absolute-position.y,self.height);}}}
+                bulk-remove := Button {enabled: root.interactive && !root.data.busy && !root.data.stale && (root.data.section==0 || root.data.can-bulk-remove);text: root.data.section==0 ? (root.french ? "Exclure toutes les candidates de ce groupe" : "Exclude all candidates in this group") : (root.french ? "Retirer et exclure tous les membres de ce groupe" : "Remove and exclude all members in this group");clicked=>{root.bulk(2);}changed has-focus=>{if self.has-focus {root.note-focus("bulk2",self.absolute-position.y,self.height);}}}
+            }
+            for row in root.data.rows: DecisionRow {entry: row;data: root.data;french: root.french;active: root.interactive && !root.data.busy && !root.data.stale;epoch: root.data.epoch;restore-epoch: root.restore-epoch;restore-key: root.focus-key;choose(i,c)=>{root.choose(i,c);}inspect(i)=>{root.inspect(i);}focused(key,y,h)=>{root.note-focus(key,y,h);if key==row.uuid {root.focused-uuid=row.uuid;}}}
+            HorizontalBox {padding: 0px;
+                previous := Button {enabled: root.interactive && !root.data.busy && root.data.previous;text: root.french ? "Page précédente" : "Previous page";clicked=>{root.page(-1);}changed has-focus=>{if self.has-focus {root.note-focus("previous",self.absolute-position.y,self.height);}}}
+                next := Button {enabled: root.interactive && !root.data.busy && root.data.next;text: root.french ? "Page suivante" : "Next page";clicked=>{root.page(1);}changed has-focus=>{if self.has-focus {root.note-focus("next",self.absolute-position.y,self.height);}}}
+            }
+            Label {text: root.data.apply-summary;}
+            apply := Button {enabled: root.interactive && !root.data.busy && !root.data.stale && root.data.can-apply;text: root.data.apply-label;clicked=>{root.apply();}changed has-focus=>{if self.has-focus {root.note-focus("apply",self.absolute-position.y,self.height);}}}
+            close := Button {enabled: root.interactive && !root.data.committing;text: root.french ? "Pas maintenant · fermer la révision" : "Not now · close review";clicked=>{root.close();}changed has-focus=>{if self.has-focus {root.note-focus("close",self.absolute-position.y,self.height);}}}
+        }
+    }
+}

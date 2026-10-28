@@ -37,6 +37,14 @@ pub struct WorkCancellation {
     job: Option<librairii_app::native_jobs::Cancellation>,
 }
 impl WorkCancellation {
+    /// Connect a scoped worker's cancellation signal. This grants no storage
+    /// admission and never resets a token retained by an earlier operation.
+    pub fn for_worker(requested: Arc<AtomicBool>) -> Self {
+        Self {
+            requested,
+            job: None,
+        }
+    }
     pub fn for_job(job: &librairii_app::native_jobs::Cancellation) -> Self {
         Self {
             requested: Arc::new(AtomicBool::new(false)),
@@ -400,6 +408,15 @@ impl Database<'_> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub(crate) fn library_layout(&self) -> &crate::LibraryLayout {
         self.authority.layout()
+    }
+    /// Observe actual close/fence state for either real file authority. An
+    /// isolated development owner is not a failed native-owner acquisition.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn file_recovery_required(&self) -> bool {
+        self.closed
+            || self.close_failed
+            || self.fenced.load(Ordering::Acquire)
+            || self.authority.effect_fence().load(Ordering::Acquire)
     }
     pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
         match self.authority {

@@ -5388,6 +5388,163 @@
           ]
         },
         "reason": "Section 14 independent review: manual Shelf navigation retains the saved sort without reordering approved membership"
+      },
+      {
+        "position": 608,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "filters::tests::choice_values_are_or_within_definition_and_boolean_removal_preserves_other_groups"
+        },
+        "reason": "Task15.1 observed additive query-editor regressions; every prior identity, position and target scope is retained."
+      },
+      {
+        "position": 609,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
+        },
+        "reason": "Task15.1 observed additive query-editor regressions; every prior identity, position and target scope is retained."
+      },
+      {
+        "position": 610,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text"
+        },
+        "reason": "Task15.2 observed inert description conversion; frozen paragraph/list/entity/plain text behavior and hidden active markup omission. Prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 611,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
+        },
+        "reason": "Task15.2 observed inert description conversion; frozen paragraph/list/entity/plain text behavior and hidden active markup omission. Prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 612,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "datetime::tests::sqlite_and_provider_instants_keep_their_identity_in_observed_offsets"
+        },
+        "reason": "Task15.2 independent review: SQL and provider timestamp identity and actual local-offset observation; retains the complete prior baseline."
+      },
+      {
+        "position": 613,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task15.3 observed native frozen-target regression: all ID/UUID pairs validate in the same writer snapshot before any tag changes. All prior identities/scopes are retained."
+      },
+      {
+        "position": 614,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "native_flag_undo_rejects_reused_uuid_and_mismatched_restore_authority_atomically",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task15.4 observed native flag regression: reused UUID and mismatched restore targets reject the whole writer batch without partial Undo. Every prior identity and target scope is retained."
+      },
+      {
+        "position": 615,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task15.6 observed native Shelf regression: exact stored UUID spelling, source/manual overlap, and frozen ID/UUID admission retain approved authority and reject reused IDs atomically. Every prior identity and target scope is retained."
+      },
+      {
+        "position": 616,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_confirmation_preserves_complete_family_and_archives",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 617,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_changed_preview_and_permission_failure_retain_actual_owner",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 618,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_replay_revalidates_durable_copies_after_process_death",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 619,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "profile::tests::binding_revalidation_does_not_publish_busy_state_to_profile_readers",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 profile validation concurrency regression; readonly checks must not advertise publication Busy to independent readers. All prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 620,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_metadata_admission_waits_for_profile_publication_and_observes_cancellation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 real native profile publication before/after metadata admission, preserving running sync and cancellation with the actual owner. All prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 621,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_guarded_file_validation_waits_for_profile_publication_without_losing_custody",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 retained native file-guard validation across profile publication, real stage creation/retirement and positive owned cleanup. All prior identities and target scopes remain unchanged."
       }
     ],
     "python": [

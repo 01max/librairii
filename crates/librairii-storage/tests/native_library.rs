@@ -3386,3 +3386,197 @@ fn native_export_rechecks_broken_after_waiting_for_actual_custody() -> TestResul
     native.finish().map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[test]
+fn native_metadata_admission_waits_for_profile_publication_and_observes_cancellation() -> TestResult
+{
+    use librairii_app::metadata::{RefreshCode, RefreshSession};
+    use librairii_storage::metadata::MetadataStorage;
+    use std::sync::mpsc;
+    use std::time::Duration;
+    const RAW: &[u8] = include_bytes!("../../librairii-app/tests/fixtures/lunii-catalog.json");
+    for (after_begin, cancel_wait) in [(false, false), (false, true), (true, false), (true, true)] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+                .map_err(|f| f.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        let cancellation = WorkCancellation::default();
+        let metadata = MetadataStorage::for_work(&db, cancellation.clone());
+        let sync_id: librairii_core::JobId = "a0000000-0000-4000-8000-000000000092".parse()?;
+        let admitted = if after_begin {
+            Some(
+                RefreshSession::begin(
+                    &metadata,
+                    "a0000000-0000-4000-8000-000000000092".parse()?,
+                    "en-GB",
+                    "2026-10-28T10:00:00Z",
+                )
+                .map_err(|code| format!("begin: {code:?}"))?,
+            )
+        } else {
+            None
+        };
+        let (entered, observed) = mpsc::sync_channel(1);
+        let (resume, wait) = mpsc::sync_channel(1);
+        let (calling, called) = mpsc::sync_channel(1);
+        let (finished, result) = mpsc::sync_channel(1);
+        let (early, completed) = std::thread::scope(|scope| -> TestResult<_> {
+            let profile = &profile;
+            let update = scope.spawn(move || {
+                profile.update(|p| {
+                    entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                    wait.recv_timeout(Duration::from_secs(5))
+                        .map_err(|_| StorageError::WorkerStopped)?;
+                    p.language = "fr".into();
+                    Ok(())
+                })
+            });
+            observed.recv_timeout(Duration::from_secs(5))?;
+            assert!(matches!(
+                db.catalog_status(librairii_core::metadata::Locale::parse("en-GB")?),
+                Err(StorageError::ProfileBusy)
+            ));
+            let owner = &metadata;
+            let refresh_cancel = cancellation.clone();
+            let refresh = scope.spawn(move || -> Result<(), StorageError> {
+                calling.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                let value = admitted
+                    .map_or_else(
+                        || RefreshSession::begin(owner, sync_id, "en-GB", "2026-10-28T10:00:00Z"),
+                        Ok,
+                    )
+                    .and_then(|session| {
+                        session.finish(Ok(RAW.to_vec()), "2026-10-28T10:00:01Z", || {
+                            refresh_cancel.is_cancelled()
+                        })
+                    });
+                finished
+                    .send(value)
+                    .map_err(|_| StorageError::WorkerStopped)
+            });
+            called.recv_timeout(Duration::from_secs(5))?;
+            let early = result.recv_timeout(Duration::from_millis(25));
+            if cancel_wait {
+                cancellation.cancel();
+            }
+            let cancelled = if cancel_wait && early.is_err() {
+                Some(result.recv_timeout(Duration::from_secs(2)))
+            } else {
+                None
+            };
+            // Always release the real profile owner before asserting outcomes.
+            resume.send(())?;
+            update.join().map_err(|_| "profile updater panicked")??;
+            refresh.join().map_err(|_| "metadata refresh panicked")??;
+            let was_waiting = early.is_err();
+            let completed = if let Some(cancelled) = cancelled {
+                cancelled?
+            } else if let Ok(value) = early {
+                value
+            } else {
+                result.recv_timeout(Duration::from_secs(5))?
+            };
+            Ok((was_waiting, completed))
+        })?;
+        assert!(
+            early,
+            "metadata treated an admitted profile update as a persistence failure"
+        );
+        if cancel_wait {
+            assert_eq!(
+                completed,
+                Err(if after_begin {
+                    RefreshCode::Cancelled
+                } else {
+                    RefreshCode::PersistenceFailed
+                })
+            );
+            assert!(db.catalog_snapshots()?.wait()?.is_empty());
+        } else {
+            let report = completed.map_err(|code| format!("refresh failed: {code:?}"))?;
+            assert_eq!(report.activated_at, "2026-10-28T10:00:01Z");
+            assert_eq!(db.catalog_snapshots()?.wait()?.len(), 1);
+        }
+        assert_eq!(
+            profile.load()?.ok_or("profile missing")?.profile().language,
+            "fr"
+        );
+        drop(metadata);
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+    }
+    Ok(())
+}
+
+#[test]
+fn native_guarded_file_validation_waits_for_profile_publication_without_losing_custody()
+-> TestResult {
+    use librairii_storage::platform::unix::LibraryFiles;
+    use std::{sync::mpsc, time::Duration};
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native = NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+        .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let guard = files.try_custody()?;
+        let (entered, observed) = mpsc::sync_channel(1);
+        let (resume, wait) = mpsc::sync_channel(1);
+        let (calling, called) = mpsc::sync_channel(1);
+        let (finished, result) = mpsc::sync_channel(1);
+        let (was_waiting, completed) = std::thread::scope(|scope| -> TestResult<_> {
+            let profile = &profile;
+            let update = scope.spawn(move || {
+                profile.update(|p| {
+                    entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                    wait.recv_timeout(Duration::from_secs(5))
+                        .map_err(|_| StorageError::WorkerStopped)?;
+                    p.language = "fr".into();
+                    Ok(())
+                })
+            });
+            observed.recv_timeout(Duration::from_secs(5))?;
+            let allocation = scope.spawn(|| -> Result<(), StorageError> {
+                calling.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                let completed = (|| -> Result<(), String> {
+                    let stage = files.create_stage(&guard).map_err(|f| format!("{f:?}"))?;
+                    stage
+                        .retire_owned_temp(&guard)
+                        .map_err(|f| format!("{f:?}"))?;
+                    Ok(())
+                })();
+                finished
+                    .send(completed)
+                    .map_err(|_| StorageError::WorkerStopped)
+            });
+            called.recv_timeout(Duration::from_secs(5))?;
+            let early = result.recv_timeout(Duration::from_millis(25));
+            resume.send(())?;
+            update.join().map_err(|_| "profile update panicked")??;
+            allocation.join().map_err(|_| "allocation panicked")??;
+            let was_waiting = early.is_err();
+            let completed = match early {
+                Ok(value) => value,
+                Err(_) => result.recv_timeout(Duration::from_secs(5))?,
+            };
+            Ok((was_waiting, completed))
+        })?;
+        assert!(
+            was_waiting,
+            "guarded file validation treated profile publication as authority loss"
+        );
+        completed.map_err(|e| format!("guarded allocation failed: {e}"))?;
+        assert_eq!(fs::read_dir(root.join("staging"))?.count(), 0);
+    }
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}

@@ -98,6 +98,17 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
         at: &str,
         cancelled: impl Fn() -> bool,
     ) -> std::result::Result<RefreshReport, RefreshCode> {
+        self.finish_with_activation(payload, at, cancelled, || {})
+    }
+    /// A presentation observation immediately before the uncancelled activation
+    /// boundary. The callback conveys no persistence or cancellation authority.
+    pub fn finish_with_activation(
+        self,
+        payload: Result<Vec<u8>>,
+        at: &str,
+        cancelled: impl Fn() -> bool,
+        before_activation: impl FnOnce(),
+    ) -> std::result::Result<RefreshReport, RefreshCode> {
         let canonical_at = match utc_time(at) {
             Ok(at) => at,
             Err(_) => return self.failed(None, RefreshCode::PersistenceFailed, &self.started_at),
@@ -133,13 +144,24 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
                 self.settled.set(true);
                 return Err(RefreshCode::OutcomeUncertain);
             }
-            Err(_) => return self.failed(None, RefreshCode::StageFailed, at),
+            Err(_) => {
+                return self.failed(
+                    None,
+                    if cancelled() {
+                        RefreshCode::Cancelled
+                    } else {
+                        RefreshCode::StageFailed
+                    },
+                    at,
+                );
+            }
         };
         self.staged.set(Some(snapshot));
         if cancelled() {
             return self.failed(Some(snapshot), RefreshCode::Cancelled, at);
         }
         self.settled.set(true);
+        before_activation();
         match self.repository.activate(snapshot, at) {
             Ok(report) => Ok(report),
             Err(RepositoryFailure::Uncertain) => Err(RefreshCode::OutcomeUncertain),

@@ -37,6 +37,23 @@ impl Database<'_> {
     pub fn collections(&self) -> Result<Pending<'_, Vec<Collection>>> {
         self.read(list)
     }
+    /// A repair draft retains unavailable references. Loading it never marks a
+    /// Collection healthy, changes saved bytes, or silently drops a predicate.
+    pub fn collection_repair_draft(&self, id: i64) -> Result<Pending<'_, Query>> {
+        self.read(move |tx| {
+            let collection = read(tx, id)?;
+            let legacy = tx
+                .query_row(
+                    "SELECT definition_id FROM legacy_broken_tag WHERE singleton=1",
+                    [],
+                    |r| r.get::<_, i64>(0),
+                )
+                .optional()?
+                .unwrap_or(0);
+            collection_codec::decode(collection.query_version, &collection.query_payload, legacy)
+                .map_err(codec)
+        })
+    }
 }
 fn from_compat(c: migrations::CompatibilityCollection) -> Collection {
     Collection {
@@ -318,6 +335,8 @@ pub struct SelectedSource {
 #[derive(Debug)]
 pub struct SelectionPreview {
     pub sources: Vec<SelectedSource>,
+    /// Copied OR criteria from this same observation, never live source IDs.
+    pub criteria: Query,
     pub unique_count: i64,
     pub overlap_count: i64,
 }
@@ -354,8 +373,8 @@ pub fn preview_selection(
         Observation::Ready(s) => s,
         Observation::NeedsAttention(i) => return Ok(Observation::NeedsAttention(i)),
     };
-    let criteria = selected.iter().map(|(_, q)| q.clone()).collect();
-    let unique_count = crate::query::count_union(tx, criteria, locale)?;
+    let criteria = selected.iter().map(|(_, q)| q.clone()).collect::<Vec<_>>();
+    let unique_count = crate::query::count_union(tx, criteria.clone(), locale)?;
     let mut sources = Vec::with_capacity(selected.len());
     let mut total = 0_i64;
     for (collection, q) in selected {
@@ -372,7 +391,10 @@ pub fn preview_selection(
             .ok_or(librairii_core::query::QueryInputError::ResourceOverflow)?;
         sources.push(SelectedSource { collection, count });
     }
+    let mut union = Query::default();
+    union.any_of = criteria;
     Ok(Observation::Ready(SelectionPreview {
+        criteria: union,
         sources,
         unique_count,
         overlap_count: total - unique_count,

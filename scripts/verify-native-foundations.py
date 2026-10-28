@@ -8,6 +8,7 @@ import platform
 import subprocess
 import shutil
 import sys
+import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 DESTINATION = ROOT / 'target/quality/native-ui'
 def run(arguments, **kwargs):
@@ -25,6 +26,9 @@ def main():
     for entry in original['files']:
         if hashlib.sha256((source / entry['path']).read_bytes()).hexdigest() != entry['sha256']:
             raise ValueError('approved native editable/export source changed')
+    profile = tomllib.loads((ROOT / 'Cargo.toml').read_text())['profile']['native-observer']
+    if profile != {'inherits': 'dev', 'opt-level': 1, 'debug-assertions': True, 'overflow-checks': True}:
+        raise ValueError('native observer must retain qualified development checks')
     source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     target = os.environ.get('RUST_TARGET')
     if not target:
@@ -47,26 +51,35 @@ def main():
     DESTINATION.mkdir(parents=True)
     (DESTINATION / '.native-fixture-root').write_text('native-foundations-14\n')
     with (DESTINATION / 'build.log').open('w') as log, (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events:
-        run(['cargo', 'build', '--locked', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations', '--message-format=json'], stdout=events, stderr=log)
+        run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations', '--message-format=json'], stdout=events, stderr=log)
     artifacts = [json.loads(line) for line in (DESTINATION / 'compiler-artifacts.jsonl').read_text().splitlines()]
     artifacts = [event for event in artifacts if event.get('reason') == 'compiler-artifact' and event.get('target', {}).get('name') == 'native-foundations' and event['target']['kind'] == ['example'] and event.get('executable')]
     if len(artifacts) != 1:
         raise ValueError('Cargo must report exactly one native fixture executable')
+    if (artifacts[0]['profile']['opt_level'] != '1' or not artifacts[0]['profile']['debug_assertions']
+            or not artifacts[0]['profile']['overflow_checks']):
+        raise ValueError('Cargo observer profile must retain assertions/overflow checks at opt-level1')
     cargo_binary = Path(artifacts[0]['executable']).resolve(strict=True)
     binary = DESTINATION / 'native-foundations'
     shutil.copy2(cargo_binary, binary)
     if not binary.is_file():
         raise ValueError('Cargo native fixture executable is not a regular file')
     binary_digest = hashlib.sha256(binary.read_bytes()).hexdigest()
-    executable = {'path': str(binary), 'cargo_path': str(cargo_binary), 'retained_path': 'native-foundations', 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh']}
+    executable = {'path': str(binary), 'cargo_path': str(cargo_binary), 'retained_path': 'native-foundations', 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh'], 'build_profile': {'name': 'native-observer', 'cargo': artifacts[0]['profile'], 'configured': profile}}
     reports = []
     for scale in ['1', '2']:
         output = DESTINATION / ('scale-' + scale)
         output.mkdir(exist_ok=True)
         (output / '.librairii-native-fixture').write_text('native-foundations-14\n')
         environment = dict(os.environ, SLINT_BACKEND='winit-skia-software', SLINT_SCALE_FACTOR=scale)
+        arguments = [str(binary), str(output)]
+        if sys.platform == 'darwin':
+            # This bounded component observer may sit behind the user's app.
+            # Override App Nap in this process's argument domain only; never
+            # write user/system defaults or change the product resource gates.
+            arguments += ['-NSAppSleepDisabled', 'YES']
         with (output / 'execution.log').open('w') as log:
-            run([str(binary), str(output)], env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
+            run(arguments, env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
         report = json.loads((output / 'report.json').read_text())
         if report['macos_programmatic_fixed_window'] != (sys.platform == 'darwin'):
             raise ValueError('native fixture window policy differs from the host')
@@ -78,6 +91,28 @@ def main():
             raise ValueError('production history restoration callback checks incomplete')
         if report['failed_query_history_callbacks'] != 'passed':
             raise ValueError('production failed-query history callback checks incomplete')
+        if report['details_removal_callbacks'] != 'passed':
+            raise ValueError('production detail/removal callback checks incomplete')
+        if report['tag_callbacks'] != 'passed':
+            raise ValueError('production tag CRUD/assignment callback checks incomplete')
+        if report.get('shelf_review_callbacks') != 'passed':
+            raise ValueError('native Shelf review callbacks failed')
+        if report.get('operation_callbacks') != 'passed':
+            raise ValueError('native operation callbacks incomplete')
+        if report.get('export_callbacks') != 'passed':
+            raise ValueError('native export callbacks incomplete')
+        if report.get('activity_history_callbacks') != 'passed':
+            raise ValueError('native History and persistent notice callbacks incomplete')
+        if report.get('maintenance_callbacks') != 'passed':
+            raise ValueError('native setup/settings/move/recovery/diagnostic callbacks incomplete')
+        if report.get('sync_callbacks') != 'passed':
+            raise ValueError('native sync callbacks incomplete')
+        if report['shelf_callbacks'] != 'passed':
+            raise ValueError('Shelf callback verification did not pass')
+        if report['collection_callbacks'] != 'passed':
+            raise ValueError('native Collection callbacks did not pass')
+        if report['flag_callbacks'] != 'passed':
+            raise ValueError('production Broken/Undo callback checks incomplete')
         frames = report['frames']
         expected = {(concept, density, mode, french) for concept in ['Story shelves', 'Desktop workspace'] for density in range(3) for mode in (range(3) if concept == 'Story shelves' else [0]) for french in [False, True]}
         if {(f['concept'], f['density'], f['mode'], f['french']) for f in frames} != expected or len(frames) != len(expected):
@@ -102,15 +137,21 @@ def main():
                 raise ValueError('fixture approved a review decision implicitly')
         if report['keyboard_checks'] != 'passed':
             raise ValueError('native keyboard checks incomplete')
-        reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION))})
+        if report['filter_callbacks'] != 'passed':
+            raise ValueError('native filter callbacks incomplete')
+        reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION)),
+            'component_process_arguments': arguments[2:]})
     if sys.platform.startswith('linux'):
-        run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(DESTINATION / 'accessibility')], timeout=90)
+        accessibility = DESTINATION / 'accessibility'
+        accessibility.mkdir()
+        with (accessibility / 'driver.log').open('w') as log:
+            run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(accessibility)], timeout=90, stdout=log, stderr=subprocess.STDOUT)
     if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != source_commit or subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT, text=True).strip():
         raise ValueError('native evidence source changed during execution')
     if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_digest:
         raise ValueError('native fixture executable changed during execution')
     files = {str(path.relative_to(DESTINATION)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(DESTINATION.rglob('*')) if path.is_file()}
-    value = {'schema': 1, 'source_commit': source_commit, 'executable': executable, 'target': target, 'host': platform.platform(), 'hardware': subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip() if sys.platform == 'darwin' else platform.machine(), 'reference': json.loads((ROOT / 'docs/rewrite/native-reference.json').read_text()), 'runs': reports, 'files': files, 'scope': 'shown native UI/public component keyboard events, observed scales and Skia snapshots; physical HID, full workflow acceptance and packages remain tasks 15/18'}
+    value = {'schema': 1, 'source_commit': source_commit, 'executable': executable, 'target': target, 'host': platform.platform(), 'hardware': subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip() if sys.platform == 'darwin' else platform.machine(), 'reference': json.loads((ROOT / 'docs/rewrite/native-reference.json').read_text()), 'capture_encoding': {'format': 'PNG', 'color': 'RGBA8', 'compression': 'uncompressed', 'filter': 'none'}, 'runs': reports, 'files': files, 'scope': 'shown native UI/public component keyboard events, observed scales and Skia snapshots; physical HID, full workflow acceptance and packages remain tasks 15/18'}
     (DESTINATION / 'manifest.json').write_text(json.dumps(value, indent=2) + '\n')
     print('Native foundations passed: both approved concepts, English/French, three densities, all story modes, two observed scales and keyboard/modal checks.')
 if __name__ == '__main__':

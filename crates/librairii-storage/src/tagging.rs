@@ -34,6 +34,13 @@ pub enum Command {
         value_ids: Vec<i64>,
     },
     CreateDefinition(CreateDefinition),
+    /// One atomic form save. Protected identities retain their stored label;
+    /// every definition still permits a validated color edit.
+    SaveDefinition {
+        id: i64,
+        label: String,
+        color: String,
+    },
     RenameDefinition {
         id: i64,
         label: String,
@@ -57,6 +64,20 @@ pub enum Command {
         ids: Vec<i64>,
     },
 }
+/// Assignment payload has no independent story-ID list: the complete frozen
+/// identity batch is the only target source.
+#[derive(Clone, Debug)]
+pub enum AssignmentEdit {
+    Boolean {
+        definition_id: i64,
+        assigned: bool,
+    },
+    ChoiceToggle {
+        definition_id: i64,
+        value_id: i64,
+        assigned: bool,
+    },
+}
 #[derive(Debug)]
 pub enum Response {
     Deleted,
@@ -66,6 +87,47 @@ pub enum Response {
     Catalog(Vec<CatalogEntry>),
 }
 impl Database<'_> {
+    pub fn edit_tags_guarded(
+        &self,
+        targets: Vec<librairii_core::browsing::StoryIdentity>,
+        command: AssignmentEdit,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
+        self.transaction(cancellation, move |tx| {
+            crate::query::require_identities(tx, &targets)?;
+            let story_ids = targets.iter().map(|s| s.id).collect();
+            let command = match command {
+                AssignmentEdit::Boolean {
+                    definition_id,
+                    assigned,
+                } => Command::Boolean {
+                    story_ids,
+                    definition_id,
+                    assigned,
+                },
+                AssignmentEdit::ChoiceToggle {
+                    definition_id,
+                    value_id,
+                    assigned,
+                } => Command::ChoiceToggle {
+                    story_ids,
+                    definition_id,
+                    value_id,
+                    assigned,
+                },
+            };
+            execute(tx, command)
+        })
+    }
+    pub fn assignment_workspace_guarded(
+        &self,
+        targets: Vec<librairii_core::browsing::StoryIdentity>,
+    ) -> Result<Pending<'_, librairii_core::tagging::AssignmentWorkspace>> {
+        self.read(move |tx| {
+            crate::query::require_identities(tx, &targets)?;
+            workspace(tx, &targets.iter().map(|s| s.id).collect::<Vec<_>>())
+        })
+    }
     pub fn edit_tags(
         &self,
         command: Command,
@@ -258,6 +320,13 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
                 tx,
                 tx.last_insert_rowid(),
             )?))
+        }
+        Command::SaveDefinition { id, label, color } => {
+            let stored = definition(tx, id)?;
+            if stored.source == "user" && !stored.protected {
+                execute(tx, Command::RenameDefinition { id, label })?;
+            }
+            execute(tx, Command::RecolorDefinition { id, color })
         }
         Command::RenameDefinition { id, label } => {
             let label = tagging::normalize_label(&label)?;

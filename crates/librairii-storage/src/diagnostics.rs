@@ -114,6 +114,11 @@ pub struct ExportFailure {
     pub problem: librairii_core::diagnostics::Problem,
     cause: StorageError,
 }
+impl ExportFailure {
+    pub fn into_storage_error(self) -> StorageError {
+        self.cause
+    }
+}
 impl std::fmt::Display for ExportFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.problem.code())
@@ -154,30 +159,63 @@ impl<'db, 'logger, 'files, 'library> Diagnostics<'db, 'logger, 'files, 'library>
         cancel: &WorkCancellation,
     ) -> std::result::Result<Report, ExportFailure> {
         self.export_with(destination, cancel, |output, name| output.publish(name))
-            .map_err(|cause| {
-                use librairii_core::diagnostics::Problem;
-                let problem = if !self.retained.is_empty() {
-                    Problem::RecoveryRequired
-                } else {
-                    match &cause {
-                        StorageError::Export(librairii_core::export::ExportError::Destination) => {
-                            Problem::Destination
-                        }
-                        StorageError::DestinationCollision => Problem::Collision,
-                        StorageError::Cancelled => Problem::Cancelled,
-                        StorageError::DiagnosticLogsUnavailable => Problem::LogsUnavailable,
-                        StorageError::CustodyRecoveryRequired
-                        | StorageError::RuntimeFenced
-                        | StorageError::OwnedTempCleanupFailed { .. } => Problem::RecoveryRequired,
-                        _ => Problem::ExportFailed,
-                    }
-                };
-                ExportFailure { problem, cause }
+            .map_err(|cause| self.failure(cause))
+    }
+    /// Native save-picker route. The selected leaf is used verbatim; existing
+    /// files still refuse publication through the same create-new protocol.
+    pub fn export_named(
+        &mut self,
+        selected: &Path,
+        cancel: &WorkCancellation,
+    ) -> std::result::Result<Report, ExportFailure> {
+        let result = (|| {
+            let parent = selected.parent().ok_or(StorageError::SettingsDestination)?;
+            let name = selected
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or(StorageError::SettingsDestination)?;
+            crate::platform::unix::EntryName::parse(name)?;
+            if !name.to_ascii_lowercase().ends_with(".zip") {
+                return Err(StorageError::SettingsDestination);
+            }
+            self.export_choice(parent, Some(name), cancel, |output, name| {
+                output.publish(name)
             })
+        })();
+        result.map_err(|cause| self.failure(cause))
+    }
+    fn failure(&self, cause: StorageError) -> ExportFailure {
+        use librairii_core::diagnostics::Problem;
+        let problem = if !self.retained.is_empty() {
+            Problem::RecoveryRequired
+        } else {
+            match &cause {
+                StorageError::Export(librairii_core::export::ExportError::Destination) => {
+                    Problem::Destination
+                }
+                StorageError::DestinationCollision => Problem::Collision,
+                StorageError::Cancelled => Problem::Cancelled,
+                StorageError::DiagnosticLogsUnavailable => Problem::LogsUnavailable,
+                StorageError::CustodyRecoveryRequired
+                | StorageError::RuntimeFenced
+                | StorageError::OwnedTempCleanupFailed { .. } => Problem::RecoveryRequired,
+                _ => Problem::ExportFailed,
+            }
+        };
+        ExportFailure { problem, cause }
     }
     fn export_with(
         &mut self,
         destination: &Path,
+        cancel: &WorkCancellation,
+        publish: impl FnOnce(&mut Output, &str) -> Result<()>,
+    ) -> Result<Report> {
+        self.export_choice(destination, None, cancel, publish)
+    }
+    fn export_choice(
+        &mut self,
+        destination: &Path,
+        selected_name: Option<&str>,
         cancel: &WorkCancellation,
         publish: impl FnOnce(&mut Output, &str) -> Result<()>,
     ) -> Result<Report> {
@@ -247,10 +285,12 @@ impl<'db, 'logger, 'files, 'library> Diagnostics<'db, 'logger, 'files, 'library>
         }
         let bytes = zip::encode(&entries)?;
         let hash = librairii_core::Checksum::from_bytes(Sha256::digest(&bytes).into());
-        let name = format!(
-            "librairii-diagnostics-{}-{identifier}.zip",
-            generated.replace(['-', ':'], "")
-        );
+        let name = selected_name.map(str::to_owned).unwrap_or_else(|| {
+            format!(
+                "librairii-diagnostics-{}-{identifier}.zip",
+                generated.replace(['-', ':'], "")
+            )
+        });
         let mut output = match destination.create_output() {
             Ok(output) => output,
             Err(failure) => {

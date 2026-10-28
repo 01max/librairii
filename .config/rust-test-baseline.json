@@ -3869,6 +3869,107 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "filters::tests::choice_values_are_or_within_definition_and_boolean_removal_preserves_other_groups"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "datetime::tests::sqlite_and_provider_instants_keep_their_identity_in_observed_offsets"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "native_flag_undo_rejects_reused_uuid_and_mismatched_restore_authority_atomically",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::schema::tests::native_schema_confirmation_preserves_complete_family_and_archives",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::schema::tests::native_schema_changed_preview_and_permission_failure_retain_actual_owner",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::schema::tests::native_schema_replay_revalidates_durable_copies_after_process_death",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::binding_revalidation_does_not_publish_busy_state_to_profile_readers",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_metadata_admission_waits_for_profile_publication_and_observes_cancellation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_guarded_file_validation_waits_for_profile_publication_without_losing_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

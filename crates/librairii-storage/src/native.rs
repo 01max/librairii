@@ -627,6 +627,8 @@ mod owned {
     mod fresh;
     pub use fresh::NewInstallFailure;
     mod lifecycle;
+    mod schema;
+    pub use schema::{SchemaPreview, SchemaRecovery, SchemaRecoveryFailure};
     mod locate;
     pub use locate::LocatedLibrary;
     mod relocation;
@@ -651,7 +653,9 @@ mod owned {
         RelocationRecovery, recover_relocation,
     };
     pub use relocation::{RelocationObserver, RelocationStage};
-    pub use relocation::{RestartMoveFailure, cancel_relocation, retry_relocation};
+    pub use relocation::{
+        RestartMoveFailure, cancel_relocation, retry_relocation, retry_relocation_observed,
+    };
     use std::{
         ffi::OsStr,
         fs::{self, File},
@@ -663,6 +667,13 @@ mod owned {
             atomic::{AtomicBool, Ordering},
         },
     };
+
+    #[derive(Clone, Copy, Eq, PartialEq)]
+    enum ReopenMode {
+        Closed,
+        Interrupted,
+        Schema,
+    }
 
     #[derive(Debug)]
     enum RootOwner {
@@ -758,6 +769,14 @@ mod owned {
         library: NativeLibrary<'profile>,
     }
     impl<'profile> RecoveryLibrary<'profile> {
+        pub fn has_pending_schema_recovery(&self) -> Result<bool> {
+            SchemaRecovery::pending(&self.library)
+        }
+        /// Consume the actual interrupted owner without opening SQLite. Only
+        /// explicit schema confirmation can produce a positively closed owner.
+        pub fn into_schema_recovery(self) -> SchemaRecovery<'profile> {
+            SchemaRecovery::from_native(self.library)
+        }
         pub fn layout(&self) -> &LibraryLayout {
             self.library.layout()
         }
@@ -774,6 +793,12 @@ mod owned {
         }
     }
     impl<'profile> NativeLibrary<'profile> {
+        pub fn has_pending_schema_recovery(&self) -> Result<bool> {
+            SchemaRecovery::pending(self)
+        }
+        pub fn into_schema_recovery(self) -> SchemaRecovery<'profile> {
+            SchemaRecovery::from_native(self)
+        }
         pub fn bind_independent(
             copy: IndependentCopy,
             store: &'profile NativeProfileStore,
@@ -971,7 +996,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> Result<Self> {
-            Self::reopen_mode(store, locations, cancellation, false)
+            Self::reopen_mode(store, locations, cancellation, ReopenMode::Closed)
         }
         pub fn recover_interrupted(
             store: &'profile NativeProfileStore,
@@ -979,15 +1004,21 @@ mod owned {
             cancellation: &WorkCancellation,
         ) -> Result<RecoveryLibrary<'profile>> {
             Ok(RecoveryLibrary {
-                library: Self::reopen_mode(store, locations, cancellation, true)?,
+                library: Self::reopen_mode(
+                    store,
+                    locations,
+                    cancellation,
+                    ReopenMode::Interrupted,
+                )?,
             })
         }
         fn reopen_mode(
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
-            recovery: bool,
+            mode: ReopenMode,
         ) -> Result<Self> {
+            let recovery = mode != ReopenMode::Closed;
             let profile = store
                 .load()?
                 .ok_or(StorageError::RecoveryBindingRequired)?
@@ -1066,9 +1097,11 @@ mod owned {
             } else {
                 require_no_sidecars(&database)?;
             }
-            let scratch = tempfile::tempdir()
-                .map_err(|e| StorageError::io("create existing native DB probe", e))?;
-            crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
+            if mode != ReopenMode::Schema {
+                let scratch = tempfile::tempdir()
+                    .map_err(|e| StorageError::io("create existing native DB probe", e))?;
+                crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
+            }
             lease.revalidate()?;
             record.revalidate(&root)?;
             let binding = admission.publish(&profile)?;
@@ -1427,6 +1460,13 @@ mod owned {
             }
             result
         }
+        /// Observes whether a new runtime claim is possible; grants no authority
+        /// and never clears a persistent fence or unclosed runtime claim.
+        pub fn runtime_reusable(&self) -> bool {
+            !self.runtime_active.load(Ordering::Acquire)
+                && !self.fenced.load(Ordering::Acquire)
+                && !self.custody_active.load(Ordering::Acquire)
+        }
         pub(crate) fn release_runtime(&self, fully_opened: bool) {
             // Called ONLY by Database after every actual reader/writer join,
             // checkpoint and owned Connection close has succeeded.
@@ -1512,15 +1552,7 @@ mod owned {
             drop(managed);
             require_root_entries(&self.root, self.allow_additions)?;
             require_no_sidecars(&self.database)?;
-            // Durable removals retain product data in their bounded namespace.
-            // Other trash owners remain unsettled and cannot certify closure.
-            let trash = self.root.child(OsStr::new("trash"))?;
-            for entry in trash.entries(1, &WorkCancellation::default())? {
-                if entry != OsStr::new("removals") {
-                    return Err(StorageError::CustodyRecoveryRequired);
-                }
-                trash.child(&entry)?;
-            }
+            require_settled_trash(&self.root)?;
             // Trash is retained product data after a committed removal.
             if !self
                 .root
@@ -1544,6 +1576,7 @@ mod owned {
             let mut next = record.document.clone();
             next.state = Phase::Closed;
             record.transition_with(&self.root, next, after_closed_replace)?;
+            require_settled_trash(&self.root)?;
             require_root_entries(&self.root, self.allow_additions)?;
             self.revalidate_database_ownership()?;
             self.frozen
@@ -1670,6 +1703,45 @@ mod owned {
             if database.read_regular(OsStr::new(name))?.is_some() {
                 return Err(StorageError::ClosedSnapshotRequired);
             }
+        }
+        Ok(())
+    }
+    /// Read-only recognition of retained product data. This never authorizes
+    /// deletion or repair. Live/uncertain owners, custody, staging and operation
+    /// registrations have separate settlement checks before Closed is written.
+    fn require_settled_trash(root: &Directory) -> Result<()> {
+        let trash = root.child(OsStr::new("trash"))?;
+        for entry in trash.entries(
+            crate::settings::manifest::MAX_MANIFEST_BYTES / 128,
+            &WorkCancellation::default(),
+        )? {
+            let directory = trash.child(&entry)?;
+            if entry == OsStr::new("removals") {
+                continue;
+            }
+            let retired = entry
+                .to_str()
+                .and_then(|name| name.strip_prefix(".librairii-unused-stage-"))
+                .and_then(|name| name.split_once('-'))
+                .is_some_and(|(pid, serial)| {
+                    !pid.is_empty()
+                        && !serial.is_empty()
+                        && pid.bytes().all(|b| b.is_ascii_digit())
+                        && serial.bytes().all(|b| b.is_ascii_digit())
+                        && pid
+                            .parse::<u32>()
+                            .is_ok_and(|number| number > 0 && number.to_string() == pid)
+                        && serial
+                            .parse::<u64>()
+                            .is_ok_and(|number| number > 0 && number.to_string() == serial)
+                });
+            if !retired
+                || directory.entries(1, &WorkCancellation::default())?
+                    != [std::ffi::OsString::from("payload")]
+            {
+                return Err(StorageError::CustodyRecoveryRequired);
+            }
+            directory.open_regular(OsStr::new("payload"), rustix::fs::OFlags::RDONLY)?;
         }
         Ok(())
     }
@@ -1973,7 +2045,8 @@ mod owned {
             use librairii_app::ports::creation::{NewItem, NewOperation};
             use librairii_core::OperationKind;
             use std::io::Write;
-            for publish in [false, true] {
+            for case in 0..3 {
+                let publish = case == 2;
                 let roots = TestRoots::new()?;
                 let (copy, locations) = copy(&roots)?;
                 let store = NativeProfileStore::create_fresh(&locations.native)?;
@@ -2064,45 +2137,93 @@ mod owned {
                         // Retirement preserves recoverable trash; it only frees
                         // the registration for the former staging workspace.
                         assert_eq!(fs::read_dir(native.layout().trash())?.count(), 66);
-                        let mut stage = files
-                            .create_stage(&guard)
-                            .map_err(|f| f.cause().to_string())?;
-                        stage.register_operation(
-                            &guard,
-                            operation.operation.identity.id.clone(),
-                            operation.items[0].identity.id,
-                        )?;
-                        stage.write_all(b"preserved")?;
-                        assert!(
-                            stage
-                                .register_operation(
-                                    &guard,
-                                    operation.operation.identity.id.clone(),
-                                    operation.items[1].identity.id
-                                )
-                                .is_err()
-                        );
-                        let registration = native
-                            .registered_temporaries()?
-                            .pop()
-                            .ok_or("registration")?;
-                        let original = native.layout().staging().join(&registration.name);
-                        let held = native.layout().staging().join("held-original");
-                        fs::rename(&original, &held)?;
-                        fs::create_dir(&original)?;
-                        let failure = stage
-                            .retire_owned_temp(&guard)
-                            .err()
-                            .ok_or("substitution accepted")?;
-                        assert_eq!(native.registered_temporaries()?, [registration]);
-                        assert_eq!(fs::read(held.join("payload"))?, b"preserved");
-                        drop(failure);
+                        if case == 1 {
+                            let mut stage = files
+                                .create_stage(&guard)
+                                .map_err(|f| f.cause().to_string())?;
+                            stage.register_operation(
+                                &guard,
+                                operation.operation.identity.id.clone(),
+                                operation.items[0].identity.id,
+                            )?;
+                            stage.write_all(b"preserved")?;
+                            assert!(
+                                stage
+                                    .register_operation(
+                                        &guard,
+                                        operation.operation.identity.id.clone(),
+                                        operation.items[1].identity.id
+                                    )
+                                    .is_err()
+                            );
+                            let registration = native
+                                .registered_temporaries()?
+                                .pop()
+                                .ok_or("registration")?;
+                            let original = native.layout().staging().join(&registration.name);
+                            let held = native.layout().staging().join("held-original");
+                            fs::rename(&original, &held)?;
+                            fs::create_dir(&original)?;
+                            let failure = stage
+                                .retire_owned_temp(&guard)
+                                .err()
+                                .ok_or("substitution accepted")?;
+                            assert_eq!(native.registered_temporaries()?, [registration]);
+                            assert_eq!(fs::read(held.join("payload"))?, b"preserved");
+                            drop(failure);
+                        }
                     }
                 }
                 db.close()?;
                 drop(db);
-                if publish {
+                if case == 0 {
+                    let trash = native.layout().trash();
+                    // Refusal observes only; foreign/malformed bytes are never
+                    // deleted, adopted or rewritten by the close predicate.
+                    for name in [
+                        "foreign",
+                        ".librairii-unused-stage-a-1",
+                        ".librairii-unused-stage-01-2",
+                    ] {
+                        let directory = trash.join(name);
+                        fs::create_dir(&directory)?;
+                        fs::write(directory.join("payload"), b"unchanged")?;
+                        assert!(require_settled_trash(&native.root).is_err());
+                        assert_eq!(fs::read(directory.join("payload"))?, b"unchanged");
+                        fs::remove_file(directory.join("payload"))?;
+                        fs::remove_dir(directory)?;
+                    }
+                    let directory = trash.join(".librairii-unused-stage-123-456");
+                    fs::create_dir(&directory)?;
+                    assert!(require_settled_trash(&native.root).is_err());
+                    let outside = roots.profile().join("retained-link-target");
+                    fs::write(&outside, b"unchanged target")?;
+                    fs::hard_link(&outside, directory.join("payload"))?;
+                    assert!(require_settled_trash(&native.root).is_err());
+                    fs::remove_file(directory.join("payload"))?;
+                    std::os::unix::fs::symlink(&outside, directory.join("payload"))?;
+                    assert!(require_settled_trash(&native.root).is_err());
+                    fs::remove_file(directory.join("payload"))?;
+                    fs::write(directory.join("payload"), b"retained")?;
+                    fs::write(directory.join("extra"), b"foreign extra")?;
+                    assert!(require_settled_trash(&native.root).is_err());
+                    assert_eq!(fs::read(directory.join("extra"))?, b"foreign extra");
+                    fs::remove_file(directory.join("extra"))?;
+                    fs::remove_file(directory.join("payload"))?;
+                    fs::remove_dir(directory)?;
+                    assert_eq!(fs::read(outside)?, b"unchanged target");
+                    require_settled_trash(&native.root)?;
+                }
+                if case != 1 {
                     native.finish().map_err(|f| f.to_string())?;
+                    let reopened =
+                        NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
+                    let mut reopened_db = Database::open_native(&reopened)?;
+                    reopened_db.close()?;
+                    drop(reopened_db);
+                    reopened.finish().map_err(|f| f.to_string())?;
+                } else {
+                    assert!(native.finish().is_err());
                 }
             }
             Ok(())
@@ -2227,10 +2348,13 @@ pub(crate) use owned::VerifiedMoveTarget;
 pub use owned::{
     CleanupReport, ClosedNativeLibrary, CommitStatus, LocatedLibrary, NativeBindingFailure,
     NativeCloseFailure, NativeLibrary, NewInstallFailure, RecoveredRoot, RecoveryLibrary,
-    RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
+    RelocatedLibrary, RelocationFailure, RelocationRecovery, SchemaPreview, SchemaRecovery,
+    SchemaRecoveryFailure, recover_relocation,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use owned::{RestartMoveFailure, cancel_relocation, retry_relocation};
+pub use owned::{
+    RestartMoveFailure, cancel_relocation, retry_relocation, retry_relocation_observed,
+};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{RelocationObserver, RelocationStage};

@@ -50,6 +50,19 @@ pub struct CatalogClient {
     permits: Arc<Semaphore>,
 }
 impl CatalogClient {
+    /// Called only by an explicitly requested native metadata job. The current
+    /// thread drives HTTP; no background scheduler or detached request escapes.
+    pub fn fetch_for_job(&self, job: &librairii_app::native_jobs::Cancellation) -> Result<Vec<u8>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|_| MetadataError::InvalidConfiguration)?;
+        let cancel = Cancellation::default();
+        runtime.block_on(async {
+            let request=self.fetch_catalog(&cancel);tokio::pin!(request);
+            loop {tokio::select! {biased; result=&mut request=>return result,_=tokio::time::sleep(Duration::from_millis(10))=>{if job.is_cancelled(){cancel.cancel();}}}}
+        })
+    }
     pub fn production() -> Result<Self> {
         Self::build(
             Endpoints {
@@ -358,6 +371,38 @@ impl<R: librairii_app::metadata::ArtworkRepository> ArtworkService<R> {
             miss: tokio::sync::Mutex::new(()),
             callers: Semaphore::new(64),
         }
+    }
+    /// Drive one lazy request on its owned blocking worker. Cancellation remains
+    /// connected while HTTP is pending; no task outlives this call.
+    pub fn load_blocking(
+        &self,
+        id: librairii_core::Checksum,
+        at: &str,
+        stopping: &std::sync::atomic::AtomicBool,
+    ) -> Result<librairii_app::metadata::ArtworkAsset> {
+        if stopping.load(std::sync::atomic::Ordering::Acquire) {
+            return Err(MetadataError::Cancelled);
+        }
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|_| MetadataError::InvalidConfiguration)?;
+        let cancel = Cancellation::default();
+        runtime.block_on(async {
+            let request = self.load(id, at, &cancel);
+            tokio::pin!(request);
+            loop {
+                tokio::select! {
+                    biased;
+                    _ = tokio::time::sleep(Duration::from_millis(10)) => {
+                        if stopping.load(std::sync::atomic::Ordering::Acquire) {
+                            cancel.cancel();
+                        }
+                    }
+                    result = &mut request => return result,
+                }
+            }
+        })
     }
     pub async fn load(
         &self,

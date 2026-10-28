@@ -227,6 +227,25 @@ impl Directory {
         }
         Ok(())
     }
+    /// Validate an optional preference leaf without requiring read permission.
+    /// This grants no file access, publication, or cleanup authority.
+    pub(crate) fn regular_entry(&self, name: &OsStr) -> Result<bool> {
+        match native::statat(&self.file, name, AtFlags::SYMLINK_NOFOLLOW) {
+            Err(error) if error == rustix::io::Errno::NOENT => Ok(false),
+            Err(error) => Err(StorageError::io(
+                "inspect optional preference entry",
+                error.into(),
+            )),
+            Ok(stat) => {
+                if native::FileType::from_raw_mode(stat.st_mode) != native::FileType::RegularFile
+                    || stat.st_nlink != 1
+                {
+                    return Err(StorageError::PathEscape);
+                }
+                Ok(true)
+            }
+        }
+    }
     pub(crate) fn open_regular(&self, name: &OsStr, flags: OFlags) -> Result<File> {
         // NONBLOCK prevents an attacker-substituted FIFO from blocking before
         // fstat can reject it. NOFOLLOW applies to this final single component.
@@ -330,6 +349,9 @@ pub(crate) struct ControlAllocation {
 pub(crate) struct ControlCreateFailure {
     pub(crate) cause: StorageError,
     pub(crate) allocation: ControlAllocation,
+    /// This mechanism refused before attempting openat. A missing returned FD
+    /// or a kernel errno alone never proves that creation had no effect.
+    pub(crate) creation_refused: bool,
 }
 impl std::fmt::Display for ControlCreateFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -358,8 +380,23 @@ impl Directory {
             file: None,
             name: name.to_os_string(),
         };
+        let mut creation_refused = false;
         let result = (|| {
             EntryName::parse(name)?;
+            // Refuse an explicitly read-only held directory BEFORE a mutating
+            // syscall. Later kernel failures can occur after inode creation.
+            let metadata = self
+                .file
+                .metadata()
+                .map_err(|e| StorageError::io("inspect control directory permissions", e))?;
+            use std::os::unix::fs::PermissionsExt;
+            if metadata.permissions().mode() & 0o222 == 0 {
+                creation_refused = true;
+                return Err(StorageError::io(
+                    "control directory has no write permission",
+                    io::Error::from(io::ErrorKind::PermissionDenied),
+                ));
+            }
             let fd = native::openat(
                 &self.file,
                 name,
@@ -393,9 +430,14 @@ impl Directory {
                 None => Err(Box::new(ControlCreateFailure {
                     cause: StorageError::CompatibilityInvariant,
                     allocation,
+                    creation_refused: false,
                 })),
             },
-            Err(cause) => Err(Box::new(ControlCreateFailure { cause, allocation })),
+            Err(cause) => Err(Box::new(ControlCreateFailure {
+                cause,
+                allocation,
+                creation_refused,
+            })),
         }
     }
     pub(crate) fn read_config(&self, name: &OsStr) -> Result<ConfigTemp> {
@@ -439,6 +481,7 @@ impl Directory {
                 file: None,
                 name: OsString::from(prefix),
             },
+            creation_refused: false,
         }))
     }
     pub(crate) fn remove_config_temp(&self, temporary: &ConfigTemp) -> Result<()> {
@@ -783,7 +826,17 @@ impl<'library> FilesAuthority<'library> {
             Self::Isolated(library) => library.revalidate_ownership(),
             Self::Native { library, database } => {
                 database.native_file_owner()?;
-                library.revalidate(&WorkCancellation::default())
+                // Revalidate the SAME retained owner; no file effect is
+                // replayed. A bounded profile publication is not authority
+                // loss, including when a receipt already owns real effects.
+                loop {
+                    match library.revalidate(&WorkCancellation::default()) {
+                        Err(StorageError::ProfileBusy) => {
+                            std::thread::sleep(std::time::Duration::from_millis(2));
+                        }
+                        result => break result,
+                    }
+                }
             }
         }
     }

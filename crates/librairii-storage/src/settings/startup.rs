@@ -264,7 +264,7 @@ fn validate_native_namespace(
         }
         Err(e) => return Err(e),
     };
-    let entries = root.entries(4, cancel)?;
+    let entries = root.entries(5, cancel)?;
     if entries.is_empty() {
         return Ok(());
     }
@@ -273,9 +273,11 @@ fn validate_native_namespace(
             && name != "settings.json"
             && name != "navigation.json"
             && name != "shelf-warnings.json"
+            && name != "interface.json"
     }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
+    root.regular_entry(std::ffi::OsStr::new("interface.json"))?;
     let mut marker = root.open_regular(
         std::ffi::OsStr::new(profile::MARKER),
         rustix::fs::OFlags::RDONLY,
@@ -305,14 +307,18 @@ pub fn default_legacy_root(locations: &ProfileLocations) -> Result<PathBuf> {
 
 #[derive(Debug)]
 pub enum AdoptionSetupFailure<'profile> {
-    Preparation(StorageError),
+    Preparation {
+        error: StorageError,
+        input: Box<ClosedLibraryInput>,
+        target: Box<super::TargetPreview>,
+    },
     Copy(Box<crate::adoption::IndependentCopyFailure>),
     Binding(Box<crate::native::NativeBindingFailure<'profile>>),
 }
 impl std::fmt::Display for AdoptionSetupFailure<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Preparation(e) => e.fmt(f),
+            Self::Preparation { error, .. } => error.fmt(f),
             Self::Copy(e) => e.fmt(f),
             Self::Binding(e) => e.fmt(f),
         }
@@ -362,7 +368,13 @@ pub fn confirm_adoption<'profile>(
         }
         Ok(())
     })();
-    prepared.map_err(AdoptionSetupFailure::Preparation)?;
+    if let Err(error) = prepared {
+        return Err(AdoptionSetupFailure::Preparation {
+            error,
+            input: Box::new(input),
+            target: Box::new(target),
+        });
+    }
     let copy = input
         .copy_to_new_root(target.resolved(), cancel)
         .map_err(AdoptionSetupFailure::Copy)?;
@@ -415,6 +427,28 @@ mod tests {
         native.finish().map_err(|f| f.to_string())?;
         drop(store);
         let store = prepare_native_profile(&locations, &cancel)?;
+        let id = "b0000000-0000-4000-8000-000000000013".parse()?;
+        let mut preferences = profile::InterfacePreferences::new(id);
+        preferences.sync_panel_hidden = true;
+        preferences
+            .dismissed_operations
+            .insert("notice-identity-with-original-CASE".into());
+        preferences
+            .dismissed_operations
+            .insert("another-notice".into());
+        store.save_interface(&preferences)?;
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Native(_)
+        ));
+        assert_eq!(store.load_interface(id)?, Some(preferences));
+        let saved = fs::read(locations.native.join("interface.json"))?;
+        let mut too_many = store.load_interface(id)?.ok_or("interface preferences")?;
+        too_many
+            .dismissed_operations
+            .extend((0..4097).map(|i| format!("notice-{i}")));
+        assert!(store.save_interface(&too_many).is_err());
+        assert_eq!(fs::read(locations.native.join("interface.json"))?, saved);
         let native = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
         let mut db = crate::database::Database::open_native(&native)?;
         db.close()?;

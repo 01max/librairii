@@ -1,0 +1,15 @@
+import { LineEdit } from "std-widgets.slint";
+import { EditAction } from "states.slint";
+export component FormField inherits LineEdit {
+    callback reveal(length,length);
+    changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } }
+    public function edit(action:EditAction) {
+        if !root.has-focus { return; }
+        if action == EditAction.undo { root.undo(); }
+        else if action == EditAction.redo { root.redo(); }
+        else if action == EditAction.cut { root.cut(); }
+        else if action == EditAction.copy { root.copy(); }
+        else if action == EditAction.paste { root.paste(); }
+        else { root.select-all(); }
+    }
+}

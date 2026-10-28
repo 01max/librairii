@@ -15,8 +15,10 @@ mod creation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod destination;
 mod history;
+mod presentation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use destination::ExportDestination;
+pub use presentation::{OperationCard, OperationHistory, OperationItems};
 mod jobs;
 mod policy;
 mod recovery;

@@ -1,3 +1,4 @@
+import {ShelfReviewPane,ShelfReviewData} from "shelf-reviews.slint";
 import { Button, ComboBox, VerticalBox, HorizontalBox, ScrollView, ListView, Palette } from "std-widgets.slint";
 import { StoryBrowser, StoryGroup } from "browsing.slint";
 import { MixedChoice, TagChip } from "states.slint";
@@ -53,10 +54,15 @@ component ReviewPane inherits FocusScope {
 // Approved membership and pending decisions use separate native panels. The
 // section-15 controller supplies/revalidates domain authority at commitment.
 export component Workspace inherits Rectangle {
+    callback toggle(int);
+    callback approved-focused();
+    out property <bool> approved-has-focus: approved-list.has-focus;
     min-width: 0px; min-height: 0px;
     in property <bool> french;
     in property <bool> interactive: true;
     in property <bool> wide;
+    in property <bool> membership;
+    in property <bool> review-visible: true;
     in property <[StoryGroup]> members;
     in property <int> count;
     in property <[string]> sources;
@@ -69,18 +75,36 @@ export component Workspace inherits Rectangle {
     callback apply();
     out property <length> approved-height: approved-list.height;
     out property <length> review-height: review.height;
-    public function focus-review() { review.focus-first(); }
+    in property <ShelfReviewData> review-data;
+    in property <bool> native-review;
+    in property <bool> review-focus-active;
+    callback review-exclusions();callback review-refresh();callback review-close();callback review-apply();callback review-keep-all();callback review-acknowledge();callback review-section(int);callback review-page(int);callback review-shelf(int);callback review-choose(string,int);callback review-bulk(int);callback review-inspect(string);callback review-focused();
+    out property <string> review-focused-uuid: native-review-pane.focused-uuid;
+    out property <length> review-focused-y: native-review-pane.focused-y;
+    out property <length> review-focused-height: native-review-pane.focused-height;
+    out property <length> review-viewport-y: native-review-pane.viewport-y;
+    out property <length> review-viewport-height: native-review-pane.viewport-height;
+    out property <bool> review-refresh-focused: native-review-pane.refresh-focused;
+    public function activate-review() {native-review-pane.activate();}
+    public function focus-review() { if root.native-review {native-review-pane.focus-current();}else{review.focus-first();} }
+
+    public function focus-approved() { approved-list.focus(); }
+    public function focus-bulk(index:int) { approved-list.focus-bulk(index); }
     approved := Rectangle {
-        x: 0px; y: 0px; width: root.wide ? parent.width * 0.54 : parent.width; height: root.wide ? parent.height : min(parent.height - 88px,max(110px,parent.height * 0.46));
-        VerticalBox { padding: 0px;
-            Text { text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
-            approved-list := StoryBrowser { enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } }
+        x: 0px; y: 0px; width: root.wide && root.review-visible ? parent.width * 0.54 : parent.width; height: root.wide || !root.review-visible ? parent.height : min(parent.height - 88px,max(118px,parent.height * 0.54));
+        VerticalBox { padding: 0px;spacing: 4px;
+            Text { height: 18px;text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
+            approved-list := StoryBrowser { focus-entered=>{root.approved-focused();} membership: root.membership; french: root.french; enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } toggle(index) => { root.toggle(index); } }
         }
     }
     Rectangle {
+        visible: root.review-visible;
         x: root.wide ? approved.width + 12px : 0px; y: root.wide ? 0px : approved.height + 8px;
         width: parent.width - self.x; height: parent.height - self.y;
         background: Palette.alternate-background;
-        review := ReviewPane { interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        review := ReviewPane {visible: !root.native-review; interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        native-review-pane := ShelfReviewPane {visible: root.native-review;x:0px;y:0px;width:parent.width;height:parent.height;interactive: root.interactive;focus-active: root.review-focus-active;data:root.review-data;french:root.french;
+            exclusions=>{root.review-exclusions();}refresh=>{root.review-refresh();}close=>{root.review-close();}apply=>{root.review-apply();}keep-all=>{root.review-keep-all();}acknowledge=>{root.review-acknowledge();}section(i)=>{root.review-section(i);}page(i)=>{root.review-page(i);}shelf(i)=>{root.review-shelf(i);}choose(i,c)=>{root.review-choose(i,c);}bulk(i)=>{root.review-bulk(i);}inspect(i)=>{root.review-inspect(i);}focused=>{root.review-focused();}
+        }
     }
 }

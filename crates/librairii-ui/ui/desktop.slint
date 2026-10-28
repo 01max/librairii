@@ -1,36 +1,60 @@
+import {SettingsPanel,SettingsData} from "settings.slint";
+import {ShelfReviewData} from "shelf-reviews.slint";
+import {Operations,ReportGroup} from "operations.slint";
+import {HistoryPanel} from "history.slint";
+import {ExportPanel,ExportData} from "exports.slint";
+import {SyncPanel,SyncData} from "sync.slint";
+import { TagManager, Assignments, AssignmentRow } from "tags.slint";
+import { FlagControl } from "flags.slint";
+import { CollectionManager, CollectionChoice } from "collections.slint";
+import { ShelfManager, ShelfPreview, ShelfExclusions, ShelfPreviewRow } from "shelves.slint";
 import { Workspace, ProposalRow } from "workspace.slint";
-import { ProgressState } from "states.slint";
+import { Filters, FilterRow, ActiveFilterRow } from "filters.slint";
+import { ProgressState, EditAction } from "states.slint";
 import { StoryRow, StoryGroup, StoryBrowser, Inspector } from "browsing.slint";
-import { Button, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView, ComboBox, ListView } from "std-widgets.slint";
+import { Button, CheckBox, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView, ComboBox, ListView } from "std-widgets.slint";
 
 global FocusState {
     in-out property <bool> modal: false;
     in-out property <bool> sidebar: false;
     in-out property <bool> ready: true;
     in-out property <bool> closing: false;
+    in-out property <bool> mutation: false;
     in-out property <int> key: 11;
     in-out property <int> restore-epoch;
+    in-out property <int> preview-focused-key;
 }
 component Action inherits Button {
     vertical-stretch: 0; horizontal-stretch: 0;
     height: 32px; min-width: 0px;
     in property <int> focus-key;
+    callback reveal(length,length);
     in property <bool> available: true;
-    enabled: root.available && !FocusState.closing && !FocusState.modal && (!FocusState.sidebar || root.focus-key >= 200);
+    enabled: root.available && !FocusState.closing && !FocusState.mutation && !FocusState.modal && (!FocusState.sidebar || root.focus-key >= 200);
     private property <int> epoch: FocusState.restore-epoch;
-    changed has-focus => { if self.has-focus { FocusState.key = root.focus-key; } }
+    changed has-focus => { if self.has-focus { FocusState.key = root.focus-key; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == root.focus-key { self.focus(); } }
 }
 component SearchField inherits LineEdit {
-    enabled: FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.sidebar;
+    callback reveal(length,length);
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
     private property <int> epoch: FocusState.restore-epoch;
-    changed has-focus => { if self.has-focus { FocusState.key = 30; } }
+    changed has-focus => { if self.has-focus { FocusState.key = 30; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == 30 { self.focus(); } }
 }
-component ModeChoice inherits ComboBox {
-    enabled: FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.sidebar;
+component PreviewBulk inherits CheckBox {
+    in property <int> focus-key;
+    callback reveal(length,length);
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
     private property <int> epoch: FocusState.restore-epoch;
-    changed has-focus => { if self.has-focus { FocusState.key = 15; } }
+    changed has-focus => {if self.has-focus {FocusState.key=root.focus-key;root.reveal(self.absolute-position.y,self.height);}}
+    changed epoch => {if !FocusState.modal && !FocusState.sidebar && FocusState.key==root.focus-key {self.focus();}}
+}
+component ModeChoice inherits ComboBox {
+    callback reveal(length,length);
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
+    private property <int> epoch: FocusState.restore-epoch;
+    changed has-focus => { if self.has-focus { FocusState.key = 15; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == 15 { self.focus(); } }
 }
 component Caption inherits Text {
@@ -39,29 +63,38 @@ component Caption inherits Text {
     wrap: word-wrap;
 }
 export struct NavigationRow { index:int, label:string, enabled:bool }
+export struct CollectionPreview { index:int, title:string, caption:string, available:bool, stories:[StoryRow] }
 component Navigation inherits FocusScope {
+    in property <SyncData> sync-data;
+    callback start-sync();callback cancel-sync();callback hide-sync(bool);callback refresh-sync();
     in property <[NavigationRow]> collections;
     in property <[NavigationRow]> shelves;
     callback navigate(int);
     in property <bool> french;
     in property <bool> compact;
+    in property <bool> sync-focus-active;
     callback close();
     callback open-panel(int);
-    public function activate() { close-navigation.focus(); }
+    public function activate() { FocusState.key=201;close-navigation.focus(); }
+    public function focus-sync(){sync-panel.focus-start();}
+    out property <bool> sync-start-focused:sync-panel.start-focused;
+    out property <bool> sync-refresh-focused:sync-panel.refresh-focused;
     public function restore(key: int) {
         FocusState.key = key;
         FocusState.restore-epoch += 1;
     }
     key-pressed(event) => {
         if root.compact && event.text == Key.Escape { root.close(); return accept; }
+        // Disabled Slint FocusScopes can retain has-focus after FocusOut.
+        // Wrap only the currently owned endpoint; let other Tab events traverse.
         if root.compact && event.text == Key.Tab {
-            if event.modifiers.shift && close-navigation.has-focus { settings-action.focus(); return accept; }
-            if !event.modifiers.shift && settings-action.has-focus { close-navigation.focus(); return accept; }
+            if event.modifiers.shift && FocusState.key==201 && close-navigation.has-focus { FocusState.key=205;settings-action.focus(); return accept; }
+            if !event.modifiers.shift && FocusState.key==205 && settings-action.has-focus { FocusState.key=201;close-navigation.focus(); return accept; }
         }
         return reject;
     }
     Rectangle { width: parent.width; height: parent.height; background: Palette.alternate-background; }
-    ScrollView {
+    nav-scroll:=ScrollView {
         width: parent.width; height: parent.height;
         content-width: self.visible-width;
         content-height: nav-layout.preferred-height;
@@ -73,18 +106,20 @@ component Navigation inherits FocusScope {
             library-action := Action { focus-key: 202; text: root.french ? "Bibliothèque" : "Library"; clicked => { root.open-panel(0); } }
             Caption { text: root.french ? "COLLECTIONS" : "COLLECTIONS"; font-weight: 600; }
             ListView { height: min(160px,root.collections.length * 34px); for entry in root.collections: Action { height: 32px; focus-key: 220 + entry.index; available: entry.enabled; text: entry.label; clicked => { root.navigate(entry.index); } } }
+            Action { focus-key: 206; text: root.french ? "Gérer les Collections…" : "Manage Collections…"; available: FocusState.ready; clicked => { root.open-panel(9); } }
             Caption { text: root.french ? "ÉTAGÈRES" : "SHELVES"; font-weight: 600; }
             ListView { height: min(160px,root.shelves.length * 34px); for entry in root.shelves: Action { height: 32px; focus-key: 220 + entry.index; available: entry.enabled; text: entry.label; clicked => { root.navigate(entry.index); } } }
+            Action { focus-key: 207; text: root.french ? "Gérer les Étagères…" : "Manage Shelves…"; available: FocusState.ready; clicked => {root.open-panel(10);} }
             tags-action := Action { focus-key: 203; text: root.french ? "Étiquettes" : "Tags"; clicked => { root.open-panel(1); } }
             history-action := Action { focus-key: 204; text: root.french ? "Historique" : "History"; clicked => { root.open-panel(4); } }
             Rectangle { height: 1px; background: Palette.border; }
-            Caption { text: root.french ? "Catalogue officiel" : "Official catalog"; font-weight: 600; }
-            Caption { text: root.french ? "Métadonnées facultatives. Vos archives restent locales." : "Optional metadata. Your archives stay local."; }
+            Caption {visible:!root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;text: root.french ? "Catalogue officiel" : "Official catalog"; font-weight: 600; }
+            Caption {visible:!root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;text: root.french ? "Métadonnées facultatives. Vos archives restent locales." : "Optional metadata. Your archives stay local."; }
+            sync-panel:=SyncPanel {visible:root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;data:root.sync-data;french:root.french;active:root.sync-focus-active && FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.mutation;focus-key:FocusState.key;epoch:FocusState.restore-epoch;start=>{root.start-sync();}cancel=>{root.cancel-sync();}hide(value)=>{root.hide-sync(value);}refresh=>{root.refresh-sync();}focused(k)=>{FocusState.key=k;}reveal(y,h)=>{let top=nav-scroll.absolute-position.y;nav-scroll.content-y=max(min(0px,nav-scroll.visible-height - nav-scroll.content-height),min(0px,nav-scroll.content-y+(y<top ? top - y : y+h>top+nav-scroll.visible-height ? top+nav-scroll.visible-height - y - h : 0px)));}}
             settings-action := Action { focus-key: 205; text: root.french ? "Réglages…" : "Settings…"; clicked => { root.open-panel(5); } }
         }
     }
 }
-export enum EditAction { undo, redo, cut, copy, paste, select-all }
 export component DesktopWindow inherits Window {
     title: "Librairii";
     preferred-width: 1180px; preferred-height: 760px;
@@ -97,20 +132,34 @@ export component DesktopWindow inherits Window {
     out property <brush> observed-selection-foreground: Palette.selection-foreground;
     out property <brush> observed-selection-background: Palette.selection-background;
     in property <bool> french;
+    in property <SyncData> sync-data;
+    callback start-sync();callback cancel-sync();callback hide-sync(bool);callback refresh-sync();
+    public function focus-sync(){navigation.focus-sync();}
+    out property <bool> sync-start-focused:navigation.sync-start-focused;
+    out property <bool> sync-refresh-focused:navigation.sync-refresh-focused;
+    changed sync-data=>{if !root.modal && (FocusState.key==35 || FocusState.key==36) && (root.sync-data.hidden || !root.sync-data.never || root.sync-data.active) {root.focus-browser();}}
     in property <string> status;
     in property <bool> pending;
     in property <float> progress;
     in property <bool> indeterminate;
     out property <length> observed-browser-height: browser.height;
     out property <length> observed-story-row-height: browser.mounted-row-height;
+    out property <bool> approved-has-focus: workspace-panel.approved-has-focus;
     out property <length> observed-approved-height: workspace-panel.approved-height;
     out property <length> observed-review-height: workspace-panel.review-height;
+    out property <string> review-focused-uuid: workspace-panel.review-focused-uuid;
+    out property <length> review-focused-y: workspace-panel.review-focused-y;
+    out property <length> review-focused-height: workspace-panel.review-focused-height;
+    out property <length> review-viewport-y: workspace-panel.review-viewport-y;
+    out property <length> review-viewport-height: workspace-panel.review-viewport-height;
+    out property <bool> review-refresh-focused: workspace-panel.review-refresh-focused;
     public function focus-review() { workspace-panel.focus-review(); }
-    public function focus-browser() { browser.focus(); }
+    public function focus-browser() { if root.startup-phase!=3 {if root.startup-phase!=4 {startup-action.focus();}return;}if root.workspace { workspace-panel.focus-approved(); } else { browser.focus(); } }
     out property <bool> close-focused: close-dialog-button.has-focus;
     out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
-    public function focus-search() { search-entry.focus(); }
+    out property <bool> text-edit-focused: !root.closing && ((!root.modal && search-entry.has-focus) || (root.dialog == 8 && filters.first-focused) || (root.dialog == 10 && tag-manager.editing) || (root.dialog == 13 && collection-manager.editing) || (root.dialog == 15 && shelf-manager.editing));
+    public function focus-search() { FocusState.key=30; search-entry.focus(); }
     public function edit-search(action: EditAction) {
         if !FocusState.modal && !FocusState.closing && search-entry.has-focus {
             if action == EditAction.undo { search-entry.undo(); }
@@ -120,8 +169,307 @@ export component DesktopWindow inherits Window {
             else if action == EditAction.paste { search-entry.paste(); }
             else { search-entry.select-all(); }
         }
+        else if !root.closing && root.dialog == 8 { filters.edit(action); }
+        else if !root.closing && root.dialog == 10 { tag-manager.edit(action); }
+        else if !root.closing && root.dialog == 13 { collection-manager.edit(action); }
+        else if !root.closing && root.dialog == 15 { shelf-manager.edit(action); }
     }
     in-out property <int> dialog;
+    in-out property <bool> picker-open;
+    in property <bool> operation-busy;
+    in property <bool> operation-loading;
+    in property <[string]> operation-choices;
+    in-out property <int> operation-index;
+    in property <string> operation-choice;
+    in property <string> operation-summary;
+    in property <string> operation-notice;
+    in property <string> operation-runtime;
+    in property <string> operation-status;
+    changed operation-status=>{if root.operation-status=="" && !root.modal && FocusState.key==34 {root.focus-browser();}}
+    in property <[string]> operation-items;
+    in property <[ReportGroup]> operation-groups;
+    in property <bool> operation-cancellable;
+    in property <bool> operation-retryable;
+    in property <string> operation-retry-label;
+    in property <bool> operation-previous;
+    in property <bool> operation-next;
+    in property <string> terminal-notice;
+    in property <string> terminal-notice-error;
+    in property <int> notice-index;
+    in property <int> notice-count;
+    callback notice-step(int);callback show-notice();callback dismiss-notice();
+    public function focus-notice(){if root.terminal-notice!="" {FocusState.key=61;FocusState.restore-epoch+=1;}}
+    out property <bool> notice-report-focused;
+    changed terminal-notice=>{if root.terminal-notice=="" {root.notice-report-focused=false;if !root.modal && FocusState.key>=60 && FocusState.key<=63 {root.focus-browser();}}}
+    in property <[string]> history-entries;
+    in property <string> history-summary;
+    in property <string> history-error;
+    in property <bool> history-older;
+    callback open-history();callback inspect-history(int);callback history-refresh();callback history-load-older();callback history-retry();
+    private property <bool> operation-from-history;
+    private property <int> history-invoker;
+    public function focus-history-refresh(){if root.dialog==21 {history.activate();}}
+    public function focus-history-older(){history.focus-older();}
+    public function focus-history-retry(){history.focus-retry();}
+    out property <bool> history-first-focused:history.first-focused;
+    out property <int> history-entry-focused:history.focused-entry;
+    out property <bool> history-retry-focused:history.retry-focused;
+    // Release History focus while its controls are enabled; disabled FocusScopes
+    // ignore FocusOut in the pinned toolkit. Close survives the report transition.
+    public function show-history-report(index:int){if root.dialog==21 {close-dialog-button.focus();root.history-invoker=index;root.operation-from-history=true;root.dialog=19;dialog-scroll.content-y=0px;operations.activate();}}
+    public function return-to-history(){root.operation-from-history=false;root.dialog=21;dialog-scroll.content-y=0px;history.restore(root.history-invoker);}
+    public function prepare-new-export(){root.operation-from-history=false;root.dialog=20;dialog-scroll.content-y=0px;exports.activate();root.open-export();}
+    callback pick-import();callback retry-import();callback select-operation(int);callback cancel-operation();callback operation-page(int);callback refresh-operations();
+    callback open-operations();
+    public function focus-operations(){if root.dialog==19 {operations.activate();}}
+    out property <bool> operation-first-focused:operations.first-focused;
+    out property <bool> operation-selector-focused:operations.selector-focused;
+    out property <string> operation-displayed-choice:operations.displayed-choice;
+    public function sync-operation-choice(){operations.sync-choice();}
+    in property <ExportData> export-data;
+    in property <bool> export-busy;
+    in property <[string]> export-modes;
+    in-out property <int> export-mode;
+    in property <[CollectionChoice]> export-groups;
+    in-out property <int> export-selection-epoch;
+    in property <[string]> export-items;
+    in property <bool> operation-revealable;
+    in property <string> operation-reveal-notice;
+    callback open-export();callback close-export();callback export-scope(int);callback export-toggle(int);callback export-group-page(int);callback pick-export-destination();callback refresh-export();callback start-export();callback export-page(int);callback reveal-export();
+    public function sync-export-choice(){exports.sync-choice();}
+    public function show-export-report(){if root.dialog==20 {root.dialog=19;dialog-scroll.content-y=0px;operations.activate();}}
+    public function focus-export-picker(){exports.focus-picker();}
+    public function focus-export-start(){exports.focus-start();}
+    out property <bool> export-first-focused:exports.first-focused;
+    out property <bool> export-picker-focused:exports.picker-focused;
+    out property <bool> export-start-focused:exports.start-focused;
+    in property <ShelfReviewData> review-data;
+    private property <bool> review-hidden: true;
+    private property <int> review-origin;
+    out property <bool> review-shown: root.review-data.open && !root.review-hidden;
+    changed review-data=>{FocusState.mutation=root.review-data.committing;}
+    callback review-updates();callback preview-shelf-sources();callback review-delete-shelf();callback review-delete-collection();
+    callback review-refresh();callback review-close();callback review-apply();callback review-keep-all();callback review-acknowledge();callback review-section(int);callback review-page(int);callback review-shelf(int);callback review-choose(string,int);callback review-bulk(int);callback review-inspect(string);
+    public function show-native-review() {if !root.review-shown {root.review-origin=root.dialog;}root.finish-shelf-preview();root.review-hidden=false;}
+    public function activate-native-review() {if root.review-shown {FocusState.key=33;workspace-panel.activate-review();}else{root.focus-browser();}}
+    public function focus-native-review() {if root.review-shown {FocusState.key=33;workspace-panel.focus-review();}else{root.focus-browser();}}
+    public function finish-native-review() {root.review-hidden=true;root.review-origin=0;FocusState.mutation=false;}
+    public function close-native-review() {
+        if root.review-data.committing {return;}
+        root.review-hidden=true;root.review-close();
+        if root.review-origin==15 {root.open-dialog(15);shelf-manager.focus-invoker(root.review-data.kind==3 ? 6 : 5);}
+        else if root.review-origin==14 {root.dialog=14;FocusState.modal=true;review-affected.focus();}
+        else {root.focus-browser();}
+    }
+    in-out property <bool> shelf-busy;
+    in property <bool> shelf-active;
+    in property <[string]> shelf-definitions;
+    in property <[string]> shelf-sources;
+    in-out property <int> shelf-index;
+    in-out property <int> shelf-source-index;
+    in-out property <string> shelf-name;
+    in-out property <bool> shelf-include-manual;
+    in property <bool> shelf-creating;
+    in property <bool> shelf-move-up;
+    in property <bool> shelf-move-down;
+    in property <bool> shelf-manual-available;
+    in property <bool> shelf-source-selected;
+    in property <bool> shelf-source-editable;
+    in property <bool> shelf-member-up;
+    in property <bool> shelf-member-down;
+    in property <bool> shelf-member-removable;
+    in property <bool> shelf-refined;
+    private property <int> shelf-action;
+    in property <string> shelf-summary;
+    in property <string> shelf-manual-summary;
+    in property <string> shelf-source-summary;
+    in property <string> shelf-view-summary;
+    in property <string> shelf-notice;
+    in property <[ShelfPreviewRow]> shelf-preview-rows;
+    in property <[ShelfPreviewRow]> shelf-exclusion-rows;
+    in property <string> shelf-preview-summary;
+    in property <string> shelf-exclusion-summary;
+    in property <string> shelf-confirm-label;
+    in-out property <int> shelf-preview-kind;
+    in property <bool> shelf-preview-warnings;
+    in property <bool> shelf-preview-has-warnings;
+    in property <bool> shelf-preview-previous;
+    in property <bool> shelf-preview-next;
+    in property <bool> shelf-confirm-enabled;
+    in property <bool> shelf-exclusion-previous;
+    in property <bool> shelf-exclusion-next;
+    callback select-shelf(int);
+    callback select-shelf-source(int);
+    callback toggle-shelf-source();
+    callback rename-shelf();
+    callback duplicate-shelf();
+    callback move-shelf(int);
+    callback preview-shelf-creation();
+    callback add-manual-shelf();
+    callback shelf-remove-members(bool);
+    callback shelf-move-member(int);
+    callback clear-shelf-refinement();
+    callback show-shelf-exclusions();
+    callback shelf-exclusion-page(int);
+    callback refresh-shelf-exclusions();
+    callback allow-shelf-suggestions(int);
+    callback refresh-shelf-preview();
+    callback shelf-preview-toggle(int);
+    callback shelf-preview-all(bool);
+    callback shelf-preview-show-warnings(bool);
+    callback shelf-preview-page(int);
+    callback confirm-shelf-preview();
+    callback cancel-shelf-preview();
+    callback dismiss-shelf-feedback();
+    private property <int> shelf-parent;
+    out property <int> shelf-return-dialog: root.shelf-parent;
+    public function focus-shelf-exclusions() {shelf-exclusions.activate();}
+    public function focus-shelf-name() {shelf-manager.focus-name();}
+    public function show-shelf-preview(kind:int) {if root.dialog!=16 && root.dialog!=17 {root.shelf-parent=root.dialog;if root.dialog==0 {root.invoker=FocusState.key;}}root.shelf-preview-kind=kind;root.dialog=kind==0 ? 16 : 17;dialog-scroll.content-y=0px;FocusState.modal=true;cancel-shelf.focus();}
+    public function show-shelf-exclusion-list() {root.shelf-parent=root.dialog;if root.dialog==0 {root.invoker=FocusState.key;}root.dialog=18;dialog-scroll.content-y=0px;FocusState.modal=true;shelf-exclusions.activate();}
+    public function finish-shelf-preview() {root.dialog=0;root.sidebar-open=false;FocusState.modal=false;FocusState.sidebar=false;}
+    out property <bool> shelf-action-focused;
+    out property <bool> shelf-run-focused;
+    out property <length> shelf-action-y;
+    out property <length> shelf-action-height;
+    out property <length> controls-viewport-y: controls-scroll.absolute-position.y;
+    out property <length> controls-viewport-height: controls-scroll.visible-height;
+    out property <bool> shelf-exclusion-refresh-focused: shelf-exclusions.first-focused;
+    out property <string> shelf-exclusion-focused-uuid: shelf-exclusions.focused-uuid;
+    public function sync-broken-controls() {bulk-flags.sync-checked();side-inspector.sync-flags();dialog-inspector.sync-flags();}
+    out property <bool> observed-bulk-checked: bulk-flags.observed-checked;
+    out property <bool> shelf-background-blocked: FocusState.modal && !search-entry.enabled;
+    out property <bool> shelf-cancel-focused: cancel-shelf.has-focus;
+    in-out property <bool> collection-busy;
+    in property <[string]> collection-definitions;
+    in property <[CollectionChoice]> collection-choices;
+    in-out property <int> collection-index;
+    in-out property <string> collection-name;
+    in property <string> collection-notice;
+    in property <string> collection-status;
+    in property <string> collection-criteria;
+    in property <string> collection-union-summary;
+    in property <string> collection-impact;
+    in-out property <bool> collection-replacing;
+    in property <bool> collection-creating;
+    in property <bool> collection-openable;
+    in property <bool> collection-move-up;
+    in property <bool> collection-move-down;
+    in property <bool> collection-union-available;
+    in property <bool> collection-union-active;
+    in property <bool> collection-union-selected;
+    in property <bool> collection-impact-previous;
+    in property <bool> collection-impact-next;
+    in property <int> collection-impact-count;
+    callback select-collection(int);
+    callback save-collection();
+    callback duplicate-collection();
+    callback move-collection(int);
+    callback open-collection();
+    callback replace-collection();
+    callback delete-collection();
+    callback edit-current-collection-query();
+    callback edit-saved-collection-query();
+    callback toggle-collection-union(int);
+    callback toggle-selected-collection-union();
+    callback open-collection-union();
+    callback save-collection-union();
+    callback confirm-collection-change();
+    callback cancel-collection-change();
+    callback collection-impact-page(int);
+    public function focus-collection-name() { collection-manager.focus-name(); }
+    public function focus-collection-union() { collection-manager.focus-union(); }
+    out property <bool> collection-union-focused: collection-manager.union-focused;
+    out property <length> collection-union-window-y: collection-manager.union-window-y;
+    out property <length> collection-union-height: collection-manager.union-height;
+    public function show-collection-confirmation() { if root.dialog == 13 { root.dialog=14;dialog-scroll.content-y=0px;cancel-collection.focus(); } }
+    public function finish-collection-confirmation() { root.dialog=13;collection-manager.activate(); }
+    out property <bool> collection-review-focused: review-affected.has-focus;
+    out property <bool> collection-cancel-focused: cancel-collection.has-focus;
+    out property <bool> collection-invoker-focused: root.collection-replacing ? collection-manager.replace-focused : collection-manager.delete-focused;
+    private property <int> assignment-parent;
+    in-out property <bool> tag-busy;
+    in property <bool> assignment-return-details;
+    callback edit-tags();
+    callback refresh-assignments();
+    callback assignment-edit(int,int);
+    callback select-tag-definition(int);
+    callback select-tag-value(int);
+    callback save-tag-definition();
+    callback save-tag-value();
+    callback move-tag-definition(int);
+    callback move-tag-value(int);
+    callback delete-tag-definition();
+    callback delete-tag-value();
+    callback confirm-tag-delete();
+    callback cancel-tag-delete();
+    in property <[string]> tag-definitions;
+    in property <[string]> tag-values;
+    in property <[AssignmentRow]> assignment-rows;
+    in property <string> assignment-summary;
+    in property <string> tag-notice;
+    in property <string> tag-source;
+    in property <bool> tag-editable;
+    in property <bool> tag-move-up;
+    in property <bool> tag-move-down;
+    in property <bool> tag-value-move-up;
+    in property <bool> tag-value-move-down;
+    in property <bool> tag-choice;
+    in property <bool> tag-creating;
+    in-out property <int> tag-definition-index;
+    in-out property <int> tag-value-index;
+    in-out property <string> tag-key;
+    in-out property <string> tag-label;
+    in-out property <string> tag-color;
+    in-out property <int> tag-kind;
+    in-out property <string> tag-value-key;
+    in-out property <string> tag-value-label;
+    in property <string> tag-impact;
+    in property <bool> tag-delete-value;
+    out property <bool> tag-delete-cancel-focused: cancel-tag.has-focus;
+    out property <bool> tag-delete-invoker-focused: root.tag-delete-value ? tag-manager.delete-value-focused : tag-manager.delete-definition-focused;
+    public function focus-tag-label() { tag-manager.focus-label(); }
+    in property <string> edit-tags-label;
+    in property <bool> edit-tags-enabled;
+    in property <string> bulk-summary;
+    public function focus-clear-bulk() { clear-bulk-button.focus(); }
+    out property <bool> clear-bulk-focused: clear-bulk-button.has-focus;
+    callback toggle-bulk(int);
+    callback clear-bulk();
+    in property <bool> detail-flag-checked;
+    in property <bool> detail-flag-enabled;
+    in property <bool> panel-flag-checked;
+    in property <bool> panel-flag-multiple;
+    in property <bool> panel-flag-mixed;
+    in property <bool> panel-flag-enabled;
+    in property <bool> bulk-flag-checked;
+    in property <bool> bulk-flag-multiple;
+    in property <bool> bulk-flag-mixed;
+    in property <bool> bulk-flag-enabled;
+    in property <string> panel-flag-summary;
+    in property <string> panel-flag-target-label;
+    in property <string> bulk-flag-summary;
+    in property <string> flag-notice;
+    in property <bool> flag-pending;
+    in property <bool> flag-undo-enabled;
+    callback detail-flag-change(bool);
+    callback panel-flag-change(bool);
+    callback bulk-flag-change(bool);
+    callback undo-flags();
+    callback dismiss-flag-feedback();
+    public function focus-detail-flag() { dialog-inspector.focus-flag(); }
+    public function focus-panel-flag() { side-inspector.focus-flag(); }
+    public function focus-bulk-flag() { bulk-flags.focus-control(1); }
+    private property <int> bulk-flag-focus: 1;
+    out property <bool> detail-flag-focused: dialog-inspector.flag-focused;
+    out property <bool> panel-flag-focused: side-inspector.flag-focused;
+    out property <bool> bulk-flag-undo-focused: bulk-flags.undo-focused;
+    public function focus-bulk-story(index:int) { if root.workspace { workspace-panel.focus-bulk(index); } else if index >= root.story-count { FocusState.key= -1002 - index * 3;FocusState.restore-epoch+=1; } else { browser.focus-bulk(index); } }
+    out property <int> preview-focused-key: !root.modal && !FocusState.sidebar && FocusState.key < 0 ? FocusState.preview-focused-key : 0;
+    public function show-assignments() { root.assignment-parent=root.dialog; if root.dialog == 0 { root.invoker=FocusState.key; } root.dialog=11; dialog-scroll.content-y=0px; assignments.activate(); }
+    public function show-tag-confirmation() { if root.dialog == 10 { root.dialog=12; cancel-tag.focus(); } }
+    public function finish-tag-confirmation() { root.dialog=10; tag-manager.activate(); }
+
     out property <bool> modal: root.dialog != 0;
     private property <int> invoker;
     in property <int> startup-phase: 3;
@@ -137,28 +485,54 @@ export component DesktopWindow inherits Window {
         if root.compact && !root.sidebar-open && !root.modal && FocusState.key >= 200 { navigation-button.focus(); }
     }
     public function open-dialog(kind: int) {
+        if root.review-data.committing || root.picker-open {return;}
         if root.dialog == 0 {
             root.invoker = FocusState.key;
             root.dialog = kind;
+            dialog-scroll.content-y = 0px;
+            if kind == 3 { dialog-inspector.reset(); root.request-details(); }
             FocusState.modal = true;
-            if kind == 2 { english-button.focus(); } else { close-dialog-button.focus(); }
+            if kind == 2 || kind==4 || kind==5 { settings-panel.activate(); } else if kind == 8 { filters.activate(); } else if kind == 10 { tag-manager.activate(); } else if kind == 13 { collection-manager.activate(); } else if kind == 15 {shelf-manager.activate();} else if kind==19 {operations.activate();} else if kind==20 {exports.activate();} else if kind==21 {history.activate();} else { close-dialog-button.focus(); }
         }
     }
     public function close-dialog() {
-        if root.closing { return; }
+        if (root.dialog==14 || root.dialog==15) && root.review-data.busy && !root.review-data.open && !root.review-data.committing {root.review-close();}
+        if root.closing || root.picker-open || root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy { return; }
+        if (root.dialog==2 || root.dialog==4 || root.dialog==5) && root.settings-data.busy {return;}
+        if root.dialog==22 {root.dialog=root.schema-parent;root.schema-parent=0;settings-panel.focus-schema();return;}
+        if root.dialog==7 && root.quit-parent!=0 {root.dialog=root.quit-parent;root.quit-parent=0;if root.dialog==2 || root.dialog==4 || root.dialog==5 {settings-panel.activate();}else if root.dialog==19 {operations.activate();}else {close-dialog-button.focus();}return;}
+        if root.dialog==2 && root.settings-parent!=0 {root.dialog=root.settings-parent;root.settings-parent=0;settings-panel.activate();return;}
+        if root.dialog==20 {root.close-export();}
+        if root.dialog==19 && root.operation-from-history {root.return-to-history();return;}
+        if root.dialog==16 || root.dialog==17 {root.cancel-shelf-preview();if root.shelf-parent==15 {root.dialog=15;shelf-manager.focus-invoker(root.shelf-preview-kind);return;}root.dialog=0;FocusState.modal=false;FocusState.key=root.invoker;FocusState.restore-epoch+=1;return;}
+        if root.dialog==18 && root.shelf-parent==15 {root.dismiss-shelf-feedback();root.dialog=15;shelf-manager.focus-invoker(4);return;}
+        if root.dialog==15 || root.dialog==18 {root.dismiss-shelf-feedback();}
+        if root.dialog == 14 { root.cancel-collection-change();root.dialog=13;collection-manager.focus-invoker(root.collection-replacing);return; }
+        if root.dialog == 12 { root.cancel-tag-delete();root.dialog=10;tag-manager.focus-delete(root.tag-delete-value);return; }
+        if root.dialog == 11 && root.assignment-parent == 3 && root.assignment-return-details { root.dialog=3;edit-tags-button.focus();root.request-details();return; }
+        if root.dialog == 9 { root.dialog = 3; remove-story-button.focus(); return; }
+        if root.dialog == 3 { root.dismiss-flag-feedback(); }
         root.dialog = 0;
         FocusState.modal = false;
         FocusState.key = root.invoker;
         if root.compact && root.sidebar-open { navigation.restore(root.invoker); }
         else if root.compact && root.invoker >= 200 { navigation-button.focus(); }
         else if root.invoker == 10 && !root.compact { library-button.focus(); }
-        else if root.invoker == 31 { browser.focus(); }
+        else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-current(); }
+        else if root.invoker == 32 { root.focus-browser(); }
+        else if root.invoker == 31 { root.focus-browser(); }
+        else if root.invoker == 33 && root.review-shown {root.focus-native-review();}
+        else if root.invoker==34 && (!root.pending || root.operation-status=="") {root.focus-browser();}
+        else if root.invoker>=60 && root.invoker<=63 && root.terminal-notice=="" {root.focus-browser();}
+        else if root.invoker == 23 && root.bulk-summary == "" { root.focus-browser(); }
+        else if root.invoker == 24 { if root.bulk-summary == "" || (!root.bulk-flag-enabled && !root.flag-undo-enabled) { root.focus-browser(); } else { bulk-flags.focus-control(root.bulk-flag-focus); } }
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
     }
-    public function request-quit() { if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
+    public function request-quit() { if root.picker-open || root.operation-busy || root.export-busy || root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy || root.review-data.busy { return; } if root.closing { return; } if root.pending { if root.modal {root.quit-parent=root.dialog;root.dialog=7;close-dialog-button.focus();}else{root.open-dialog(7);} } else { root.quit(); } }
     in-out property <bool> compact;
     in-out property <bool> wide: true;
+    changed wide => { if !root.wide && !root.modal && FocusState.key == 32 { browser.focus(); } }
     in-out property <bool> sidebar-open;
     in-out property <int> panel;
     in-out property <string> query;
@@ -179,26 +553,110 @@ export component DesktopWindow inherits Window {
     in-out property <int> mode;
     in-out property <int> selected-index: -1;
     in property <StoryRow> selected-story;
+    callback request-details();
+    callback begin-removal();
+    callback remove-story();
+    in-out property <bool> detail-pending;
+    in property <string> removal-title;
+    in property <string> removal-error;
+    public function scroll-details(key:string) { dialog-inspector.scroll(key); }
+    out property <bool> inspector-technical-focused: side-inspector.technical-focused;
+    out property <bool> inspector-technical-open:side-inspector.technical-open;
+    out property <bool> details-technical-open:dialog-inspector.technical-open;
+    public function focus-inspector-technical() { side-inspector.focus-technical(); }
+    public function focus-details-technical() { dialog-inspector.focus-technical(); }
+    out property <length> details-scroll-position: dialog-inspector.scroll-position;
+    out property <bool> removal-keep-focused: keep-story.has-focus;
+    public function confirm-removal() { if root.dialog == 3 { root.dialog = 9; keep-story.focus(); } }
+    public function complete-removal() { root.detail-pending = false; root.dialog = 3; root.close-dialog(); }
+
     in property <string> counts;
     in property <bool> previous-enabled;
     in property <bool> next-enabled;
     callback select-story(int);
     callback mode-selected(int);
     callback change-page(int);
+    in property <[CollectionPreview]> collection-previews;
+    in property <bool> group-previous;
+    in property <bool> group-next;
+    callback change-group-page(int);
+    public function scroll-library-end() { library-scroll.content-y=min(0px,library-scroll.visible-height - library-scroll.content-height); }
+    function reveal-library(y:length,h:length) {
+        let top=library-scroll.absolute-position.y;
+        library-scroll.content-y=max(min(0px,library-scroll.visible-height - library-scroll.content-height),min(0px,library-scroll.content-y+(y<top ? top - y : y+h>top+library-scroll.visible-height ? top+library-scroll.visible-height - y - h : 0px)));
+    }
     in property <bool> back-enabled;
     in property <bool> forward-enabled;
     callback history-step(int);
     callback quit();
     callback request-panel(int);
     callback search(string);
+    in property <[FilterRow]> filter-rows;
+    in property <[ActiveFilterRow]> active-filter-rows;
+    in property <string> active-filter-summary;
+    in property <string> filter-label;
+    in-out property <int> sort-index;
+    in property <bool> sort-manual-available;
+    out property <int> displayed-sort-index: filters.displayed-sort-index;
+    out property <bool> filter-clear-focused: filters.clear-focused;
+    out property <length> filter-clear-window-y: filters.clear-window-y;
+    out property <length> filter-clear-height: filters.clear-height;
+    out property <length> dialog-viewport-y: dialog-scroll.absolute-position.y;
+    out property <length> dialog-viewport-height: dialog-scroll.visible-height;
+    callback filter-search(string);
+    in-out property <string> filter-search-query;
+    callback filter-edit(int,int);
+    callback filter-collapse(int);
+    callback filter-remove(int);
+    callback filter-clear();
+    callback filter-clear-tags();
+    callback sort-selected(int);
+    public function focus-filters() { filters.activate(); }
+    function reveal-controls(y:length,h:length) {
+        let top=controls-scroll.absolute-position.y;
+        controls-scroll.content-y=max(min(0px,controls-scroll.visible-height - controls-scroll.content-height),min(0px,controls-scroll.content-y+(y<top ? top - y : y+h>top+controls-scroll.visible-height ? top+controls-scroll.visible-height - y - h : 0px)));
+    }
+    function reveal-dialog(y:length, height:length) {
+        let top=dialog-scroll.absolute-position.y;
+        let delta=y<top ? top - y : y+height>top+dialog-scroll.visible-height ? top+dialog-scroll.visible-height - y - height : 0px;
+        dialog-scroll.content-y=max(min(0px,dialog-scroll.visible-height - dialog-scroll.content-height),min(0px,dialog-scroll.content-y+delta));
+    }
     public function open-sidebar() { if !root.modal { root.sidebar-open = true; navigation.activate(); } }
     public function close-sidebar() { root.sidebar-open = false; navigation-button.focus(); }
     public function show-panel(kind: int) {
+        if root.review-data.committing || root.picker-open {return;}
         if kind == 0 { root.panel = 0; root.request-panel(kind); if root.compact { root.close-sidebar(); } }
-        else if kind == 5 { root.open-dialog(2); }
+        else if kind == 5 { if root.dialog==4 || root.dialog==5 {root.settings-parent=root.dialog;root.dialog=2;settings-panel.activate();}else if root.dialog==2 {settings-panel.activate();}else {root.settings-parent=0;root.open-dialog(2);} }
         else if kind == 8 { root.open-dialog(3); }
+        else if kind == 1 { root.open-dialog(10);root.request-panel(kind); }
+        else if kind == 9 { root.open-dialog(13);root.request-panel(kind); }
+        else if kind == 10 { root.open-dialog(15);root.request-panel(kind); }
+        else if kind == 2 {root.open-dialog(19);root.open-operations();}
+        else if kind == 3 {root.open-dialog(20);root.open-export();}
+        else if kind == 4 {root.open-dialog(21);root.open-history();}
         else { root.panel = kind; root.open-dialog(6); root.request-panel(kind); }
     }
+    in property <SettingsData> settings-data;
+    callback settings-preserve-schema();
+    private property <int> schema-parent;
+    private property <int> schema-focus;
+    public function show-schema-confirmation(){if (root.dialog==2 || root.dialog==5) && root.settings-data.can-preserve && !root.settings-data.busy {root.schema-parent=root.dialog;root.dialog=22;dialog-scroll.content-y=0px;root.schema-focus=0;keep-schema.focus();}}
+    public function confirm-schema-recovery(){if root.dialog==22 && root.settings-data.can-preserve {root.dialog=root.schema-parent;root.schema-parent=0;settings-panel.activate();root.settings-preserve-schema();}}
+    out property <bool> schema-keep-focused:root.dialog==22 && root.schema-focus==0 && keep-schema.has-focus;
+    callback settings-choose();callback settings-confirm();callback settings-retry();callback settings-locate();callback settings-diagnostics();callback settings-cancel();callback settings-retry-move();callback settings-keep-source();
+    private property <int> settings-parent;
+    private property <int> quit-parent;
+    public function finish-settings-startup(){root.settings-parent=0;if root.dialog==4 || root.dialog==5 {root.dialog=2;settings-panel.activate();}else if root.dialog==2 && (settings-panel.confirm-focused || settings-panel.retry-focused) {settings-panel.activate();}}
+    public function focus-settings(){if root.dialog==2 || root.dialog==4 || root.dialog==5 {settings-panel.activate();}}
+    public function focus-settings-choose(){settings-panel.focus-choose();}
+    public function focus-settings-confirm(){settings-panel.focus-confirm();}
+    public function focus-settings-retry(){settings-panel.focus-retry();}
+    public function focus-settings-diagnostics(){settings-panel.focus-diagnostics();}
+    out property <bool> settings-first-focused:settings-panel.first-focused;
+    out property <bool> settings-cancel-focused:settings-panel.cancel-focused;
+    out property <bool> settings-confirm-focused:settings-panel.confirm-focused;
+    out property <bool> settings-retry-focused:settings-panel.retry-focused;
+    out property <bool> settings-command-ready:root.startup-phase!=4 && !root.closing && !root.picker-open && (!root.modal || root.dialog==2 || root.dialog==4 || root.dialog==5);
     in property <bool> platform-menu: false;
     if !root.platform-menu: MenuBar {
         Menu {
@@ -208,7 +666,10 @@ export component DesktopWindow inherits Window {
         }
         Menu {
             title: "Librairii";
-            MenuItem { title: root.french ? "Réglages…" : "Settings…"; shortcut: @keys(Control + ","); activated => { root.show-panel(5); } }
+            MenuItem { title: root.french ? "Réglages…" : "Settings…"; enabled:root.settings-command-ready; shortcut: @keys(Control + ","); activated => { root.show-panel(5); } }
+            MenuItem {title:root.french ? "Historique…" : "History…";enabled:root.startup-phase==3 && !root.modal;activated=>{root.show-panel(4);}}
+            MenuItem {title:root.french ? "Emplacement de la bibliothèque…" : "Library Location…";enabled:root.settings-command-ready;activated=>{root.show-panel(5);root.focus-settings-choose();}}
+            MenuItem {title:root.french ? "Enregistrer le ZIP de diagnostic…" : "Save Diagnostic ZIP…";enabled:root.startup-phase==3 && root.settings-command-ready;activated=>{root.show-panel(5);root.focus-settings-diagnostics();}}
             MenuItem { title: root.french ? "À propos de Slint…" : "About Slint…"; activated => { root.open-dialog(1); } }
             MenuItem { title: root.french ? "Quitter" : "Quit"; shortcut: @keys(Control + Q); activated => { root.request-quit(); } }
         }
@@ -226,10 +687,15 @@ export component DesktopWindow inherits Window {
             Rectangle { horizontal-stretch: 1; }
         }
         Rectangle { height: 1px; background: Palette.border; }
-        if root.startup-phase != 3: HorizontalBox {
-            padding: 10px;
+        if root.startup-phase==3 && root.sync-data.loaded && root.sync-data.never && !root.sync-data.hidden && !root.workspace: HorizontalBox {vertical-stretch:0;padding:4px;spacing:8px;
+            Action {focus-key:35;available:root.sync-data.can-start;text:root.french ? "Facultatif · synchroniser" : "Optional metadata · sync now";accessible-label:root.french ? "Synchroniser les métadonnées officielles · facultatif" : "Sync optional official metadata";clicked=>{root.start-sync();}}
+            Action {focus-key:36;text:root.french ? "Plus tard" : "Later";clicked=>{root.hide-sync(true);}}
+        }
+        HorizontalBox {
+            visible: root.startup-phase != 3; height: self.visible ? 52px : 0px;
+            padding: self.visible ? 10px : 0px;
             Caption { text: root.status; horizontal-stretch: 1; accessible-live-region: polite; }
-            Action { focus-key: 18; visible: root.startup-phase != 4; width: root.startup-phase == 4 ? 0px : 110px; text: root.startup-phase == 2 ? (root.french ? "Récupération…" : "Recovery…") : (root.french ? "Configurer…" : "Set up…"); clicked => { root.open-dialog(root.startup-phase == 2 ? 5 : 4); } }
+            startup-action := Action { focus-key: 18; visible: root.startup-phase != 4; width: root.startup-phase == 4 ? 0px : 110px; text: root.startup-phase == 2 ? (root.french ? "Récupération…" : "Recovery…") : (root.french ? "Configurer…" : "Set up…"); clicked => { root.open-dialog(root.startup-phase == 2 ? 5 : 4); } }
         }
         Rectangle {
             vertical-stretch: 1;
@@ -238,22 +704,80 @@ export component DesktopWindow inherits Window {
                 width: parent.width - self.x; height: parent.height;
                 enabled: !root.compact || !root.sidebar-open;
                 VerticalBox {
-                    padding: root.compact ? 8px : 20px; spacing: 8px;
+                    padding: root.compact ? (root.shelf-active ? 4px : 8px) : 20px; spacing: root.compact && root.shelf-active ? 0px : 8px;
+                    controls-scroll := ScrollView {
+                        vertical-stretch: 0;content-width: self.visible-width;content-height: controls-layout.preferred-height;
+                        height: root.compact && (root.workspace || root.shelf-active || root.bulk-summary!="" || root.terminal-notice!="" || root.terminal-notice-error!="") ? min(controls-layout.preferred-height,max(36px,main.height - (root.workspace ? 256px : 240px))) : controls-layout.preferred-height;
+                        controls-layout := VerticalBox {height: self.preferred-height;padding: 0px;spacing: root.compact && root.shelf-active ? 0px : 8px;
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); horizontal-stretch: 1; font-size: root.compact ? 20px : 24px; font-weight: 600; }
                         Caption { text: root.counts; horizontal-stretch: 0; }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
-                        search-entry := SearchField { horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
-                        ModeChoice { horizontal-stretch: 0; width: root.compact ? 180px : 230px; accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                        search-entry := SearchField {reveal(y,h)=>{root.reveal-controls(y,h);} horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
+                        ModeChoice {reveal(y,h)=>{root.reveal-controls(y,h);} visible: !root.shelf-active; horizontal-stretch: 0; width: root.shelf-active ? 0px : (root.compact ? 180px : 230px); accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                        Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
+                    }
+                    if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
+                    if root.terminal-notice!="": VerticalBox {padding:0px;spacing:4px;
+                        Text {height:24px;text:root.terminal-notice;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
+                        HorizontalBox {padding:0px;spacing:6px;
+                            Action {focus-key:60;available:root.notice-index>0;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Précédente" : "Previous";clicked=>{root.notice-step(-1);}}
+                            Action {focus-key:61;changed has-focus=>{root.notice-report-focused=self.has-focus;if self.has-focus {FocusState.key=61;root.reveal-controls(self.absolute-position.y,self.height);}}reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Voir le rapport" : "View report";clicked=>{root.show-panel(2);root.show-notice();}}
+                            Action {focus-key:62;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Fermer la notification" : "Dismiss notice";clicked=>{root.dismiss-notice();}}
+                            Action {focus-key:63;available:root.notice-index+1<root.notice-count;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Suivante" : "Next";clicked=>{root.notice-step(1);}}
+                        }
+                    }
+                    if root.terminal-notice-error!="": Text {height:24px;text:root.terminal-notice-error;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
+                    HorizontalBox { visible: root.bulk-summary != ""; height: self.visible ? 32px : 0px; padding: 0px; spacing: 8px;
+                        Caption { text: root.bulk-summary; accessible-live-region: polite; horizontal-stretch: 1; }
+                        clear-bulk-button := Action { focus-key: 23;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.bulk-summary != ""; text: root.french ? "Effacer la sélection" : "Clear selection"; clicked => { root.clear-bulk(); } }
+                    }
+                    bulk-flags := FlagControl { visible: root.bulk-summary != ""; height: self.visible ? self.preferred-height : 0px; french: root.french; active: !root.modal && !root.closing && !FocusState.sidebar; available: root.bulk-flag-enabled; multiple:root.bulk-flag-multiple;mixed:root.bulk-flag-mixed; checked: root.bulk-flag-checked; pending: root.flag-pending; can-undo: root.flag-undo-enabled; inline-summary: true; title: root.french ? "Histoires sélectionnées" : "Selected stories"; summary: root.bulk-flag-summary; notice: root.flag-notice;
+                        change(value) => { root.bulk-flag-change(value); } undo => { root.undo-flags(); } focused(kind) => { root.bulk-flag-focus=kind;FocusState.key=24;root.reveal-controls(self.absolute-position.y,self.height); }
+                    }
+                    if root.shelf-active: VerticalBox { padding: 0px;spacing: 4px;
+                        Text {height: 20px;text: root.shelf-view-summary;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
+                        HorizontalBox {padding: 0px;spacing: 8px;height: 32px;
+                            shelf-action-choice := ComboBox {width: root.compact ? 270px : 360px;enabled: !root.modal && !root.shelf-busy && !FocusState.sidebar;model: root.french ? ["Gérer les Étagères…", "Monter le membre", "Descendre le membre", "Retirer les membres…", "Retirer et exclure…", "Gérer les exclusions…", "Rétablir la vue et l’ordre approuvé", "Examiner les mises à jour…", "Supprimer cette Étagère…"] : ["Manage Shelves…", "Move member up", "Move member down", "Remove members…", "Remove and exclude…", "Manage exclusions…", "Restore approved view and order", "Review updates…", "Delete this Shelf…"];current-index <=> root.shelf-action;accessible-label: root.french ? "Action sur l’Étagère" : "Shelf action";changed has-focus=>{root.shelf-action-focused=self.has-focus;if self.has-focus {FocusState.key=28;root.reveal-controls(self.absolute-position.y,self.height);root.shelf-action-y=self.absolute-position.y;root.shelf-action-height=self.height;}}private property <int> epoch: FocusState.restore-epoch;changed epoch=>{if !FocusState.modal && FocusState.key==28 {self.focus();}}}
+                            shelf-run := Action {changed has-focus=>{root.shelf-run-focused=self.has-focus;if self.has-focus {FocusState.key=29;root.reveal-controls(self.absolute-position.y,self.height);}}focus-key: 29;reveal(y,h)=>{root.reveal-controls(y,h);}text: root.french ? "Exécuter" : "Run";available: !root.shelf-busy && ((root.shelf-action==0 || root.shelf-action==7 || root.shelf-action==8) || (root.shelf-action==1 && root.shelf-member-up) || (root.shelf-action==2 && root.shelf-member-down) || ((root.shelf-action==3 || root.shelf-action==4) && root.shelf-member-removable) || root.shelf-action==5 || (root.shelf-action==6 && root.shelf-refined));clicked=>{if root.shelf-action==0 {root.show-panel(10);}else if root.shelf-action==1 {root.shelf-move-member(-1);}else if root.shelf-action==2 {root.shelf-move-member(1);}else if root.shelf-action==3 || root.shelf-action==4 {root.shelf-remove-members(root.shelf-action==4);}else if root.shelf-action==5 {root.show-shelf-exclusions();}else if root.shelf-action==6 {root.clear-shelf-refinement();}else if root.shelf-action==7 {root.review-updates();}else{root.review-delete-shelf();}}}
+                        }
+                        Text {visible: root.shelf-notice!="";height: self.visible ? 20px : 0px;text: root.shelf-notice;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
+                        Text {visible: root.status!="";height: self.visible ? 20px : 0px;text: root.status;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
+                    }
+                        }
                     }
                     body := HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1; min-height: 0px;
                         VerticalBox { padding: 0px; spacing: root.status == "" ? 0px : 8px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
-                            browser := StoryBrowser { visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
+                            library-scroll := ScrollView { content-width: self.visible-width; content-height: library-layout.preferred-height;
+                                library-layout := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 8px;
+                                    browser := StoryBrowser { height: library-scroll.visible-height; french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Toutes les histoires" : "All stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } reveal(y,h) => {root.reveal-library(y,h);} }
+                                    for preview in root.collection-previews: VerticalBox { padding: 8px; spacing: 8px;
+                                        Caption { text: preview.title; font-weight: 600; }
+                                        Caption { text: preview.caption; }
+                                        Action { focus-key: -1000 - preview.index * 3; available: preview.available; text: root.french ? "Tout afficher · " + preview.title : "View all · " + preview.title; clicked => {root.navigate-group(preview.index);} changed has-focus => {if self.has-focus {FocusState.key=self.focus-key;root.reveal-library(self.absolute-position.y,self.height);}} }
+                                        for story in preview.stories: HorizontalBox { padding: 0px; spacing: 8px; height: 58px;
+                                            Image { width: 48px; height: 50px; source: story.cover.width > 0 ? story.cover : @image-url("../assets/library.svg"); image-fit: contain; opacity: story.broken ? 0.45 : 1; }
+                                            Rectangle { horizontal-stretch: 1; height: 54px; border-width: preview-inspect.has-focus ? 2px : 0px; border-color: Palette.foreground; border-radius: 4px; accessible-role: none;
+                                            preview-inspect := Action { x: 3px; y: 3px; width: parent.width - 6px; height: parent.height - 6px; focus-key: -1001 - story.index * 3; text: (root.selected-story.uuid==story.uuid ? "▶ " : "") + story.title + (story.warning == "" ? "" : " · " + story.warning); accessible-item-selectable: true; accessible-item-selected: root.selected-story.uuid==story.uuid; accessible-label: (root.selected-story.uuid==story.uuid ? (root.french ? "Histoire inspectée · " : "Inspected story · ") : "") + story.title + (story.warning == "" ? "" : " · " + story.warning); clicked => {root.select-story(story.index);} changed has-focus => {if self.has-focus {FocusState.key=self.focus-key;FocusState.preview-focused-key=self.focus-key;root.reveal-library(self.absolute-position.y,self.height);}else if FocusState.preview-focused-key==self.focus-key {FocusState.preview-focused-key=0;}} }
+                                            }
+                                            Rectangle { width: 34px; height: 34px; border-width: preview-check.has-focus ? 2px : 0px; border-color: Palette.foreground; border-radius: 4px; accessible-role: none;
+                                            preview-check := PreviewBulk { x: 3px; y: 3px; width: 28px; height: 28px; focus-key: -1002 - story.index * 3; checked: story.bulk; text: ""; accessible-label: (story.bulk ? (root.french ? "Désélectionner · " : "Deselect · ") : (root.french ? "Sélectionner · " : "Select · ")) + story.title; toggled => {root.toggle-bulk(story.index);} reveal(y,h)=>{root.reveal-library(y,h);} }
+                                            }
+                                        }
+                                    }
+                                    if root.collection-previews.length > 0: HorizontalBox { padding: 0px;
+                                        Action { focus-key: 25; available: root.group-previous; text: root.french ? "Groupes précédents" : "Previous groups"; clicked => {root.change-group-page(-1);} changed has-focus => {if self.has-focus {root.reveal-library(self.absolute-position.y,self.height);}} }
+                                        Action { focus-key: 26; available: root.group-next; text: root.french ? "Groupes suivants" : "Next groups"; clicked => {root.change-group-page(1);} changed has-focus => {if self.has-focus {root.reveal-library(self.absolute-position.y,self.height);}} }
+                                    }
+                                }
+                            }
                         }
-                        workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
-                        if root.wide && !root.workspace: Inspector { width: 264px; french: root.french; story: root.selected-story; }
+                        workspace-panel := Workspace {review-exclusions=>{root.show-shelf-exclusions();}review-refresh=>{root.review-refresh();}review-close=>{root.close-native-review();}review-apply=>{root.review-apply();}review-keep-all=>{root.review-keep-all();}review-acknowledge=>{root.review-acknowledge();}review-section(i)=>{root.review-section(i);}review-page(i)=>{root.review-page(i);}review-shelf(i)=>{root.review-shelf(i);}review-choose(i,c)=>{root.review-choose(i,c);}review-bulk(i)=>{root.review-bulk(i);}review-inspect(i)=>{root.review-inspect(i);}review-focused=>{FocusState.key=33;} approved-focused=>{FocusState.key=31;} membership: root.shelf-active;review-visible: !root.shelf-active || root.review-shown;native-review: root.review-shown;review-focus-active: FocusState.key==33 && !root.modal && root.review-shown;review-data: root.review-data; visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !root.review-data.committing && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
+                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; }
+                            flag-enabled: root.panel-flag-enabled; flag-multiple:root.panel-flag-multiple;flag-mixed:root.panel-flag-mixed; flag-checked: root.panel-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-summary: root.panel-flag-summary; flag-target-label: root.panel-flag-target-label; flag-notice: root.flag-notice; flag-change(value) => { root.panel-flag-change(value); } undo-flags => { root.undo-flags(); }
+                        }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }
@@ -273,11 +797,15 @@ export component DesktopWindow inherits Window {
                 width: root.compact ? 280px : 216px; height: parent.height;
                 sidebar-focus := FocusScope { x: 0px; y: 0px; width: parent.width; height: parent.height;
                     key-pressed(event) => { if event.text == Key.Escape && root.compact { root.close-sidebar(); return accept; } return reject; }
-                    navigation := Navigation { x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
+                    navigation := Navigation {sync-focus-active:!root.compact || root.sidebar-open;sync-data:root.sync-data;start-sync=>{root.start-sync();}cancel-sync=>{root.cancel-sync();}hide-sync(value)=>{root.hide-sync(value);}refresh-sync=>{root.refresh-sync();} x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal && !root.review-data.committing; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
                 }
             }
         }
-        if root.pending || root.startup-phase == 4: ProgressState { progress: root.progress; indeterminate: root.indeterminate || root.startup-phase == 4; label: root.status; }
+        if root.pending && root.operation-status!="": HorizontalBox {vertical-stretch:0;min-height:32px;padding:4px;spacing:8px;
+            Caption {text:root.operation-status;accessible-live-region:polite;}
+            Action {focus-key:34;text:root.french ? "Opérations…" : "Operations…";clicked=>{root.show-panel(2);}}
+        }
+        if root.pending || root.startup-phase == 4: ProgressState { progress: root.progress; indeterminate: root.indeterminate || root.startup-phase == 4; label: root.operation-status!="" ? root.operation-status : root.status; }
 
     }
 
@@ -291,7 +819,7 @@ export component DesktopWindow inherits Window {
         width: min(600px,parent.width - 32px); height: parent.height - 48px;
         background: Palette.background; border-width: 2px; border-color: Palette.foreground; border-radius: 6px;
         accessible-role: groupbox;
-        accessible-label: root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : (root.french ? "Bibliothèque" : "Library");
+        accessible-label: root.dialog==22 ? (root.french ? "Confirmer la récupération de la base" : "Confirm database recovery") : root.dialog==21 ? (root.french ? "Historique" : "History") : root.dialog==20 ? (root.french ? "Préparer l’export" : "Prepare export") : root.dialog==19 ? (root.french ? "Imports et opérations" : "Imports and operations") : root.dialog==15 ? (root.french ? "Gérer les Étagères" : "Manage Shelves") : root.dialog==16 || root.dialog==17 ? (root.french ? "Confirmer les membres approuvés" : "Confirm approved membership") : root.dialog==18 ? (root.french ? "Exclusions de l’Étagère" : "Shelf exclusions") : root.dialog == 13 ? (root.french ? "Gérer les Collections" : "Manage Collections") : root.dialog == 14 ? (root.french ? "Confirmer la modification de la Collection" : "Confirm Collection change") : root.dialog == 10 ? (root.french ? "Gérer les étiquettes" : "Manage tags") : root.dialog == 11 ? (root.french ? "Attribuer les étiquettes" : "Assign tags") : root.dialog == 12 ? (root.french ? "Confirmer l’impact" : "Confirm impact") : root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
         FocusScope {
             width: parent.width; height: parent.height;
             key-pressed(event) => {
@@ -306,6 +834,34 @@ export component DesktopWindow inherits Window {
                     return accept;
                 }
                 if event.text == Key.Tab {
+                    if root.dialog==22 {if root.schema-focus==0 {root.schema-focus=1;confirm-schema.focus();}else{root.schema-focus=0;keep-schema.focus();}return accept;}
+                    if root.dialog==20 {if event.modifiers.shift && exports.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {exports.activate();return accept;}return reject;}
+                    if root.dialog==21 {if event.modifiers.shift && history.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {history.activate();return accept;}return reject;}
+                    if root.dialog==19 {if event.modifiers.shift && operations.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {operations.activate();return accept;}return reject;}
+                    if root.dialog==15 {if event.modifiers.shift && shelf-manager.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {shelf-manager.activate();return accept;}return reject;}
+                    if root.dialog==16 || root.dialog==17 {if event.modifiers.shift && shelf-preview.first-focused {if root.shelf-confirm-enabled {confirm-shelf.focus();}else{cancel-shelf.focus();}return accept;}if !event.modifiers.shift && (confirm-shelf.has-focus || (!root.shelf-confirm-enabled && cancel-shelf.has-focus)) {shelf-preview.activate();return accept;}return reject;}
+                    if root.dialog==18 {if event.modifiers.shift && shelf-exclusions.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {shelf-exclusions.activate();return accept;}return reject;}
+                    if root.dialog == 13 { if event.modifiers.shift && collection-manager.first-focused {close-dialog-button.focus();return accept;} if !event.modifiers.shift && close-dialog-button.has-focus {collection-manager.activate();return accept;}return reject; }
+                    if root.dialog == 14 {
+                        if !event.modifiers.shift && confirm-collection.has-focus && !review-affected.enabled {if root.collection-impact-previous {collection-prev.focus();}else if root.collection-impact-next {collection-next.focus();}else {cancel-collection.focus();}return accept;}
+                        if !event.modifiers.shift && review-affected.has-focus {if root.collection-impact-previous {collection-prev.focus();}else if root.collection-impact-next {collection-next.focus();}else {cancel-collection.focus();}return accept;}
+                        if event.modifiers.shift && (collection-prev.has-focus || (collection-next.has-focus && !root.collection-impact-previous) || (cancel-collection.has-focus && !root.collection-impact-previous && !root.collection-impact-next)) {if review-affected.enabled {review-affected.focus();}else{confirm-collection.focus();}return accept;}
+                        return reject;
+                    }
+                    if root.dialog == 12 { if cancel-tag.has-focus { confirm-tag.focus(); } else { cancel-tag.focus(); } return accept; }
+                    if root.dialog == 10 { if event.modifiers.shift && tag-manager.first-focused { close-dialog-button.focus();return accept; } if !event.modifiers.shift && close-dialog-button.has-focus {tag-manager.activate();return accept;} return reject; }
+                    if root.dialog == 11 { if event.modifiers.shift && assignments.first-focused { close-dialog-button.focus();return accept; } if !event.modifiers.shift && close-dialog-button.has-focus {assignments.activate();return accept;} return reject; }
+                    if root.dialog == 9 { if keep-story.has-focus { trash-story.focus(); } else { keep-story.focus(); } return accept; }
+                    if root.dialog == 3 {
+                        if event.modifiers.shift && dialog-inspector.first-focused { close-dialog-button.focus(); return accept; }
+                        if !event.modifiers.shift && close-dialog-button.has-focus { dialog-inspector.focus-first(); return accept; }
+                        return reject;
+                    }
+                    if root.dialog == 8 {
+                        if event.modifiers.shift && filters.first-focused { close-dialog-button.focus(); return accept; }
+                        if !event.modifiers.shift && close-dialog-button.has-focus { filters.activate(); return accept; }
+                        return reject;
+                    }
                     if root.dialog == 1 {
                         if close-dialog-button.has-focus { attribution-button.focus(); } else { close-dialog-button.focus(); }
                         return accept;
@@ -314,31 +870,107 @@ export component DesktopWindow inherits Window {
                         if close-dialog-button.has-focus { stop-close-button.focus(); } else { close-dialog-button.focus(); }
                         return accept;
                     }
-                    if root.dialog != 2 { close-dialog-button.focus(); return accept; }
-                    if event.modifiers.shift && english-button.has-focus { close-dialog-button.focus(); return accept; }
-                    if !event.modifiers.shift && close-dialog-button.has-focus { english-button.focus(); return accept; }
+                    if root.dialog==2 || root.dialog==4 || root.dialog==5 {
+                        if event.modifiers.shift && settings-panel.first-focused {close-dialog-button.focus();return accept;}
+                        if !event.modifiers.shift && close-dialog-button.has-focus {settings-panel.activate();return accept;}
+                        return reject;
+                    }
+                    close-dialog-button.focus();return accept;
                 }
                 return reject;
             }
-            VerticalBox { padding: 18px; spacing: 12px;
+            VerticalBox { padding: 18px; spacing: 0px;
                 Caption { text: dialog-panel.accessible-label; font-size: 22px; font-weight: 600; }
-                dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width;
-                    VerticalBox { padding: 0px;
+                Rectangle { height: 12px; }
+                dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
+                    dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
+                        exports:=ExportPanel {visible:root.dialog==20;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==20 && root.startup-phase==3 && !root.closing;picking:root.picker-open;data:root.export-data;modes:root.export-modes;mode <=> root.export-mode;groups:root.export-groups;selection-epoch:root.export-selection-epoch;items:root.export-items;select(i)=>{root.export-scope(i);}toggle(i)=>{root.export-toggle(i);}group-page(i)=>{root.export-group-page(i);}pick=>{root.pick-export-destination();}refresh=>{root.refresh-export();}start=>{root.start-export();}page(i)=>{root.export-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        history:=HistoryPanel {visible:root.dialog==21;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==21 && !root.picker-open && !root.closing;entries:root.history-entries;summary:root.history-summary;error:root.history-error;older:root.history-older;inspect(i)=>{root.show-history-report(i);root.inspect-history(i);}refresh=>{root.history-refresh();}load-older=>{root.history-load-older();}retry=>{root.history-retry();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        operations:=Operations {visible:root.dialog==19;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==19 && root.startup-phase==3 && !root.closing;loading:root.operation-loading;history-report:root.operation-from-history;back-history=>{root.return-to-history();}picking:root.picker-open;revealable:root.operation-revealable;reveal-notice:root.operation-reveal-notice;reveal-destination=>{root.reveal-export();}choices:root.operation-choices;selected <=> root.operation-index;choice:root.operation-choice;summary:root.operation-summary;notice:root.operation-notice;runtime:root.operation-runtime;items:root.operation-items;groups:root.operation-groups;cancellable:root.operation-cancellable;retryable:root.operation-retryable;retry-label:root.operation-retry-label;previous:root.operation-previous;next:root.operation-next;pick=>{root.pick-import();}retry=>{root.retry-import();}cancel=>{root.cancel-operation();}select(i)=>{root.select-operation(i);}refresh=>{root.refresh-operations();}page(i)=>{root.operation-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        settings-panel:=SettingsPanel {visible:root.dialog==2 || root.dialog==4 || root.dialog==5;height:self.visible ? self.preferred-height : 0px;french:root.french;active:(root.dialog==2 || root.dialog==4 || root.dialog==5) && !root.closing;picking:root.picker-open;data:root.settings-data;language(code)=>{root.change-language(code);}choose=>{root.settings-choose();}confirm=>{root.settings-confirm();}retry=>{root.settings-retry();}locate=>{root.settings-locate();}diagnostics=>{root.settings-diagnostics();}cancel=>{root.settings-cancel();}retry-move=>{root.settings-retry-move();}keep-source=>{root.settings-keep-source();}preserve-schema=>{root.show-schema-confirmation();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        if root.dialog==22:Caption {text:root.settings-data.schema-explanation;}
                         if root.dialog == 1: AboutSlint { }
-                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(240px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; }
-                        if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }
-                        if root.dialog == 5: Caption { text: root.french ? "La bibliothèque attendue est indisponible ou nécessite une récupération. Ses fichiers sont conservés. Reconnectez son volume puis réessayez ; ne remplacez pas votre bibliothèque." : "The expected library is unavailable or needs recovery. Its files are preserved. Reconnect its volume and retry; keep your existing library."; }
+                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); }
+                            flag-enabled: root.detail-flag-enabled; flag-checked: root.detail-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-notice: root.flag-notice; flag-change(value) => { root.detail-flag-change(value); } undo-flags => { root.undo-flags(); }
+                        }
+                        if root.dialog == 9: Caption { text: (root.french ? "Retirer cette histoire de la bibliothèque ?\n« " : "Remove this story from the library?\n“") + root.removal-title + (root.french ? " » sera déplacée dans la corbeille de l’application. Votre fichier d’origine restera à son emplacement." : "” will move to application trash. Your original source file will stay where it is."); }
+                        if root.dialog == 9: Caption { text: root.removal-error; }
                         if root.dialog == 6: Caption { text: root.status != "" ? root.status : (root.french ? "Vos histoires et leurs archives restent dans votre bibliothèque locale." : "Your stories and archives stay in your local library."); }
+                        filters := Filters { visible: root.dialog == 8; height: root.dialog == 8 ? max(480px,dialog-scroll.visible-height) : 0px; french: root.french; options: root.filter-rows; sort-manual-available: root.sort-manual-available; active: root.active-filter-rows; sort-index <=> root.sort-index; search <=> root.filter-search-query;
+                            search-edited(text) => { root.filter-search(text); }
+                            option-edited(index,value) => { root.filter-edit(index,value); }
+                            collapse(index) => { root.filter-collapse(index); }
+                            remove(index) => { root.filter-remove(index); }
+                            clear-all => { root.filter-clear(); }
+                            clear-tags => { root.filter-clear-tags(); }
+                            sort-selected(index) => { root.sort-selected(index); }
+                            reveal(y,height) => { root.reveal-dialog(y,height); }
+                        }
+                        tag-manager := TagManager { visible: root.dialog == 10; height: self.visible ? self.preferred-height : 0px; french: root.french; active: root.startup-phase == 3 && root.dialog == 10 && !root.tag-busy; editable: root.tag-editable; choice: root.tag-choice; creating: root.tag-creating; definitions: root.tag-definitions; values: root.tag-values; source: root.tag-source; notice: root.tag-notice;
+                            move-up: root.tag-move-up; move-down: root.tag-move-down; value-move-up: root.tag-value-move-up; value-move-down: root.tag-value-move-down;
+                            definition-index <=> root.tag-definition-index; value-index <=> root.tag-value-index; key <=> root.tag-key; label <=> root.tag-label; color <=> root.tag-color; kind <=> root.tag-kind; value-key <=> root.tag-value-key; value-label <=> root.tag-value-label;
+                            select-definition(index) => { root.select-tag-definition(index); } select-value(index) => { root.select-tag-value(index); }
+                            save-definition => { root.save-tag-definition(); } save-value => { root.save-tag-value(); }
+                            move-definition(offset) => { root.move-tag-definition(offset); } move-value(offset) => { root.move-tag-value(offset); }
+                            delete-definition => { root.delete-tag-definition(); } delete-value => { root.delete-tag-value(); } reveal(y,h) => { root.reveal-dialog(y,h); }
+                        }
+                        assignments := Assignments { visible: root.dialog == 11; height: self.visible ? max(400px,dialog-scroll.visible-height) : 0px; french: root.french; active: root.startup-phase == 3 && root.dialog == 11 && !root.tag-busy; summary: root.assignment-summary; notice: root.tag-notice; rows: root.assignment-rows;
+                            refresh => { root.refresh-assignments(); } assign(index,value) => { root.assignment-edit(index,value); } reveal(y,h) => { root.reveal-dialog(y,h); }
+                        }
+                        if root.dialog == 12: Caption { text: root.tag-impact; }
+                        if root.dialog == 12: Caption { text: root.tag-notice; accessible-live-region: polite; }
+                        collection-manager := CollectionManager { visible: root.dialog == 13; height: self.visible ? self.preferred-height : 0px; french: root.french; active: root.dialog == 13 && root.startup-phase == 3 && !root.collection-busy;
+                            creating: root.collection-creating; openable: root.collection-openable; move-up: root.collection-move-up; move-down: root.collection-move-down; definitions: root.collection-definitions; choices: root.collection-choices; selected <=> root.collection-index; name <=> root.collection-name; notice: root.collection-notice; status: root.collection-status; criteria: root.collection-criteria; union-summary: root.collection-union-summary; union-available: root.collection-union-available; union-active: root.collection-union-active; union-selected: root.collection-union-selected;
+                            select(index) => {root.select-collection(index);}save=>{root.save-collection();}duplicate=>{root.duplicate-collection();}move(offset)=>{root.move-collection(offset);}open=>{root.open-collection();}replace=>{root.replace-collection();}delete=>{root.delete-collection();}edit-query=>{root.edit-current-collection-query();}edit-saved-query=>{root.edit-saved-collection-query();}toggle(index)=>{root.toggle-collection-union(index);}toggle-selected=>{root.toggle-selected-collection-union();}open-union=>{root.open-collection-union();}save-union=>{root.save-collection-union();}reveal(y,h)=>{root.reveal-dialog(y,h);}
+                        }
+                        shelf-manager := ShelfManager {visible: root.dialog==15;height: self.visible ? self.preferred-height : 0px;french: root.french;active: root.dialog==15 && root.startup-phase==3 && !root.shelf-busy && !root.review-data.busy;definitions: root.shelf-definitions;sources: root.shelf-sources;selected <=> root.shelf-index;source-index <=> root.shelf-source-index;name <=> root.shelf-name;include-manual <=> root.shelf-include-manual;creating: root.shelf-creating;move-up: root.shelf-move-up;move-down: root.shelf-move-down;manual-available: root.shelf-manual-available;source-selected: root.shelf-source-selected;source-editable: root.shelf-source-editable;notice: root.shelf-notice;summary: root.shelf-summary;manual-summary: root.shelf-manual-summary;source-summary: root.shelf-source-summary;
+                            preview-sources=>{root.preview-shelf-sources();}delete-shelf=>{root.review-delete-shelf();}select(i)=>{root.select-shelf(i);}choose-source(i)=>{root.select-shelf-source(i);}toggle-source=>{root.toggle-shelf-source();}rename=>{root.rename-shelf();}duplicate=>{root.duplicate-shelf();}move(offset)=>{root.move-shelf(offset);}preview=>{root.preview-shelf-creation();}add-manual=>{root.add-manual-shelf();}exclusions=>{root.show-shelf-exclusions();}reveal(y,h)=>{root.reveal-dialog(y,h);}
+                        }
+                        shelf-preview := ShelfPreview {visible: root.dialog==16 || root.dialog==17;height: self.visible ? self.preferred-height : 0px;french: root.french;active: !root.shelf-busy && root.startup-phase==3;creating: root.shelf-preview-kind==0;warnings: root.shelf-preview-warnings;has-warnings: root.shelf-preview-has-warnings;rows: root.shelf-preview-rows;summary: root.shelf-preview-summary;notice: root.shelf-notice;refresh=>{root.refresh-shelf-preview();}toggle(i)=>{root.shelf-preview-toggle(i);}all(value)=>{root.shelf-preview-all(value);}show-warnings(value)=>{root.shelf-preview-show-warnings(value);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        shelf-exclusions := ShelfExclusions {visible: root.dialog==18;height: self.visible ? self.preferred-height : 0px;french: root.french;active: !root.shelf-busy && root.startup-phase==3;rows: root.shelf-exclusion-rows;summary: root.shelf-exclusion-summary;notice: root.shelf-notice;refresh=>{root.refresh-shelf-exclusions();}allow(i)=>{root.allow-shelf-suggestions(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        if root.dialog == 14: Caption { text: root.collection-impact; }
+                        if root.dialog == 14: Caption { text: root.collection-notice; accessible-live-region: polite; }
                         if root.dialog == 7: Caption { text: root.commit-pending ? (root.french ? "Enregistrement en cours. Attendez la fin de cette étape avant de fermer." : "Saving changes. Wait for this step to finish before closing.") : (root.french ? "Vous pouvez continuer ou demander l’arrêt. Les effets déjà enregistrés sont conservés." : "Keep working or request a safe stop. Already committed changes are preserved."); }
                     }
                 }
-                attribution-button := Button { visible: root.dialog == 1; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
-                HorizontalBox { visible: root.dialog == 2;
-                    english-button := Button { text: "English"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("en"); } }
-                    Button { text: "Français"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("fr"); } }
+                attribution-button := Button { visible: root.dialog == 1; height: root.dialog == 1 ? 40px : 0px; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
+                stop-close-button := Button { visible: root.dialog == 7; height: root.dialog == 7 ? 40px : 0px; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
+                edit-tags-button := Button { visible: root.dialog == 3; height: self.visible ? 40px : 0px; enabled: !root.detail-pending && root.edit-tags-enabled; text: root.edit-tags-label != "" ? root.edit-tags-label : (root.french ? "Modifier les étiquettes" : "Edit tags"); clicked => { root.edit-tags(); } }
+                HorizontalBox { visible: root.dialog == 12; height: self.visible ? 40px : 0px; padding: 0px;
+                    cancel-tag := Button { enabled: !root.tag-busy; text: root.french ? "Annuler" : "Cancel"; clicked => {root.close-dialog();} }
+                    confirm-tag := Button { enabled: !root.tag-busy; text: root.french ? "Supprimer définitivement" : "Delete permanently"; clicked => {root.confirm-tag-delete();} }
                 }
-                stop-close-button := Button { visible: root.dialog == 7; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
-                close-dialog-button := Button { enabled: !root.closing; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
+                HorizontalBox { visible: root.dialog == 14 && !root.collection-replacing; height: self.visible ? 32px : 0px; padding: 0px;
+                    collection-prev := Button { enabled: !root.collection-busy && root.collection-impact-previous; text: root.french ? "Étagère précédente" : "Previous Shelf"; clicked => {root.collection-impact-page(-1);} }
+                    collection-next := Button { enabled: !root.collection-busy && root.collection-impact-next; text: root.french ? "Étagère suivante" : "Next Shelf"; clicked => {root.collection-impact-page(1);} }
+                }
+                HorizontalBox { visible: root.dialog == 14; height: self.visible ? 40px : 0px; padding: 0px;
+                    cancel-collection := Button { enabled: !root.collection-busy; text: root.french ? "Annuler" : "Cancel"; clicked => {root.close-dialog();} }
+                    confirm-collection := Button { enabled: !root.collection-busy; text: root.collection-replacing ? (root.french ? "Remplacer la requête" : "Replace saved query") : (root.french ? "Supprimer et conserver les histoires" : "Delete and keep approved stories"); clicked => {root.confirm-collection-change();} }
+                }
+                HorizontalBox {visible: root.dialog==16 || root.dialog==17;height: self.visible ? 32px : 0px;padding: 0px;
+                    Button {enabled: !root.shelf-busy && root.shelf-preview-previous;text: root.french ? "Page précédente" : "Previous page";clicked=>{root.shelf-preview-page(-1);}}
+                    Button {enabled: !root.shelf-busy && root.shelf-preview-next;text: root.french ? "Page suivante" : "Next page";clicked=>{root.shelf-preview-page(1);}}
+                }
+                HorizontalBox {visible: root.dialog==18;height: self.visible ? 32px : 0px;padding: 0px;
+                    Button {enabled: !root.shelf-busy && root.shelf-exclusion-previous;text: root.french ? "Page précédente" : "Previous page";clicked=>{root.shelf-exclusion-page(-1);}}
+                    Button {enabled: !root.shelf-busy && root.shelf-exclusion-next;text: root.french ? "Page suivante" : "Next page";clicked=>{root.shelf-exclusion-page(1);}}
+                }
+                HorizontalBox {visible: root.dialog==16 || root.dialog==17;height: self.visible ? 40px : 0px;padding: 0px;
+                    cancel-shelf := Button {enabled: !root.shelf-busy;text: root.french ? "Annuler" : "Cancel";clicked=>{root.close-dialog();}}
+                    confirm-shelf := Button {enabled: !root.shelf-busy && root.shelf-confirm-enabled;text: root.shelf-confirm-label;clicked=>{root.confirm-shelf-preview();}}
+                }
+                remove-story-button := Button { visible: root.dialog == 3; height: root.dialog == 3 ? 40px : 0px; enabled: !root.detail-pending && root.selected-story.uuid != ""; text: root.french ? "Retirer de la bibliothèque…" : "Remove from library…"; clicked => { root.begin-removal(); } }
+                HorizontalBox { height: root.dialog == 9 ? 40px : 0px; visible: root.dialog == 9;
+                    keep-story := Button { enabled: !root.detail-pending; text: root.french ? "Conserver l’histoire" : "Keep story"; clicked => { root.close-dialog(); } }
+                    trash-story := Button { enabled: !root.detail-pending; text: root.detail-pending ? (root.french ? "Déplacement…" : "Moving to trash…") : (root.french ? "Déplacer dans la corbeille" : "Move to trash"); clicked => { root.remove-story(); } }
+                }
+                review-affected := Button {visible: root.dialog==14 && !root.collection-replacing;height: self.visible ? 40px : 0px;enabled: !root.collection-busy && root.collection-impact-count>0;text: root.french ? "Examiner les histoires concernées…" : "Review affected stories…";clicked=>{root.review-delete-collection();}}
+                HorizontalBox {visible:root.dialog==22;height:self.visible ? 40px : 0px;padding:0px;spacing:8px;
+                    keep-schema:=Button {enabled:root.dialog==22 && !root.closing;text:root.french ? "Conserver sans modifier" : "Keep files unchanged";clicked=>{root.close-dialog();}}
+                    confirm-schema:=Button {enabled:root.dialog==22 && root.settings-data.can-preserve && !root.closing;text:root.french ? "Confirmer la récupération" : "Confirm recovery";clicked=>{root.confirm-schema-recovery();}}
+                }
+                close-dialog-button := Button { visible: root.dialog != 9 && root.dialog != 12 && root.dialog != 14 && root.dialog!=16 && root.dialog!=17 && root.dialog!=22; height: self.visible ? 40px : 0px; enabled: !root.closing && !root.picker-open && !root.detail-pending && !root.tag-busy && !root.collection-busy && !root.shelf-busy && !((root.dialog==2 || root.dialog==4 || root.dialog==5) && root.settings-data.busy); text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
             }
         }
     }

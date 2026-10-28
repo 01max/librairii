@@ -26,8 +26,69 @@ fn invalid() -> StorageError {
 fn text(value: &str) -> Value {
     Value::Text(value.to_owned())
 }
+pub(crate) fn require_identities(
+    tx: &Transaction<'_>,
+    identities: &[librairii_core::browsing::StoryIdentity],
+) -> Result<()> {
+    if identities.is_empty() || identities.len() > 1000 {
+        return Err(StorageError::SnapshotChanged);
+    }
+    for story in identities {
+        if story.id <= 0 || !tx.query_row("SELECT EXISTS(SELECT 1 FROM stories WHERE id=? AND uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents WHERE story_id=?))", params![story.id, story.uuid, story.id], |row| row.get::<_, bool>(0))? {
+            return Err(StorageError::SnapshotChanged);
+        }
+    }
+    Ok(())
+}
+#[derive(Clone, Debug)]
+pub struct StoryDetail {
+    pub summary: StorySummary,
+    pub archive: ExportStory,
+}
 
 impl Database<'_> {
+    /// One coherent observation, with lossless native filename bytes retained.
+    pub fn story_detail(
+        &self,
+        id: i64,
+        locale: String,
+    ) -> Result<Pending<'_, Option<StoryDetail>>> {
+        self.read(move |tx| {
+            let record = tx
+                .query_row(&format!("{RECORD}{FROM} WHERE s.id=?"), [id], Record::read)
+                .optional()?;
+            record
+                .map(|record| {
+                    let summary = summary(tx, &record, &locale)?;
+                    let archive = ExportStory {
+                        broken: record.broken,
+                        id: record.id,
+                        uuid: record.uuid,
+                        title: summary.title.clone(),
+                        original_filename: String::from_utf8(record.filename.clone())
+                            .unwrap_or_default(),
+                        original_filename_bytes: record.filename,
+                        detected_format: record.format,
+                        sha256: record.checksum,
+                        byte_size: record.bytes,
+                        managed_relative_path: String::from_utf8(record.path.clone())
+                            .unwrap_or_default(),
+                        managed_relative_path_bytes: record.path,
+                        verification: summary.compatibility.clone(),
+                    };
+                    Ok(StoryDetail { summary, archive })
+                })
+                .transpose()
+        })
+    }
+    /// Facet choices observe active metadata independently of the display locale.
+    pub fn available_languages(&self) -> Result<Pending<'_, Vec<String>>> {
+        self.read(|tx| {
+            let mut statement=tx.prepare("SELECT DISTINCT m.language FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE c.status='active' AND m.language<>'' ORDER BY m.language")?;
+            let rows=statement.query_map([],|row|row.get::<_,String>(0))?.collect::<std::result::Result<Vec<_>,_>>()?;
+            Ok(rows)
+        })
+    }
     pub fn search(&self, request: QueryRequest, locale: String) -> Result<Pending<'_, Page>> {
         self.read(move |tx| search(tx, request, &locale))
     }

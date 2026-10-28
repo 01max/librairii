@@ -349,6 +349,14 @@ fn inventory_graph(
                 .ok_or("missing resolved package")?;
             let patch = if package["name"] == native["name"] {
                 native
+            } else if let Some(companion) =
+                native["companion_patches"].as_array().and_then(|patches| {
+                    patches
+                        .iter()
+                        .find(|patch| patch["name"] == package["name"])
+                })
+            {
+                companion
             } else {
                 archive
             };
@@ -369,7 +377,7 @@ fn inventory_graph(
                         .join("Cargo.toml")
                         .to_str()
             {
-                return Err("unexpected archive patch resolution".into());
+                return Err("unexpected vendored patch resolution".into());
             }
             if package["source"].is_null() && !vendored {
                 continue;

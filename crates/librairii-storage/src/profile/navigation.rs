@@ -13,7 +13,7 @@ use std::{
 const NAME: &str = "navigation.json";
 
 impl NativeProfileStore {
-    fn ui_bytes(&self, name: &'static str) -> Result<Option<(Vec<u8>, File, Metadata)>> {
+    pub(super) fn ui_bytes(&self, name: &'static str) -> Result<Option<(Vec<u8>, File, Metadata)>> {
         let file = match self
             .namespace
             .open_regular(OsStr::new(name), rustix::fs::OFlags::RDONLY)
@@ -94,7 +94,7 @@ impl NativeProfileStore {
                 .map_err(Into::into)
         })
     }
-    fn save_ui_document(
+    pub(super) fn save_ui_document(
         &self,
         name: &'static str,
         bytes: &[u8],
@@ -111,8 +111,10 @@ impl NativeProfileStore {
             Ok(stage) => stage,
             Err(failure) => {
                 let failure = *failure;
-                state.poison();
-                state.recovery_allocations.push(failure.allocation);
+                if !failure.creation_refused || failure.allocation.file.is_some() {
+                    state.poison();
+                    state.recovery_allocations.push(failure.allocation);
+                }
                 return Err(failure.cause);
             }
         };

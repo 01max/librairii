@@ -64,11 +64,18 @@ impl<'db, 'library> Exports<'db, 'library> {
             retained: Vec::new(),
         }
     }
+    /// Native composition must preserve uncertainty independently of a preview's serial.
+    pub fn native_recovery_required(&self) -> bool {
+        !self.retained.is_empty() || self.database.file_recovery_required()
+    }
     pub fn retained_outputs(&self) -> usize {
         self.retained.len()
     }
     pub fn preparation_count(&self) -> usize {
         self.prepared.len()
+    }
+    pub fn discard(&mut self, id: &PreparationId) {
+        self.prepared.retain(|p| !p.id.same(id));
     }
     pub fn invalidate(&mut self) {
         self.prepared.clear();
@@ -80,6 +87,18 @@ impl<'db, 'library> Exports<'db, 'library> {
         id: &PreparationId,
         cancel: &WorkCancellation,
     ) -> Result<Running<'_, 'db, 'library>> {
+        let plan = self.take_prepared(id, cancel)?;
+        Ok(Running {
+            owner: self,
+            plan,
+            cursor: 0,
+        })
+    }
+    pub(super) fn take_prepared(
+        &mut self,
+        id: &PreparationId,
+        cancel: &WorkCancellation,
+    ) -> Result<Prepared> {
         if cancel.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
@@ -107,11 +126,7 @@ impl<'db, 'library> Exports<'db, 'library> {
                 if current!=(id,broken) { return Err(ExportError::Stale.into()); }
             }Ok(())
         })?.wait()?;
-        Ok(Running {
-            owner: self,
-            plan,
-            cursor: 0,
-        })
+        Ok(plan)
     }
     pub fn prepare(
         &mut self,
@@ -123,7 +138,13 @@ impl<'db, 'library> Exports<'db, 'library> {
         if cancel.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
-        let scope = self.database.resolve_export(scope, locale)?.wait()?;
+        let scope = self
+            .database
+            .resolve_export_cancellable(scope, locale, cancel.clone())?
+            .wait()?;
+        if cancel.is_cancelled() {
+            return Err(StorageError::Cancelled);
+        }
         let destination = Destination::open(destination)?;
         if !self.retained.is_empty() {
             return Err(StorageError::CustodyRecoveryRequired);
@@ -392,17 +413,24 @@ impl Running<'_, '_, '_> {
     /// Observation only. A copier calls this immediately before source open.
     /// Previously skipped/conflicted rows retain their original disposition.
     pub fn check_item(&self, index: usize) -> Result<Disposition> {
-        let preview = self
-            .plan
-            .preview
-            .items
-            .get(index)
-            .ok_or(ExportError::InvalidScope)?;
-        if preview.disposition != Disposition::Ready {
-            return Ok(preview.disposition);
-        }
-        let original = self.plan.scope.stories[index].clone();
-        self.owner.database.read(move|tx|{
+        check_item(self.owner.database, &self.plan, index)
+    }
+}
+pub(super) fn check_item(
+    database: &Database<'_>,
+    plan: &Prepared,
+    index: usize,
+) -> Result<Disposition> {
+    let preview = plan
+        .preview
+        .items
+        .get(index)
+        .ok_or(ExportError::InvalidScope)?;
+    if preview.disposition != Disposition::Ready {
+        return Ok(preview.disposition);
+    }
+    let original = plan.scope.stories[index].clone();
+    database.read(move|tx|{
             use rusqlite::OptionalExtension;
             let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents r WHERE r.story_id=s.id)",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get_ref(4)?.as_bytes()?.to_vec(),r.get_ref(5)?.as_bytes()?.to_vec(),r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
             let Some((id,broken,hash,bytes,path,name,format,validation))=current else {return Ok(Disposition::Skipped(Issue::StoryUnavailable));};
@@ -412,7 +440,6 @@ impl Running<'_, '_, '_> {
             else if validation!="valid" {Disposition::Skipped(if validation=="missing"{Issue::ArchiveMissing}else{Issue::ArchiveInvalid})}
             else{Disposition::Ready})
         })?.wait()
-    }
 }
 pub(super) fn inspect(
     files: &LibraryFiles<'_>,
@@ -477,6 +504,7 @@ mod tests {
             let directory = tempfile::tempdir()?;
             let destination = Destination::open(directory.path())?;
             let mut exports = Exports::new(&db);
+            assert!(!exports.native_recovery_required());
             let out = if acquisition {
                 let failure = destination
                     .create_with_failed_acquisition()
@@ -491,6 +519,8 @@ mod tests {
             assert!(out.retention_required());
             exports.retain_output(out);
             assert_eq!(exports.retained_outputs(), 1);
+            assert!(exports.native_recovery_required());
+            assert!(Exports::new(&db).native_recovery_required());
             assert!(db.read(|_| Ok(())).is_err());
             drop(exports);
             assert!(db.close().is_err());
@@ -513,6 +543,7 @@ mod tests {
         let mut db = Database::open_isolated(&library)?;
         let directory = tempfile::tempdir()?;
         let destination = Destination::open(directory.path())?;
+        assert!(!Exports::new(&db).native_recovery_required());
         let mut output = destination.create_output().map_err(|f| f.cause)?;
         let bytes = b"published";
         output.stream(
@@ -528,6 +559,7 @@ mod tests {
         exports.retain_output(output);
         assert_eq!(exports.retained_outputs(), 1);
         let mut replacement = Exports::new(&db);
+        assert!(replacement.native_recovery_required());
         assert!(
             replacement
                 .prepare(

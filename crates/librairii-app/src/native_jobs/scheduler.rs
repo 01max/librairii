@@ -98,6 +98,19 @@ impl Handle {
     pub fn take_dirty(&self) -> bool {
         self.0.dirty.swap(false, Ordering::AcqRel)
     }
+    pub fn has_critical_work(&self) -> bool {
+        let state = self.0.state.lock().unwrap_or_else(|e| e.into_inner());
+        self.0.progress.iter().any(|slot| {
+            slot.lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .latest
+                .as_ref()
+                .is_some_and(|p| {
+                    p.phase != super::Phase::Running
+                        && state.inflight.iter().any(|(id, _, _)| *id == p.item)
+                })
+        })
+    }
     pub fn take_progress(&self) -> Vec<ProgressUpdate> {
         self.0
             .progress

@@ -27,5 +27,27 @@
     "LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
     "LICENSE-APACHE": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
     "LICENSE.chromium": "845022e0c1db1abb41a6ba4cd3c4b674ec290f3359d9d3c78ae558d4c0ed9308"
-  }
+  },
+  "local_corrections": [
+    {
+      "id": "librairii-task15-logical-node-lifetime",
+      "origin": "Local Librairii correction; no upstream commit is claimed",
+      "files": [
+        "src/adapter.rs",
+        "src/node.rs"
+      ],
+      "behavior": "Retain registered logical nodes across temporary filtering; reconcile exposed parents, states and interface deltas; dispose and unregister only nodes actually removed from the consumer tree.",
+      "regressions": [
+        "repeated filtering and restoration without duplicate interfaces",
+        "hidden subtree restoration and actual hidden deletion",
+        "hidden role/interface changes and silent removal of never-exported nodes",
+        "transparent ancestor hide/reveal, including initially hidden descendants"
+      ],
+      "qualification": "Task15 source-bound Linux X11/Wayland Orca and three-target native receipts on PR66 and in the canonical handover; historical section2 sources remain unchanged.",
+      "references": [
+        "https://docs.gtk.org/atspi2/enum.StateType.html",
+        "https://raw.githubusercontent.com/GNOME/at-spi2-core/AT_SPI2_CORE_2_52_0/atspi/atspi-misc.c"
+      ]
+    }
+  ]
 }

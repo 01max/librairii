@@ -4,7 +4,11 @@
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod interface;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod navigation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use interface::InterfacePreferences;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) mod relocation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -253,10 +257,19 @@ impl ProfileBinding<'_> {
         if self.state.fenced.load(Ordering::Acquire) || self.state.frozen.load(Ordering::Acquire) {
             return Err(StorageError::ProfileRestartRequired);
         }
-        let mut state = self.store.reserve_inner(true)?;
+        // Validation does not publish profile state. Keep it present while
+        // checking retained documents, so a concurrent reader or
+        // publisher waits for this check instead of observing a false Busy.
+        // Actual publication still takes the state out and refuses peers.
+        let mut slot = self
+            .store
+            .state
+            .lock()
+            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let state = slot.as_mut().ok_or(StorageError::ProfileBusy)?;
         let result = (|| {
-            self.store.load_locked(&mut state)?;
-            self.store.revalidate_settings(&state)?;
+            self.store.load_locked(state)?;
+            self.store.revalidate_settings(state)?;
             self.store.require_unrecovered_namespace()?;
             if self.state.fenced.load(Ordering::Acquire)
                 || !state
@@ -381,7 +394,10 @@ pub struct NativeProfileStore {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     namespace: Directory,
     // None means one bounded synchronous operation owns the actual state.
-    // The mutex protects admission/transfer only, never callbacks or I/O.
+    // Publication transfers state out before callbacks or I/O. Read-only
+    // binding validation keeps it under this mutex during bounded filesystem
+    // checks, including a retained relocation journal of at most 64 MiB.
+    // No caller callback, SQL or filesystem copy runs under this mutex.
     state: Mutex<Option<State>>,
 }
 
@@ -760,7 +776,7 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(5, &crate::database::WorkCancellation::default())
+            .entries(6, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
@@ -770,6 +786,7 @@ impl NativeProfileStore {
                 && entry != SETTINGS
                 && entry != "navigation.json"
                 && entry != "shelf-warnings.json"
+                && entry != "interface.json"
                 && entry != relocation::JOURNAL
         }) {
             return Err(StorageError::RecoveryBindingRequired);
@@ -787,6 +804,8 @@ impl NativeProfileStore {
             self.namespace
                 .open_regular(std::ffi::OsStr::new(name), rustix::fs::OFlags::RDONLY)?;
         }
+        self.namespace
+            .regular_entry(std::ffi::OsStr::new("interface.json"))?;
         Ok(())
     }
 
@@ -993,8 +1012,10 @@ impl NativeProfileStore {
             Ok(staged) => staged,
             Err(failure) => {
                 let failure = *failure;
-                state.poison();
-                state.recovery_allocations.push(failure.allocation);
+                if !failure.creation_refused || failure.allocation.file.is_some() {
+                    state.poison();
+                    state.recovery_allocations.push(failure.allocation);
+                }
                 return Err(failure.cause);
             }
         };
@@ -1263,6 +1284,31 @@ mod tests {
         let directory = roots.profile().join("native");
         let store = NativeProfileStore::create_fresh(&directory)?;
         store.update(|_| Ok(()))?;
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = fs::metadata(&directory)?.permissions();
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o500))?;
+        let refused = store.update(|p| {
+            p.language = "fr".into();
+            Ok(())
+        });
+        fs::set_permissions(&directory, permissions)?;
+        assert!(refused.is_err());
+        assert_eq!(
+            store
+                .load()?
+                .ok_or("refusal lost profile")?
+                .profile()
+                .language,
+            "en"
+        );
+        assert!(
+            store
+                .state
+                .lock()
+                .map_err(|_| "test state")?
+                .as_ref()
+                .is_some_and(|s| !s.poisoned && s.recovery_allocations.is_empty())
+        );
         let result = store.update_with_flush(
             |p| {
                 p.language = "fr".into();
@@ -1646,6 +1692,58 @@ mod tests {
             Ok(())
         })?;
         assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
+        Ok(())
+    }
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn binding_revalidation_does_not_publish_busy_state_to_profile_readers()
+    -> std::result::Result<(), Box<dyn Error>> {
+        use std::sync::Barrier;
+        let roots = TestRoots::new()?;
+        let store = NativeProfileStore::create_fresh(&roots.profile().join("native"))?;
+        // Profile-only admission fixture; native runtime authority remains
+        // covered by the real owned-copy integration tests.
+        let proposed = Profile {
+            version: 1,
+            language: "en".into(),
+            root: roots.library().to_str().ok_or("root UTF8")?.into(),
+            library_id: "A0000000-0000-4000-8000-000000000001".into(),
+            complete: true,
+            recovering: false,
+        };
+        let binding = store.bind_verified_copy(&proposed)?;
+        let start = Barrier::new(2);
+        let busy_reads =
+            std::thread::scope(|scope| -> std::result::Result<usize, Box<dyn Error>> {
+                let observer = scope.spawn(|| -> Result<()> {
+                    start.wait();
+                    for _ in 0..256 {
+                        match binding.revalidate() {
+                            Ok(()) | Err(StorageError::ProfileBusy) => (),
+                            Err(error) => return Err(error),
+                        }
+                        std::thread::yield_now();
+                    }
+                    Ok(())
+                });
+                start.wait();
+                let mut busy = 0;
+                for _ in 0..256 {
+                    match store.load() {
+                        Ok(Some(document)) => assert_eq!(document.profile(), &proposed),
+                        Err(StorageError::ProfileBusy) => busy += 1,
+                        result => return Err(format!("unexpected profile read: {result:?}").into()),
+                    }
+                    std::thread::yield_now();
+                }
+                observer.join().map_err(|_| "binding observer panicked")??;
+                Ok(busy)
+            })?;
+        assert_eq!(
+            busy_reads, 0,
+            "read-only binding validation claimed to be a profile publication"
+        );
+        binding.revalidate()?;
         Ok(())
     }
 }

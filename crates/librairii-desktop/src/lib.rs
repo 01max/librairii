@@ -5,6 +5,8 @@ pub mod imports;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod library;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod metadata_jobs;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod presentation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod settings;
@@ -13,4 +15,19 @@ pub mod startup;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod browsing;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod maintenance;
 pub mod menus;
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod workflows;
+
+mod host;
+
+mod export_preparation;
+
+mod startup_flow;
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod artwork;
+pub mod preferences;

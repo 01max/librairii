@@ -26,6 +26,14 @@ runs:
           target/debug/
           target/*/debug/
           fuzz/target/
+    - name: Restore pinned native observer build outputs
+      if: ${{ inputs.tools == 'quality' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        key: rust-native-observer-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('rust-toolchain.toml', 'fuzz/rust-toolchain.toml', '**/Cargo.toml', '**/Cargo.lock') }}
+        path: |
+          target/native-observer/
+          target/*/native-observer/
     - name: Restore compiled helper tools
       id: tools-cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

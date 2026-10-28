@@ -17,6 +17,19 @@ pub struct ClosedNativeLibrary<'profile> {
     pub(super) library: NativeLibrary<'profile>,
 }
 impl<'profile> NativeLibrary<'profile> {
+    /// Read-only size observation for native confirmation. This is deliberately
+    /// not a relocation manifest or copy/cleanup authority. The closed source
+    /// is captured and verified again by the existing relocation protocol.
+    pub fn relocation_preview_summary(
+        &self,
+        cancel: &WorkCancellation,
+    ) -> Result<crate::settings::ManifestSummary> {
+        self.revalidate(cancel)?;
+        let summary =
+            crate::settings::RelocationManifest::capture(&self.root, cancel)?.summary()?;
+        self.revalidate(cancel)?;
+        Ok(summary)
+    }
     pub fn preview_relocation(
         &self,
         selected: &Path,

@@ -4,7 +4,11 @@ use std::{collections::BTreeMap, sync::Arc};
 #[derive(Clone, Debug)]
 pub struct SourceChangePreview {
     pub shelf_id: ShelfId,
+    pub revision: i64,
     pub shelf_name: String,
+    pub approved_count: i64,
+    pub unavailable_count: i64,
+    pub exclusion_count: usize,
     pub sources: Vec<Source>,
     pub detached: Vec<Source>,
     pub(super) affected: Vec<Candidate>,
@@ -57,7 +61,11 @@ pub(super) fn evaluate(
     let shelf = read(tx, id)?;
     let mut preview = SourceChangePreview {
         shelf_id: id,
+        revision: shelf.revision,
         shelf_name: shelf.name,
+        approved_count: shelf.count,
+        unavailable_count: shelf.unavailable_count,
+        exclusion_count: curation::exclusions(tx, id)?.len(),
         sources: wanted,
         detached,
         affected: Vec::new(),

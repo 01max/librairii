@@ -4,3 +4,8 @@ pub mod archives;
 pub mod lunii;
 
 pub mod thumbnails;
+
+pub mod datetime;
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod identities;

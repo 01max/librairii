@@ -68,6 +68,27 @@ pub fn verify(ui: &DesktopWindow, menus: &Menus) -> Result {
                 "native application visibility action is not localized",
             )?;
         }
+        for (index, label) in (if french {
+            [
+                "Historique…",
+                "Emplacement de la bibliothèque…",
+                "Enregistrer le ZIP de diagnostic…",
+            ]
+        } else {
+            ["History…", "Library Location…", "Save Diagnostic ZIP…"]
+        })
+        .into_iter()
+        .enumerate()
+        {
+            check(
+                app.itemAtIndex(9 + index as isize)
+                    .ok_or("native maintenance menu item missing")?
+                    .title()
+                    .to_string()
+                    == label,
+                "native maintenance menu is not localized",
+            )?;
+        }
         check(
             shortcut(",", Flags::Command, 43)?,
             "Command-comma was not handled natively",
@@ -158,6 +179,44 @@ pub fn verify(ui: &DesktopWindow, menus: &Menus) -> Result {
     )?;
     check(ui.get_query() == "After", "native Redo event was lost")?;
     ui.set_query("".into());
+    ui.invoke_open_dialog(8);
+    ui.invoke_focus_filters();
+    key(ui, "Before".into())?;
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "modal editor Select All missing",
+    )?;
+    key(ui, "After".into())?;
+    check(
+        ui.get_filter_search_query() == "After" && ui.get_query().is_empty(),
+        "native editing targeted the background search",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "modal Undo missing")?;
+    check(
+        ui.get_filter_search_query().is_empty(),
+        "modal Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second modal Undo missing",
+    )?;
+    check(
+        ui.get_filter_search_query() == "Before",
+        "modal Undo did not restore removal",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "modal Redo missing",
+        )?;
+    }
+    check(
+        ui.get_filter_search_query() == "After",
+        "modal Redo lost the focused editor",
+    )?;
+    key(ui, slint::platform::Key::Escape.into())?;
+    ui.set_filter_search_query("".into());
     check(
         menus.owns_native_menu(),
         "native ownership changed after edit actions",
@@ -173,6 +232,100 @@ pub fn request_quit(ui: &DesktopWindow, menus: &Menus) -> Result {
     menus.dispatch(ui);
     Ok(())
 }
+/// Native edit actions must target the focused tag field, never the search.
+pub fn bulk_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    ui.invoke_focus_clear_bulk();
+    check(ui.get_clear_bulk_focused(), "Clear selection did not focus")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "bulk Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_clear_bulk_focused(),
+        "Settings lost the Clear selection invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_clear_bulk_focused(),
+        "About lost the Clear selection invoker",
+    )?;
+    Ok(())
+}
+pub fn flag_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(ui.get_panel_flag_focused(), "panel flag was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "flag Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_panel_flag_focused(),
+        "Settings lost the flag invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(ui.get_panel_flag_focused(), "About lost the flag invoker")?;
+    Ok(())
+}
+pub fn bulk_flag_undo_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(ui.get_bulk_flag_undo_focused(), "bulk Undo was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "bulk Undo Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_bulk_flag_undo_focused(),
+        "Settings lost the bulk Undo invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_bulk_flag_undo_focused(),
+        "About lost the bulk Undo invoker",
+    )?;
+    Ok(())
+}
+/// Native edit actions must target the focused tag field, never the search.
+pub fn tag_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_tag_label();
+    let query = ui.get_query();
+    ui.invoke_focus_tag_label();
+    menus.dispatch(ui);
+    check(shortcut("a", Flags::Command, 0)?, "tag Select All missing")?;
+    key(ui, "Edited tag label".into())?;
+    check(
+        ui.get_tag_label() == "Edited tag label" && ui.get_query() == query,
+        "native tag editing targeted the background query",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "tag Undo missing")?;
+    check(
+        ui.get_tag_label().is_empty(),
+        "tag Undo did not remove insertion",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "second tag Undo missing")?;
+    check(
+        ui.get_tag_label() == original,
+        "tag Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "tag Redo missing",
+        )?;
+    }
+    check(
+        ui.get_tag_label() == "Edited tag label" && ui.get_query() == query,
+        "tag Redo lost the focused editor",
+    )?;
+    ui.set_tag_label(original);
+    Ok(())
+}
 pub fn about(ui: &DesktopWindow, menus: &Menus) -> Result {
     menus.dispatch(ui);
     let app = main_menu()?
@@ -182,4 +335,164 @@ pub fn about(ui: &DesktopWindow, menus: &Menus) -> Result {
     app.performActionForItemAtIndex(0);
     menus.dispatch(ui);
     check(ui.get_dialog() == 1, "native About Slint event was lost")
+}
+
+/// The actual native menus return focus to an inspector control, including when
+/// the previous browser/action key differs from the current invoker.
+pub fn inspector_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "native Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    check(
+        ui.get_dialog() == 2,
+        "native Settings did not open from inspector",
+    )?;
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_inspector_technical_focused(),
+        "native Settings lost the inspector invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_inspector_technical_focused(),
+        "native About lost the inspector invoker",
+    )?;
+    Ok(())
+}
+
+pub fn collection_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_collection_name();
+    let query = ui.get_query();
+    ui.invoke_focus_collection_name();
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "Collection Select All missing",
+    )?;
+    key(ui, "Edited Collection label".into())?;
+    check(
+        ui.get_collection_name() == "Edited Collection label" && ui.get_query() == query,
+        "native Collection editing targeted the background query",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "Collection Undo missing")?;
+    check(
+        ui.get_collection_name().is_empty(),
+        "Collection Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second Collection Undo missing",
+    )?;
+    check(
+        ui.get_collection_name() == original,
+        "Collection Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "Collection Redo missing",
+        )?;
+    }
+    check(
+        ui.get_collection_name() == "Edited Collection label" && ui.get_query() == query,
+        "Collection Redo lost the focused editor",
+    )?;
+    ui.set_collection_name(original);
+    Ok(())
+}
+
+pub fn preview_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let invoker = ui.get_focused_key();
+    check(invoker < 0, "preview was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "preview Settings missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_focused_key() == invoker,
+        "Settings lost preview invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_focused_key() == invoker,
+        "About lost preview invoker",
+    )
+}
+
+pub fn shelf_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_shelf_name();
+    let query = ui.get_query();
+    ui.invoke_focus_shelf_name();
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "Shelf Select All missing",
+    )?;
+    key(ui, "Edited Shelf label".into())?;
+    check(
+        ui.get_shelf_name() == "Edited Shelf label" && ui.get_query() == query,
+        &format!(
+            "native Shelf editing targeted the background query: dialog={}, editing={}, name={:?}, query={:?}, old_query={:?}",
+            ui.get_dialog(),
+            ui.get_text_edit_focused(),
+            ui.get_shelf_name(),
+            ui.get_query(),
+            query
+        ),
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "Shelf Undo missing")?;
+    check(
+        ui.get_shelf_name().is_empty(),
+        "Shelf Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second Shelf Undo missing",
+    )?;
+    check(
+        ui.get_shelf_name() == original,
+        "Shelf Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "Shelf Redo missing",
+        )?;
+    }
+    check(
+        ui.get_shelf_name() == "Edited Shelf label" && ui.get_query() == query,
+        "Shelf Redo lost the focused editor",
+    )?;
+    ui.set_shelf_name(original);
+    Ok(())
+}
+
+pub fn shelf_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    ui.invoke_focus_browser();
+    check(
+        ui.get_approved_has_focus() && ui.get_focused_key() == 31,
+        "approved member focus was not recorded",
+    )?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "Shelf Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        !ui.get_modal() && ui.get_approved_has_focus(),
+        "Settings lost approved-list focus",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        !ui.get_modal() && ui.get_approved_has_focus(),
+        "About lost approved-list focus",
+    )
 }
