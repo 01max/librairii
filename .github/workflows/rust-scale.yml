@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
       - name: Install signed Ubuntu compiler prerequisites
         if: runner.os == 'Linux'
-        run: .github/scripts/ubuntu-apt build-essential pkg-config python3 clang cmake ninja-build libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth xdotool dbus-x11 libvulkan1 mesa-vulkan-drivers mesa-utils
+        run: .github/scripts/ubuntu-apt build-essential pkg-config python3 clang cmake ninja-build libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth xdotool dbus-x11 libvulkan1 mesa-vulkan-drivers mesa-utils python3-pyatspi at-spi2-core libglib2.0-bin
       - uses: ./.github/actions/rust-environment
         with:
           tools: quality

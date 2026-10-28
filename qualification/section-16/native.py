@@ -58,7 +58,7 @@ def linux_input(pid, output):
         search()
         wait(lambda: state(output)['running_import'])
         start = time.monotonic()
-        subprocess.run(['xdotool', 'mousemove', str(point['x']), str(point['y']), 'click', '1'], check=True, timeout=10)
+        subprocess.run(['xdotool', 'mousemove', str(point['x']), str(point['y']), 'click', '--delay', '0', '1'], check=True, timeout=10)
         end = wait(lambda: (s := state(output)) and s['focus_key'] == 31 and s, 1)
         pointers.append((time.monotonic() - start) * 1000)
         pointer_states.append(end)
@@ -102,6 +102,13 @@ def linux_input(pid, output):
             'method': 'pre-xdotool native post through actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End'}
 
 
+def timed_arguments(binary, configuration, destination):
+    metrics = destination / 'native-time.log'
+    clock = ['/usr/bin/time', '-o', str(metrics)]
+    clock += ['-l', '-p'] if platform.system() == 'Darwin' else ['-f', 'qualification_time; wall=%e; user=%U; system=%S; maxrss_kib=%M']
+    return clock + [str(binary), '--run', str(configuration), str(destination)]
+
+
 def inspect(binary, destination, backend, helper=None):
     destination.mkdir()
     (destination / '.native-scale').write_text('native-scale-16\n')
@@ -117,10 +124,13 @@ def inspect(binary, destination, backend, helper=None):
         log = (destination / 'execution.log').open('w')
         environment = dict(os.environ, SLINT_BACKEND=backend, SLINT_SCALE_FACTOR='1', SLINT_DEBUG_PERFORMANCE='refresh_lazy,console')
         start = time.monotonic()
-        process = subprocess.Popen([str(binary), '--run', str(configuration), str(destination)], env=environment, stdout=log, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(timed_arguments(binary, configuration, destination), env=environment, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         wait(lambda: (destination / 'ready').exists() and state(destination))
         report['development_launch_ready_ms'] = (time.monotonic() - start) * 1000
         report['initial'] = state(destination)
+        actual_pid = report['initial']['pid']
+        if os.getpgid(actual_pid) != process.pid:
+            raise ValueError('observed native PID is outside the owned process group')
         (destination / 'start-load').touch()
         wait(lambda: (s := state(destination)) and s['running_import'])
         pages = []
@@ -138,12 +148,12 @@ def inspect(binary, destination, backend, helper=None):
         if platform.system() == 'Darwin':
             if helper is None:
                 raise ValueError('native macOS helper required')
-            raw = subprocess.run([str(helper), str(process.pid), str(destination)], capture_output=True, text=True, timeout=240)
+            raw = subprocess.run([str(helper), str(actual_pid), str(destination)], capture_output=True, text=True, timeout=240)
             (destination / 'input.log').write_text(raw.stdout + raw.stderr)
             raw.check_returncode()
             measured = json.loads(raw.stdout)
         else:
-            measured = linux_input(process.pid, destination)
+            measured = linux_input(actual_pid, destination)
         report['input'] = measured
         for key, count in [('input_ms', 64), ('pointer_ms', 64), ('navigation_ms', 20)]:
             if len(measured[key]) != count or any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in measured[key]):
