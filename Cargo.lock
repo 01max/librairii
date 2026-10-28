@@ -2764,6 +2764,7 @@ version = "0.0.0"
 dependencies = [
  "i-slint-backend-winit",
  "image",
+ "libc",
  "librairii-adapters",
  "librairii-app",
  "librairii-core",

@@ -31,6 +31,10 @@ CRC-checked full RGB decodes
 and consumption of every pixel. Compressed/output scratch is reused; decoded
 results are not cached. Its independent procedural RGB sum is1,173,893,696 per
 batch and wall p95 remains≤50ms. No failure is replaced by a retry/sample.
+Process CPU accompanies every wall sample; artwork also records actual lookup,
+read and full-decode wall/CPU phases. These explain CPU work versus scheduling or
+worker wait and never replace the unchanged wall gate. Failed measurements stay
+in the diagnostic record.
 
 `scripts/verify-native-scale.py` requires clean committed source and matching
 native hardware/compiler. It retains the Cargo-reported executable/profile,

@@ -1,5 +1,5 @@
 use super::{
-    Result,
+    Result, cpu,
     fixture::{self, Story},
 };
 use image::ImageDecoder;
@@ -20,17 +20,20 @@ fn measured(
 ) -> Result<Value> {
     assert_eq!(action()?, expected, "complete warmup result");
     let mut samples = Vec::new();
+    let mut cpu_ms = Vec::new();
     for _ in 0..sample_count {
+        let process_start = cpu::milliseconds()?;
         let started = Instant::now();
         let actual = action()?;
         samples.push(started.elapsed().as_secs_f64() * 1000.);
+        cpu_ms.push(cpu::milliseconds()? - process_start);
         assert_eq!(actual, expected, "result changed during measurement");
     }
     let mut sorted = samples.clone();
     sorted.sort_by(f64::total_cmp);
     let p95 = sorted[(sample_count * 95).div_ceil(100) - 1];
     Ok(
-        json!({"wall_ms":samples,"p95_ms":p95,"budget_ms":budget_ms,"passed":p95<=budget_ms,"result":expected}),
+        json!({"wall_ms":samples,"process_cpu_ms":cpu_ms,"p95_ms":p95,"budget_ms":budget_ms,"passed":p95<=budget_ms,"result":expected}),
     )
 }
 
@@ -218,24 +221,43 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
     );
     let mut compressed = Vec::new();
     let mut pixels = vec![0; 320 * 400 * 3];
+    let mut phases = Vec::new();
     let load = || -> Result<Value> {
         let mut witness = 0_u64;
+        let mut phase_wall = [0.; 3];
+        let mut phase_cpu = [0.; 3];
         for id in &ids {
             // Include the real record lookup for every local asset load.
+            let cpu_start = cpu::milliseconds()?;
+            let start = Instant::now();
             let path = lookup(*id)?;
+            phase_wall[0] += start.elapsed().as_secs_f64() * 1000.;
+            phase_cpu[0] += cpu::milliseconds()? - cpu_start;
+            let cpu_start = cpu::milliseconds()?;
+            let start = Instant::now();
             compressed.clear();
             std::io::Read::read_to_end(&mut fs::File::open(root.join(path))?, &mut compressed)?;
+            phase_wall[1] += start.elapsed().as_secs_f64() * 1000.;
+            phase_cpu[1] += cpu::milliseconds()? - cpu_start;
+            let cpu_start = cpu::milliseconds()?;
+            let start = Instant::now();
             let decoder = image::codecs::png::PngDecoder::new(Cursor::new(&compressed))?;
             assert_eq!(decoder.dimensions(), (320, 400));
             assert_eq!(decoder.total_bytes(), pixels.len() as u64);
             decoder.read_image(&mut pixels)?;
             witness += pixels.iter().map(|byte| u64::from(*byte)).sum::<u64>();
+            phase_wall[2] += start.elapsed().as_secs_f64() * 1000.;
+            phase_cpu[2] += cpu::milliseconds()? - cpu_start;
         }
+        phases.push(json!({"lookup_wall_ms":phase_wall[0],"lookup_cpu_ms":phase_cpu[0],
+            "read_wall_ms":phase_wall[1],"read_cpu_ms":phase_cpu[1],"decode_wall_ms":phase_wall[2],"decode_cpu_ms":phase_cpu[2]}));
         Ok(json!({"files":24,"pixel_sum":witness}))
     };
     // Independent frozen generator RGB sum, not another decoder warmup.
     let wanted = json!({"files":24,"pixel_sum":1_173_893_696_u64});
-    metrics.insert("artworkLoad".into(), measured(load, wanted, 50., 100)?);
+    let mut artwork = measured(load, wanted, 50., 100)?;
+    artwork["phases_warmup_then_100"] = json!(phases);
+    metrics.insert("artworkLoad".into(), artwork);
     let passed = metrics.values().all(|metric| metric["passed"] == true);
     Ok(json!({"passed":passed,"metrics":metrics,"query_plans":plans}))
 }

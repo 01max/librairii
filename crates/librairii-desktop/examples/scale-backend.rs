@@ -1,4 +1,6 @@
 //! Retained Task 1 workload through actual Rust database workers, never user data.
+#[path = "scale-backend/cpu.rs"]
+mod cpu;
 #[path = "scale-backend/fixture.rs"]
 mod fixture;
 #[path = "scale-backend/queries.rs"]

@@ -53,6 +53,9 @@ def verify_queries(report):
         count = 100 if name == 'artworkLoad' else 20
         if len(samples) != count or any(type(n) not in (int, float) or not math.isfinite(n) or n < 0 for n in samples):
             raise ValueError('invalid complete warmed samples: ' + name)
+        cpu = metric['process_cpu_ms']
+        if len(cpu) != count or any(type(n) not in (int, float) or not math.isfinite(n) or n < 0 for n in cpu):
+            raise ValueError('complete process CPU diagnostics required: ' + name)
         p95 = sorted(samples)[math.ceil(count * 0.95) - 1]
         if (metric['budget_ms'] != budget or metric['p95_ms'] != p95
                 or metric['passed'] != (p95 <= budget) or not metric['passed']):
@@ -71,6 +74,11 @@ def verify_queries(report):
         raise ValueError('six frozen Collection counts differ')
     if queries['metrics']['artworkLoad']['result'] != {'files': 24, 'pixel_sum': 1173893696} or not queries['passed']:
         raise ValueError('complete local artwork workload missing')
+    phases = queries['metrics']['artworkLoad']['phases_warmup_then_100']
+    phase_keys = {p + '_' + clock + '_ms' for p in ['lookup', 'read', 'decode'] for clock in ['wall', 'cpu']}
+    if len(phases) != 101 or any(set(p) != phase_keys or any(type(n) not in (int, float)
+            or not math.isfinite(n) or n < 0 for n in p.values()) for p in phases):
+        raise ValueError('complete warmup and measured artwork phase diagnostics required')
     plans = queries['query_plans']
     if set(plans) != set(BUDGETS):
         raise ValueError('all measured query/count/artwork plans required')
