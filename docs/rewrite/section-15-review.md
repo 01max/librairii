@@ -405,3 +405,11 @@ The observer expectation is updated to the current production label, retaining
 list focus, Home/End selection, warning, modal, French and compact-workspace
 assertions. Run40644775812 remains failed diagnostic evidence; its complete
 spoken run is retained before fresh source-bound qualification of this correction.
+
+The checked observer profile has separate Cargo output directories, which the
+existing development-output cache did not retain. The quality environment now
+caches those host and target directories separately using the same reviewed cache
+action and exact compiler/manifest/lock identity, partitioned by runner OS and
+architecture. Cargo still validates source fingerprints; the sealer still checks
+compiler profile fields and the retained executable. No result, runtime deadline
+or qualification receipt is cached or substituted for execution.
