@@ -190,8 +190,11 @@ The separately pinned nightly fuzz lane now also drives saved-query/reference/
 migration and native URL/history/request codecs, with retained JSON, overflow,
 Unicode and URL seeds. Its30-second,16KiB-input,2-second-case and512MiB bounds
 match the archive/JSON lane; active corpora and crash outputs live in owned copied
-working directories. A local diagnostic completed1,841,529 codec inputs in31s
-with no crash. Final clean-source focused coverage/fuzz evidence remains required.
+working directories. Independent URL/hash and JSON frames include valid matching Library, Collection,
+legacy dynamic Collection and curated Shelf history seeds. Source review caught
+and corrected an earlier harness that could only reach history rejection; its
+1,841,529-input diagnostic is retained without a successful-history coverage claim.
+Final clean-source focused coverage/fuzz evidence remains required.
 
 Six observed test identities append to the prior622-entry baseline (628 total);
 all old identities, target scopes and historical source-map digests remain exact.
