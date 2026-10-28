@@ -879,7 +879,10 @@ fn run_session<'p>(
         match active {
             Ok(Some(action)) => return Ok(action),
             Ok(None) => {},
-            Err(_) => {
+            Err(error) => {
+                // Keep the initiating cause in process diagnostics; the public
+                // recovery presentation continues to use localized guidance.
+                eprintln!("native_controller_recovery; revision={revision}; cause={error:?}");
                 crate::presentation::recovery_with_workflows(receiver, mailbox, stop, language, workflows.clone(), |requested| {
                     store.save_language(&mut settings, requested)
                 })?;

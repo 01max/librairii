@@ -257,3 +257,16 @@ product startup, interaction, query and Shelf timing gates. The envelope is now
 180seconds, with a raw wall-time/completion receipt on success or failure. All
 176 capture, geometry, focus and callback obligations remain required. A fresh
 complete run must qualify the change; no scheduler cause is inferred.
+
+The same Intel scale run failed artwork139.199ms (process CPU139.253ms) and
+deep paging127.575ms (CPU124.78ms). Pure descheduling cannot explain those
+CPU-backed failures; their underlying cost remains unidentified. Native GPU
+preconditioning also stalled at revision109 with two active imports. Its later
+restart-required error does not establish the cause, and software did not run.
+The observer now retains failure-only controller phase/status/revisions and
+bounded operation metadata before shutdown can mask its triggering error. A
+separate shutdown receipt distinguishes window, timer and worker close errors.
+The controller also retains its initiating recovery cause in process diagnostics,
+while the UI continues to show localized recovery guidance. Once
+finish is requested it stops admitting further import/page work and still waits
+for positive worker shutdown. No failed interaction becomes an accepted sample.

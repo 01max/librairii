@@ -69,14 +69,29 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let mut last_capture = 0;
     let mut previous_state = Vec::new();
     let mut geometry_sequence = 0u64;
+    let failure_output = output.clone();
+    let mut last_projection = None;
     timer.start(slint::TimerMode::Repeated,Duration::from_millis(16),move||{
+      let mut stage="window";
       let result=(||->Result{
         let Some(ui)=weak.upgrade() else{return Err("window disappeared".into())};
         if !ui.window().has_winit_window() {return Ok(())}
+        // Stop admission before any further import/page offers. The real worker
+        // still joins every owned job before this observer can report success.
+        if output.join("finish").exists(){
+            pending.borrow().request_shutdown();
+            if pending.borrow().finished(){slint::quit_event_loop()?;}
+            return Ok(())
+        }
+        stage="projection";
         view.borrow_mut().resize(&ui);menus.dispatch(&ui);
-        if let Some(s)=pending.borrow().take_snapshot(){view.borrow_mut().accept(&ui,s,pending.borrow().revision());}
+        if let Some(s)=pending.borrow().take_snapshot(){
+            let revision=s.revision;let phase=s.phase;let expected=pending.borrow().revision();
+            let accepted=view.borrow_mut().accept(&ui,s,expected);
+            last_projection=Some((revision,phase,expected,accepted));
+        }
         let snapshot=&view.borrow().snapshot;
-        if snapshot.phase==Phase::Recovery{return Err(format!("scale observer entered recovery: {}",snapshot.status).into())}
+        if snapshot.phase==Phase::Recovery{stage="recovery";return Err(format!("scale observer entered recovery: {}",snapshot.status).into())}
         if !ready && snapshot.phase==Phase::Library && snapshot.page.as_ref().is_some_and(|p|p.total==1000){
             ready=true;ui.invoke_focus_search();atomic(&output.join("ready"),b"ready\n")?;
             println!("scale_ready; pid={}; preparation_excluded=true",std::process::id());
@@ -96,8 +111,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         let active_imports=snapshot.workflows.operations.cards.iter().filter(|c|matches!(c.operation.state,OperationState::Running|OperationState::Queued)).count();
         let running=active_imports>0;
         let loading=output.join("start-load").exists();
+        stage="import-offer";
         if loading && ready && active_imports<2 && snapshot.workflows.operations.preparing.is_none() && offered_at.elapsed()>Duration::from_millis(250) && imports<64 && let Some(generation)=snapshot.generation.clone() {pending.borrow().offer(Command::Operations{generation,action:librairii_desktop::workflows::operations::Action::Import(config.imports.clone())})?;imports+=1;offered_at=Instant::now();
         }
+        stage="page-offer";
         if let Ok(text)=fs::read_to_string(output.join("page")) {
             let requested=text.trim().parse::<i64>()?;
             if !(1..=42).contains(&requested){return Err("bounded qualification page required".into())}
@@ -106,6 +123,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
                 pending.borrow().offer(Command::Request(request))?;last_page_command=Some(requested);
             }
         }
+        stage="geometry";
         if let Ok(bytes)=fs::read(output.join("geometry")) {
             let request:serde_json::Value=serde_json::from_slice(&bytes)?;
             let sequence=request["sequence"].as_u64().ok_or("geometry sequence")?;
@@ -119,6 +137,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
                 geometry_sequence=sequence;
             }
         }
+        stage="capture";
         let sequence=fs::read_to_string(output.join("capture")).ok().and_then(|s|s.trim().parse::<u32>().ok()).unwrap_or(0);
         if sequence>last_capture {
             let pixels=ui.window().take_snapshot()?;
@@ -126,24 +145,60 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             use image::ImageEncoder;
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
+        stage="state";
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
         let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"active_imports":active_imports,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
         let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
-        if output.join("finish").exists(){pending.borrow().request_shutdown();}
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}
         if pending.borrow().finished(){slint::quit_event_loop()?;}
         Ok(())
       })();
-      if let Err(e)=result{*failure.borrow_mut()=Some(e.to_string());pending.borrow().request_shutdown();let _quit=slint::quit_event_loop();}
+      if let Err(e)=result{
+        let message=e.to_string();
+        // Retain the triggering controller observation before worker shutdown
+        // can replace it with a secondary close error. Diagnostics run only on
+        // failure, outside every accepted latency cohort.
+        let fresh=pending.borrow().take_snapshot();
+        let current=view.borrow();
+        let snapshot=fresh.as_ref().unwrap_or(&current.snapshot);
+        let operations=&snapshot.workflows.operations;
+        let cards=operations.cards.iter().take(8).map(|c|format!("{:?}",c.operation).chars().take(1024).collect::<String>()).collect::<Vec<_>>();
+        let receipt=json!({"error":message,"stage":stage,"fresh_snapshot":fresh.is_some(),"phase":format!("{:?}",snapshot.phase),
+            "displayed_revision":current.snapshot.revision,"displayed_phase":format!("{:?}",current.snapshot.phase),
+            "displayed_status":current.snapshot.status,"displayed_operations_recovery_required":current.snapshot.workflows.operations.recovery_required,
+            "last_projection":last_projection.map(|(revision,phase,expected,accepted)|json!({"revision":revision,"phase":format!("{phase:?}"),"expected_revision":expected,"accepted":accepted})),
+            "status":snapshot.status,"snapshot_revision":snapshot.revision,"pending_revision":pending.borrow().revision(),
+            "worker_finished":pending.borrow().finished(),"operations_recovery_required":operations.recovery_required,
+            "operation_error":operations.error,"operation_preparing":operations.preparing,
+            "runtime_status":format!("{:?}",operations.status),"operation_cards":cards});
+        if let Err(write)=serde_json::to_vec(&receipt).map_err(std::io::Error::other).and_then(|bytes|atomic(&output.join("failure.json"),bytes)){
+            eprintln!("native_failure_diagnostic_write_failed; {write}");
+        }
+        *failure.borrow_mut()=Some(message);pending.borrow().request_shutdown();let _quit=slint::quit_event_loop();
+      }
     });
     let shown = ui.run();
     timer.stop();
     let joined = worker.borrow_mut().finish();
-    shown?;
-    joined?;
-    if let Some(message) = error.borrow_mut().take() {
-        return Err(message.into());
+    if shown.is_err() || joined.is_err() || error.borrow().is_some() {
+        let receipt = json!({"window_error": shown.as_ref().err().map(ToString::to_string),
+            "worker_shutdown_error": joined.as_ref().err(), "timer_error": &*error.borrow()});
+        if let Err(write) = serde_json::to_vec(&receipt)
+            .map_err(std::io::Error::other)
+            .and_then(|bytes| atomic(&failure_output.join("shutdown.json"), bytes))
+        {
+            eprintln!("native_shutdown_diagnostic_write_failed; {write}");
+        }
     }
+    shown?;
+    if let Some(message) = error.borrow_mut().take() {
+        return Err(match joined {
+            Ok(()) => message,
+            Err(close) => format!("{message}; worker shutdown failed: {close}"),
+        }
+        .into());
+    }
+    joined?;
     println!("scale_complete; workers_joined=true");
     Ok(())
 }
