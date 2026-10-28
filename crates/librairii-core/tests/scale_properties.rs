@@ -43,5 +43,51 @@ fn retained_unicode_seed_preserves_observable_frozen_canonical_passes()
     assert_eq!(decoded.name, "a");
     let raw = codec::payload(&named("𝕬".into()))?;
     assert_eq!(codec::migrate(5, raw.as_bytes(), 1)?.0, r#"{"name":"a"}"#);
+    // Pin the original malformed-UTF8 discovery and its minimal Cherokee
+    // cycle to actual frozen Go outputs, including every observable pass.
+    let oracle: serde_json::Value =
+        serde_json::from_str(include_str!("data/scale-unicode-frozen-go.json"))?;
+    assert_eq!(oracle["oracle"], "73a93303a9a44cf0a92eaf525331561ed8c04460");
+    assert_eq!(
+        oracle["query_source_sha256"],
+        "569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763"
+    );
+    for (name, seed) in [
+        (
+            "original",
+            include_bytes!("../../../fuzz/corpus/query_codec/unicode-cherokee-invalid-utf8")
+                .as_slice(),
+        ),
+        (
+            "minimal",
+            include_bytes!("../../../fuzz/corpus/query_codec/unicode-cherokee-observable-passes")
+                .as_slice(),
+        ),
+    ] {
+        let case = &oracle["cases"][name];
+        let hex = case["inputHex"]
+            .as_str()
+            .ok_or("oracle input bytes missing")?;
+        assert_eq!(seed.len() * 2, hex.len());
+        for (byte, pair) in seed.iter().zip(hex.as_bytes().as_chunks::<2>().0) {
+            assert_eq!(*byte, u8::from_str_radix(std::str::from_utf8(pair)?, 16)?);
+        }
+        let version = i64::from(seed[0] % 7);
+        assert_eq!(case["version"], version);
+        assert_eq!(
+            codec::payload(&codec::decode(version, &seed[1..], 1)?)?,
+            case["decodePayload"]
+        );
+        let (encoded, owned) = codec::migrate(version, &seed[1..], 1)?;
+        assert_eq!(encoded, case["migratePayload"]);
+        assert_eq!(codec::payload(&owned)?, encoded);
+        assert_eq!(codec::encode(owned)?, case["encodeMigratedQuery"]);
+        let current = codec::decode(5, encoded.as_bytes(), 1)?;
+        assert_eq!(codec::payload(&current)?, case["decodeMigratedPayload"]);
+        assert_eq!(
+            codec::encode(current)?,
+            case["encodeDecodedMigratedPayload"]
+        );
+    }
     Ok(())
 }

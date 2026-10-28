@@ -11,16 +11,15 @@ fuzz_target!(|data: &[u8]| {
             let version = i64::from(data[0] % 7);
             let _references = codec::decode_references(version, payload, 1);
             if let Ok((encoded, query)) = codec::migrate(version, payload, 1) {
-                let current =
-                    codec::decode(5, encoded.as_bytes(), 1).expect("migrated current query");
-                assert_eq!(
-                    codec::encode(current).expect("canonical current encoding"),
-                    encoded
-                );
-                assert_eq!(
-                    codec::encode(query).expect("migrated query encoding"),
-                    encoded
-                );
+                // Migrate returns the wire form of its owned query. Further
+                // canonical passes can change Unicode again (frozen Cherokee
+                // case mapping even cycles), so do not require idempotence.
+                assert_eq!(codec::payload(&query).expect("migrated wire"), encoded);
+                // Decode-current and Encode-owned each add exactly ONE pass.
+                // Compare their results, including a possible bounded rejection.
+                let current = codec::decode(5, encoded.as_bytes(), 1)
+                    .and_then(|query| codec::payload(&query));
+                assert_eq!(current, codec::encode(query));
             }
         }
         1 => {

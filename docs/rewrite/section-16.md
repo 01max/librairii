@@ -270,3 +270,14 @@ The controller also retains its initiating recovery cause in process diagnostics
 while the UI continues to show localized recovery guidance. Once
 finish is requested it stops admitting further import/page work and still waits
 for positive worker shutdown. No failed interaction becomes an accepted sample.
+
+At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
+that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
+reduction also reproduces locally. Actual frozen Go1.26.5 Decode/Migrate/Encode
+independently produces the same alternating Cherokee forms. Both inputs are now
+tracked regression seeds, and the existing Unicode regression checks the exact
+observable passes. The fuzz target compares the migrated wire with its owned
+query's payload and the results of two entry points that each add exactly one
+canonical pass, including bounded rejection. It no longer assumes arbitrary
+Unicode idempotence. Production codec behavior and ASCII stability checks remain
+unchanged. The failed cohort stays retained; fresh complete fuzz runs are required.
