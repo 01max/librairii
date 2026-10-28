@@ -5,6 +5,7 @@ from pathlib import Path
 import platform
 import re
 import struct
+import shutil
 import subprocess
 import tempfile
 
@@ -91,8 +92,7 @@ def inspect(binary, destination, backend, native, scale=None, environment=None, 
 
 def mixed_monitors(binary, destination, native):
     destination.mkdir()
-    runtime_owner = tempfile.TemporaryDirectory(prefix='librairii-scale-display-')
-    runtime = Path(runtime_owner.name)
+    runtime = Path(tempfile.mkdtemp(prefix='librairii-scale-display-'))
     runtime.chmod(0o700)
     config = runtime / 'sway.conf'
     config.write_text('output * mode 1920x1080\nxwayland disable\nseat seat0 fallback true\ndefault_border pixel 1\nfor_window [app_id=".*"] floating enable\n')
@@ -118,8 +118,14 @@ def mixed_monitors(binary, destination, native):
         return inspect(binary, destination / 'application', 'winit-skia-software', native, environment=env, mixed=command)
     finally:
         compositor.terminate()
-        compositor.wait(timeout=10)
+        try:
+            compositor.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            compositor.kill()
+            compositor.wait(timeout=10)
         log.close()
-        runtime_owner.cleanup()
+        # This path has no automatic deleting destructor: an uncertain process
+        # lifetime retains its runtime instead of removing live socket files.
+        shutil.rmtree(runtime)
         if runtime.exists():
             raise ValueError('owned compositor runtime was not retired')

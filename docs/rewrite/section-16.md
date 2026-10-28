@@ -147,8 +147,8 @@ render densities on each renderer. Actual Winit monitor/surface and Slint scale,
 logical dimensions, viewport/row geometry and capture bytes are retained. Linux
 also moves the current window four times between two private headless Wayland
 outputs at actual native1×/2× scales; these are virtual monitor transitions,
-not a claim about physical monitor hardware. Every window/controller and owned
-compositor is joined before positive fixture retirement. The workflow's larger
+not a claim about physical monitor hardware. Every window/controller joins before positive library-fixture retirement; the
+owned compositor joins before its separate runtime directory is retired. The workflow's larger
 120-minute job envelope accommodates builds and the full repeated cohorts; no
 individual numerical ceiling changes.
 
