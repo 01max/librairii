@@ -251,35 +251,41 @@ fn main() -> Result {
             .ok_or("explicit workflow language required")?;
         return callback_checks::speech(&ui, &menus, &output, &case, &language);
     }
-    eprintln!("native callbacks: paging");
-    callback_checks::paging(&ui)?;
-    eprintln!("native callbacks: history");
-    callback_checks::history(&ui)?;
-    eprintln!("native callbacks: failed_query");
-    callback_checks::failed_query(&ui)?;
-    callback_checks::filters(&ui, None)?;
-    eprintln!("native callbacks: details");
-    callback_checks::details(&ui)?;
-    eprintln!("native callbacks: tags");
-    callback_checks::tags(&ui)?;
-    eprintln!("native callbacks: flags");
-    callback_checks::flags(&ui)?;
-    eprintln!("native callbacks: collections");
-    callback_checks::collections(&ui)?;
-    eprintln!("native callbacks: shelves");
-    callback_checks::shelves(&ui)?;
-    eprintln!("native callbacks: shelf_reviews");
-    callback_checks::shelf_reviews(&ui)?;
-    eprintln!("native callbacks: operations");
-    callback_checks::operations(&ui)?;
-    eprintln!("native callbacks: sync");
-    callback_checks::sync(&ui)?;
-    eprintln!("native callbacks: exports");
-    callback_checks::exports(&ui)?;
-    eprintln!("native callbacks: activity_history");
-    callback_checks::activity_history(&ui)?;
-    eprintln!("native callbacks: maintenance");
-    callback_checks::maintenance(&ui)?;
+    let server = std::env::args().any(|arg| arg == "--ax-server");
+    // The parent verifies every callback at both scales before launching these
+    // semantic observers. Publish their window within the original AX deadline
+    // instead of rerunning the whole backend suite before registration.
+    if !server {
+        eprintln!("native callbacks: paging");
+        callback_checks::paging(&ui)?;
+        eprintln!("native callbacks: history");
+        callback_checks::history(&ui)?;
+        eprintln!("native callbacks: failed_query");
+        callback_checks::failed_query(&ui)?;
+        callback_checks::filters(&ui, None)?;
+        eprintln!("native callbacks: details");
+        callback_checks::details(&ui)?;
+        eprintln!("native callbacks: tags");
+        callback_checks::tags(&ui)?;
+        eprintln!("native callbacks: flags");
+        callback_checks::flags(&ui)?;
+        eprintln!("native callbacks: collections");
+        callback_checks::collections(&ui)?;
+        eprintln!("native callbacks: shelves");
+        callback_checks::shelves(&ui)?;
+        eprintln!("native callbacks: shelf_reviews");
+        callback_checks::shelf_reviews(&ui)?;
+        eprintln!("native callbacks: operations");
+        callback_checks::operations(&ui)?;
+        eprintln!("native callbacks: sync");
+        callback_checks::sync(&ui)?;
+        eprintln!("native callbacks: exports");
+        callback_checks::exports(&ui)?;
+        eprintln!("native callbacks: activity_history");
+        callback_checks::activity_history(&ui)?;
+        eprintln!("native callbacks: maintenance");
+        callback_checks::maintenance(&ui)?;
+    }
     while ui.get_dialog() != 0 {
         ui.invoke_close_dialog();
     }
@@ -377,7 +383,6 @@ fn main() -> Result {
         ui.set_workspace(true);
         ui.set_mode(0);
     }
-    let server = std::env::args().any(|arg| arg == "--ax-server");
     let step = Rc::new(RefCell::new(0usize));
     let errors = Rc::new(RefCell::new(None::<String>));
     let report = Rc::new(RefCell::new(Vec::<serde_json::Value>::new()));

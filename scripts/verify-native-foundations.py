@@ -135,7 +135,10 @@ def main():
         reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION)),
             'component_process_arguments': arguments[2:]})
     if sys.platform.startswith('linux'):
-        run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(DESTINATION / 'accessibility')], timeout=90)
+        accessibility = DESTINATION / 'accessibility'
+        accessibility.mkdir()
+        with (accessibility / 'driver.log').open('w') as log:
+            run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(accessibility)], timeout=90, stdout=log, stderr=subprocess.STDOUT)
     if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != source_commit or subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT, text=True).strip():
         raise ValueError('native evidence source changed during execution')
     if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_digest:

@@ -326,3 +326,21 @@ cover stale/unrelated logs, partial names, role mismatches, Notify:false and lab
 with direction words, apostrophes and wrapped text. This observer policy does not
 qualify uninterrupted reading. All original application, container, session and
 per-utterance deadlines remain required.
+
+At head `dc91484e3e39b8aecdf99b744199376d7aa3fabe`, run40610005709's
+Apple silicon native job passes, including both scales and the full quality/
+handover/relocation checks. Linux's early diagnostic artifact12783611164 (ZIP
+SHA256 `c990eba658c37fbeb11be2eb9cdc430156e78e6a8a33ff3dfb53466d84d6a480`)
+contains both completed88-capture reports and all callbacks, including compact
+bulk and actual Recovery traversal. Its separate AT-SPI check fails before the
+first application registers; the application log stops during operation callback
+checks before showing the semantic window. This points to repeated full callback
+startup exceeding the original15-second registration observation window.
+
+AX-server mode now starts the same production UI/model/menu semantic fixture
+directly. Both normal scale runs still execute and verify every callback before
+the parent launches AT-SPI inspection; no callback result is supplied by AX-server
+mode. All semantic checks and15/90-second bounds remain. The AT-SPI driver's own
+stdout/stderr is retained as `accessibility/driver.log`, including failure details.
+The independent source reviewers have zero required findings for this correction;
+fresh actual Linux and final source-bound matrix results remain mandatory.
