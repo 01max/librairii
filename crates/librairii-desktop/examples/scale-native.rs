@@ -112,7 +112,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         let running=active_imports>0;
         let loading=output.join("start-load").exists();
         stage="import-offer";
-        if loading && ready && active_imports<2 && snapshot.workflows.operations.preparing.is_none() && offered_at.elapsed()>Duration::from_millis(250) && imports<64 && let Some(generation)=snapshot.generation.clone() {pending.borrow().offer(Command::Operations{generation,action:librairii_desktop::workflows::operations::Action::Import(config.imports.clone())})?;imports+=1;offered_at=Instant::now();
+        // An old projection can undercount work already offered. Await the
+        // current controller revision before using its durable admission/card
+        // observation to admit another batch; otherwise slow hosts self-flood.
+        if loading && ready && snapshot.revision==pending.borrow().revision() && active_imports<2 && snapshot.workflows.operations.preparing.is_none() && offered_at.elapsed()>Duration::from_millis(250) && imports<64 && let Some(generation)=snapshot.generation.clone() {pending.borrow().offer(Command::Operations{generation,action:librairii_desktop::workflows::operations::Action::Import(config.imports.clone())})?;imports+=1;offered_at=Instant::now();
         }
         stage="page-offer";
         if let Ok(text)=fs::read_to_string(output.join("page")) {

@@ -285,6 +285,15 @@ Window poll count and elapsed time survive success and failure. Avoiding early
 AX interference is a hypothesis for the fresh run, not an established cause or
 permission to discard the failed startup cohort.
 
+The same Intel cohort exposed stale-state admission in the observer: all128
+input endpoints reported five active imports, and a release workload offered57
+batches while its displayed revision remained1. Import admission now requires
+the displayed snapshot to acknowledge the latest controller revision before
+using its active/preparing counts. The wrapper independently requires one or two
+active imports at every timed endpoint. An isolated real-controller run visits
+all42 pages/1,000 covers, observes two imports, joins workers and retires its
+fixture. Native input and resource timings still require fresh three-host runs.
+
 At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
 that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
 reduction also reproduces locally. Actual frozen Go1.26.5 Decode/Migrate/Encode

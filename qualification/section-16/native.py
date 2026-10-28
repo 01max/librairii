@@ -166,7 +166,7 @@ def inspect(binary, destination, backend, helper=None):
             if len(measured[key]) != count or any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in measured[key]):
                 raise ValueError('complete finite native wall samples required')
         if (len(measured['input_states']) != 64 or len(measured['pointer_states']) != 64 or len(measured['endpoints']) != 20
-                or any(not s['running_import'] or s['max_rows'] > 24 for s in measured['input_states'] + measured['pointer_states'] + measured['endpoints'])
+                or any(not s['running_import'] or not 1 <= s['active_imports'] <= 2 or s['max_rows'] > 24 for s in measured['input_states'] + measured['pointer_states'] + measured['endpoints'])
                 or any(s['total'] != 1000 or s['rows'] != 24 or s['selected_index'] != 23 or not s['settled'] for s in measured['endpoints'])):
             raise ValueError('actual current controller/model endpoints under import required')
         generations = [s['first_cover_reloads'] for s in measured['endpoints']]
