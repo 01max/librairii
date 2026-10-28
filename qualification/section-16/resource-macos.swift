@@ -48,23 +48,63 @@ do {
         var witness: [String: String] = [:]
         var queries = 0
         var queryNanoseconds: UInt64 = 0
+        func elapsedSinceAttach() -> Double { Double(DispatchTime.now().uptimeNanoseconds-start)/1e6 }
+        var trace: [[String: Any]] = []
+        var traceDropped = 0
+        var passes = 0
+        var emitted = false
+        defer {
+            if !emitted, let data = try? JSONSerialization.data(withJSONObject: [
+                "observer_traversal": "owned-AXWindows-preorder", "observer_passes": passes,
+                "observer_queries": queries, "observer_query_ms": Double(queryNanoseconds)/1e6,
+                "observer_trace": trace, "observer_trace_dropped": traceDropped
+            ], options: [.sortedKeys]), let encoded = String(data: data, encoding: .utf8) {
+                fputs(encoded+"\n", stderr)
+            }
+        }
+        func retain(_ entry: [String: Any]) {
+            if trace.count < 512 { trace.append(entry) } else { traceDropped += 1 }
+        }
         let attributes = [kAXTitleAttribute, kAXDescriptionAttribute, kAXChildrenAttribute, kAXRoleAttribute] as CFArray
         while witness.isEmpty {
-            var queue: [AXUIElement] = [app]; var next = 0
-            while next < queue.count && next < 4096 {
-                let item = queue[next]; next += 1
+            passes += 1
+            // The application's children also include the native menu bar.
+            // Search only its real windows, preserving the loaded-story endpoint.
+            let windowsStarted = DispatchTime.now().uptimeNanoseconds
+            var rawWindows: CFTypeRef?
+            let windowsResult = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &rawWindows)
+            let windowsDuration = DispatchTime.now().uptimeNanoseconds-windowsStarted
+            queryNanoseconds += windowsDuration; queries += 1
+            let windows = rawWindows as? [AXUIElement] ?? []
+            retain(["pass": passes, "attribute": "AXWindows", "offset_ms": elapsedSinceAttach(),
+                "query_ms": Double(windowsDuration)/1e6, "result": windowsResult.rawValue, "children": windows.count])
+            // Preorder visits a window subtree before unrelated siblings. No
+            // cached node/known title substitutes for querying the actual row.
+            var stack = windows.prefix(16).reversed().map { ($0, 0) }
+            var visited = 0
+            while let (item, depth) = stack.popLast(), visited < 4096 {
+                visited += 1
                 let queryStarted = DispatchTime.now().uptimeNanoseconds
                 var rawValues: CFArray?
                 let result = AXUIElementCopyMultipleAttributeValues(item, attributes, [], &rawValues)
-                queryNanoseconds += DispatchTime.now().uptimeNanoseconds-queryStarted
-                queries += 1
-                guard result == .success, let values = rawValues as? [Any], values.count == 4 else { continue }
+                let duration = DispatchTime.now().uptimeNanoseconds-queryStarted
+                queryNanoseconds += duration; queries += 1
+                guard result == .success, let values = rawValues as? [Any], values.count == 4 else {
+                    retain(["pass": passes, "visited": visited, "depth": depth, "offset_ms": elapsedSinceAttach(),
+                        "query_ms": Double(duration)/1e6, "result": result.rawValue])
+                    continue
+                }
                 let title = values[0] as? String ?? ""
                 let description = values[1] as? String ?? ""
+                let role = values[3] as? String ?? ""
+                let children = values[2] as? [AXUIElement] ?? []
+                retain(["pass": passes, "visited": visited, "depth": depth, "offset_ms": elapsedSinceAttach(),
+                    "query_ms": Double(duration)/1e6, "result": result.rawValue,
+                    "role": role, "title": String(title.prefix(160)), "children": children.count])
                 if title.hasPrefix("Histoire 0001") || description.hasPrefix("Histoire 0001") {
-                    witness = ["role": values[3] as? String ?? "", "title": title, "description": description]; break
+                    witness = ["role": role, "title": title, "description": description]; break
                 }
-                queue.append(contentsOf: (values[2] as? [AXUIElement] ?? []).prefix(max(0, 4096 - queue.count)))
+                stack.append(contentsOf: children.prefix(max(0, 4096-visited-stack.count)).reversed().map { ($0, depth+1) })
             }
             if DispatchTime.now().uptimeNanoseconds - start > 10_000_000_000 { throw Refusal(message: "actual product first story accessibility readiness deadline") }
             if witness.isEmpty { Thread.sleep(forTimeInterval: 0.001) }
@@ -72,6 +112,9 @@ do {
         print(String(data: try JSONSerialization.data(withJSONObject: ["pid": pid, "actual_story": witness,
             "observer_attach_to_story_ms": Double(DispatchTime.now().uptimeNanoseconds-start)/1e6,
             "observer_queries": queries, "observer_query_ms": Double(queryNanoseconds)/1e6,
+            "observer_traversal": "owned-AXWindows-preorder", "observer_passes": passes,
+            "observer_trace": trace, "observer_trace_dropped": traceDropped,
             "method": "actual product first loaded story in public native AX tree"]), encoding: .utf8)!)
+        emitted = true
     }
 } catch { fputs("\(error)\n", stderr); exit(1) }

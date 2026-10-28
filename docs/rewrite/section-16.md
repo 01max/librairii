@@ -148,6 +148,14 @@ Mac readiness reads title/description/children/role in a single public AX reques
 per node, retaining request count and time. This removes redundant observer IPC
 while preserving the full production launch-to-loaded-story interval. The later
 ARM1268ms receipt remains failed until a fresh complete cohort meets the ceiling.
+The subsequent ARM2030ms receipt also failed:202 public AX requests accumulated
+1245ms of wall time inside a1979ms attach phase. That time may include product
+startup waiting and is never subtracted. The observer now starts at the owned
+application's public AXWindows and visits each window in preorder, avoiding
+native menu branches while preserving the exact first-loaded-story predicate.
+A bounded in-memory trace retains AX results, durations, traversal depth and
+visited counts; serialization follows observation (or appears in retained failure
+logs). Fresh complete cohorts must establish the effect; old failures remain.
 Resource and display lanes retain independent failures in one incomplete manifest;
 a failed input/resource cohort does not suppress the remaining display scenarios.
 One warmup and three fresh measured runs on each actual rendering route retain
