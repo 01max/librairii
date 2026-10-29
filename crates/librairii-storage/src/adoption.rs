@@ -32,6 +32,14 @@ impl ClosedManifest {
             serde_json::from_slice(bytes).map_err(|_| StorageError::AdoptionInputInvalid)?;
         let mut paths = std::collections::BTreeMap::new();
         for entry in &entries {
+            if entry.path == ".librairii-library.lock"
+                && (entry.directory
+                    || entry.size != 0
+                    || entry.sha256.as_deref()
+                        != Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"))
+            {
+                return Err(StorageError::AdoptionInputInvalid);
+            }
             // A closed Manifest contains literal canonical relative paths, not
             // instructions to clean/normalize paths before claiming files.
             if entry
@@ -347,16 +355,9 @@ mod closed {
                 if !target.is_absolute() {
                     return Err(StorageError::RootNotAbsolute);
                 }
-                // The new lock is an owned runtime control object, not an old
-                // source file to replace. Such an input needs another route.
-                if self
-                    .manifest
-                    .entries
-                    .iter()
-                    .any(|e| e.path == LIBRARY_LOCK_FILE)
-                {
-                    return Err(StorageError::AdoptionInputInvalid);
-                }
+                // A closed bridge source can retain its empty control inode.
+                // It remains part of source verification, while the candidate
+                // gets its own fresh inode and lease. No control is copied.
                 let name =
                     EntryName::parse(target.file_name().ok_or(StorageError::InvalidManagedPath)?)?;
                 let parent_path =
@@ -397,6 +398,9 @@ mod closed {
                 let mut children: BTreeMap<&str, Vec<&ManifestEntry>> = BTreeMap::new();
                 children.entry("").or_default();
                 for entry in &self.manifest.entries {
+                    if entry.path == LIBRARY_LOCK_FILE {
+                        continue;
+                    }
                     let (parent, _) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
                     children.entry(parent).or_default().push(entry);
                     if entry.directory {
@@ -925,6 +929,9 @@ mod closed {
         }
         for entry in &manifest.entries {
             let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+            if owned_lock && entry.path == LIBRARY_LOCK_FILE {
+                continue;
+            }
             children
                 .entry(parent)
                 .or_default()

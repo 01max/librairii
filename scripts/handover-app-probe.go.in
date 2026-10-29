@@ -1,0 +1,95 @@
+// Synthetic host invoking the real Go application composition and resource
+// lifecycle. Used with both manifest-frozen and current compatibility sources.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"time"
+
+	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/platform"
+)
+
+type host struct{}
+
+func (host) Now() time.Time                    { return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC) }
+func (host) Emit(context.Context, string, any) {}
+func (host) OpenFiles(context.Context, coreapp.FileDialogRequest) ([]string, error) {
+	return nil, errors.New("picker unavailable in synthetic host")
+}
+func (host) OpenDirectory(context.Context, string) (string, error) {
+	return "", errors.New("picker unavailable in synthetic host")
+}
+func (host) RevealDirectory(context.Context, string) error {
+	return errors.New("reveal unavailable in synthetic host")
+}
+func (host) FetchCatalog(context.Context) ([]byte, error) {
+	return nil, errors.New("network disabled in synthetic host")
+}
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func main() {
+	if len(os.Args) != 5 {
+		panic("mode, explicit profile, library and receipt required")
+	}
+	mode, profile, root, receipt := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
+	for _, path := range []string{profile, root, receipt} {
+		if !filepath.IsAbs(path) {
+			panic("relative fixture path")
+		}
+	}
+	ctx := context.Background()
+	storage := platform.NewConfiguredStorageReadiness(profile, root, "fr")
+	composition, err := coreapp.NewComposition(coreapp.CompositionOptions{Storage: storage, Clock: host{}, Dialogs: host{}, Events: host{}, MetadataFetcher: host{}, Workers: 1})
+	must(err)
+	app := composition.Application
+	must(app.Start(ctx))
+	if mode == "blocked" {
+		if app.Status().MutationsAllowed || storage.SQL() != nil {
+			panic("second application entered storage")
+		}
+		app.Stop(ctx)
+		must(json.NewEncoder(os.Stdout).Encode(map[string]any{"blocked": true, "state": app.Status().State}))
+		return
+	}
+	if !app.Status().MutationsAllowed || storage.SQL() == nil {
+		panic(fmt.Sprintf("application unavailable: %+v", app.StatusResponse()))
+	}
+	if mode == "hold" {
+		file, err := os.OpenFile(receipt, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		must(err)
+		_, err = file.WriteString("application-ready\n")
+		must(err)
+		must(file.Sync())
+		must(file.Close())
+		_, err = io.CopyN(io.Discard, os.Stdin, 1)
+		if err != nil && err != io.EOF {
+			must(err)
+		}
+	} else if mode == "mutate" {
+		result, err := storage.Writer().ExecContext(ctx, "UPDATE stories SET embedded_title=COALESCE(embedded_title,'')||' application-write' WHERE id=1")
+		must(err)
+		changed, err := result.RowsAffected()
+		must(err)
+		if changed != 1 {
+			panic("source mutation did not execute")
+		}
+	} else if mode != "open" {
+		panic("unknown application mode")
+	}
+	p := storage.Profile()
+	app.Stop(ctx)
+	if storage.SQL() != nil {
+		panic("application did not close storage")
+	}
+	must(json.NewEncoder(os.Stdout).Encode(map[string]any{"root": p.Root, "libraryId": p.LibraryID, "language": p.Language, "closed": true, "mode": mode}))
+}
