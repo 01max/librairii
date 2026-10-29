@@ -5598,6 +5598,110 @@
           ]
         },
         "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 628,
+        "identity": {
+          "suite": "librairii-core::handover",
+          "name": "actual_go_handover_preserves_history_and_separates_overlapping_group_ids",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 629,
+        "identity": {
+          "suite": "librairii-core::handover",
+          "name": "handover_refuses_wrong_library_versions_unknown_fields_duplicates_and_bounds",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 630,
+        "identity": {
+          "suite": "librairii-storage::handover",
+          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 631,
+        "identity": {
+          "suite": "librairii-storage::handover",
+          "name": "first_transfer_keeps_already_saved_native_preferences",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 632,
+        "identity": {
+          "suite": "librairii-storage::handover",
+          "name": "wrong_library_or_invalid_transfer_preserves_every_native_profile_byte",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 633,
+        "identity": {
+          "suite": "librairii-storage::handover",
+          "name": "future_receipt_or_aliased_receipt_is_never_overwritten",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 634,
+        "identity": {
+          "suite": "librairii-storage::handover",
+          "name": "selected_transfer_refuses_links_directories_pipes_and_oversized_files_without_effects",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 635,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
       }
     ],
     "python": [
@@ -5670,6 +5774,16 @@
         "position": 51,
         "identity": "test_frozen_go.FrozenGoTests.test_changed_manifest_member_refuses_without_compiling",
         "reason": "Task 4.7 isolated frozen-Go materialization safety regressions; retains all prior discovery identities."
+      },
+      {
+        "position": 52,
+        "identity": "test_frozen_go.FrozenGoTests.test_bridge_changes_use_original_manifest_verified_retained_bytes",
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 53,
+        "identity": "test_frozen_go.FrozenGoTests.test_retained_alias_cannot_supply_oracle_bytes",
+        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
       }
     ]
   },
