@@ -69,6 +69,45 @@ Newer edits and the receipt survive actual cold worker startup. Missing-transfer
 guidance and result notices exist in English/French. Cancel restores visible
 focus without a command/effect. Windows support remains deferred.
 
+## Native dispatch observer correction
+
+The controlled12-cohort Intel replay at source `4b745e5` reproduced three traced
+keyboard observation-wall p95 failures (107.584522,161.895748,151.607603ms).
+Actual production traces, all64 independent clock handshakes and the controlled
+single-driver event order conditionally bound callback-dispatch p95 at33.489936,87.300910,50.919916ms respectively. Both
+independent evidence reviews accepted this distinction. Later publication and
+timer/render work remain observable; these traces do not establish visible
+completion or reclassify historical qualification.
+
+macOS method3 measures from before native event posting to the actual search
+callback return, or the actual browser-focus acknowledgement used by the
+original pointer endpoint. Optional Slint hooks have no product handlers. Only
+the qualification fixture installs bounded in-memory timestamps and per-kind
+sequences. The helper reuses its existing before/after state observations,
+requires exactly one new matching acknowledgement and retains every original
+file-observation wall. It adds no per-event arming or wait before timing.
+
+After both input cohorts,64 round trips constrain the offset between the native
+and helper monotonic clocks. Every round participates; the metric uses the
+conservative upper bound. The actual state containing the acknowledgement is
+also a physical upper bound. Missing, ambiguous, incompatible or reordered
+evidence refuses qualification. The complete native event log, including all106
+search edits, must match the witnesses after positive worker join.
+
+All64 keyboard,64 pointer and20 cold completion samples, real concurrent imports,
+bounded24-row pages,1,000 covers and both rendering routes remain required.
+Dispatch p95 stays≤100ms; completion p95 stays≤3,000ms. Completion still includes
+query expansion, fresh thumbnails and real Tab/End selection. Browser focus
+acknowledgement does not claim completion of the pointer handler or rendering.
+Linux retains method2's observation-wall upper bound. Producer manifests and
+raw admission identify the platform-specific method explicitly.
+
+Regression cases distinguish200ms publication delay from205ms actual dispatch,
+retain slow event-posting cost, reject tampered/missing/ambiguous witnesses and
+incompatible clock rounds, and replay a provenance-bound64-sample diagnostic
+fixture. The latter protects clock arithmetic only. Fresh complete native
+qualification and pointer evidence remain necessary; Task17.8 stays open.
+
 ## Executable rehearsal and retained evidence
 
 `python3 -I -B scripts/verify-upgrade-handover.py` materializes two private Go

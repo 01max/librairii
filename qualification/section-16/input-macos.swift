@@ -35,6 +35,38 @@ func key(_ code: CGKeyCode, flags: CGEventFlags = []) throws {
     }
 }
 func elapsed(_ start: UInt64) -> Double { Double(DispatchTime.now().uptimeNanoseconds - start) / 1e6 }
+// Clock synchronization runs after the input cohort, preserving its existing
+// event queue and preconditioning. Every round bounds the same clock offset.
+func dispatchCalibrate() throws -> [[String: Any]] {
+    var clocks: [[String: Any]] = []
+    for sequence in 1...64 {
+        let before = DispatchTime.now().uptimeNanoseconds
+        try Data(String(sequence).utf8).write(to: directory.appendingPathComponent("dispatch-clock-request"), options: .atomic)
+        while true {
+            if let data = try? Data(contentsOf: directory.appendingPathComponent("dispatch-clock-response")),
+                let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                response["sequence"] as? Int == sequence, let native = response["native_ns"] as? UInt64 {
+                clocks.append(["sequence": sequence, "before_ns": before, "native_ns": native,
+                    "after_ns": DispatchTime.now().uptimeNanoseconds])
+                break
+            }
+            if DispatchTime.now().uptimeNanoseconds - before > 2_000_000_000 { throw Refusal(message: "dispatch clock deadline") }
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+    }
+    return clocks
+}
+func dispatchCounter(_ value: [String: Any], _ key: String) throws -> UInt64 {
+    guard let dispatch = value["dispatch"] as? [String: Any], let count = dispatch[key+"_sequence"] as? UInt64 else {
+        throw Refusal(message: "actual native dispatch counter missing")
+    }
+    return count
+}
+func dispatchSample(_ value: [String: Any], _ key: String, _ before: UInt64, _ n: Int, _ start: UInt64, _ posted: UInt64, _ observed: UInt64) throws -> [String: Any] {
+    guard let dispatch = value["dispatch"] as? [String: Any], let ack = dispatch[key] as? [String: Any],
+        ack["sequence"] as? UInt64 == before+1 else { throw Refusal(message: "ambiguous native callback acknowledgement") }
+    return ["n": n, "before_sequence": before, "ack": ack, "start_ns": start, "posted_ns": posted, "observed_ns": observed]
+}
 func active(_ value: [String: Any]) -> Bool { value["running_import"] as? Bool == true }
 func focusSearch() throws {
     for _ in 0..<64 {
@@ -102,13 +134,18 @@ do {
     _ = try wait { _ in NSWorkspace.shared.frontmostApplication?.processIdentifier == pid }
     try focusSearch()
     var input: [Double] = []; var inputStates: [[String: Any]] = []
+    var inputDispatch: [[String: Any]] = []; var pointerDispatch: [[String: Any]] = []
     for n in 0..<64 {
-        _ = try wait { active($0) }
+        let before = try wait { active($0) }
+        let sequence = try dispatchCounter(before, "search")
         let wanted = n % 2 == 0 ? "x" : ""
         let start = DispatchTime.now().uptimeNanoseconds
         try key(n % 2 == 0 ? 7 : 51)
+        let posted = DispatchTime.now().uptimeNanoseconds
         let end = try wait({ $0["query"] as? String == wanted }, seconds: 1)
-        input.append(elapsed(start)); inputStates.append(end)
+        let observed = DispatchTime.now().uptimeNanoseconds
+        input.append(Double(observed-start)/1e6); inputStates.append(end)
+        inputDispatch.append(try dispatchSample(end, "search", sequence, n, start, posted, observed))
         guard active(end) else { throw Refusal(message: "import ended during native input sample") }
     }
     let target = try firstStoryPoint()
@@ -116,17 +153,26 @@ do {
     let pointerReceipt: [String: Any] = ["x": point.x, "y": point.y, "role": target.role, "name": target.name, "first_title_role": target.firstTitleRole, "parent_role": target.parentRole, "parent_name": target.parentName, "actions": target.actions]
     try JSONSerialization.data(withJSONObject: pointerReceipt, options: [.sortedKeys]).write(to: directory.appendingPathComponent("pointer-target.json"), options: .atomic)
     var pointers: [Double] = []; var pointerStates: [[String: Any]] = []
-    for _ in 0..<64 {
-        try focusSearch(); _ = try wait { active($0) }
+    for n in 0..<64 {
+        try focusSearch(); let before = try wait { active($0) }
+        guard before["query_focused"] as? Bool == true, before["focus_key"] as? Int == 30 else {
+            throw Refusal(message: "pointer sample requires observed Search focus")
+        }
+        let sequence = try dispatchCounter(before, "browser_focus")
         let start = DispatchTime.now().uptimeNanoseconds
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { throw Refusal(message: "lost owned foreground PID before pointer post") }
         for type in [CGEventType.leftMouseDown, CGEventType.leftMouseUp] {
             guard let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left) else { throw Refusal(message: "pointer event allocation") }
             event.post(tap: .cghidEventTap)
         }
+        let posted = DispatchTime.now().uptimeNanoseconds
         let end = try wait({ $0["focus_key"] as? Int == 31 }, seconds: 1)
-        pointers.append(elapsed(start)); pointerStates.append(end)
+        let observed = DispatchTime.now().uptimeNanoseconds
+        pointers.append(Double(observed-start)/1e6); pointerStates.append(end)
+        pointerDispatch.append(try dispatchSample(end, "browser_focus", sequence, n, start, posted, observed))
         guard active(end) else { throw Refusal(message: "import ended during native pointer sample") }
     }
+    let clockCalibrations = try dispatchCalibrate()
     var navigation: [Double] = []; var endpoints: [[String: Any]] = []
     for n in 0..<21 {
         let coldGeneration = try coldFirstPage()
@@ -151,9 +197,10 @@ do {
         try key(115)
         _ = try wait { $0["selected_index"] as? Int == 0 && $0["settled"] as? Bool == true }
     }
-    let result: [String: Any] = ["input_ms": input, "input_states": inputStates, "input_p95_ms": input.sorted()[60],
+    let result: [String: Any] = ["clock_calibrations": clockCalibrations,
+        "input_dispatch_samples": inputDispatch, "pointer_dispatch_samples": pointerDispatch, "input_ms": input, "input_states": inputStates, "input_p95_ms": input.sorted()[60],
         "pointer_ms": pointers, "pointer_states": pointerStates, "pointer_p95_ms": pointers.sorted()[60], "pointer_target": pointerReceipt,
         "navigation_ms": navigation, "endpoints": endpoints, "navigation_p95_ms": navigation.sorted()[18],
-        "method": "pre-CGEvent post to observed actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End selects last visible story"]
+        "method": "method3: pre-CGEvent post to uniquely identified actual search callback return/browser focus acknowledgement, conservative synchronized clock upper bound; file-observation wall times retained separately; unchanged cold1000-story completion"]
     print(String(data: try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), encoding: .utf8)!)
 } catch { fputs("\(error)\n", stderr); exit(1) }

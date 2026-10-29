@@ -591,6 +591,9 @@ export component DesktopWindow inherits Window {
     callback quit();
     callback request-panel(int);
     callback search(string);
+    // Optional observer hooks; handlers are installed only by the scale fixture.
+    callback qualification-search-dispatched(string);
+    callback qualification-browser-focused();
     in property <[FilterRow]> filter-rows;
     in property <[ActiveFilterRow]> active-filter-rows;
     in property <string> active-filter-summary;
@@ -716,7 +719,7 @@ export component DesktopWindow inherits Window {
                         Caption { text: root.counts; horizontal-stretch: 0; }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
-                        search-entry := SearchField {reveal(y,h)=>{root.reveal-controls(y,h);} horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
+                        search-entry := SearchField {reveal(y,h)=>{root.reveal-controls(y,h);} horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); root.qualification-search-dispatched(self.text); } }
                         ModeChoice {reveal(y,h)=>{root.reveal-controls(y,h);} visible: !root.shelf-active; horizontal-stretch: 0; width: root.shelf-active ? 0px : (root.compact ? 180px : 230px); accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
                         Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
@@ -756,7 +759,7 @@ export component DesktopWindow inherits Window {
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
                             library-scroll := ScrollView { content-width: self.visible-width; content-height: library-layout.preferred-height;
                                 library-layout := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 8px;
-                                    browser := StoryBrowser { height: library-scroll.visible-height; french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Toutes les histoires" : "All stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } reveal(y,h) => {root.reveal-library(y,h);} }
+                                    browser := StoryBrowser { height: library-scroll.visible-height; french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; root.qualification-browser-focused(); } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Toutes les histoires" : "All stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } reveal(y,h) => {root.reveal-library(y,h);} }
                                     for preview in root.collection-previews: VerticalBox { padding: 8px; spacing: 8px;
                                         Caption { text: preview.title; font-weight: 600; }
                                         Caption { text: preview.caption; }

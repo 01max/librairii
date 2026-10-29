@@ -1,5 +1,6 @@
 """Current desktop native scale observer. No normal profile or public network."""
 import json
+import importlib.util
 import math
 import re
 import signal
@@ -8,6 +9,17 @@ from pathlib import Path
 import platform
 import subprocess
 import time
+
+
+def input_method_version():
+    return 3 if platform.system() == 'Darwin' else 2
+
+
+def dispatch_protocol():
+    spec = importlib.util.spec_from_file_location('native_dispatch', Path(__file__).with_name('dispatch.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def publish(path, text):
@@ -126,7 +138,7 @@ def inspect(binary, destination, backend, helper=None):
         raise ValueError('owned fixture preparation failed')
     process = None
     joined = False
-    report = {'backend_request': backend, 'prepared': prepared, 'complete': False, 'input_method_version': 2}
+    report = {'backend_request': backend, 'prepared': prepared, 'complete': False, 'input_method_version': input_method_version()}
     try:
         log = (destination / 'execution.log').open('w')
         environment = dict(os.environ, SLINT_BACKEND=backend, SLINT_SCALE_FACTOR='1', SLINT_DEBUG_PERFORMANCE='refresh_lazy,console')
@@ -158,13 +170,13 @@ def inspect(binary, destination, backend, helper=None):
             raw = subprocess.run([str(helper), str(actual_pid), str(destination)], capture_output=True, text=True, timeout=240)
             (destination / 'input.log').write_text(raw.stdout + raw.stderr)
             raw.check_returncode()
-            measured = json.loads(raw.stdout)
+            measured = dispatch_protocol().measure(json.loads(raw.stdout))
         else:
             measured = linux_input(actual_pid, destination)
         report['input'] = measured
         for key, count in [('input_ms', 64), ('pointer_ms', 64), ('navigation_ms', 20)]:
             if len(measured[key]) != count or any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in measured[key]):
-                raise ValueError('complete finite native wall samples required')
+                raise ValueError('complete finite native input/completion samples required')
         if (len(measured['input_states']) != 64 or len(measured['pointer_states']) != 64 or len(measured['endpoints']) != 20
                 or any(not s['running_import'] or not 1 <= s['active_imports'] <= 2 or s['max_rows'] > 24 for s in measured['input_states'] + measured['pointer_states'] + measured['endpoints'])
                 or any(s['total'] != 1000 or s['rows'] != 24 or s['selected_index'] != 23 or not s['settled'] for s in measured['endpoints'])):
@@ -177,13 +189,16 @@ def inspect(binary, destination, backend, helper=None):
                 or measured['navigation_p95_ms'] != sorted(measured['navigation_ms'])[18]
                 or measured['pointer_p95_ms'] != sorted(measured['pointer_ms'])[60] or measured['pointer_p95_ms'] > 100
                 or measured['input_p95_ms'] > 100 or measured['navigation_p95_ms'] > 3000):
-            raise ValueError('retained native input/completion wall gate failed')
+            raise ValueError('retained native dispatch/completion gate failed')
         (destination / 'finish').touch()
         code = process.wait(timeout=20)
         log.close()
         joined = code == 0 and 'scale_complete; workers_joined=true' in (destination / 'execution.log').read_text()
         if not joined:
             raise ValueError('positive current-controller worker shutdown required')
+        if platform.system() == 'Darwin':
+            dispatch_protocol().verify_events(measured, json.loads((destination / 'dispatch-events.json').read_text()))
+            report['dispatch_witnesses_verified_after_join'] = True
         owner.stdin.write('workers_joined\n')
         owner.stdin.close()
         if owner.wait(timeout=15) != 0 or Path(prepared['owner']).exists():

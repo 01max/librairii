@@ -185,6 +185,13 @@ import activity and bounded models. This is the equivalent paged product
 interaction, not a1,000-row artificial component model. Raw samples and endpoints
 are retained; no frame/timer statistic substitutes for either wall gate.
 
+Task17 introduces macOS input method3 after a controlled trace reproduced the
+file-observation proxy failure. Its actual callback boundary, conservative
+clock mapping, retained observation walls and unchanged gates are documented in
+[section17](section-17.md#native-dispatch-observer-correction). Linux continues
+to use method2's stronger observation-wall upper bound. Historical method2
+failures retain their original verdicts.
+
 Both default Skia GPU API and explicit software routes must identify their
 actually selected surface. A Linux Mesa GPU API route does not claim physical
 GPU hardware. Three-host clean-source sealing and independent review remain
