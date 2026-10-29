@@ -53,8 +53,12 @@ func main() {
 	must(err)
 	app := composition.Application
 	must(app.Start(ctx))
-	if mode == "blocked" {
-		if app.Status().MutationsAllowed || storage.SQL() != nil || app.StatusResponse().Error == nil || app.StatusResponse().Error.Message != "Close the other Librairii application, then retry." {
+	if mode == "blocked" || mode == "native-refused" {
+		message := "Close the other Librairii application, then retry."
+		if mode == "native-refused" {
+			message = "This library was used by the native application. To return to this version, use a separate pre-native backup and keep the newer library."
+		}
+		if app.Status().MutationsAllowed || storage.SQL() != nil || app.StatusResponse().Error == nil || app.StatusResponse().Error.Message != message {
 			panic("second application entered storage")
 		}
 		app.Stop(ctx)

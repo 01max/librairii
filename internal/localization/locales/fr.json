@@ -607,6 +607,7 @@
   "Not tagged": "Sans cette étiquette",
   "Clear tag filters": "Effacer les filtres",
   "Close the other Librairii application, then retry.": "Fermez l’autre application Librairii, puis réessayez.",
+  "This library was used by the native application. To return to this version, use a separate pre-native backup and keep the newer library.": "Cette bibliothèque a été utilisée par l’application native. Pour revenir à cette version, utilisez une sauvegarde séparée datant d’avant la transition et conservez la bibliothèque la plus récente.",
   "Move to the native application": "Passer à l’application native",
   "Export your view, notice and navigation preferences. Your library files stay in place.": "Exportez vos préférences de présentation, de notifications et de navigation. Les fichiers de votre bibliothèque restent en place.",
   "Export preferences…": "Exporter les préférences…",

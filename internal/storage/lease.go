@@ -40,6 +40,7 @@ func LibraryEntries(root string) ([]os.DirEntry, error) {
 
 var ErrLibraryInUse = errors.New("close the other Librairii application before retrying")
 var ErrLeaseChanged = errors.New("library ownership changed; restart before retrying")
+var ErrNativeLibrary = errors.New("native library requires an independent pre-native backup for Go rollback")
 
 // Lease implements the shared Rust/Go protocol: nonblocking exclusive flock on
 // a retained regular file. A filename or PID never proves ownership. Closing a

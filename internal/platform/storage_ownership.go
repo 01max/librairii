@@ -46,7 +46,10 @@ func (r *StorageReadiness) acquireLibrary(root string, create bool) error {
 		return err
 	}
 	if lease := r.leases[canonical]; lease != nil {
-		return lease.Revalidate()
+		if err := lease.Revalidate(); err != nil {
+			return err
+		}
+		return rejectNativeLibrary(canonical)
 	}
 	lease, err := storage.AcquireLibrary(canonical)
 	if err != nil {
@@ -56,7 +59,20 @@ func (r *StorageReadiness) acquireLibrary(root string, create bool) error {
 		r.leases = make(map[string]*storage.Lease)
 	}
 	r.leases[canonical] = lease
-	return nil
+	return rejectNativeLibrary(canonical)
+}
+
+// Native query versions and recovery records can outlive Go's understanding.
+// Presence is refusal only, never cleanup authority or permission to parse it.
+func rejectNativeLibrary(root string) error {
+	_, err := os.Lstat(filepath.Join(root, ".librairii-native-state.json"))
+	if err == nil {
+		return storage.ErrNativeLibrary
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func (r *StorageReadiness) releaseOwnership() error {

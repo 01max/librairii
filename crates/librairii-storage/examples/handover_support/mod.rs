@@ -136,8 +136,29 @@ fn rows(c: &Connection, sql: &str) -> librairii_storage::Result<Vec<Value>> {
     Ok(out)
 }
 pub fn snapshot(db: &Database<'_>) -> Result<Value> {
-    Ok(db.barrier_read(|tx|{
-    let mut tables=serde_json::Map::new();for table in rows(tx,"SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")? {let name=table["name"].as_str().ok_or(librairii_storage::StorageError::IntegrityFailed)?;tables.insert(name.into(),json!(rows(tx,&format!("SELECT * FROM \"{}\" ORDER BY rowid",name.replace('"',"\"\"")))?));}
-    Ok(json!({"tables":tables,"schema":rows(tx,"SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name")?,"integrity":tx.query_row("PRAGMA integrity_check",[],|r|r.get::<_,String>(0))?,"foreignKeyViolations":rows(tx,"PRAGMA foreign_key_check")?}))
-})?.wait()?)
+    Ok(db.barrier_read(|tx| snapshot_connection(tx))?.wait()?)
+}
+pub fn snapshot_connection(tx: &Connection) -> librairii_storage::Result<Value> {
+    let mut tables = serde_json::Map::new();
+    for table in rows(
+        tx,
+        "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+    )? {
+        let name = table["name"]
+            .as_str()
+            .ok_or(librairii_storage::StorageError::IntegrityFailed)?;
+        tables.insert(
+            name.into(),
+            json!(rows(
+                tx,
+                &format!(
+                    "SELECT * FROM \"{}\" ORDER BY rowid",
+                    name.replace('"', "\"\"")
+                )
+            )?),
+        );
+    }
+    Ok(
+        json!({"tables":tables,"schema":rows(tx,"SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name")?,"integrity":tx.query_row("PRAGMA integrity_check",[],|r|r.get::<_,String>(0))?,"foreignKeyViolations":rows(tx,"PRAGMA foreign_key_check")?}),
+    )
 }

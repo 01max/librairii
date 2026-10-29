@@ -202,6 +202,11 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
         }
     }
     let mut query = Query::default();
+    use librairii_app::ports::jobs::{JobStore, StoreResult};
+    let jobs = librairii_storage::operations_repository::TerminalRepository::new(&db, 1);
+    assert!(jobs.claim_session());
+    assert!(matches!(jobs.startup(), StoreResult::Known(())));
+    jobs.release_session();
     query.name = "new native collection".into();
     assert!(matches!(
         db.edit_collections(
@@ -291,6 +296,57 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
     reopened.finish().map_err(|e| e.to_string())?;
     let post_files = files(&target)?;
     let native_profile = files(store.directory())?;
+    let bridge_reopen = roots.library().join("post-Rust Go compatibility clone");
+    copy_tree(&target, &bridge_reopen)?;
+    let bridge_profile = roots.profile().join("compatibility profile");
+    fs::create_dir(&bridge_profile)?;
+    fs::write(
+        bridge_profile.join("settings.json"),
+        serde_json::to_vec(&profile(&bridge_reopen)?)?,
+    )?;
+    assert_eq!(
+        probe(bridge, "native-refused", &bridge_profile, &bridge_reopen)?["blocked"],
+        true
+    );
+    // Only this disposable compatibility experiment removes its COPIED native
+    // control record. It grants no production rollback/rebinding permission.
+    fs::remove_file(bridge_reopen.join(".librairii-native-state.json"))?;
+    assert_eq!(
+        probe(bridge, "open", &bridge_profile, &bridge_reopen)?["closed"],
+        true
+    );
+    let connection = rusqlite::Connection::open_with_flags(
+        bridge_reopen.join("db/librairii.sqlite3"),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )?;
+    let go_after_native = handover_support::snapshot_connection(&connection)?;
+    let direct_go_compatible = go_after_native == post_native;
+    let native_collection = post_native["tables"]["collections"]
+        .as_array()
+        .ok_or("collections")?
+        .iter()
+        .find(|r| r["name"] == "Native addition")
+        .ok_or("native addition")?;
+    let go_collection = go_after_native["tables"]["collections"]
+        .as_array()
+        .ok_or("Go collections")?
+        .iter()
+        .find(|r| r["id"] == native_collection["id"])
+        .ok_or("Go retained native addition")?;
+    assert_eq!(
+        go_collection["query_payload"],
+        native_collection["query_payload"]
+    );
+    assert_eq!(
+        go_collection["query_version"],
+        native_collection["query_version"]
+    );
+    drop(connection);
+    assert!(
+        files(&target)? == post_files,
+        "Go compatibility reopening changed active candidate"
+    );
+    assert!(files(store.directory())? == native_profile);
     // The supported rollback always gets an independent closed pre-adoption
     // snapshot. New native edits remain in the retained candidate, for explicit
     // export/re-import or manual reconciliation; never overwrite with backup.
@@ -333,7 +389,7 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
     assert_eq!(files(legacy)?, legacy_before);
     assert_eq!(files(&backup)?, source_before);
     Ok(
-        json!({"prefix":prefix,"current_bridge":prefix==19,"configured_legacy_profile":configured,"source_manifest":source_manifest,"backup_manifest":backup_manifest,"legacy_profile_backup":seal(&profile_backup)?,"upgraded_database":upgraded,"post_native_database":post_native,"candidate_manifest":seal(&target)?,"native_profile_manifest":seal(store.directory())?,"rollback_clone":seal(&rollback)?,"source_and_legacy_unchanged":true,"independent_inodes":true,"restart_all_tables_equal":true,"preferences_retained":true,"in_place_refused":true,"newer_candidate_preserved_during_rollback":true}),
+        json!({"prefix":prefix,"current_bridge":prefix==19,"configured_legacy_profile":configured,"source_manifest":source_manifest,"backup_manifest":backup_manifest,"closed_tree_manifest":serde_json::from_slice::<Value>(&manifest)?,"legacy_profile_backup":seal(&profile_backup)?,"upgraded_database":upgraded,"post_native_database":post_native,"go_after_native_on_disposable_copy":go_after_native,"direct_go_compatible":direct_go_compatible,"bridge_refuses_native_owned_root":true,"rollback_policy":"independent pre-native snapshot; retain newer candidate and explicitly reconcile edits","candidate_manifest":seal(&target)?,"native_profile_manifest":seal(store.directory())?,"rollback_clone":seal(&rollback)?,"source_and_legacy_unchanged":true,"independent_inodes":true,"restart_all_tables_equal":true,"preferences_retained":true,"in_place_refused":true,"newer_candidate_preserved_during_rollback":true}),
     )
 }
 fn main() -> Result {

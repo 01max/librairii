@@ -162,3 +162,38 @@ func TestFailedClosePermanentlyFencesReopenAndRetainsEveryLease(t *testing.T) {
 		t.Fatal("failed close released ownership", err)
 	}
 }
+
+func TestNativeOwnedLibraryRefusesGoReopenAndRecoveryWithoutChangingItsRecords(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	initial := NewStorageReadiness(root)
+	if _, err := initial.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := initial.Close(); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(root, ".librairii-native-state.json")
+	if err := os.WriteFile(marker, []byte("future native recovery bytes"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(root, "db/librairii.sqlite3"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := NewStorageReadiness(root)
+	defer other.Close()
+	if _, err := other.Check(ctx); !errors.Is(err, storage.ErrNativeLibrary) {
+		t.Fatal(err)
+	}
+	if _, err := other.RecoverSchemaConflict(ctx); !errors.Is(err, storage.ErrNativeLibrary) {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(root, "db/librairii.sqlite3"))
+	if err != nil || string(after) != string(before) {
+		t.Fatal("native database changed", err)
+	}
+	if b, err := os.ReadFile(marker); err != nil || string(b) != "future native recovery bytes" {
+		t.Fatal("native control changed", err)
+	}
+}

@@ -178,6 +178,9 @@ func (a *Application) Start(ctx context.Context) error {
 		if errors.Is(err, storage.ErrLibraryInUse) {
 			message = "Close the other Librairii application, then retry."
 		}
+		if errors.Is(err, storage.ErrNativeLibrary) {
+			message = "This library was used by the native application. To return to this version, use a separate pre-native backup and keep the newer library."
+		}
 		a.lastError = NewAPIError(ErrorStorageUnavailable, message)
 		return nil
 	}
