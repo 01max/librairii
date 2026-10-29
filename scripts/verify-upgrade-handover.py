@@ -29,17 +29,37 @@ def build(work, environment, template, name):
 
 
 def run_example(example, helpers, environment):
-    command = ['cargo', 'run', '--locked', '-p', 'librairii-storage', '--example', example]
+    command = ['cargo', 'build', '--locked', '-p', 'librairii-storage', '--example', example, '--message-format=json-render-diagnostics']
     if os.environ.get('RUST_TARGET'):
         command += ['--target', os.environ['RUST_TARGET']]
-    result = subprocess.run(command + ['--'] + list(map(str, helpers)), cwd=ROOT,
+    built = subprocess.run(command, cwd=ROOT, env=environment, text=True, capture_output=True, timeout=240)
+    destination = ROOT / 'target/quality'
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / f'{example}-compiler.jsonl').write_text(built.stdout)
+    (destination / f'{example}-build.log').write_text(built.stderr)
+    if built.returncode:
+        raise RuntimeError(f'{example} compilation failed: {built.stderr[-4096:]}')
+    artifacts = [json.loads(line) for line in built.stdout.splitlines()]
+    executables = [item for item in artifacts if item.get('reason') == 'compiler-artifact' and item.get('target', {}).get('name') == example and item.get('executable')]
+    if len(executables) != 1:
+        raise ValueError(f'expected one compiler-reported {example} executable')
+    executable = Path(executables[0]['executable'])
+    if executable.is_symlink() or not executable.is_file() or executable.stat().st_nlink != 1:
+        raise ValueError('nonregular rehearsal executable')
+    before = digest(executable)
+    result = subprocess.run([str(executable)] + list(map(str, helpers)), cwd=ROOT,
                             env=environment, text=True, capture_output=True, timeout=240)
+    (destination / f'{example}-execution.log').write_text(result.stderr)
     if result.returncode:
         failure = ROOT / 'target/quality' / f'{example}-failure.log'
         failure.parent.mkdir(parents=True, exist_ok=True)
         failure.write_text(result.stdout + '\n' + result.stderr)
         raise RuntimeError(f'{example} failed; full output: {failure}\n{result.stderr[-4096:]}')
-    return json.loads(result.stdout)
+    if digest(executable) != before:
+        raise ValueError('rehearsal executable changed during execution')
+    report = json.loads(result.stdout)
+    report['execution'] = {'executable_sha256': before, 'bytes': executable.stat().st_size, 'compiler_artifact': executables[0]}
+    return report
 
 
 def main():
@@ -73,6 +93,9 @@ def main():
                 'frozen_source_manifest_sha256': hashlib.sha256(manifest).hexdigest(),
                 'current_go_sources': sources,
                 'example_sha256': digest(ROOT / 'crates/librairii-storage/examples/upgrade_handover.rs'),
+                'application_example_sha256': digest(ROOT / 'crates/librairii-storage/examples/application_handover.rs'),
+                'shared_support_sha256': digest(ROOT / 'crates/librairii-storage/examples/handover_support/mod.rs'),
+                'driver_script_sha256': digest(Path(__file__)),
             }
             destination = ROOT / 'target/quality/upgrade-handover.json'
             destination.parent.mkdir(parents=True, exist_ok=True)
