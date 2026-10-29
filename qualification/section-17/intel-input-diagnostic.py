@@ -107,7 +107,7 @@ def main():
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     assert platform.system() == 'Darwin' and platform.machine() == 'x86_64'
     assert os.environ.get('GITHUB_REPOSITORY') == '01max/librairii'
-    OUT.mkdir(mode=0o700)
+    OUT.mkdir(mode=0o700, parents=True)
     receipt = {'scope': 'diagnostic only; never substitutes for or erases qualification',
                'complete': False, 'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                'platform': platform.platform(), 'hardware': {
