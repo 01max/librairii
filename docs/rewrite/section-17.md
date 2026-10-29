@@ -105,8 +105,10 @@ raw admission identify the platform-specific method explicitly.
 Regression cases distinguish200ms publication delay from205ms actual dispatch,
 retain slow event-posting cost, reject tampered/missing/ambiguous witnesses and
 incompatible clock rounds, and replay a provenance-bound64-sample diagnostic
-fixture. The latter protects clock arithmetic only. Fresh complete native
-qualification and pointer evidence remain necessary; Task17.8 stays open.
+fixture. The latter protects clock arithmetic only. The subsequent128-pointer
+diagnostic validated counter correspondence, and standalone Intel method3
+verification passed at source `386c4b7`. Fresh complete three-target qualification
+remains required; final admission is recorded in PR68.
 
 ## Native startup font indexing candidate
 
@@ -131,7 +133,8 @@ face attribute, axis, character-map index and file identity against the original
 serial implementation, in forward and reverse file order. A local468-file run
 passes; its timings are diagnostic only. Fresh complete three-target native,
 startup and resource qualification remains required under the unchanged1,000ms
-startup ceiling. Task17.8 stays open.
+startup ceiling. Local equivalence does not close Task17.8; final admission is
+recorded in PR68.
 
 ## Executable rehearsal and retained evidence
 
