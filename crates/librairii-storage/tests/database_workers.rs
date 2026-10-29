@@ -581,3 +581,85 @@ fn dropping_result_does_not_cancel_durable_repair_and_close_drains_it() -> TestR
     drop(connection);
     Ok(())
 }
+
+#[test]
+fn engine_rollback_loss_never_turns_body_or_cancel_failure_into_retry_permission() -> TestResult {
+    for cancel_after_engine_rollback in [false, true] {
+        let roots = TestRoots::new()?;
+        let library = isolated(&roots)?;
+        let mut database = Database::open_isolated(&library)?;
+        committed(database.transaction(Default::default(),|tx| {
+            tx.execute_batch("CREATE TABLE rollback_probe(value INTEGER); CREATE TRIGGER rollback_failure BEFORE INSERT ON rollback_probe WHEN NEW.value=2 BEGIN SELECT RAISE(ROLLBACK,'engine rollback'); END")?;Ok(())
+        })?.wait()?)?;
+        let cancellation = WorkCancellation::default();
+        let signal = cancellation.clone();
+        let attempted = database
+            .transaction(cancellation, move |tx| {
+                tx.execute("INSERT INTO rollback_probe VALUES(1)", [])?;
+                let Err(error) = tx.execute("INSERT INTO rollback_probe VALUES(2)", []) else {
+                    return Err(StorageError::CompatibilityInvariant);
+                };
+                if cancel_after_engine_rollback {
+                    signal.cancel();
+                    Ok(())
+                } else {
+                    Err(error.into())
+                }
+            })?
+            .wait()?;
+        match attempted {
+            TransactionOutcome::CommitUncertain(StorageError::RollbackUncertain {
+                work,
+                rollback: _,
+            }) => {
+                if cancel_after_engine_rollback {
+                    assert!(matches!(*work, StorageError::Cancelled));
+                } else {
+                    assert!(matches!(*work, StorageError::Sqlite(_)));
+                }
+            }
+            other => {
+                return Err(
+                    format!("rollback acknowledgement loss was misclassified: {other:?}").into(),
+                );
+            }
+        }
+        assert!(matches!(
+            database.transaction(Default::default(), |_| Ok(())),
+            Err(StorageError::RuntimeFenced)
+        ));
+        let count = database
+            .barrier_read(|tx| {
+                Ok(
+                    tx.query_row("SELECT count(*) FROM rollback_probe", [], |r| {
+                        r.get::<_, i64>(0)
+                    })?,
+                )
+            })?
+            .wait()?;
+        assert_eq!(count, 0, "fresh truth, never a replay of the failed item");
+        committed(
+            database
+                .repair_transaction(|tx| {
+                    tx.execute("INSERT INTO rollback_probe VALUES(3)", [])?;
+                    let value:i64=tx.query_row("SELECT value FROM rollback_probe",[],|r|r.get(0))?;
+                    assert_eq!(value,3);
+                    tx.execute_batch("DROP TRIGGER rollback_failure; DROP TABLE rollback_probe; INSERT INTO stories(uuid,embedded_title,display_name_normalized) VALUES('16000000-0000-4000-8000-000000000001','Repaired','repaired')")?;
+                    Ok(())
+                })?
+                .wait()?,
+        )?;
+        database.close()?;
+        let mut reopened = Database::open_isolated(&library)?;
+        assert_eq!(
+            reopened
+                .read(|tx| Ok(tx
+                    .query_row("SELECT embedded_title FROM stories", [], |r| r
+                        .get::<_, String>(0))?))?
+                .wait()?,
+            "Repaired"
+        );
+        reopened.close()?;
+    }
+    Ok(())
+}

@@ -1,9 +1,13 @@
 //! Native presentation fixtures use only explicitly owned synthetic library data.
 #[path = "native-foundations/presentation.rs"]
 mod callback_checks;
+#[path = "native-foundations/cover_projection.rs"]
+mod cover_projection_checks;
 #[cfg(target_os = "macos")]
 #[path = "native-foundations/native_menu.rs"]
 mod native_menu;
+#[path = "native-foundations/typing_layout.rs"]
+mod typing_layout_checks;
 #[allow(dead_code)]
 #[path = "../src/view.rs"]
 mod view;
@@ -313,6 +317,7 @@ fn main() -> Result {
     ui.invoke_close_dialog();
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        covers: Default::default(),
         maintenance: Default::default(),
         activation: initial.workflows.settings.activation,
         operations: Default::default(),
@@ -374,6 +379,7 @@ fn main() -> Result {
             state.borrow_mut().project(&ui);
         }
     });
+    cover_projection_checks::checks(&ui, &view)?;
     let state = view.clone();
     let weak = ui.as_weak();
     ui.on_mode_selected(move |_| {
@@ -578,6 +584,9 @@ fn capture_step(
             ui.set_workspace(workspace);
             proposals(ui, french);
         } else {
+            if index == 1 || index == 19 {
+                typing_layout_checks::checks(ui, view)?;
+            }
             let name = if workspace {
                 format!(
                     "workspace-{density}-{}.png",

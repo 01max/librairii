@@ -26,6 +26,8 @@ objc2-foundation = { version = "=0.3.2", default-features = false, features = ["
 workspace = true
 
 [dev-dependencies]
+rustix = { workspace = true, features = ["time"] }
+serde.workspace = true
 rusqlite.workspace = true
 image.workspace = true
 librairii-testkit.workspace = true

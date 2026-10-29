@@ -820,4 +820,59 @@ mod tests {
         }
         Ok(())
     }
+    #[test]
+    fn forged_schema_preservation_receipts_never_authorize_replacement_or_release_custody()
+    -> TestResult {
+        for variant in 0..8 {
+            let (_roots, locations, root) = setup()?;
+            let store = NativeProfileStore::open_native(&locations.native)?;
+            let mut recovery = SchemaRecovery::open(&store, &locations, &Default::default())?;
+            assert_eq!(recovery.preview(), Some(SchemaPreview::Foreign));
+            // Produce actual durable verified copies and receipt with the real
+            // owned storage path, then adversarially substitute fixture bytes.
+            recovery.create_archive()?;
+            let path = recovery.retained_paths().pop().ok_or("preserved archive")?;
+            let receipt = path.join(RECEIPT);
+            let mut manifest: serde_json::Value = serde_json::from_slice(&fs::read(&receipt)?)?;
+            match variant {
+                0 => manifest["version"] = 2.into(),
+                1 => manifest["library_id"] = "a0000000-0000-4000-8000-000000000999".into(),
+                2 => manifest["members"] = serde_json::json!([]),
+                3 => {
+                    let duplicate = manifest["members"][0].clone();
+                    manifest["members"]
+                        .as_array_mut()
+                        .ok_or("members")?
+                        .push(duplicate);
+                }
+                4 => manifest["members"][0]["name"] = "../librairii.sqlite3".into(),
+                5 => manifest["members"][0]["sha256"] = "not-a-checksum".into(),
+                6 => manifest["members"][0]["bytes"] = 99999.into(),
+                _ => fs::write(path.join(FAMILY[0]), b"substituted preserved database")?,
+            }
+            fs::write(&receipt, serde_json::to_vec(&manifest)?)?;
+            // Reinspect the durable bytes while retaining this exact native
+            // owner; Drop must never be interpreted as a clean restart receipt.
+            let SchemaRecovery { native, .. } = recovery;
+            let before = payloads(&root)?;
+            let recovery = SchemaRecovery::from_native(native);
+            let Err(failure) = recovery.confirm(unclosed) else {
+                return Err(
+                    format!("forged receipt variant {variant} authorized replacement").into(),
+                );
+            };
+            assert_eq!(failure.root(), root);
+            assert!(LibraryLease::acquire_existing_in(&root, &Directory::open(&root)?).is_err());
+            assert_eq!(
+                payloads(&root)?,
+                before,
+                "all originals, archives and forged evidence must remain exact"
+            );
+            assert_eq!(
+                fs::read(root.join("db/librairii.sqlite3"))?,
+                b"foreign database bytes"
+            );
+        }
+        Ok(())
+    }
 }

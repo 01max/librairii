@@ -1,6 +1,8 @@
 //! Main-thread projection of owned bounded worker values into native models.
 #[path = "view/collections.rs"]
 pub(crate) mod collections;
+#[path = "view/cover_images.rs"]
+pub(crate) mod cover_images;
 #[path = "view/details.rs"]
 pub(crate) mod details;
 #[path = "view/exports.rs"]
@@ -106,6 +108,7 @@ fn update_story_groups(ui: &DesktopWindow, mut next: Vec<StoryGroup>) {
     ui.set_story_groups(ModelRc::new(VecModel::from(next)));
 }
 pub struct View {
+    pub covers: cover_images::CoverImages,
     pub maintenance: maintenance::State,
     pub activation: u64,
     pub operations: operations::State,
@@ -123,7 +126,13 @@ pub struct View {
     pub columns: usize,
     pub guard: librairii_ui::responses::ResponseGuard,
 }
-fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> StoryRow {
+fn row(
+    index: usize,
+    story: &Story,
+    language: Language,
+    catalogs: &Catalogs,
+    cover: slint::Image,
+) -> StoryRow {
     let (broken, available) = story
         .summary
         .as_ref()
@@ -136,15 +145,6 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
         (_, false, Language::French) => "Indisponible · exclue des exports",
         _ => "",
     };
-    let cover = story
-        .thumbnail
-        .as_ref()
-        .map(|t| {
-            slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
-                &t.rgba, t.width, t.height,
-            ))
-        })
-        .unwrap_or_default();
     let tags = story
         .tags
         .iter()
@@ -336,6 +336,7 @@ impl View {
                 }
                 self.activation = activation;
                 self.guard.activate(generation.clone());
+                self.covers.clear();
             }
             self.guard.expect(revision);
             if !self.guard.accepts(generation, snapshot.revision) {
@@ -489,6 +490,7 @@ impl View {
             .unwrap_or(if french { "Bibliothèque" } else { "Library" });
         ui.set_scope_title(title.into());
         let Some(page) = &self.snapshot.page else {
+            self.covers.clear();
             ui.set_story_groups(ModelRc::new(VecModel::from(Vec::<StoryGroup>::new())));
             ui.set_story_count(0);
             ui.set_collection_previews(ModelRc::default());
@@ -517,11 +519,13 @@ impl View {
             .or_else(|| (!page.stories.is_empty()).then_some(0));
         self.selected =
             selected.and_then(|index| page.all_stories().nth(index).map(|s| s.uuid.clone()));
+        let covers = self.covers.project(page.all_stories());
         let rows = page
             .all_stories()
+            .zip(covers)
             .enumerate()
-            .map(|(i, s)| {
-                let mut row = row(i, s, self.snapshot.language, &self.catalogs);
+            .map(|(i, (s, cover))| {
+                let mut row = row(i, s, self.snapshot.language, &self.catalogs, cover);
                 row.bulk = self.tags.selection.contains(&s.uuid);
                 row
             })
@@ -694,6 +698,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        covers: Default::default(),
         maintenance: Default::default(),
         activation: initial.workflows.settings.activation,
         operations: Default::default(),

@@ -707,7 +707,7 @@ export component DesktopWindow inherits Window {
                     padding: root.compact ? (root.shelf-active ? 4px : 8px) : 20px; spacing: root.compact && root.shelf-active ? 0px : 8px;
                     controls-scroll := ScrollView {
                         vertical-stretch: 0;content-width: self.visible-width;content-height: controls-layout.preferred-height;
-                        height: root.compact && (root.workspace || root.shelf-active || root.bulk-summary!="" || root.terminal-notice!="" || root.terminal-notice-error!="") ? min(controls-layout.preferred-height,max(36px,main.height - (root.workspace ? 256px : 240px))) : controls-layout.preferred-height;
+                        height: (main.height < 440px || (root.compact && (root.workspace || root.shelf-active || root.bulk-summary!="" || root.terminal-notice!="" || root.terminal-notice-error!=""))) ? min(controls-layout.preferred-height,max(36px,main.height - (root.workspace ? 256px : 240px))) : controls-layout.preferred-height;
                         controls-layout := VerticalBox {height: self.preferred-height;padding: 0px;spacing: root.compact && root.shelf-active ? 0px : 8px;
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); horizontal-stretch: 1; font-size: root.compact ? 20px : 24px; font-weight: 600; }
@@ -718,7 +718,9 @@ export component DesktopWindow inherits Window {
                         ModeChoice {reveal(y,h)=>{root.reveal-controls(y,h);} visible: !root.shelf-active; horizontal-stretch: 0; width: root.shelf-active ? 0px : (root.compact ? 180px : 230px); accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
                         Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
-                    if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
+                    // Keep feedback mounted so adding/removing search text does
+                    // not reflow the results and inspector on every keystroke.
+                    Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: self.text == "" ? "" : (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
                     if root.terminal-notice!="": VerticalBox {padding:0px;spacing:4px;
                         Text {height:24px;text:root.terminal-notice;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
                         HorizontalBox {padding:0px;spacing:6px;
