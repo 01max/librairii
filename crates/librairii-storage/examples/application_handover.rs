@@ -46,7 +46,7 @@ fn go_profile(directory: &Path, root: &Path) -> Result {
     )?;
     Ok(())
 }
-fn seed(case: &Path) -> Result {
+fn seed(case: &Path, prefix: Option<usize>) -> Result {
     let l = locations(case)?;
     let source = case.join("legacy");
     fs::create_dir_all(&source)?;
@@ -64,6 +64,12 @@ fn seed(case: &Path) -> Result {
             )?;
         }
     }
+    if let Some(prefix) = prefix {
+        fs::copy(
+            corpus.join(format!("databases/prefix-{prefix:03}.sqlite3")),
+            source.join("db/librairii.sqlite3"),
+        )?;
+    }
     go_profile(l.legacy.as_ref().ok_or("legacy")?, &source)?;
     let Startup::AdoptIndependent(input) = inspect_startup(&l, &Default::default()) else {
         return Err("adoption not offered".into());
@@ -77,6 +83,10 @@ fn seed(case: &Path) -> Result {
         &Default::default(),
     )
     .map_err(|e| e.to_string())?;
+    if prefix.is_some() {
+        drop(native);
+        return Ok(());
+    }
     let mut db = Database::open_native(&native)?;
     db.close()?;
     drop(db);
@@ -200,6 +210,115 @@ impl RelocationObserver for Observer<'_> {
         }
     }
 }
+fn migration(roots: &librairii_testkit::TestRoots, frozen: &Path, bridge: &Path) -> Result<Value> {
+    let case = roots.library().join("interrupted migration");
+    fs::create_dir(&case)?;
+    seed(&case, Some(1))?;
+    let l = locations(&case)?;
+    let candidate = case.join("candidate");
+    let source = case.join("legacy");
+    // Only this closed disposable candidate changes journal mode to install
+    // the deterministic SQLite read barrier; the legacy input stays exact.
+    let fixture = rusqlite::Connection::open(candidate.join("db/librairii.sqlite3"))?;
+    fixture.execute_batch("PRAGMA journal_mode=DELETE;")?;
+    drop(fixture);
+    let original_database = fs::read(candidate.join("db/librairii.sqlite3"))?;
+    let source_backup = seal(&source)?;
+    // A real readonly SQLite transaction holds the initial journal-mode switch.
+    // The child has acquired native ownership and published Active, but cannot
+    // commit schema changes. SIGKILL therefore exercises a deterministic
+    // interrupted upgrade before its first migration, never a timing race.
+    let blocker = rusqlite::Connection::open_with_flags(
+        candidate.join("db/librairii.sqlite3"),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )?;
+    blocker.execute_batch("BEGIN; SELECT version FROM schema_migrations LIMIT 1;")?;
+    let mut process = OwnedChild(
+        Command::new(std::env::current_exe()?)
+            .arg("migration-child")
+            .arg(&case)
+            .env_clear()
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::inherit())
+            .spawn()?,
+    );
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        let state: Value =
+            serde_json::from_slice(&fs::read(candidate.join(".librairii-native-state.json"))?)?;
+        let no_pending_control = fs::read_dir(&candidate)?.all(|entry| {
+            entry.is_ok_and(|e| {
+                !e.file_name()
+                    .to_string_lossy()
+                    .starts_with(".librairii-native-state.json.tmp-")
+            })
+        });
+        let directories_ready = ["db", "archives", "catalog", "staging", "trash", "logs"]
+            .iter()
+            .all(|d| candidate.join(d).is_dir());
+        if state["state"] == "active" && no_pending_control && directories_ready {
+            break;
+        }
+        if process.0.try_wait()?.is_some() || Instant::now() >= deadline {
+            return Err("upgrade child did not acquire native ownership".into());
+        }
+        thread::sleep(Duration::from_millis(2));
+    }
+    assert!(
+        Command::new("/bin/kill")
+            .arg("-STOP")
+            .arg(process.0.id().to_string())
+            .status()?
+            .success()
+    );
+    let before = protected(&case)?;
+    assert_eq!(protected(&case)?, before, "upgrade child did not stop");
+    let bridge_profile = roots.profile().join("migration bridge");
+    go_profile(&bridge_profile, &candidate)?;
+    assert_eq!(
+        probe(bridge, "blocked", &bridge_profile, &candidate)?["blocked"],
+        true
+    );
+    let legacy = l.legacy.as_ref().ok_or("legacy")?;
+    assert_eq!(probe(frozen, "open", legacy, &source)?["closed"], true);
+    assert_eq!(
+        protected(&case)?,
+        before,
+        "later original Go changed the interrupted candidate"
+    );
+    assert!(
+        process.0.try_wait()?.is_none(),
+        "migration passed the SQLite blocker"
+    );
+    process.0.kill()?;
+    assert_eq!(process.0.wait()?.signal(), Some(9));
+    assert_eq!(
+        fs::read(candidate.join("db/librairii.sqlite3"))?,
+        original_database
+    );
+    blocker.execute_batch("ROLLBACK")?;
+    drop(blocker);
+    let store = NativeProfileStore::open_native(&l.native)?;
+    let recovered = NativeLibrary::recover_interrupted(&store, &l, &Default::default())?;
+    let mut db = recovered.open()?;
+    let snapshot = snapshot(&db)?;
+    assert_eq!(
+        snapshot["tables"]["schema_migrations"]
+            .as_array()
+            .ok_or("ledger")?
+            .len(),
+        18
+    );
+    assert_eq!(snapshot["integrity"], "ok");
+    assert_eq!(snapshot["foreignKeyViolations"], json!([]));
+    db.close()?;
+    drop(db);
+    recovered.finish().map_err(|e| e.to_string())?;
+    Ok(
+        json!({"boundary":"native Active before first migration commit; SQLite readonly blocker","sigkill":9,"candidate_database_unchanged_before_recovery":true,"bridge_refused_before_recovery":true,"unmodified_go_opened_and_upgraded_source_only":true,"candidate_and_native_journal_unchanged_by_go":true,"closed_source_backup_manifest":source_backup,"after_recovery":snapshot,"candidate_manifest":seal(&candidate)?}),
+    )
+}
 fn main() -> Result {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
     if args.first().is_some_and(|a| a == "child") {
@@ -208,12 +327,23 @@ fn main() -> Result {
             Path::new(args.get(2).ok_or("receipt")?),
         );
     }
+    if args.first().is_some_and(|a| a == "migration-child") {
+        let case = Path::new(args.get(1).ok_or("case")?);
+        let l = locations(case)?;
+        let store = NativeProfileStore::open_native(&l.native)?;
+        let owner = NativeLibrary::reopen(&store, &l, &Default::default())?;
+        let mut db = Database::open_native(&owner)?;
+        db.close()?;
+        drop(db);
+        owner.finish().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
     let frozen = fs::canonicalize(args.first().ok_or("frozen application helper")?)?;
     let bridge = fs::canonicalize(args.get(1).ok_or("bridge application helper")?)?;
     let roots = librairii_testkit::TestRoots::new()?;
     let case = roots.library().join("application handover");
     fs::create_dir(&case)?;
-    seed(&case).map_err(|e| format!("seed/adopt: {e}"))?;
+    seed(&case, None).map_err(|e| format!("seed/adopt: {e}"))?;
     let receipt = roots.profile().join("ready");
     let mut process = OwnedChild(
         Command::new(std::env::current_exe()?)
@@ -342,9 +472,10 @@ fn main() -> Result {
             "missing relocation overlap {stage}"
         );
     }
+    let migration = migration(&roots, &frozen, &bridge)?;
     println!(
         "{}",
-        json!({"format":"librairii.application-handover","version":1,"live":live,"sigkill":9,"native_second_launch_refused_before_recovery":true,"recovered_export":operation,"restarted":restarted,"relocation_stages":stages,"after_move":after_move,"final_native_profile":seal(store.directory())?,"final_database":after,"foreign_export_preserved":true})
+        json!({"format":"librairii.application-handover","version":1,"migration":migration,"live":live,"sigkill":9,"native_second_launch_refused_before_recovery":true,"recovered_export":operation,"restarted":restarted,"relocation_stages":stages,"after_move":after_move,"final_native_profile":seal(store.directory())?,"final_database":after,"foreign_export_preserved":true})
     );
     Ok(())
 }
