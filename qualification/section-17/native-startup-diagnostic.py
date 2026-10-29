@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import subprocess
+import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,6 +54,8 @@ def load(name, path):
 
 
 def main():
+    assert sys.argv[1:] in ([], ['--late-first'])
+    late_first = sys.argv[1:] == ['--late-first']
     assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == '01max/librairii'
     assert platform.system() == 'Darwin' and platform.machine() == 'x86_64'
     assert not subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT)
@@ -94,12 +97,18 @@ def main():
                'platform': platform.platform(),
                'swift_version': subprocess.check_output(['xcrun', 'swiftc', '--version'], text=True),
                'source_artifact': 12933483272, 'source_artifact_sha256': sha(archive.read_bytes()),
+               'order': 'late-first' if late_first else 'original-first',
                'binary_pins': PINS, 'late_helper_sha256': sha(helper.read_bytes()), 'late_source_sha256': sha(source.read_bytes()),
                'hardware': {key: subprocess.check_output(['sysctl', '-n', value], text=True).strip()
                             for key, value in [('cpu', 'machdep.cpu.brand_string'), ('memory', 'hw.memsize'),
                                                ('logical_cpus', 'hw.logicalcpu'), ('model', 'hw.model')]},
                'plan': [['original', 'gpu'], ['late', 'gpu'], ['late', 'software'], ['original', 'software'],
                         ['late', 'gpu'], ['original', 'gpu'], ['original', 'software'], ['late', 'software']], 'cohorts': []}
+    if late_first:
+        # Complement every treatment in the original predeclared order. The
+        # first GPU launch now uses late activation on a fresh hosted runner.
+        receipt['plan'] = [['late' if treatment == 'original' else 'original', renderer]
+                           for treatment, renderer in receipt['plan']]
     def publish():
         (OUT / 'diagnostic.json').write_text(json.dumps(receipt, indent=2) + '\n')
     publish()
