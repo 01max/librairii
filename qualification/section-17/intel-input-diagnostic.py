@@ -86,8 +86,16 @@ def probe_source():
          '''        input.append(elapsed(start)); inputStates.append(end)
         probeSamples.append(["n": n, "wanted": wanted, "start_ns": start, "posted_ns": posted,
             "observed_ns": DispatchTime.now().uptimeNanoseconds, "thread_cpu_ns": probeCPU() - cpuStart,
-            "reads": Array(probeReads[readsStart...])])'''),
+            "key_phases": probeKeys.last ?? [:], "reads": Array(probeReads[readsStart...])])'''),
         ('    let target = try firstStoryPoint()', '    try probeEnd()\n    let target = try firstStoryPoint()'),
+        ('    guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { throw Refusal(message: "lost owned foreground PID") }',
+         '''    let probeKeyStart = DispatchTime.now().uptimeNanoseconds
+    guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { throw Refusal(message: "lost owned foreground PID") }
+    let probeForeground = DispatchTime.now().uptimeNanoseconds
+    defer { if probeEnabled { probeKeys.append(["start_ns": probeKeyStart, "foreground_checked_ns": probeForeground,
+        "posted_ns": DispatchTime.now().uptimeNanoseconds]) } }'''),
+        ('} catch { fputs("\\(error)\\n", stderr); exit(1) }',
+         '} catch { try? probeEnd(); fputs("\\(error)\\n", stderr); exit(1) }'),
     ]
     for old, new in substitutions:
         assert original.count(old) == 1, old
@@ -144,6 +152,11 @@ def main():
         except Exception as error:
             cohort['error'] = f'{type(error).__name__}: {error}'
         report = json.loads((destination / 'report.json').read_text()) if (destination / 'report.json').exists() else {}
+        if probes:
+            probe_path = destination / 'keyboard-probe.json'
+            probe = json.loads(probe_path.read_text()) if probe_path.exists() else {}
+            cohort['probe_cleanup_complete'] = probe.get('cleanup_complete', False)
+            cohort['probes_complete'] = probe.get('probes_complete', False)
         cohort.update(workers_joined=report.get('workers_joined', False),
                       fixture_retired=report.get('fixture_retired', False), gate_complete=report.get('complete', False))
         for key in ['input_p95_ms', 'pointer_p95_ms', 'navigation_p95_ms']:
@@ -151,13 +164,16 @@ def main():
         receipt['cohorts'].append(cohort)
         publish()
         print(json.dumps(cohort), flush=True)
-        if not cohort['workers_joined'] or not cohort['fixture_retired']:
+        if not cohort['workers_joined'] or not cohort['fixture_retired'] or (probes and not cohort['probe_cleanup_complete']):
             raise ValueError('owned process/fixture retirement required before another cohort')
     for label, pin in PINS.items():
         assert digest((OUT / f'{label}-scale-native').read_bytes()) == pin[4]
         assert digest((OUT / f'{label}-input-macos').read_bytes()) == HELPER
     receipt['complete'] = True  # completion of the declared diagnostic, not admission
+    receipt['probes_complete'] = all(c.get('probes_complete', not c['probes']) for c in receipt['cohorts'])
     publish()
+    if not receipt['probes_complete']:
+        raise ValueError('declared diagnostic completed, but one or more probes are unavailable')
 
 
 if __name__ == '__main__':
