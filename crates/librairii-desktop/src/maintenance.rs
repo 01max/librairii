@@ -22,15 +22,17 @@ pub enum Action {
     KeepSource,
     Locate(PathBuf),
     Diagnostics(PathBuf),
+    ImportPreferences(PathBuf),
     Clear,
     PreserveSchema,
 }
 impl Action {
     pub fn bounded(&self) -> bool {
         match self {
-            Self::Select(p) | Self::Locate(p) | Self::Diagnostics(p) => {
-                p.is_absolute() && p.as_os_str().len() <= 16 * 1024
-            }
+            Self::Select(p)
+            | Self::Locate(p)
+            | Self::Diagnostics(p)
+            | Self::ImportPreferences(p) => p.is_absolute() && p.as_os_str().len() <= 16 * 1024,
             _ => true,
         }
     }
@@ -57,6 +59,10 @@ pub enum Notice {
     Retained,
     CleanupPending,
     SchemaRecovered,
+    PreferencesImported,
+    PreferencesKept,
+    PreferencesAlreadyImported,
+    PreferencesRejected,
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {

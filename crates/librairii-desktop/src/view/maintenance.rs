@@ -69,6 +69,26 @@ impl State {
             ),
         };
         let notice = match s.notice {
+            Some(Notice::PreferencesImported) => words(
+                l,
+                "Preferences imported for this library.",
+                "Préférences importées pour cette bibliothèque.",
+            ),
+            Some(Notice::PreferencesKept) => words(
+                l,
+                "Preference transfer recorded. Already saved native choices were kept.",
+                "Transfert de préférences enregistré. Les choix natifs déjà enregistrés ont été conservés.",
+            ),
+            Some(Notice::PreferencesAlreadyImported) => words(
+                l,
+                "Preferences were already imported. Your current choices were kept.",
+                "Les préférences ont déjà été importées. Vos choix actuels ont été conservés.",
+            ),
+            Some(Notice::PreferencesRejected) => words(
+                l,
+                "This preference file is invalid, belongs to another library, or could not be read. Existing choices were kept.",
+                "Ce fichier de préférences est invalide, appartient à une autre bibliothèque ou ne peut pas être lu. Les choix existants ont été conservés.",
+            ),
             Some(Notice::SchemaRecovered) => words(
                 l,
                 "Database recovery completed. The original database files are preserved at the locations below; managed archives remain unchanged.",
@@ -182,6 +202,7 @@ impl State {
             can_locate: s.can_locate,
             can_export: matches!(mode, Mode::Library | Mode::Override)
                 && snapshot.generation.is_some(),
+            can_import: mode==Mode::Library && snapshot.generation.is_some(),
             interrupted: s.interrupted_move,
             ..Default::default()
         });
@@ -300,6 +321,7 @@ pub(crate) enum Picker {
     Folder,
     Locate,
     Diagnostics,
+    Preferences,
 }
 pub(crate) fn selected(
     state: &Rc<RefCell<View>>,
@@ -322,11 +344,13 @@ pub(crate) fn selected(
                 Picker::Folder => Action::Select(path),
                 Picker::Locate => Action::Locate(path),
                 Picker::Diagnostics => Action::Diagnostics(path),
+                Picker::Preferences => Action::ImportPreferences(path),
             },
         );
     }
     match kind {
         Picker::Diagnostics => ui.invoke_focus_settings_diagnostics(),
+        Picker::Preferences => ui.invoke_focus_settings_transfer(),
         _ => ui.invoke_focus_settings_choose(),
     }
 }
@@ -343,12 +367,17 @@ fn pick(state: Rc<RefCell<View>>, worker: Rc<RefCell<Worker>>, ui: &DesktopWindo
         (Picker::Locate, true) => "Retrouver la même bibliothèque",
         (Picker::Diagnostics, false) => "Save diagnostic ZIP",
         (Picker::Diagnostics, true) => "Enregistrer le ZIP de diagnostic",
+        (Picker::Preferences, false) => "Import preferences from the previous application",
+        (Picker::Preferences, true) => "Importer les préférences de l’ancienne application",
     };
     let mut dialog = rfd::AsyncFileDialog::new().set_title(title);
     if matches!(kind, Picker::Diagnostics) {
         dialog = dialog
             .add_filter("ZIP", &["zip"])
             .set_file_name("librairii-diagnostics.zip");
+    }
+    if matches!(kind, Picker::Preferences) {
+        dialog = dialog.add_filter("JSON", &["json"]);
     }
     let Some(dialog) = ui.window().with_winit_window(|w| dialog.set_parent(w)) else {
         return;
@@ -359,6 +388,8 @@ fn pick(state: Rc<RefCell<View>>, worker: Rc<RefCell<Worker>>, ui: &DesktopWindo
     if let Err(error) = slint::spawn_local(async move {
         let path = if matches!(kind, Picker::Diagnostics) {
             dialog.save_file().await
+        } else if matches!(kind, Picker::Preferences) {
+            dialog.pick_file().await
         } else {
             dialog.pick_folder().await
         }
@@ -377,6 +408,7 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
         (Picker::Folder, 0),
         (Picker::Locate, 1),
         (Picker::Diagnostics, 2),
+        (Picker::Preferences, 3),
     ] {
         let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
         let callback = move || {
@@ -387,7 +419,8 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
         match index {
             0 => ui.on_settings_choose(callback),
             1 => ui.on_settings_locate(callback),
-            _ => ui.on_settings_diagnostics(callback),
+            2 => ui.on_settings_diagnostics(callback),
+            _ => ui.on_settings_import_preferences(callback),
         }
     }
     for (action, index) in [

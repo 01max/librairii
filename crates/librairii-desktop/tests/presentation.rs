@@ -191,6 +191,80 @@ fn library_worker() -> Result<
     Ok((roots, locations, id, worker))
 }
 #[test]
+fn preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands()
+-> TestResult {
+    use librairii_desktop::maintenance::{Action, Notice};
+    let (roots, locations, id, mut worker) = library_worker()?;
+    let initial = receive(&worker)?;
+    let generation = initial.generation.ok_or("generation")?;
+    let mut document: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../librairii-core/tests/fixtures/handover-v1.json"
+    ))?;
+    document["libraryId"] = id.to_string().into();
+    document["state"]["frames"] =
+        serde_json::json!([{"hash":"#/library?v=3&page=1","kind":"library"}]);
+    document["state"]["position"] = 0.into();
+    let selected = roots.profile().join("selected.json");
+    fs::write(&selected, serde_json::to_vec(&document)?)?;
+    worker.offer(Command::Maintenance {
+        generation: None,
+        action: Action::ImportPreferences(selected.clone()),
+    })?;
+    assert_eq!(
+        receive(&worker)?.workflows.settings.notice,
+        Some(Notice::PreferencesRejected)
+    );
+    assert!(!locations.native.join("handover.json").exists());
+    worker.offer(Command::Maintenance {
+        generation: Some(generation.clone()),
+        action: Action::ImportPreferences(selected.clone()),
+    })?;
+    let imported = receive(&worker)?;
+    assert_eq!(
+        imported.workflows.settings.notice,
+        Some(Notice::PreferencesImported)
+    );
+    assert_eq!(
+        imported.navigation.ok_or("navigation")?.presentation(),
+        Presentation::SmallCovers
+    );
+    assert!(imported.workflows.operations.sync_hidden);
+    let receipt = fs::read(locations.native.join("handover.json"))?;
+    worker.offer(Command::Presentation(Presentation::LargeCovers))?;
+    receive(&worker)?;
+    worker.offer(Command::Maintenance {
+        generation: Some(generation),
+        action: Action::ImportPreferences(selected.clone()),
+    })?;
+    let repeated = receive(&worker)?;
+    assert_eq!(
+        repeated.workflows.settings.notice,
+        Some(Notice::PreferencesAlreadyImported)
+    );
+    assert_eq!(
+        repeated.navigation.ok_or("navigation")?.presentation(),
+        Presentation::LargeCovers
+    );
+    assert_eq!(fs::read(locations.native.join("handover.json"))?, receipt);
+    worker.finish()?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert_eq!(
+        store
+            .load_navigation(id, 2)?
+            .ok_or("navigation")?
+            .presentation(),
+        Presentation::LargeCovers
+    );
+    assert!(
+        store
+            .load_interface(id)?
+            .ok_or("interface")?
+            .sync_panel_hidden
+    );
+    Ok(())
+}
+
+#[test]
 fn real_native_library_restores_and_persists_each_mode_before_joined_shutdown() -> TestResult {
     let (_roots, locations, id, mut worker) = library_worker()?;
     let initial = receive(&worker)?;
