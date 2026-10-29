@@ -72,6 +72,11 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let failure_output = output.clone();
     let mut last_projection = None;
     timer.start(slint::TimerMode::Repeated,Duration::from_millis(16),move||{
+      // Quit is asynchronous. Preserve the first diagnostic if another timer
+      // tick arrives before the native event loop actually returns.
+      if failure.borrow().is_some(){
+        pending.borrow().request_shutdown();let _quit=slint::quit_event_loop();return;
+      }
       let mut stage="window";
       let result=(||->Result{
         let Some(ui)=weak.upgrade() else{return Err("window disappeared".into())};

@@ -332,6 +332,10 @@ The controller also retains its initiating recovery cause in process diagnostics
 while the UI continues to show localized recovery guidance. Once
 finish is requested it stops admitting further import/page work and still waits
 for positive worker shutdown. No failed interaction becomes an accepted sample.
+The observer also latches its first timer failure: asynchronous event-loop quit
+may allow another tick, which must not offer more work or replace the first
+receipt with a secondary shutdown refusal. Separate shutdown diagnostics remain
+required. Earlier failed cohorts keep their original outcomes.
 
 The a5 ARM startup trace retained1783.055ms, including1095.169ms in AX calls,
 with repeated blocking window requests before a window was available. The
