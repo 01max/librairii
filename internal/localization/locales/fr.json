@@ -606,5 +606,13 @@
   "Tagged": "Avec cette étiquette",
   "Not tagged": "Sans cette étiquette",
   "Clear tag filters": "Effacer les filtres",
-  "Close the other Librairii application, then retry.": "Fermez l’autre application Librairii, puis réessayez."
+  "Close the other Librairii application, then retry.": "Fermez l’autre application Librairii, puis réessayez.",
+  "Move to the native application": "Passer à l’application native",
+  "Export your view, notice and navigation preferences. Your library files stay in place.": "Exportez vos préférences de présentation, de notifications et de navigation. Les fichiers de votre bibliothèque restent en place.",
+  "Export preferences…": "Exporter les préférences…",
+  "Export preferences for the native application": "Exporter les préférences pour l’application native",
+  "Preferences exported. Import the file in the native application.": "Préférences exportées. Importez le fichier dans l’application native.",
+  "Preference transfer is invalid or exceeds its limits.": "Le transfert de préférences est invalide ou dépasse les limites autorisées.",
+  "Preference transfer could not be saved.": "Le transfert de préférences n’a pas pu être enregistré.",
+  "Preference transfer could not be saved. Choose a folder without an existing transfer file.": "Le transfert de préférences n’a pas pu être enregistré. Choisissez un dossier sans fichier de transfert existant."
 }
