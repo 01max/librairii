@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"github.com/01max/librairii/internal/storage"
 )
 
 var ErrCleanupPending = errors.New("settings.cleanup_pending")
@@ -27,7 +29,7 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 	}
 	var failures []error
 	for _, entry := range j.Entries {
-		if entry.Directory || entry.Path == IdentityFile {
+		if entry.Directory || entry.Path == IdentityFile || entry.Path == storage.LibraryLockFile {
 			continue
 		}
 		path := filepath.Join(j.Source, entry.Path)
@@ -70,7 +72,7 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 	if len(failures) > 0 {
 		return errors.Join(append(failures, ErrCleanupPending)...)
 	}
-	entries, err := os.ReadDir(j.Source)
+	entries, err := storage.LibraryEntries(j.Source)
 	if err != nil {
 		return err
 	}
@@ -78,6 +80,13 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 		return ErrCleanupPending
 	}
 	if err := os.Remove(filepath.Join(j.Source, IdentityFile)); err != nil {
+		return err
+	}
+	// The old lease pins this exact directory/inode until durable shutdown.
+	// Keep its control shell; deleting the filename would permit split ownership.
+	if _, err := os.Lstat(filepath.Join(j.Source, storage.LibraryLockFile)); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	return os.Remove(j.Source)

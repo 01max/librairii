@@ -11,6 +11,9 @@ import (
 // Helpers run under mu. Profile authority excludes cooperating recovery across
 // root changes; library leases implement the shared Rust/Go flock protocol.
 func (r *StorageReadiness) acquireProfile() error {
+	if r.closeFailure != nil {
+		return r.closeFailure
+	}
 	if r.profileStore == nil {
 		return nil
 	}
@@ -30,6 +33,9 @@ func (r *StorageReadiness) acquireProfile() error {
 }
 
 func (r *StorageReadiness) acquireLibrary(root string, create bool) error {
+	if r.closeFailure != nil {
+		return r.closeFailure
+	}
 	if create {
 		if err := os.MkdirAll(root, 0700); err != nil {
 			return err

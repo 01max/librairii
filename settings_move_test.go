@@ -136,8 +136,8 @@ func TestApplicationUsesNewRootAfterMove(t *testing.T) {
 		t.Fatal(exported.Error)
 	}
 	waitOperation(t, a, exported.Operation.ID)
-	if _, err := os.Stat(source); !errors.Is(err, os.ErrNotExist) {
-		t.Fatal("old root still exists", err)
+	if entries, err := os.ReadDir(source); err != nil || len(entries) != 1 || entries[0].Name() != ".librairii-library.lock" {
+		t.Fatal("old root retained payload instead of only its owned lock", entries, err)
 	}
 	if _, err := os.Stat(archive); err != nil {
 		t.Fatal("source archive moved", err)

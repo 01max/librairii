@@ -13,6 +13,31 @@ import (
 
 const LibraryLockFile = ".librairii-library.lock"
 
+// LibraryEntries distinguishes the reserved, empty protocol inode from user
+// payload. Callers must still acquire their lifetime lease before any effect.
+// A symlink, hard link, directory or nonempty file at this name is not a control.
+func LibraryEntries(root string) ([]os.DirEntry, error) {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]os.DirEntry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Name() == LibraryLockFile {
+			info, err := os.Lstat(filepath.Join(root, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			if !singleRegular(info) || info.Size() != 0 {
+				return nil, ErrLeaseChanged
+			}
+			continue
+		}
+		result = append(result, entry)
+	}
+	return result, nil
+}
+
 var ErrLibraryInUse = errors.New("close the other Librairii application before retrying")
 var ErrLeaseChanged = errors.New("library ownership changed; restart before retrying")
 

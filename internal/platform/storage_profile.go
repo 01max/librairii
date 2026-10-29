@@ -14,7 +14,7 @@ import (
 // NewConfiguredStorageReadiness loads the independent profile before storage
 // creation. The original constructor remains the explicit isolated-host path.
 func NewConfiguredStorageReadiness(directory, legacy, language string) *StorageReadiness {
-	return &StorageReadiness{profileStore: preferences.NewStore(directory), legacyRoot: legacy, profile: preferences.Profile{Version: preferences.Version, Language: language}}
+	return &StorageReadiness{profileStore: preferences.NewStoreWithLanguage(directory, language), legacyRoot: legacy, profile: preferences.Profile{Version: preferences.Version, Language: language}}
 }
 func (r *StorageReadiness) prepareProfile(ctx context.Context) error {
 	if r.profileStore == nil {
@@ -189,7 +189,6 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 		p.Root = root
 		p.LibraryID = id
 		p.Complete = false
-		p.Language = r.profile.Language
 		return nil
 	})
 	if err != nil {
@@ -207,7 +206,6 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 		p.Root = root
 		p.LibraryID = id
 		p.Complete = true
-		p.Language = r.profile.Language
 		return nil
 	})
 	if err != nil {

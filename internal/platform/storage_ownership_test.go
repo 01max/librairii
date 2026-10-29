@@ -85,3 +85,80 @@ func TestRelocationRetainsOwnershipAcrossDatabaseClosure(t *testing.T) {
 		t.Fatalf("actual close did not release: %+v %v", report, err)
 	}
 }
+
+func TestEmptyExistingSetupFolderRemainsUsableAcrossRestartWithSharedControl(t *testing.T) {
+	ctx := context.Background()
+	directory, root := t.TempDir(), t.TempDir()
+	first := NewConfiguredStorageReadiness(directory, root, "fr")
+	if _, err := first.Check(ctx); !errors.Is(err, preferences.ErrSetupRequired) {
+		t.Fatal(err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatal(err)
+	}
+	next := NewConfiguredStorageReadiness(directory, root, "fr")
+	defer next.Close()
+	if _, err := next.Check(ctx); !errors.Is(err, preferences.ErrSetupRequired) {
+		t.Fatal(err)
+	}
+	if err := next.InitializeLibrary(ctx, root); err != nil {
+		t.Fatal(err)
+	}
+	if report, err := next.Check(ctx); err != nil || !report.MutationsAllowed {
+		t.Fatal(report, err)
+	}
+}
+
+func TestSetupKeepsLanguageSavedByAnotherRecoveryWindow(t *testing.T) {
+	ctx := context.Background()
+	directory, root := t.TempDir(), t.TempDir()
+	owner := NewConfiguredStorageReadiness(directory, root, "en")
+	defer owner.Close()
+	if _, err := owner.Check(ctx); !errors.Is(err, preferences.ErrSetupRequired) {
+		t.Fatal(err)
+	}
+	other := NewConfiguredStorageReadiness(directory, root, "en")
+	defer other.Close()
+	if err := other.SetLanguage("fr"); err != nil {
+		t.Fatal(err)
+	}
+	if err := owner.InitializeLibrary(ctx, root); err != nil {
+		t.Fatal(err)
+	}
+	actual, err := preferences.NewStore(directory).Load()
+	if err != nil || actual.Language != "fr" || actual.Root != root || !actual.Complete {
+		t.Fatal(actual, err)
+	}
+}
+
+func TestFailedClosePermanentlyFencesReopenAndRetainsEveryLease(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	owner := NewStorageReadiness(root)
+	// Test-only disposal after proving the terminal fence. Production retains
+	// ownership until process exit; no normal callback can clear this state.
+	defer owner.releaseOwnership()
+	if _, err := owner.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := owner.Writer().Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := owner.Close(); err == nil {
+		t.Fatal("failed checkpoint accepted")
+	}
+	if err := owner.Close(); err == nil {
+		t.Fatal("second close cleared the fence")
+	}
+	if _, err := owner.Check(ctx); err == nil {
+		t.Fatal("failed-close owner reopened")
+	}
+	if _, err := owner.RecoverSchemaConflict(ctx); err == nil {
+		t.Fatal("failed-close owner entered recovery")
+	}
+	other := NewStorageReadiness(root)
+	defer other.Close()
+	if _, err := other.Check(ctx); !errors.Is(err, storage.ErrLibraryInUse) {
+		t.Fatal("failed close released ownership", err)
+	}
+}
