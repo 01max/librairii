@@ -11,6 +11,7 @@ on:
       - 'qualification/section-17/native-startup-diagnostic.py'
       - 'qualification/section-17/native-input-replay.py'
       - 'qualification/section-17/native-startup-profile.py'
+      - 'qualification/section-17/native-startup-phases.py'
   workflow_dispatch:
     inputs:
       probe:
@@ -18,7 +19,7 @@ on:
         required: true
         default: input
         type: choice
-        options: [input, startup, startup-late-first, startup-profile, input-replay]
+        options: [input, startup, startup-late-first, startup-profile, startup-phases, input-replay]
 
 permissions:
   contents: read
@@ -37,12 +38,12 @@ jobs:
         with:
           persist-credentials: false
       - name: Install the workspace-pinned compiler
-        if: github.event.inputs.probe == 'input' || github.event_name == 'pull_request'
+        if: github.event.inputs.probe == 'input' || github.event.inputs.probe == 'startup-phases' || github.event_name == 'pull_request'
         run: |
           pin="$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
           rustup toolchain install "$pin" --profile minimal
       - name: Reuse exact-dependency release build inputs
-        if: github.event.inputs.probe == 'input' || github.event_name == 'pull_request'
+        if: github.event.inputs.probe == 'input' || github.event.inputs.probe == 'startup-phases' || github.event_name == 'pull_request'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           key: intel-input-phases-v1-${{ hashFiles('rust-toolchain.toml', '**/Cargo.toml', '**/Cargo.lock') }}
@@ -73,12 +74,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 -I -B qualification/section-17/native-startup-profile.py
+      - name: Trace in-memory toolkit, component, menu and timer phases
+        if: github.event.inputs.probe == 'startup-phases'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I -B qualification/section-17/native-startup-phases.py
       - name: Retain all diagnostic cohorts, including failures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: intel-${{ github.event.inputs.probe || 'input' }}-diagnostic-${{ github.sha }}
-          path: ${{ startsWith(github.event.inputs.probe, 'startup') && 'target/intel-startup-diagnostic/' || github.event.inputs.probe == 'input-replay' && 'target/intel-input-replay/' || 'target/intel-input-phases/' }}
+          path: ${{ github.event.inputs.probe == 'startup-phases' && 'target/intel-startup-phases/' || startsWith(github.event.inputs.probe, 'startup') && 'target/intel-startup-diagnostic/' || github.event.inputs.probe == 'input-replay' && 'target/intel-input-replay/' || 'target/intel-input-phases/' }}
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
