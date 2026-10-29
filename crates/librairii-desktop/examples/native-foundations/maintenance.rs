@@ -612,7 +612,69 @@ fn schema_checks(ui: &DesktopWindow) -> Result {
     f.finish()
 }
 
+fn preference_checks(ui: &DesktopWindow) -> Result {
+    for code in ["en", "fr"] {
+        let mut f = setup(ui)?;
+        language(&f, ui, code)?;
+        initialize(&mut f, ui)?;
+        check(
+            ui.get_settings_data().can_import,
+            "native preference transfer is unreachable",
+        )?;
+        let before = f.worker.borrow().revision();
+        choose(&f, ui, Picker::Preferences, None);
+        check(
+            f.worker.borrow().revision() == before && ui.get_settings_transfer_focused(),
+            "cancelled transfer changed preferences or lost focus",
+        )?;
+        let selected = f._roots.profile().join("selected preferences.json");
+        std::fs::write(&selected, b"{invalid")?;
+        choose(&f, ui, Picker::Preferences, Some(selected.clone()));
+        let rejected = f.settle(ui)?;
+        check(
+            rejected.workflows.settings.notice == Some(Notice::PreferencesRejected)
+                && !f.locations.native.join("handover.json").exists(),
+            "invalid transfer changed native preferences",
+        )?;
+        let mut transfer: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../librairii-core/tests/fixtures/handover-v1.json"
+        ))?;
+        transfer["libraryId"] = f.id.to_string().into();
+        transfer["state"]["frames"] =
+            serde_json::json!([{"hash":"#/library?v=3&page=1","kind":"library"}]);
+        transfer["state"]["position"] = 0.into();
+        std::fs::write(&selected, serde_json::to_vec(&transfer)?)?;
+        choose(&f, ui, Picker::Preferences, Some(selected.clone()));
+        let imported = f.settle(ui)?;
+        check(
+            imported.workflows.settings.notice == Some(Notice::PreferencesImported)
+                && imported.workflows.operations.sync_hidden
+                && imported.navigation.as_ref().is_some_and(|n| {
+                    n.presentation() == librairii_core::navigation::Presentation::SmallCovers
+                }),
+            "valid transfer did not reach native worker/view",
+        )?;
+        let receipt = std::fs::read(f.locations.native.join("handover.json"))?;
+        choose(&f, ui, Picker::Preferences, Some(selected));
+        check(
+            f.settle(ui)?.workflows.settings.notice == Some(Notice::PreferencesAlreadyImported)
+                && std::fs::read(f.locations.native.join("handover.json"))? == receipt,
+            "repeat transfer replayed native preferences",
+        )?;
+        close(ui);
+        f.restart(ui)?;
+        check(
+            f.view.borrow().snapshot.phase == Phase::Library && ui.get_french() == (code == "fr"),
+            "imported native profile did not restart in saved language",
+        )?;
+        f.finish()?;
+    }
+    Ok(())
+}
+
 pub fn checks(ui: &DesktopWindow) -> Result {
+    eprintln!("maintenance: preference transfer en/fr");
+    preference_checks(ui)?;
     eprintln!("maintenance: setup");
     setup_checks(ui)?;
     eprintln!("maintenance: move");

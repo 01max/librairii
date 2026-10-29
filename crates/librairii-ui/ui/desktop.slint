@@ -657,6 +657,7 @@ export component DesktopWindow inherits Window {
     out property <bool> settings-cancel-focused:settings-panel.cancel-focused;
     out property <bool> settings-confirm-focused:settings-panel.confirm-focused;
     out property <bool> settings-retry-focused:settings-panel.retry-focused;
+    out property <bool> settings-transfer-focused:settings-panel.transfer-focused;
     out property <bool> settings-command-ready:root.startup-phase!=4 && !root.closing && !root.picker-open && (!root.modal || root.dialog==2 || root.dialog==4 || root.dialog==5);
     in property <bool> platform-menu: false;
     if !root.platform-menu: MenuBar {
