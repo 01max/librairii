@@ -61,6 +61,10 @@ jobs:
           cache: true
       - name: Complete Go bridge upgrade and application handover rehearsal
         run: python3 -I -B scripts/verify-upgrade-handover.py
+      - name: Native font metadata equivalence
+        run: |
+          set -o pipefail
+          cargo test --locked -p fontique --lib -- --nocapture 2>&1 | tee target/quality/font-metadata-tests.log
       - name: Cumulative workspace check
         run: cargo xtask check
       - name: Qualified AT-SPI adapter lifetime regressions

@@ -108,6 +108,31 @@ incompatible clock rounds, and replay a provenance-bound64-sample diagnostic
 fixture. The latter protects clock arithmetic only. Fresh complete native
 qualification and pointer evidence remain necessary; Task17.8 stays open.
 
+## Native startup font indexing candidate
+
+An incomplete Intel diagnostic at source `2954520` retained six ordered font
+stamps after the ordinary startup marker. Font discovery occupied1,017.699932ms
+of the1,018.634600ms platform-install interval, including619.545996ms indexing
+font metadata. Its owned-window observer failed later; no idle-resource,
+cleanup or full qualification result is admitted. Separate backend and timer
+intervals were also slow. This identifies work to optimize without establishing
+that every ordinary startup failure shares that cause.
+
+The candidate vendors the exact Fontique0.11.1 registry archive, with unchanged
+licenses, original file hashes and an explicit local-correction notice. macOS
+retains all CoreText and directory-discovered paths, then indexes their metadata
+on at most two scoped workers. All workers join before use. Results are
+aggregated in the original input order, retaining aliases, PostScript mappings,
+face metadata and per-file source identities. Thread-creation failure scans that
+chunk synchronously. Other platform discovery keeps its existing path.
+
+The macOS regression compares every discovered family/alias, PostScript mapping,
+face attribute, axis, character-map index and file identity against the original
+serial implementation, in forward and reverse file order. A local468-file run
+passes; its timings are diagnostic only. Fresh complete three-target native,
+startup and resource qualification remains required under the unchanged1,000ms
+startup ceiling. Task17.8 stays open.
+
 ## Executable rehearsal and retained evidence
 
 `python3 -I -B scripts/verify-upgrade-handover.py` materializes two private Go
