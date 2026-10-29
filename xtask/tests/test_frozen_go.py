@@ -51,3 +51,30 @@ class FrozenGoTests(unittest.TestCase):
                 with FROZEN_GO.frozen_module(root, "test-"):
                     self.fail("changed input was admitted")
             self.assertEqual(list((root / "tmp").iterdir()), [])
+
+    def test_bridge_changes_use_original_manifest_verified_retained_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            admitted = self.fixture(root)
+            baseline = admitted.read_bytes()
+            retained = root / 'preservation/oracle-files' / (admitted.relative_to(root).as_posix() + '.in')
+            retained.parent.mkdir(parents=True)
+            retained.write_bytes(baseline)
+            admitted.write_bytes(b'package policy\nfunc Bridge() {}\n')
+            with FROZEN_GO.frozen_module(root, 'test-') as (work, _, _):
+                self.assertEqual((work / admitted.relative_to(root)).read_bytes(), baseline)
+            retained.write_bytes(admitted.read_bytes())
+            with self.assertRaisesRegex(ValueError, 'frozen source changed'):
+                with FROZEN_GO.frozen_module(root, 'test-'):
+                    self.fail('bridge admitted as oracle')
+
+    def test_retained_alias_cannot_supply_oracle_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            admitted = self.fixture(root)
+            retained = root / 'preservation/oracle-files' / (admitted.relative_to(root).as_posix() + '.in')
+            retained.parent.mkdir(parents=True)
+            retained.symlink_to(admitted)
+            with self.assertRaisesRegex(ValueError, 'aliased frozen source'):
+                with FROZEN_GO.frozen_module(root, 'test-'):
+                    self.fail('alias admitted')

@@ -1,5 +1,10 @@
 # Frozen Go product contract
 
+Task17's compatibility bridge changes maintained Go files. Their original bytes
+are retained under `oracle-files/` before editing. `scripts/frozen_go.py` uses
+these copies only after checking the unchanged `oracle-source.json` checksums;
+bridge additions and changed behavior never enter the historical oracle module.
+
 This directory is section 1 of `rewrite-in-rust-native-desktop`. It preserves the working product as an oracle; it does not qualify a Rust implementation or any new platform. The separate OpenSpec repository remains separate and is never vendored as a nested Git repository.
 
 Start with [evidence-index.json](evidence-index.json), [oracle.json](oracle.json), and the contract inventories. Every P01–P60 row remains unverified in Rust on macOS ARM, real Intel macOS, Linux x64 and Windows x64 until its own implementation evidence passes. Baseline observations are scoped to their actual host and command. Missing GUI/hardware resources remain open gates.
