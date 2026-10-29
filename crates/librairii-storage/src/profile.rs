@@ -3,10 +3,12 @@
 //! Legacy settings are read-only inputs. Native updates require a fresh, separate
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
+mod handover;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod interface;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod navigation;
+pub use handover::HandoverImport;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use interface::InterfacePreferences;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -776,7 +778,7 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(6, &crate::database::WorkCancellation::default())
+            .entries(7, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
@@ -787,6 +789,7 @@ impl NativeProfileStore {
                 && entry != "navigation.json"
                 && entry != "shelf-warnings.json"
                 && entry != "interface.json"
+                && entry != "handover.json"
                 && entry != relocation::JOURNAL
         }) {
             return Err(StorageError::RecoveryBindingRequired);
@@ -806,6 +809,8 @@ impl NativeProfileStore {
         }
         self.namespace
             .regular_entry(std::ffi::OsStr::new("interface.json"))?;
+        self.namespace
+            .regular_entry(std::ffi::OsStr::new("handover.json"))?;
         Ok(())
     }
 

@@ -64,6 +64,9 @@ impl NativeProfileStore {
             }
             Err(error) => return Err(error),
         };
+        if bytes.is_none() {
+            return self.handover_interface(library);
+        }
         bytes
             .map(|(bytes, _, _)| InterfacePreferences::decode(&bytes, library))
             .transpose()
