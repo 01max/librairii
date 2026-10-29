@@ -69,5 +69,21 @@ if ! cmp -s "$verification_root/expected.log" "$verification_root/checkpoints.lo
     exit 1
 fi
 test -f "$verification_root/moved/db/librairii.sqlite3"
-test ! -e "$verification_root/library"
+python3 - "$verification_root/library" "$verification_root/moved" <<'PY'
+import fcntl
+from pathlib import Path
+import stat
+import sys
+
+source, target = map(Path, sys.argv[1:])
+control = '.librairii-library.lock'
+assert sorted(path.name for path in source.iterdir()) == [control], 'old root retained payload'
+for root in (source, target):
+    path = root / control
+    metadata = path.lstat()
+    assert stat.S_ISREG(metadata.st_mode) and metadata.st_nlink == 1 and metadata.st_size == 0, 'invalid retained shared control'
+    with path.open('rb') as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(handle, fcntl.LOCK_UN)
+PY
 printf 'Native settings, setup, relocation, and post-move export passed.\n'
