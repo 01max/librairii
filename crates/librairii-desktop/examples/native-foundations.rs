@@ -315,6 +315,7 @@ fn main() -> Result {
     ui.invoke_close_dialog();
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        covers: Default::default(),
         maintenance: Default::default(),
         activation: initial.workflows.settings.activation,
         operations: Default::default(),

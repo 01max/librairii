@@ -348,6 +348,25 @@ positive shutdown remain required. The bounded production intake is unchanged;
 the earlier failed, unretired cohorts remain failed. Fresh three-host execution
 must qualify this correction.
 
+The48 ARM resource run failed its software warmup pointer p95 at128.8475ms;
+all64 samples and the failed verdict remain retained despite positive shutdown.
+Inspection found that each selection projection copied all24 unchanged decoded
+covers into fresh native images. An owned local replay of the installed production
+callback retained1,536 replacements across64 selections. The projection now reuses
+an image only while UUID, decoded allocation identity and dimensions match. Its
+entries are replaced by the current projected rows, cleared on library generation
+change or an absent page, and hold weak decoded identities rather than extending
+the worker LRU. Changed or removed covers still update immediately.
+
+The native component regression exercises repeated selection, changed pixels,
+changed dimensions, untouched neighboring covers and release of invisible entries.
+The same actual-controller local replay now retains zero unchanged-image
+replacements;64 callback projections took3.388ms versus16.427ms before the fix.
+These are allocation/callback diagnostics on the local host, not native event or
+render latency acceptance, and do not establish the sole cause of the failed VM
+pointer intervals. Fresh complete three-host native/resource qualification and
+independent review remain required; no sample count, workload or ceiling changes.
+
 The a5 ARM startup trace retained1783.055ms, including1095.169ms in AX calls,
 with repeated blocking window requests before a window was available. The
 external observer now waits on public WindowServer metadata for its owned PID's

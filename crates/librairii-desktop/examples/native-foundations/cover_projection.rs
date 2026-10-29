@@ -57,7 +57,7 @@ pub fn checks(ui: &DesktopWindow, state: &Rc<RefCell<view::View>>) -> Result {
         .thumbnail = Some(Thumbnail {
         width: 2,
         height: 1,
-        rgba: pixels,
+        rgba: pixels.clone(),
     });
     state.borrow_mut().project(ui);
     let replaced = covers(ui);
@@ -74,6 +74,21 @@ pub fn checks(ui: &DesktopWindow, state: &Rc<RefCell<view::View>>) -> Result {
         replaced[1..] == before[1..],
         "one changed cover replaced other native images",
     )?;
+    {
+        let mut state = state.borrow_mut();
+        let thumbnail = state.snapshot.page.as_mut().ok_or("cover page")?.stories[0]
+            .thumbnail
+            .as_mut()
+            .ok_or("cover thumbnail")?;
+        thumbnail.width = 1;
+        thumbnail.height = 2;
+    }
+    state.borrow_mut().project(ui);
+    let resized = covers(ui);
+    check(
+        resized[0] != replaced[0] && resized[0].size().width == 1 && resized[0].size().height == 2,
+        "changed cover dimensions reused a stale native image",
+    )?;
 
     state
         .borrow_mut()
@@ -88,6 +103,11 @@ pub fn checks(ui: &DesktopWindow, state: &Rc<RefCell<view::View>>) -> Result {
         covers(ui)[0].size().width == 0,
         "removed cover remained visible",
     )?;
+    check(
+        Arc::strong_count(&pixels) == 1 && Arc::weak_count(&pixels) == 1,
+        "projection retained an invisible cover entry",
+    )?;
+    drop(pixels);
     check(
         retired.strong_count() == 0,
         "projection retained retired decoded cover pixels",
