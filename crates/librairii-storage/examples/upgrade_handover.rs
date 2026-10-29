@@ -1,13 +1,7 @@
 //! Task17: actual independent adoption of every retained prefix and bridge source.
 mod handover_support;
 use handover_support::{Result, files, probe, seal, snapshot};
-use librairii_core::{
-    collection_codec::{
-        Query,
-        url::{Location, Scope},
-    },
-    navigation::{Navigation, Presentation},
-};
+use librairii_core::{collection_codec::Query, navigation::Presentation};
 use librairii_storage::{
     StorageError,
     adoption::{ClosedLibraryInput, ClosedManifest},
@@ -237,8 +231,8 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
         "../../librairii-core/tests/fixtures/handover-v1.json"
     ))?;
     transfer["libraryId"] = ID.into();
-    transfer["state"]["frames"] = json!([{"hash":"#/library?v=3&page=1","kind":"library"}]);
-    transfer["state"]["position"] = 0.into();
+    transfer["state"]["frames"] = json!([{"hash":"#/library?v=3&page=1","kind":"library"},{"hash":"#/library?v=3&name=bonjour%20%C3%A9&page=2","kind":"custom"}]);
+    transfer["state"]["position"] = 1.into();
     assert_eq!(
         store.import_handover(&serde_json::to_vec(&transfer)?, ID.parse()?)?,
         HandoverImport::Imported
@@ -250,14 +244,11 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
             .presentation(),
         Presentation::SmallCovers
     );
-    let mut navigation = Navigation::new(
-        ID.parse()?,
-        1,
-        Location {
-            scope: Scope::Library,
-            request: Default::default(),
-        },
-    )?;
+    let mut navigation = store.load_navigation(ID.parse()?, 1)?.ok_or("navigation")?;
+    let current = navigation.current().location.clone();
+    assert!(navigation.back()?);
+    assert!(navigation.forward()?);
+    assert_eq!(navigation.current().location, current);
     navigation.set_presentation(Presentation::LargeCovers);
     store.save_navigation(&navigation)?;
     db.close()?;
@@ -283,6 +274,18 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
             .ok_or("interface")?
             .sync_panel_hidden
     );
+    assert_eq!(
+        store
+            .load_interface(ID.parse()?)?
+            .ok_or("interface")?
+            .dismissed_operations,
+        std::collections::BTreeSet::from(["f2000000-0000-4000-8000-000000000017".into()])
+    );
+    let mut restored = store.load_navigation(ID.parse()?, 2)?.ok_or("navigation")?;
+    assert_eq!(restored.current().location, current);
+    assert!(restored.back()?);
+    assert!(restored.forward()?);
+    assert_eq!(restored.current().location, current);
     db.close()?;
     drop(db);
     reopened.finish().map_err(|e| e.to_string())?;
@@ -321,7 +324,8 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
         "rollback changed native profile"
     );
     for (path, bytes) in &source_before {
-        if path.starts_with("archives") {
+        if path != Path::new("db/librairii.sqlite3") && path != Path::new(".librairii-library.lock")
+        {
             assert_eq!(&fs::read(target.join(path))?, bytes);
         }
     }
