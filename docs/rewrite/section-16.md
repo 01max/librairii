@@ -337,6 +337,17 @@ may allow another tick, which must not offer more work or replace the first
 receipt with a secondary shutdown refusal. Separate shutdown diagnostics remain
 required. Earlier failed cohorts keep their original outcomes.
 
+The46 Intel rerun reached the cold-page preload with displayed revision109 and
+pending revision172 after native pointer selection callbacks. Its next page
+offer hit the production intake's16-command limit. The observer now waits for
+the displayed snapshot to acknowledge those earlier commands before offering a
+cold-page request. This wait belongs to existing preconditioning, before the
+timed clear-search response. All42 pages,144 evicting covers per trial,64 key/
+64 pointer/20 cold-completion samples, original deadlines, real imports and
+positive shutdown remain required. The bounded production intake is unchanged;
+the earlier failed, unretired cohorts remain failed. Fresh three-host execution
+must qualify this correction.
+
 The a5 ARM startup trace retained1783.055ms, including1095.169ms in AX calls,
 with repeated blocking window requests before a window was available. The
 external observer now waits on public WindowServer metadata for its owned PID's

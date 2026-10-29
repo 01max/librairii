@@ -126,7 +126,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         if let Ok(text)=fs::read_to_string(output.join("page")) {
             let requested=text.trim().parse::<i64>()?;
             if !(1..=42).contains(&requested){return Err("bounded qualification page required".into())}
-            if last_page_command!=Some(requested) {
+            // Cold-page preconditioning follows a burst of real selection
+            // callbacks. Await their acknowledged snapshot before submitting
+            // another command to the unchanged bounded production intake.
+            if last_page_command!=Some(requested) && snapshot.revision==pending.borrow().revision() {
                 let request=librairii_core::query::QueryRequest{page:requested,..Default::default()};
                 pending.borrow().offer(Command::Request(request))?;last_page_command=Some(requested);
             }
