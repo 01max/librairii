@@ -261,6 +261,26 @@ fn preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_st
             .ok_or("interface")?
             .sync_panel_hidden
     );
+    drop(store);
+    let mut restarted = Worker::start_with(Environment {
+        home: roots.profile().join("home").into_os_string(),
+        config: roots.profile().join("config").into_os_string(),
+        data: roots.library().join("data").into_os_string(),
+    })?;
+    let snapshot = receive(&restarted)?;
+    assert_eq!(
+        snapshot.phase,
+        librairii_desktop::presentation::Phase::Library
+    );
+    assert_eq!(
+        snapshot
+            .navigation
+            .ok_or("restarted navigation")?
+            .presentation(),
+        Presentation::LargeCovers
+    );
+    assert!(snapshot.workflows.operations.sync_hidden);
+    restarted.finish()?;
     Ok(())
 }
 
