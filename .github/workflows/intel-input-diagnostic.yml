@@ -1,0 +1,36 @@
+name: Intel input diagnosis
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/intel-input-diagnostic.yml'
+      - 'qualification/section-17/intel-input-diagnostic.py'
+      - 'qualification/section-17/input-probe-macos.swift'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compare:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compare retained native executables with bounded probes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I -B qualification/section-17/intel-input-diagnostic.py
+      - name: Retain all diagnostic cohorts, including failures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: intel-input-diagnostic-${{ github.sha }}
+          path: target/intel-input-diagnostic/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
