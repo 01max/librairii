@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -58,11 +59,20 @@ def run_example(example, helpers, environment):
     if digest(executable) != before:
         raise ValueError('rehearsal executable changed during execution')
     report = json.loads(result.stdout)
-    report['execution'] = {'executable_sha256': before, 'bytes': executable.stat().st_size, 'compiler_artifact': executables[0]}
+    retained = destination / 'handover-bin' / example
+    retained.parent.mkdir(exist_ok=True)
+    shutil.copy2(executable, retained)
+    if digest(retained) != before:
+        raise ValueError('retained rehearsal executable differs from executed bytes')
+    report['execution'] = {'executable_sha256': before, 'bytes': executable.stat().st_size, 'retained_path': str(retained.relative_to(destination)), 'compiler_artifact': executables[0]}
     return report
 
 
 def main():
+    source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    status = ['git', 'status', '--porcelain', '--untracked-files=normal']
+    if subprocess.check_output(status, cwd=ROOT, text=True).strip():
+        raise ValueError('handover qualification requires a clean committed source tree')
     template = ROOT / 'scripts/handover-app-probe.go.in'
     with frozen_module(ROOT, 'task17-frozen-') as (frozen, environment, manifest):
         original = build(frozen, environment, template, 'original-application')
@@ -83,8 +93,15 @@ def main():
             report = run_example('upgrade_handover', [bridge], environment)
             application = run_example('application_handover', [original, bridge], environment)
             report['application_handover'] = application
+            binaries = ROOT / 'target/quality/handover-bin'
+            for helper in [original, bridge]:
+                retained = binaries / helper.name
+                shutil.copy2(helper, retained)
+                if digest(retained) != digest(helper):
+                    raise ValueError('retained Go helper differs from executed bytes')
             report['producer'] = {
-                'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+                'source': source,
+                'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], cwd=ROOT, text=True).strip(),
                 'go': subprocess.check_output(['go', 'version'], env=environment, text=True).strip(),
                 'rust': subprocess.check_output(['rustc', '-vV'], text=True).strip(),
                 'application_driver_sha256': digest(template),
@@ -99,6 +116,8 @@ def main():
             }
             destination = ROOT / 'target/quality/upgrade-handover.json'
             destination.parent.mkdir(parents=True, exist_ok=True)
+            if subprocess.check_output(status, cwd=ROOT, text=True).strip() or subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != source:
+                raise ValueError('handover qualification source changed during execution')
             destination.write_text(json.dumps(report, indent=2) + '\n')
             print(f'Upgrade handover: {len(report["cases"])} real adoption/restart/rollback cases passed; full manifests and table snapshots retained at {destination}.')
 
