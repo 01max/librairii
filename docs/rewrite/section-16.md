@@ -48,9 +48,21 @@ all native/resource/display lanes.
 `scripts/verify-native-scale.py` requires clean committed source and matching
 native hardware/compiler. It retains the Cargo-reported executable/profile,
 source/lock/fixture hashes, hardware, complete raw samples and actual plans.
-The observer uses the qualified opt-level1 profile with assertions/overflow
-checks, owns fresh isolated roots and positively closes the database and retires
-the fixture. It never discovers normal profiles or contacts production HTTP.
+Backend method version2 uses the production release profile: optimization3,
+debug assertions and overflow checks disabled. The actual Cargo profile and
+executable bind that method. Method1 inherited Task15's optimization1 checked
+callback/capture observer profile; all of its retained passing and failed
+cohorts keep their original verdicts. The specification defines the frozen
+workloads and ceilings without requiring optimization1. The spike's packaged
+release artwork probe establishes release lineage for artwork; the other SQL
+and Shelf limits originate in the frozen Go qualification. This profile change
+does not establish the cause of historical timing variance or numerical
+acceptance. Fresh complete three-host method2 qualification is required.
+All fixture rows, SQL/binds/plans/results, sample counts, full pixel consumption,
+Shelf outcomes and numerical ceilings remain unchanged. Ordinary result
+assertions remain active in release. The observer owns fresh isolated roots,
+positively closes the database and retires the fixture. It never discovers
+normal profiles or contacts production HTTP.
 
 `Rust scale and resilience` executes the observer separately on Apple Silicon,
 real Intel macOS and Linux. Reports under `target/quality/native-scale` identify
@@ -117,8 +129,8 @@ between byte-identical method1 binaries, or qualify any failed startup/CPU run.
 
 All native-input workloads, sample counts and numerical ceilings remain the
 same in version2, including both actual rendering paths and positive shutdown.
-Task15's checked functional suite and16.1's retained backend profile stay
-separate. The paired resource workload already used production release3; both
+Task15's checked functional suite stays separate. The paired resource workload
+already used production release3; both
 lanes now declare version2 in their native workload reports. Workload readiness
 is a diagnostic and does not replace the separately measured startup endpoint.
 

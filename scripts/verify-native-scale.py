@@ -176,6 +176,8 @@ def main():
     DESTINATION.mkdir(parents=True)
     (DESTINATION / '.scale-fixture-root').write_text('native-scale-16\n')
     manifest = {'format': 'librairii.native-scale', 'version': 1, 'complete': False,
+                'backend_method_version': 2,
+                'performance_profile': 'production release; opt-level3; debug assertions and overflow checks disabled',
                 'source_commit': output(['git', 'rev-parse', 'HEAD']), 'target': target,
                 'rustc': compiler, 'hardware': machine, 'platform': platform.platform(),
                 'cargo_lock_sha256': digest(ROOT / 'Cargo.lock'), 'scope': 'Task16.1-16.2 backend and Shelf gates; remaining Task16 gates separate'}
@@ -184,7 +186,7 @@ def main():
                             [fixture / 'stories.jsonl', fixture / 'distribution.json', fixture / 'review5000.json',
                              *sorted((fixture / 'catalog/embedded').glob('*.png'))]}
     with (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events, (DESTINATION / 'build.log').open('w') as log:
-        subprocess.run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target,
+        subprocess.run(['cargo', 'build', '--locked', '--release', '--target', target,
                         '-p', 'librairii-desktop', '--example', 'scale-backend', '--message-format=json'],
                        cwd=ROOT, stdout=events, stderr=log, check=True)
     events = [json.loads(line) for line in (DESTINATION / 'compiler-artifacts.jsonl').read_text().splitlines()]
@@ -193,8 +195,8 @@ def main():
     if len(artifacts) != 1:
         raise ValueError('Cargo must report the exact scale observer executable')
     artifact = artifacts[0]
-    if artifact['profile']['opt_level'] != '1' or not artifact['profile']['debug_assertions'] or not artifact['profile']['overflow_checks']:
-        raise ValueError('scale observer must retain the qualified development checks')
+    if artifact['profile']['opt_level'] != '3' or artifact['profile']['debug_assertions'] or artifact['profile']['overflow_checks']:
+        raise ValueError('scale observer must use the exact production release profile')
     binary = DESTINATION / 'scale-backend'
     shutil.copy2(artifact['executable'], binary)
     manifest['executable'] = {'path': binary.name, 'sha256': digest(binary), 'bytes': binary.stat().st_size,
@@ -213,7 +215,7 @@ def main():
     manifest['complete'] = True
     manifest['files'] = {p.name: digest(p) for p in DESTINATION.iterdir() if p.is_file() and p.name != 'manifest.json'}
     (DESTINATION / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    print(json.dumps({'complete': True, 'source': manifest['source_commit'], 'target': target,
+    print(json.dumps({'complete': True, 'source': manifest['source_commit'], 'target': target, 'backend_method_version': 2,
                       'hardware': machine, 'six_retained_backend_budgets': 'passed', 'retained_shelf_gates': 'passed'}))
 
 
