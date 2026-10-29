@@ -35,6 +35,17 @@ func AcquireProfile(directory string) (*Lease, error) {
 }
 
 func acquireLease(root, name string) (*Lease, error) {
+	return acquireLeaseMode(root, name, true)
+}
+
+// Short preference publication is independent of the lifetime recovery lease.
+// Serialize read-modify-write so a recovery window changing only its language
+// cannot overwrite another process's newly committed library root.
+func AcquirePreferenceUpdate(directory string) (*Lease, error) {
+	return acquireLeaseMode(directory, ".librairii-preference-update.lock", false)
+}
+
+func acquireLeaseMode(root, name string, nonblocking bool) (*Lease, error) {
 	if !filepath.IsAbs(root) {
 		return nil, ErrDataRootNotAbsolute
 	}
@@ -60,7 +71,11 @@ func acquireLease(root, name string) (*Lease, error) {
 	if !singleRegular(info) {
 		return refuse(ErrLeaseChanged)
 	}
-	if err := unix.Flock(lockFD, unix.LOCK_EX|unix.LOCK_NB); err != nil {
+	flags := unix.LOCK_EX
+	if nonblocking {
+		flags |= unix.LOCK_NB
+	}
+	if err := unix.Flock(lockFD, flags); err != nil {
 		if errors.Is(err, unix.EWOULDBLOCK) || errors.Is(err, unix.EAGAIN) {
 			err = ErrLibraryInUse
 		}

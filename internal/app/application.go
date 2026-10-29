@@ -13,6 +13,7 @@ import (
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/preferences"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/storage"
 )
 
 const EventApplicationReady = "application:ready"
@@ -173,7 +174,11 @@ func (a *Application) Start(ctx context.Context) error {
 		a.state = StateRecovery
 		a.ready = false
 		a.recoverable = false
-		a.lastError = NewAPIError(ErrorStorageUnavailable, "Application storage is unavailable.")
+		message := "Application storage is unavailable."
+		if errors.Is(err, storage.ErrLibraryInUse) {
+			message = "Close the other Librairii application, then retry."
+		}
+		a.lastError = NewAPIError(ErrorStorageUnavailable, message)
 		return nil
 	}
 	if !report.MutationsAllowed {

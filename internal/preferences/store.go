@@ -3,6 +3,7 @@ package preferences
 import (
 	"encoding/json"
 	"errors"
+	"github.com/01max/librairii/internal/storage"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,9 +31,6 @@ func (s *Store) loadLocked() (Profile, error) {
 	if s.failure != nil {
 		return Profile{}, s.failure
 	}
-	if s.loaded {
-		return s.profile, nil
-	}
 	file, err := os.Open(filepath.Join(s.directory, "settings.json"))
 	if err != nil {
 		return Profile{}, err
@@ -58,9 +56,21 @@ func (s *Store) Update(change func(*Profile) error) (Profile, error) {
 	if s.failure != nil {
 		return s.profile, s.failure
 	}
-	if !s.loaded {
-		if _, err := s.loadLocked(); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.MkdirAll(s.directory, 0700); err != nil {
+		return s.profile, err
+	}
+	guard, err := storage.AcquirePreferenceUpdate(s.directory)
+	if err != nil {
+		return s.profile, err
+	}
+	defer guard.Close()
+	wasLoaded := s.loaded
+	if _, err := s.loadLocked(); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
 			return s.profile, err
+		}
+		if wasLoaded {
+			return s.profile, ErrInvalid
 		}
 	}
 	next := s.profile

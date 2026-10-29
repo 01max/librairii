@@ -20,6 +20,25 @@ func (r *StorageReadiness) prepareProfile(ctx context.Context) error {
 	if r.profileStore == nil {
 		return nil
 	}
+	if err := r.acquireProfile(); err != nil {
+		return err
+	}
+	prior, loadErr := r.profileStore.Load()
+	root := r.legacyRoot
+	if loadErr == nil && prior.Root != "" {
+		root = prior.Root
+		r.profile = prior
+	}
+	if loadErr != nil && !errors.Is(loadErr, os.ErrNotExist) {
+		return loadErr
+	}
+	if _, err := os.Stat(root); err == nil {
+		if err := r.acquireLibrary(root, false); err != nil {
+			return err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	p, err := preferences.Bootstrap(ctx, r.profileStore, r.legacyRoot, r.profile.Language)
 	r.profile = p
 	if errors.Is(err, database.ErrForeignSchema) {
@@ -61,6 +80,20 @@ func (r *StorageReadiness) prepareProfile(ctx context.Context) error {
 	}
 	if !p.Complete {
 		return preferences.ErrSetupRequired
+	}
+	if journal, err := preferences.ReadJournal(r.profileStore.Directory()); err == nil {
+		if journal.LibraryID != p.LibraryID {
+			return preferences.ErrInvalid
+		}
+		for _, path := range []string{journal.Source, journal.Destination, journal.Workspace()} {
+			if id, err := preferences.Identity(path); err == nil && id == p.LibraryID {
+				if err := r.acquireLibrary(path, false); err != nil {
+					return err
+				}
+			}
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 	if recoveryErr := preferences.Reconcile(ctx, r.profileStore.Directory(), p); recoveryErr != nil && !errors.Is(recoveryErr, preferences.ErrCleanupPending) {
 		return recoveryErr
@@ -119,6 +152,9 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 	if r.profileStore == nil {
 		return preferences.ErrInvalid
 	}
+	if err := r.acquireProfile(); err != nil {
+		return err
+	}
 	if r.profile.Complete {
 		return preferences.ErrInvalid
 	}
@@ -133,6 +169,9 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 		if err != nil || id != r.profile.LibraryID {
 			return preferences.ErrInvalid
 		}
+	}
+	if err := r.acquireLibrary(root, true); err != nil {
+		return err
 	}
 	layout, err := storage.Initialize(root)
 	if err != nil {
@@ -186,6 +225,12 @@ func (r *StorageReadiness) CommitRoot(root string) error {
 	if r.profileStore == nil {
 		return preferences.ErrInvalid
 	}
+	if err := r.acquireProfile(); err != nil {
+		return err
+	}
+	if err := r.acquireLibrary(root, false); err != nil {
+		return err
+	}
 	p, err := r.profileStore.Update(func(p *preferences.Profile) error { p.Root = root; return nil })
 	if err != nil {
 		return err
@@ -202,9 +247,23 @@ func (r *StorageReadiness) ConfigurationDirectory() string {
 }
 
 func (r *StorageReadiness) LocateLibrary(ctx context.Context, root string) error {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	p := r.Profile()
 	if !p.Complete || r.Isolated() {
 		return preferences.ErrInvalid
+	}
+	if id, err := preferences.Identity(root); err != nil || id != p.LibraryID {
+		return preferences.ErrInvalid
+	}
+	r.mu.Lock()
+	err := r.acquireProfile()
+	if err == nil {
+		err = r.acquireLibrary(root, false)
+	}
+	r.mu.Unlock()
+	if err != nil {
+		return err
 	}
 	if err := preferences.ValidateLibrary(ctx, root, p.LibraryID); err != nil {
 		return err
