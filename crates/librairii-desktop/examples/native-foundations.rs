@@ -1,6 +1,8 @@
 //! Native presentation fixtures use only explicitly owned synthetic library data.
 #[path = "native-foundations/presentation.rs"]
 mod callback_checks;
+#[path = "native-foundations/cover_projection.rs"]
+mod cover_projection_checks;
 #[cfg(target_os = "macos")]
 #[path = "native-foundations/native_menu.rs"]
 mod native_menu;
@@ -374,6 +376,7 @@ fn main() -> Result {
             state.borrow_mut().project(&ui);
         }
     });
+    cover_projection_checks::checks(&ui, &view)?;
     let state = view.clone();
     let weak = ui.as_weak();
     ui.on_mode_selected(move |_| {
