@@ -6,6 +6,8 @@ mod cover_projection_checks;
 #[cfg(target_os = "macos")]
 #[path = "native-foundations/native_menu.rs"]
 mod native_menu;
+#[path = "native-foundations/typing_layout.rs"]
+mod typing_layout_checks;
 #[allow(dead_code)]
 #[path = "../src/view.rs"]
 mod view;
@@ -582,6 +584,9 @@ fn capture_step(
             ui.set_workspace(workspace);
             proposals(ui, french);
         } else {
+            if index == 1 || index == 19 {
+                typing_layout_checks::checks(ui, view)?;
+            }
             let name = if workspace {
                 format!(
                     "workspace-{density}-{}.png",
