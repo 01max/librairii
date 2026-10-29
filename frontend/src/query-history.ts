@@ -51,6 +51,7 @@ type CollectionHistoryState = {
         scope?: CollectionScope;
         group?: {kind: 'shelf'; id: number; manualOrder?: boolean};
         handoverKey?: number;
+        handoverSession?: string;
     };
 };
 
@@ -61,6 +62,7 @@ export class CollectionQueryHistory {
     #handover: {key: number; frame: HandoverFrame}[] = [];
     #handoverPosition = 0;
     #nextHandoverKey = 1;
+    readonly #handoverSession = crypto.randomUUID();
 
     handover(): {frames: HandoverFrame[]; position: number} {
         this.#observeHandover();
@@ -78,7 +80,7 @@ export class CollectionQueryHistory {
     #observeHandover() {
         const frame = this.#frame();
         const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
-        let position = entry?.hash === this.#target.location.hash
+        let position = entry?.hash === this.#target.location.hash && entry.handoverSession === this.#handoverSession
             ? this.#handover.findIndex(({key}) => key === entry?.handoverKey) : -1;
         if (position < 0) position = this.#handover.findIndex((item) => JSON.stringify(item.frame) === JSON.stringify(frame));
         if (position >= 0) { this.#handoverPosition = position; return; }
@@ -97,7 +99,7 @@ export class CollectionQueryHistory {
             this.#handoverPosition = this.#handover.length - 1;
         } else this.#handover[this.#handoverPosition] = item;
         const state = this.#target.history.state as CollectionHistoryState;
-        this.#target.history.replaceState({collectionQuery: {...state.collectionQuery, handoverKey: key}}, '',
+        this.#target.history.replaceState({collectionQuery: {...state.collectionQuery, handoverKey: key, handoverSession: this.#handoverSession}}, '',
             `${this.#target.location.pathname}${this.#target.location.search}${this.#target.location.hash}`);
     }
 

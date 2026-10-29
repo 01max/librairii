@@ -48,6 +48,21 @@ test('restores the same query when history is reconstructed like a reload', () =
     expect(reloaded.currentScope()).toBe('collection');
 });
 
+test('older browser entries cannot collide with keys allocated after reload', async () => {
+    const first = new CollectionQueryHistory(window, applicationDefault);
+    first.replace({...applicationDefault, name: 'A'}, null);
+    first.push({...applicationDefault, name: 'B'}, null);
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    reloaded.handover();
+    reloaded.push({...applicationDefault, name: 'C'}, null);
+    window.history.back();
+    await waitFor(() => expect(reloaded.current().name).toBe('b'));
+    reloaded.handover();
+    window.history.back();
+    await waitFor(() => expect(reloaded.current().name).toBe('a'));
+    expect(reloaded.handover()).toEqual({frames: [{hash: window.location.hash, kind: 'custom'}], position: 0});
+});
+
 test('restores back and forward query states', async () => {
     const history = new CollectionQueryHistory(window, applicationDefault);
     history.replace(applicationDefault, null);
