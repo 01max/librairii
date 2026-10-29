@@ -12,6 +12,7 @@ type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'>
 };
 
 export type CollectionScope = 'all' | 'collection' | 'shelf' | 'custom';
+export type HandoverFrame = {hash: string; kind: 'library' | 'custom' | 'collection' | 'shelf'; id?: number; manualOrder?: boolean};
 
 function hasMembershipCriteria(query: CollectionQuery): boolean {
     return !!query.anyOf?.length || query.name !== '' ||
@@ -49,6 +50,7 @@ type CollectionHistoryState = {
         collectionId?: number | null;
         scope?: CollectionScope;
         group?: {kind: 'shelf'; id: number; manualOrder?: boolean};
+        handoverKey?: number;
     };
 };
 
@@ -56,6 +58,48 @@ export class CollectionQueryHistory {
     readonly #target: CollectionWindow;
     readonly #fallback: CollectionQuery;
     #legacyBrokenTagID = 0;
+    #handover: {key: number; frame: HandoverFrame}[] = [];
+    #handoverPosition = 0;
+    #nextHandoverKey = 1;
+
+    handover(): {frames: HandoverFrame[]; position: number} {
+        this.#observeHandover();
+        return {frames: this.#handover.map(({frame}) => ({...frame})), position: this.#handoverPosition};
+    }
+
+    #frame(): HandoverFrame {
+        const scope = this.currentScope();
+        const hash = this.#target.location.hash || encodeCollectionQuery(this.#fallback);
+        if (scope === 'shelf') return {hash, kind: 'shelf', id: this.currentCuratedShelfID()!, manualOrder: this.currentShelfManualOrder()};
+        if (scope === 'collection') return {hash, kind: 'collection', id: this.currentCollectionID()!};
+        return {hash, kind: scope === 'all' ? 'library' : 'custom'};
+    }
+
+    #observeHandover() {
+        const frame = this.#frame();
+        const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
+        let position = entry?.hash === this.#target.location.hash
+            ? this.#handover.findIndex(({key}) => key === entry?.handoverKey) : -1;
+        if (position < 0) position = this.#handover.findIndex((item) => JSON.stringify(item.frame) === JSON.stringify(frame));
+        if (position >= 0) { this.#handoverPosition = position; return; }
+        // Browser history before this session is not enumerable. Keep the
+        // current semantic location without reading browser storage internals.
+        this.#handover = [{key: 0, frame}]; this.#handoverPosition = 0;
+    }
+
+    #recordHandover(method: 'pushState' | 'replaceState') {
+        const key = this.#nextHandoverKey++;
+        const item = {key, frame: this.#frame()};
+        if (method === 'pushState') {
+            this.#handover.splice(this.#handoverPosition + 1);
+            this.#handover.push(item);
+            if (this.#handover.length > 100) this.#handover.shift();
+            this.#handoverPosition = this.#handover.length - 1;
+        } else this.#handover[this.#handoverPosition] = item;
+        const state = this.#target.history.state as CollectionHistoryState;
+        this.#target.history.replaceState({collectionQuery: {...state.collectionQuery, handoverKey: key}}, '',
+            `${this.#target.location.pathname}${this.#target.location.search}${this.#target.location.hash}`);
+    }
 
     configureLegacyBrokenTagID(id: number) { this.#legacyBrokenTagID = id; }
 
@@ -102,10 +146,12 @@ export class CollectionQueryHistory {
     }
 
     pushShelf(id: number, query: CollectionQuery = this.#fallback, manualOrder?: boolean): CollectionQuery {
+        this.#observeHandover();
         const canonical = canonicalCollectionQuery(query);
         const hash = encodeCollectionQuery(canonical);
         this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id, manualOrder: manualOrder ?? (this.currentCuratedShelfID() === id ? this.currentShelfManualOrder() : true)}, scope: 'shelf'}}, '',
             `${this.#target.location.pathname}${this.#target.location.search}${hash}`);
+        this.#recordHandover('pushState');
         return canonical;
     }
 
@@ -187,12 +233,12 @@ export class CollectionQueryHistory {
             curatedShelfId: number | null,
         ) => void,
     ): () => void {
-        const onHistory = () => listener(
+        const onHistory = () => { this.#observeHandover(); listener(
             this.current(),
             this.currentShelfID(),
             this.currentScope(),
             this.currentCuratedShelfID(),
-        );
+        ); };
         this.#target.addEventListener('popstate', onHistory);
         return () => this.#target.removeEventListener('popstate', onHistory);
     }
@@ -203,6 +249,7 @@ export class CollectionQueryHistory {
         shelfId?: number | null,
         scope?: CollectionScope,
     ): CollectionQuery {
+        this.#observeHandover();
         const canonical = canonicalCollectionQuery(query);
         const hash = encodeCollectionQuery(canonical);
         const current = this.current();
@@ -227,6 +274,7 @@ export class CollectionQueryHistory {
                 scope: resolvedScope,
             },
         }, '', location);
+        this.#recordHandover(method);
         return canonical;
     }
 }
