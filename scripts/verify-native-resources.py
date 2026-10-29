@@ -49,7 +49,8 @@ def main():
     for name, kind in [('librairii-desktop', 'bin'), ('scale-native', 'example')]:
         matches = [e for e in events if e.get('reason') == 'compiler-artifact' and e.get('target', {}).get('name') == name
                    and e['target']['kind'] == [kind] and e.get('executable')]
-        if len(matches) != 1 or matches[0]['profile']['opt_level'] != '3' or matches[0]['profile']['debug_assertions']:
+        if (len(matches) != 1 or matches[0]['profile']['opt_level'] != '3'
+                or matches[0]['profile']['debug_assertions'] or matches[0]['profile']['overflow_checks']):
             raise ValueError('exact production release executable/profile required: ' + name)
         path = destination / name
         shutil.copy2(matches[0]['executable'], path)
