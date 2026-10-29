@@ -116,6 +116,13 @@ macOS, Intel macOS and Linux x86-64 and retains it with cumulative/native eviden
 Native foundations additionally executes the transfer callback/cancel/focus/
 repeat-import/cold-start path in both languages at both observed scales.
 
-Current provider receipts, final cumulative counts and both independent source/
-evidence reviews will be recorded here before17.8 is closed. Do not infer completed
-Task18 package, signing or installed-host qualification from these rehearsals.
+The [PR68 qualification record](https://github.com/01max/librairii/pull/68)
+indexes provider run/artifact identities, archive digests, qualified source/merge
+trees, cumulative counts and both independent source/evidence reviews. A passing
+workflow alone does not admit the evidence: review the raw38-case snapshots,
+four retained executables and their source/compiler bindings together with the
+complete native quality, scale and Linux speech receipts. Task17.8 remains the
+admission gate until that review is complete. Local reports live under
+`target/quality`; independent audit receipts under `target/task17-diagnostics`.
+Do not infer completed Task18 package, signing or installed-host qualification
+from these rehearsals.
