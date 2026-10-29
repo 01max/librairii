@@ -200,6 +200,14 @@ followed by positive application/controller shutdown. The earlier title-mismatch
 failure remains failed. Linux traversal skips absent accessibility children
 within the same bounds and still requires the actual showing story or ListItem.
 
+Quit method version2 visits only the owned application menu's direct items,
+reading role/title/enabled together. The retained Intel trace showed version1
+descending into Services and exhausting its2-second observer deadline before
+visiting Quit. The new depth2 candidate witness excludes Services descendants;
+the256-node bound,2-second deadline, exact enabled Quit action, and20-second
+positive application/controller join remain unchanged. The earlier failed
+attempt remains failed and does not establish shutdown completion.
+
 Native time records peak RSS across each real product process and a paired
 release-built current-view/controller workload containing the full1,000-cover
 traversal, real imports and native input. Their larger peak must stay≤512MiB.

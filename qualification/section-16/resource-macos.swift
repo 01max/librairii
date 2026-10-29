@@ -55,17 +55,25 @@ func quitFromOwnedMenu(_ app: AXUIElement) throws -> [String: Any] {
     let opened = AXUIElementPerformAction(applicationMenu, kAXPressAction as CFString)
     guard opened == .success else { throw Refusal(message: "owned native application menu action failed: \(opened.rawValue)") }
     while DispatchTime.now().uptimeNanoseconds-started < 2_000_000_000 {
-        var stack = [applicationMenu]
-        var visited = 0
-        while let item = stack.popLast(), visited < 256 {
+        // Quit belongs directly to this application's menu. Visiting a Services
+        // subtree first can spend the entire deadline on unrelated slow nodes.
+        var queue = [(applicationMenu, 0)]
+        var next = 0
+        while next < queue.count && next < 256 {
             try checkDeadline()
-            visited += 1
+            let (item, depth) = queue[next]
+            next += 1
             AXUIElementSetMessagingTimeout(item, 0.1)
-            let role = text(item, kAXRoleAttribute)
-            let title = text(item, kAXTitleAttribute)
-            let enabled = attribute(item, kAXEnabledAttribute) as? Bool ?? false
-            if trace.count < 64 { trace.append(["role": role, "title": String(title.prefix(160)), "enabled": enabled]) }
-            if role == kAXMenuItemRole as String && ["Quit Librairii", "Quitter Librairii"].contains(title) {
+            var rawValues: CFArray?
+            let result = AXUIElementCopyMultipleAttributeValues(item,
+                [kAXRoleAttribute, kAXTitleAttribute, kAXEnabledAttribute] as CFArray, [], &rawValues)
+            let values = rawValues as? [Any] ?? []
+            let role = values.count == 3 ? values[0] as? String ?? "" : ""
+            let title = values.count == 3 ? values[1] as? String ?? "" : ""
+            let enabled = values.count == 3 ? values[2] as? Bool ?? false : false
+            if trace.count < 64 { trace.append(["role": role, "title": String(title.prefix(160)), "enabled": enabled,
+                "depth": depth, "attributes_result": result.rawValue]) }
+            if depth == 2 && role == kAXMenuItemRole as String && ["Quit Librairii", "Quitter Librairii"].contains(title) {
                 var rawActions: CFArray?
                 AXUIElementCopyActionNames(item, &rawActions)
                 let actions = rawActions as? [String] ?? []
@@ -74,12 +82,15 @@ func quitFromOwnedMenu(_ app: AXUIElement) throws -> [String: Any] {
                 let result = AXUIElementPerformAction(item, kAXPressAction as CFString)
                 guard result == .success else { throw Refusal(message: "owned native Quit action failed: \(result.rawValue)") }
                 emitted = true
-                return ["native_quit_posted": true, "pid": pid,
+                return ["native_quit_posted": true, "pid": pid, "quit_method_version": 2,
+                    "traversal": "owned application menu direct items", "candidate_depth": depth,
                     "method": "owned native application menu AXPress", "application_menu": applicationMenuTitle,
                     "role": role, "title": title, "actions": actions, "result": result.rawValue]
             }
-            let children = attribute(item, kAXChildrenAttribute) as? [AXUIElement] ?? []
-            stack.append(contentsOf: children.prefix(max(0, 256-visited-stack.count)).reversed())
+            if depth < 2 {
+                let children = attribute(item, kAXChildrenAttribute) as? [AXUIElement] ?? []
+                queue.append(contentsOf: children.prefix(max(0, 256-queue.count)).map { ($0, depth+1) })
+            }
         }
         Thread.sleep(forTimeInterval: 0.001)
     }
