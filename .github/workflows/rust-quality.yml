@@ -108,6 +108,8 @@ jobs:
           cache: true
       - name: Shared Go/Rust lock and isolated legacy storage rehearsal
         run: python3 -I -B scripts/verify-storage-handover.py
+      - name: Complete Go bridge upgrade and application handover rehearsal
+        run: python3 -I -B scripts/verify-upgrade-handover.py
       - name: Native relocation crash and external-volume rehearsal
         run: python3 -I -B scripts/verify-native-relocation.py
       - name: Retain native check evidence

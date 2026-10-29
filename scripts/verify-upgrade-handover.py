@@ -61,6 +61,8 @@ def main():
                 sources.append({'path': str(path), 'sha256': digest(source)})
             bridge = build(current, environment, template, 'bridge-application')
             report = run_example('upgrade_handover', [bridge], environment)
+            application = run_example('application_handover', [original, bridge], environment)
+            report['application_handover'] = application
             report['producer'] = {
                 'source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                 'go': subprocess.check_output(['go', 'version'], env=environment, text=True).strip(),

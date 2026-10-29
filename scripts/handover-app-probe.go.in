@@ -54,7 +54,7 @@ func main() {
 	app := composition.Application
 	must(app.Start(ctx))
 	if mode == "blocked" {
-		if app.Status().MutationsAllowed || storage.SQL() != nil {
+		if app.Status().MutationsAllowed || storage.SQL() != nil || app.StatusResponse().Error == nil || app.StatusResponse().Error.Message != "Close the other Librairii application, then retry." {
 			panic("second application entered storage")
 		}
 		app.Stop(ctx)
