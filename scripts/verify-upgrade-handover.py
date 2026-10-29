@@ -82,13 +82,13 @@ def main():
             sources = []
             for raw in filter(None, paths):
                 path = Path(os.fsdecode(raw))
-                source = ROOT / path
-                if source.is_symlink() or not source.is_file() or source.stat().st_nlink != 1:
+                source_file = ROOT / path
+                if source_file.is_symlink() or not source_file.is_file() or source_file.stat().st_nlink != 1:
                     raise ValueError(f'nonregular current source: {path}')
                 target = current / path
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(source.read_bytes())
-                sources.append({'path': str(path), 'sha256': digest(source)})
+                target.write_bytes(source_file.read_bytes())
+                sources.append({'path': str(path), 'sha256': digest(source_file)})
             bridge = build(current, environment, template, 'bridge-application')
             report = run_example('upgrade_handover', [bridge], environment)
             application = run_example('application_handover', [original, bridge], environment)
