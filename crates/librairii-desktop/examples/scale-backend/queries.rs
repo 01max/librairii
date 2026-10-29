@@ -264,5 +264,5 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
     artwork["phases_warmup_then_100"] = json!(phases);
     metrics.insert("artworkLoad".into(), artwork);
     let passed = metrics.values().all(|metric| metric["passed"] == true);
-    Ok(json!({"passed":passed,"metrics":metrics,"query_plans":plans}))
+    Ok(json!({"passed":passed,"metrics":metrics,"query_plans":plans,"query_plan_version":2}))
 }

@@ -17,7 +17,13 @@ use rusqlite::{OptionalExtension, Transaction, params, params_from_iter, types::
 const FROM: &str = " FROM stories s JOIN story_archives a ON a.story_id=s.id";
 // Exact matching/sorting expression from frozen story_query.go. In particular,
 // name matching uses raw UUID spelling; official display lookup canonicalizes it.
-const DISPLAY_NAME: &str = "COALESCE(NULLIF((SELECT m.title_normalized FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE m.story_uuid=s.uuid AND c.status='active' AND c.locale=? ORDER BY c.activated_at DESC,c.id DESC LIMIT 1),''),s.display_name_normalized)";
+// The existing unique active-locale and snapshot/story constraints make this a
+// zero-or-one-row join. Resolve the uncorrelated active snapshot once, and share
+// the title lookup between literal matching and ordering without changing UUID
+// spelling or the empty-title fallback.
+const DISPLAY_JOIN: &str = " LEFT JOIN official_story_metadata display_metadata ON display_metadata.story_uuid=s.uuid AND display_metadata.snapshot_id=(SELECT c.id FROM catalog_snapshots c WHERE c.status='active' AND c.locale=?)";
+const DISPLAY_NAME: &str =
+    "COALESCE(NULLIF(display_metadata.title_normalized,''),s.display_name_normalized)";
 const RECORD: &str = "SELECT s.id,s.uuid,COALESCE(s.embedded_title,''),COALESCE(s.embedded_description,''),COALESCE(s.embedded_artwork_path,''),s.created_at,a.original_filename,a.detected_format,a.sha256,a.byte_size,a.managed_path,a.validation_state,s.is_broken";
 
 fn invalid() -> StorageError {
@@ -146,11 +152,19 @@ fn list(values: impl serde::Serialize) -> Result<Value> {
         .map_err(|_| invalid())
 }
 
-fn predicate(q: &Query, locale: &str, args: &mut Vec<Value>) -> Result<String> {
+fn uses_display_name(q: &Query) -> bool {
+    !q.name.is_empty() || q.any_of.iter().any(uses_display_name)
+}
+
+fn display_from(from: &str) -> String {
+    from.replacen(FROM, &format!("{FROM}{DISPLAY_JOIN}"), 1)
+}
+
+fn predicate(q: &Query, args: &mut Vec<Value>) -> Result<String> {
     let mut parts = Vec::new();
     if !q.name.is_empty() {
         parts.push(format!("instr({DISPLAY_NAME},?)>0"));
-        args.extend([text(locale), text(&q.name)]);
+        args.push(text(&q.name));
     }
     if !q.languages().is_empty() {
         parts.push("EXISTS(SELECT 1 FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE m.story_uuid=s.uuid AND c.status='active' AND m.language IN (SELECT value FROM json_each(?)))".into());
@@ -184,7 +198,7 @@ fn predicate(q: &Query, locale: &str, args: &mut Vec<Value>) -> Result<String> {
     if !q.any_of.is_empty() {
         let mut branches = Vec::new();
         for branch in &q.any_of {
-            let p = predicate(branch, locale, args)?;
+            let p = predicate(branch, args)?;
             branches.push(format!("({})", if p.is_empty() { "1" } else { &p }));
         }
         parts.push(format!("({})", branches.join(" OR ")));
@@ -200,20 +214,34 @@ fn matching(
     let request = normalize_request(request)?;
     validate_references(tx, &request.criteria)?;
     let mut args = Vec::new();
-    let predicate = predicate(&request.criteria, locale, &mut args)?;
-    let from = if predicate.is_empty() {
-        FROM.to_owned()
+    let base = if uses_display_name(&request.criteria) {
+        args.push(text(locale));
+        display_from(FROM)
     } else {
-        format!("{FROM} WHERE {predicate}")
+        FROM.to_owned()
+    };
+    let predicate = predicate(&request.criteria, &mut args)?;
+    let from = if predicate.is_empty() {
+        base
+    } else {
+        format!("{base} WHERE {predicate}")
     };
     Ok((request, from, args))
 }
 
-fn ordering(request: &QueryRequest, locale: &str, args: &mut Vec<Value>) -> String {
+fn ordering(
+    request: &QueryRequest,
+    locale: &str,
+    from: &mut String,
+    args: &mut Vec<Value>,
+) -> String {
     if request.sort == "imported_desc" {
         " ORDER BY s.created_at DESC,s.id DESC".into()
     } else {
-        args.push(text(locale));
+        if !uses_display_name(&request.criteria) {
+            *from = display_from(from);
+            args.insert(0, text(locale));
+        }
         format!(" ORDER BY {DISPLAY_NAME},s.uuid,s.id")
     }
 }
@@ -231,7 +259,8 @@ pub fn count(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Resul
 // drift between the observed page and its query plan. Call only for a page
 // inside the observed result count, as search does below.
 fn page_sql(request: &QueryRequest, from: &str, args: &mut Vec<Value>, locale: &str) -> String {
-    let order = ordering(request, locale, args);
+    let mut from = from.to_owned();
+    let order = ordering(request, locale, &mut from, args);
     args.extend([
         Value::Integer(request.page_size),
         Value::Integer((request.page - 1) * request.page_size),
@@ -495,8 +524,8 @@ pub fn visit_scope(
     locale: &str,
     mut consume: impl FnMut(ExportStory) -> Result<()>,
 ) -> Result<u64> {
-    let (request, from, mut args) = matching(tx, request, locale)?;
-    let order = ordering(&request, locale, &mut args);
+    let (request, mut from, mut args) = matching(tx, request, locale)?;
+    let order = ordering(&request, locale, &mut from, &mut args);
     let mut statement = tx.prepare(&format!("{RECORD}{from}{order}"))?;
     let mut rows = statement.query(params_from_iter(args))?;
     let mut count = 0_u64;
@@ -595,7 +624,7 @@ pub fn visit_uuids(
         " AND s.uuid IN (SELECT value FROM json_each(?))"
     });
     args.push(list(uuids)?);
-    let order = ordering(&request, locale, &mut args);
+    let order = ordering(&request, locale, &mut from, &mut args);
     let mut stmt = tx.prepare(&format!("{RECORD}{from}{order}"))?;
     let mut rows = stmt.query(params_from_iter(args))?;
     while let Some(row) = rows.next()? {

@@ -71,6 +71,23 @@ comparison. Final-source three-host qualification and independent review remain
 required before Task16 is checked complete. This record does not qualify
 installed packages, signing, upgrade/rollback or cutover.
 
+The48 Intel run failed literal search at130.834ms and deep paging at158.688ms;
+their process CPU p95s were130.806ms and153.820ms. These CPU-backed failures
+remain failed. Controlled SQL comparisons on the exact frozen fixture found
+redundant active-title lookups. The query now joins the active display metadata
+once, sharing it between literal matching and ordering. Existing unique active
+locale and snapshot/story constraints preserve zero-or-one-row behavior. Raw UUID
+matching, empty-title fallback, active-language matching and every result/order
+remain unchanged; no schema or dependency feature changes are needed.
+
+Query-plan report version2 retains the actual executed SQL and typed parameters.
+The locale is bound once before predicate values, including nested name branches.
+Legacy reports retain their original strict binding checks. Full local retained
+search p95 changed from16.330ms to8.761ms; this is local diagnostic evidence and
+does not qualify Intel or erase its failed samples. The exact frozen Go count,
+page and full-scope differential suite passes. Fresh full three-host gates remain
+required.
+
 ## Large Shelf review and bounded surfaces —16.2
 
 The same retained executable accepts `--shelves` in a separate fresh isolated

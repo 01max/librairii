@@ -86,12 +86,22 @@ def verify_queries(report):
         plan = plans[name]
         page, count = plan['page'], plan['count']
         offset = 4776 if name == 'deepPagination' else 0
+        if queries.get('query_plan_version') == 2:
+            page_prefix = count['parameters'] or [{'type': 'text', 'value': 'en-GB'}]
+            parameters_match = page['parameters'] == page_prefix + [
+                {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
+            parameters_match = parameters_match and page['statement'].count('?') == len(page['parameters'])
+            parameters_match = parameters_match and count['statement'].count('?') == len(count['parameters'])
+        elif 'query_plan_version' not in queries:
+            parameters_match = (page['parameters'][-3:] == [{'type': 'text', 'value': 'en-GB'},
+                {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
+                and count['parameters'] == page['parameters'][:-3])
+        else:
+            raise ValueError('unsupported actual query-plan version')
         if (plan['page_size'] != 24 or plan['page_number'] != offset // 24 + 1
                 or not page['statement'].endswith('LIMIT ? OFFSET ?')
-                or page['parameters'][-3:] != [{'type': 'text', 'value': 'en-GB'},
-                    {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
                 or not count['statement'].startswith('SELECT COUNT(*)')
-                or count['parameters'] != page['parameters'][:-3]
+                or not parameters_match
                 or not page['steps'] or not count['steps']):
             raise ValueError('plan/bound values do not describe measured page and count: ' + name)
     if len(plans['collectionCounts']) != 6 or any(not p['steps'] or not p['statement'].startswith('SELECT COUNT(*)') for p in plans['collectionCounts']):
