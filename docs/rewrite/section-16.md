@@ -88,6 +88,20 @@ does not qualify Intel or erase its failed samples. The exact frozen Go count,
 page and full-scope differential suite passes. Fresh full three-host gates remain
 required.
 
+For name-sorted pages after the first, the worker now materializes only the
+bounded selected IDs and ordering keys before loading complete records. The
+same transaction, total count, LIMIT/OFFSET, name/UUID/ID ordering and final
+24-row enrichment remain intact. Imported-date ordering keeps its existing
+indexed path. The raw version2 plan records the inner pagination bindings and
+the final key order; historical plan checks remain unchanged.
+
+The exact frozen local backend changed deep-page p95 from24.225ms before the
+query fixes to4.488ms afterward, while literal search retained8.753ms. All raw
+samples and complete frozen outcomes remain required. The existing scope
+regression also checks the last17-row page and the following empty page for
+both name and imported-date order, with and without literal matching. These
+local results do not replace fresh Intel or three-host provider qualification.
+
 ## Large Shelf review and bounded surfaces —16.2
 
 The same retained executable accepts `--shelves` in a separate fresh isolated

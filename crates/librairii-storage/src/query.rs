@@ -265,7 +265,16 @@ fn page_sql(request: &QueryRequest, from: &str, args: &mut Vec<Value>, locale: &
         Value::Integer(request.page_size),
         Value::Integer((request.page - 1) * request.page_size),
     ]);
-    format!("{RECORD}{from}{order} LIMIT ? OFFSET ?")
+    if request.page > 1 && request.sort != "imported_desc" {
+        // Deep OFFSET must sort keys, not every archive/description payload.
+        // Materialization selects the same bounded IDs in this transaction;
+        // only those records are enriched, with the same total ordering.
+        format!(
+            "WITH selected_page AS MATERIALIZED (SELECT s.id,{DISPLAY_NAME} AS page_name{from} ORDER BY page_name,s.uuid,s.id LIMIT ? OFFSET ?) {RECORD}{FROM} JOIN selected_page selected ON selected.id=s.id ORDER BY selected.page_name,s.uuid,s.id"
+        )
+    } else {
+        format!("{RECORD}{from}{order} LIMIT ? OFFSET ?")
+    }
 }
 
 pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Result<Page> {

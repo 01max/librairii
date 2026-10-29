@@ -92,14 +92,21 @@ def verify_queries(report):
                 {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
             parameters_match = parameters_match and page['statement'].count('?') == len(page['parameters'])
             parameters_match = parameters_match and count['statement'].count('?') == len(count['parameters'])
+            if name == 'deepPagination':
+                page_shape_matches = (page['statement'].startswith('WITH selected_page AS MATERIALIZED (SELECT s.id,')
+                    and page['statement'].count('LIMIT ? OFFSET ?') == 1
+                    and page['statement'].endswith('ORDER BY selected.page_name,s.uuid,s.id'))
+            else:
+                page_shape_matches = page['statement'].startswith('SELECT s.id,') and page['statement'].endswith('LIMIT ? OFFSET ?')
         elif 'query_plan_version' not in queries:
             parameters_match = (page['parameters'][-3:] == [{'type': 'text', 'value': 'en-GB'},
                 {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
                 and count['parameters'] == page['parameters'][:-3])
+            page_shape_matches = page['statement'].endswith('LIMIT ? OFFSET ?')
         else:
             raise ValueError('unsupported actual query-plan version')
         if (plan['page_size'] != 24 or plan['page_number'] != offset // 24 + 1
-                or not page['statement'].endswith('LIMIT ? OFFSET ?')
+                or not page_shape_matches
                 or not count['statement'].startswith('SELECT COUNT(*)')
                 or not parameters_match
                 or not page['steps'] or not count['steps']):

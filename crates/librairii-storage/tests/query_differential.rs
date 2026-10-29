@@ -247,6 +247,28 @@ fn streaming_scope_exceeds_picker_and_page_limits_and_stops_on_callback_failure(
         });
         assert!(matches!(result, Err(StorageError::Cancelled)));
         assert_eq!(seen, 1);
+        for sort in ["name_asc", "imported_desc"] {
+            for name in ["", "story"] {
+                let mut request = QueryRequest {
+                    page: 42,
+                    page_size: 24,
+                    sort: sort.into(),
+                    ..Default::default()
+                };
+                request.criteria.name = name.into();
+                let page = query::search(tx, request.clone(), "en-GB")?;
+                let ids = page.stories.iter().map(|s| s.id).collect::<Vec<_>>();
+                let expected = if sort == "name_asc" {
+                    (985..=1001).collect::<Vec<_>>()
+                } else {
+                    (1..=17).rev().collect::<Vec<_>>()
+                };
+                assert_eq!(ids, expected, "last bounded page: {sort}/{name}");
+                assert_eq!(page.total_items, 1001);
+                request.page = 43;
+                assert!(query::search(tx, request, "en-GB")?.stories.is_empty());
+            }
+        }
         Ok(())
     })?
     .wait()?;
