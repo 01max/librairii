@@ -33,9 +33,11 @@ def main():
     destination.mkdir()
     source = scale.output(['git', 'rev-parse', 'HEAD'])
     manifest = {'source_commit': source, 'target': target, 'hardware': scale.hardware(), 'complete': False,
+                'native_input_method_version': 2,
+                'performance_profile': 'production release; opt-level3; debug assertions and overflow checks disabled',
                 'compiler': scale.output(['rustc', '-vV']), 'cargo_lock_sha256': scale.digest(ROOT / 'Cargo.lock')}
     with (destination / 'compiler-artifacts.jsonl').open('w') as out, (destination / 'build.log').open('w') as err:
-        subprocess.run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target,
+        subprocess.run(['cargo', 'build', '--locked', '--release', '--target', target,
                         '-p', 'librairii-desktop', '--example', 'scale-native', '--message-format=json'], cwd=ROOT, stdout=out, stderr=err, check=True)
     events = [json.loads(s) for s in (destination / 'compiler-artifacts.jsonl').read_text().splitlines()]
     artifacts = [e for e in events if e.get('reason') == 'compiler-artifact' and e.get('target', {}).get('name') == 'scale-native'
@@ -43,8 +45,8 @@ def main():
     if len(artifacts) != 1:
         raise ValueError('exact Cargo native observer executable required')
     artifact = artifacts[0]
-    if artifact['profile']['opt_level'] != '1' or not artifact['profile']['debug_assertions'] or not artifact['profile']['overflow_checks']:
-        raise ValueError('qualified development checks required')
+    if artifact['profile']['opt_level'] != '3' or artifact['profile']['debug_assertions'] or artifact['profile']['overflow_checks']:
+        raise ValueError('exact production release profile required')
     binary = destination / 'scale-native'
     shutil.copy2(artifact['executable'], binary)
     manifest['executable'] = {'sha256': scale.digest(binary), 'bytes': binary.stat().st_size, 'profile': artifact['profile']}
@@ -65,7 +67,7 @@ def main():
     (destination / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     if not manifest['complete']:
         raise ValueError('both actual rendering paths required')
-    print(json.dumps({'source': source, 'native_input_loading_cache': 'passed'}))
+    print(json.dumps({'source': source, 'native_input_method_version': 2, 'native_input_loading_cache': 'passed'}))
 
 
 if __name__ == '__main__':

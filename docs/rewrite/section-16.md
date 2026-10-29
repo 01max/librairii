@@ -104,6 +104,24 @@ import batches while navigating. It keeps a second real batch queued so a comple
 batch does not create an unloaded gap inside a timed sample; the active/queued
 count is retained. It never uses a public catalog client.
 
+Native-input method version2 builds this workload with the production release
+profile: optimization3, debug assertions and overflow checks disabled. Actual
+Cargo profile fields and executable bytes bind the observation. The retained
+spike also built and packaged its native-input executable with `--release`
+(`task2-qualification.yml`). Task15's optimization1 checked observer was created
+for callback/capture qualification; its original rationale explicitly kept
+production/resource/package profiles separate. Standalone method1 inherited
+that development observer choice. Its failed cohorts retain their failed
+verdicts. Measuring production-release behavior does not explain the variation
+between byte-identical method1 binaries, or qualify any failed startup/CPU run.
+
+All native-input workloads, sample counts and numerical ceilings remain the
+same in version2, including both actual rendering paths and positive shutdown.
+Task15's checked functional suite and16.1's retained backend profile stay
+separate. The paired resource workload already used production release3; both
+lanes now declare version2 in their native workload reports. Workload readiness
+is a diagnostic and does not replace the separately measured startup endpoint.
+
 Every one of42 repository pages is displayed and observed; models retain at most
 24 stories (16 on the last page). A retained Arc from the first cover differs
 after visiting all1,000 covers and returning, proving actual production LRU

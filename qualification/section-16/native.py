@@ -126,14 +126,14 @@ def inspect(binary, destination, backend, helper=None):
         raise ValueError('owned fixture preparation failed')
     process = None
     joined = False
-    report = {'backend_request': backend, 'prepared': prepared, 'complete': False}
+    report = {'backend_request': backend, 'prepared': prepared, 'complete': False, 'input_method_version': 2}
     try:
         log = (destination / 'execution.log').open('w')
         environment = dict(os.environ, SLINT_BACKEND=backend, SLINT_SCALE_FACTOR='1', SLINT_DEBUG_PERFORMANCE='refresh_lazy,console')
         start = time.monotonic()
         process = subprocess.Popen(timed_arguments(binary, configuration, destination), env=environment, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         wait(lambda: (destination / 'ready').exists() and state(destination))
-        report['development_launch_ready_ms'] = (time.monotonic() - start) * 1000
+        report['workload_launch_ready_ms'] = (time.monotonic() - start) * 1000
         report['initial'] = state(destination)
         actual_pid = report['initial']['pid']
         if os.getpgid(actual_pid) != process.pid:
