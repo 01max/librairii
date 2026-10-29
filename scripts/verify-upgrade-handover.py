@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,45 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def executable_identity(metadata):
+    # Reading/executing may update atime; content/ownership changes must fail.
+    return (metadata.st_dev, metadata.st_ino, metadata.st_mode, metadata.st_nlink,
+            metadata.st_size, metadata.st_mtime_ns, metadata.st_ctime_ns)
+
+
+def read_executable(path):
+    # Cargo may hard-link the named example to its hashed build output. Never
+    # execute that shared inode; read only a regular, non-followed source.
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(descriptor, 'rb') as source:
+        before = os.fstat(source.fileno())
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError('nonregular rehearsal executable')
+        body = source.read()
+        if executable_identity(os.fstat(source.fileno())) != executable_identity(before):
+            raise ValueError('rehearsal executable changed while reading')
+    return body, before
+
+
+def retain_executable(executable, retained):
+    body, metadata = read_executable(executable)
+    retained.parent.mkdir(exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix='.executable-', dir=retained.parent)
+    try:
+        with os.fdopen(descriptor, 'wb') as destination:
+            destination.write(body)
+            os.fchmod(destination.fileno(), 0o700)
+            destination.flush()
+            os.fsync(destination.fileno())
+        os.replace(temporary, retained)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+    copied, copied_metadata = read_executable(retained)
+    if copied != body or copied_metadata.st_nlink != 1:
+        raise ValueError('retained rehearsal executable is not an exact private copy')
+    return hashlib.sha256(body).hexdigest(), metadata, copied_metadata
 
 
 def build(work, environment, template, name):
@@ -50,10 +90,9 @@ def run_example(example, helpers, environment):
     if len(executables) != 1:
         raise ValueError(f'expected one compiler-reported {example} executable')
     executable = Path(executables[0]['executable'])
-    if executable.is_symlink() or not executable.is_file() or executable.stat().st_nlink != 1:
-        raise ValueError('nonregular rehearsal executable')
-    before = digest(executable)
-    result = subprocess.run([str(executable)] + list(map(str, helpers)), cwd=ROOT,
+    retained = destination / 'handover-bin' / example
+    before, compiler_metadata, executed_metadata = retain_executable(executable, retained)
+    result = subprocess.run([str(retained)] + list(map(str, helpers)), cwd=ROOT,
                             env=environment, text=True, capture_output=True, timeout=240)
     (destination / f'{example}-execution.log').write_text(result.stderr)
     if result.returncode:
@@ -61,15 +100,17 @@ def run_example(example, helpers, environment):
         failure.parent.mkdir(parents=True, exist_ok=True)
         failure.write_text(result.stdout + '\n' + result.stderr)
         raise RuntimeError(f'{example} failed; full output: {failure}\n{result.stderr[-4096:]}')
-    if digest(executable) != before:
-        raise ValueError('rehearsal executable changed during execution')
+    for path, metadata in [(executable, compiler_metadata), (retained, executed_metadata)]:
+        body, after = read_executable(path)
+        if hashlib.sha256(body).hexdigest() != before or executable_identity(after) != executable_identity(metadata):
+            raise ValueError('rehearsal executable changed during execution')
     report = json.loads(result.stdout)
-    retained = destination / 'handover-bin' / example
-    retained.parent.mkdir(exist_ok=True)
-    shutil.copy2(executable, retained)
-    if digest(retained) != before:
-        raise ValueError('retained rehearsal executable differs from executed bytes')
-    report['execution'] = {'executable_sha256': before, 'bytes': executable.stat().st_size, 'retained_path': str(retained.relative_to(destination)), 'compiler_artifact': executables[0]}
+    report['execution'] = {'executable_sha256': before, 'bytes': executed_metadata.st_size,
+                           'retained_path': str(retained.relative_to(destination)),
+                           'executed_path': str(retained), 'executed_links': executed_metadata.st_nlink,
+                           'compiler_executable_sha256': before,
+                           'compiler_executable_links': compiler_metadata.st_nlink,
+                           'compiler_artifact': executables[0]}
     return report
 
 

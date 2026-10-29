@@ -53,6 +53,10 @@
     "test_frozen_go.FrozenGoTests.test_extra_checkout_sources_and_inherited_overlays_cannot_enter_oracle",
     "test_frozen_go.FrozenGoTests.test_changed_manifest_member_refuses_without_compiling",
     "test_frozen_go.FrozenGoTests.test_bridge_changes_use_original_manifest_verified_retained_bytes",
-    "test_frozen_go.FrozenGoTests.test_retained_alias_cannot_supply_oracle_bytes"
+    "test_frozen_go.FrozenGoTests.test_retained_alias_cannot_supply_oracle_bytes",
+    "test_handover_runner.HandoverRunnerTests.test_cargo_hardlink_executes_exact_owned_single_link_copy",
+    "test_handover_runner.HandoverRunnerTests.test_compiler_symlink_and_fifo_refuse_without_execution",
+    "test_handover_runner.HandoverRunnerTests.test_compiler_output_change_during_execution_refuses_receipt",
+    "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt"
   ]
 }

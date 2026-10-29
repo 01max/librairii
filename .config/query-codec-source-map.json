@@ -5784,6 +5784,26 @@
         "position": 53,
         "identity": "test_frozen_go.FrozenGoTests.test_retained_alias_cannot_supply_oracle_bytes",
         "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 54,
+        "identity": "test_handover_runner.HandoverRunnerTests.test_cargo_hardlink_executes_exact_owned_single_link_copy",
+        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
+      },
+      {
+        "position": 55,
+        "identity": "test_handover_runner.HandoverRunnerTests.test_compiler_symlink_and_fifo_refuse_without_execution",
+        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
+      },
+      {
+        "position": 56,
+        "identity": "test_handover_runner.HandoverRunnerTests.test_compiler_output_change_during_execution_refuses_receipt",
+        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
+      },
+      {
+        "position": 57,
+        "identity": "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
+        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
       }
     ]
   },
