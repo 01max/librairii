@@ -6,6 +6,7 @@ pub mod collection_codec;
 pub mod collections;
 pub mod diagnostics;
 pub mod export;
+pub mod handover;
 mod identity;
 pub mod import;
 pub mod metadata;
