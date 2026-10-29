@@ -11,6 +11,7 @@ use std::{
 };
 
 const TICK: Duration = Duration::from_millis(10);
+const IDLE_TICK: Duration = Duration::from_millis(100);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Refusal {
     Busy,
@@ -791,7 +792,26 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
             return;
         }
         let s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
-        let _ = shared.changed.wait_timeout(s, TICK);
+        // Only proven durable quiescence may reduce database polling. New
+        // admission, cancellation and shutdown notify this same condition
+        // variable under the state lock, so they still wake immediately.
+        // A worker excluded from the finishing scan may since have settled;
+        // keep the fast poll until a fresh scan includes that completion.
+        let idle = empty
+            && no_finished
+            && finishing_exclusions.is_empty()
+            && s.ready
+            && !s.failed
+            && !s.stopping
+            && s.ingress.is_none()
+            && !s.admitting
+            && s.cancel.is_none()
+            && s.queue.is_empty()
+            && s.inflight.is_empty()
+            && s.running == 0;
+        let _ = shared
+            .changed
+            .wait_timeout(s, if idle { IDLE_TICK } else { TICK });
     }
 }
 /// The caller runs its event loop inside `run`. Returning or panicking requests

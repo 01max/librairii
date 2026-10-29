@@ -340,6 +340,33 @@ The source map records the additions and its current upstream digest changes
 accordingly. A current-source cumulative gate and independent review still gate
 section acceptance.
 
+## Idle durable job polling
+
+The source48 Intel resource warmup retained 10.6528% idle CPU against the
+unchanged 5% limit; startup (857.147ms) and RSS passed, and the owned product
+joined positively. The same source's software native workload also failed key
+(134.264ms) and pointer (117.442ms) gates. These results remain failed; their
+causes cannot be attributed solely to scheduling.
+
+An isolated actual 1,000-story Worker consumed 2.8693% of a local core over an
+unsampled 15-second interval. A subsequent stack sample showed the job
+coordinator repeatedly reading pending and finishing work while idle. Only after
+both durable reads prove no work, with no excluded worker, intake, cancellation,
+queue, running work or shutdown, the coordinator now waits up to 100ms. Actual
+work and uncertain observations retain the 10ms poll. Admission, cancellation
+and shutdown notify the same condition variable while holding its state lock.
+A worker excluded from the finishing scan keeps the fast poll until a fresh
+scan includes its possible settlement.
+
+The final local version consumed 1.1118% of a core over an unsampled 15-second
+interval (166.940 CPU milliseconds / 15,015.626 wall milliseconds). Profiling ran
+after the interval; the actual Worker joined and its supervisor retired the
+fixture. Its existing SQL-backed runtime regression now exercises admission
+after idle, a second job after completed idle, and idle shutdown through positive
+settlement. Complete three-host ordinary product resource cohorts remain
+required: local Worker measurements exclude UI work and cannot replace the 5%
+product gate.
+
 ## Component batch watchdog
 
 At286199d the Intel component fixture completed its callback checks and advanced

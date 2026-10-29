@@ -118,6 +118,8 @@ fn actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement() 
     let request = input(OperationKind::Import, 30, 1);
     let id = request.id.clone();
     let stale = with_runtime(&store, &effect, Configuration::default(), |handle| {
+        wait(|| handle.idle_for_relocation());
+        thread::sleep(Duration::from_millis(120));
         must(runtime_support::offer(&handle, must(Start::new(request))));
         wait(|| handle.take_admission().is_some_and(|v| v.accepted));
         wait(|| handle.status().running == 2 && handle.status().queued == 4);
@@ -127,12 +129,26 @@ fn actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement() 
             must(must(db.operation_snapshot(id.clone())).wait())
                 .is_some_and(|s| s.operation.state == OperationState::Succeeded)
         });
+        wait(|| handle.idle_for_relocation());
+        thread::sleep(Duration::from_millis(120));
+        let next = input(OperationKind::Import, 1, 2);
+        let next_id = next.id.clone();
+        must(runtime_support::offer(&handle, must(Start::new(next))));
+        wait(|| handle.take_admission().is_some_and(|v| v.accepted));
+        wait(|| {
+            must(must(db.operation_snapshot(next_id.clone())).wait())
+                .is_some_and(|s| s.operation.state == OperationState::Succeeded)
+        });
+        wait(|| handle.idle_for_relocation());
+        thread::sleep(Duration::from_millis(120));
+        handle.shutdown();
+        wait(|| handle.status().drained);
         handle
     })?;
-    assert_eq!(effect.settled.load(Ordering::SeqCst), 30);
+    assert_eq!(effect.settled.load(Ordering::SeqCst), 31);
     assert_eq!(stale.status().running, 0);
     assert!(matches!(
-        stale.try_start(must(Start::new(input(OperationKind::Import, 1, 2)))),
+        stale.try_start(must(Start::new(input(OperationKind::Import, 1, 3)))),
         Err((Refusal::Closed, _))
     ));
     db.close()?;
