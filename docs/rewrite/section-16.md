@@ -367,6 +367,34 @@ settlement. Complete three-host ordinary product resource cohorts remain
 required: local Worker measurements exclude UI work and cannot replace the 5%
 product gate.
 
+## Stable search feedback geometry
+
+The source53 Intel software resource trial2 failed keyboard p95 at105.759ms
+against100ms. Four of64 samples exceeded the ceiling in one burst. Pointer and
+cold completion passed, and the workload joined and retired positively. Six
+pairs completed before this failed seventh attempt; the eighth was not run.
+All seven ordinary product observations passed startup, idle CPU and RSS, and
+all20 display frames completed. These partial results do not admit the full
+resource qualification. The record lacks aligned per-input CPU, dispatch and
+render milestones, so whole-process totals cannot establish its cause.
+
+An actual local1,000-story Worker, installed search callback and shown native
+frames reproduce a32px results-viewport shift on each text add/remove at a
+stable1180×760 scale-one window. The active-filter summary used to insert/remove
+a24px row plus spacing. It now stays mounted while its text changes, preserving
+localized feedback and using an empty accessibility label when blank. This
+removes the repeated geometry change in the results and inspector.
+
+The native component regression renders64 alternating feedback edits at fixed
+window geometry, requires the results viewport to stay stable and verifies that
+active-filter feedback remains present. It runs in the existing English/French
+wide-window cases at both scales without adding captures or changing sample
+counts. Its exact pre-fix local failure is retained. The same fixed local probe passes
+all64 edits at399px viewport height instead of alternating399/431px, with
+positive worker joining and fixture retirement. Local geometry/render
+diagnosis does not reproduce or admit native event latency; fresh complete
+three-host qualification and independent numerical review remain required.
+
 ## Component batch watchdog
 
 At286199d the Intel component fixture completed its callback checks and advanced

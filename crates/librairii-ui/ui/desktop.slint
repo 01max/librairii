@@ -718,7 +718,9 @@ export component DesktopWindow inherits Window {
                         ModeChoice {reveal(y,h)=>{root.reveal-controls(y,h);} visible: !root.shelf-active; horizontal-stretch: 0; width: root.shelf-active ? 0px : (root.compact ? 180px : 230px); accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
                         Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
-                    if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
+                    // Keep feedback mounted so adding/removing search text does
+                    // not reflow the results and inspector on every keystroke.
+                    Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: self.text == "" ? "" : (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
                     if root.terminal-notice!="": VerticalBox {padding:0px;spacing:4px;
                         Text {height:24px;text:root.terminal-notice;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
                         HorizontalBox {padding:0px;spacing:6px;
