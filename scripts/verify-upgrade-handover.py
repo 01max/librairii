@@ -24,7 +24,12 @@ def build(work, environment, template, name):
     driver.parent.mkdir()
     driver.write_bytes(template.read_bytes())
     helper = work / name
-    subprocess.run(['go', 'build', '-mod=readonly', '-o', str(helper), './driver'],
+    command = ['go', 'build', '-mod=readonly']
+    # Match the retained Ubuntu Go/Wails package's WebKit ABI. The probe runs
+    # application services without a window, but still links the native adapter.
+    if sys.platform == 'linux':
+        command += ['-tags', 'webkit2_41']
+    subprocess.run(command + ['-o', str(helper), './driver'],
                    cwd=work, env=environment, check=True, timeout=240)
     return helper
 
@@ -103,6 +108,7 @@ def main():
                 'source': source,
                 'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], cwd=ROOT, text=True).strip(),
                 'go': subprocess.check_output(['go', 'version'], env=environment, text=True).strip(),
+                'go_build_tags': ['webkit2_41'] if sys.platform == 'linux' else [],
                 'rust': subprocess.check_output(['rustc', '-vV'], text=True).strip(),
                 'application_driver_sha256': digest(template),
                 'bridge_helper_sha256': digest(bridge),
