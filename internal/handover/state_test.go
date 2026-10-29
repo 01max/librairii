@@ -23,6 +23,10 @@ func TestLibraryBoundExportWhitelistsStateAndDoesNotClobber(t *testing.T) {
 	if document.LibraryID != testLibrary || document.Version != 1 || document.State.Frames[0].Hash != state.Frames[0].Hash {
 		t.Fatal(document)
 	}
+	upper, err := Encode(strings.ToUpper(testLibrary), 3, state)
+	if err != nil || string(upper) != string(body) {
+		t.Fatalf("valid legacy UUID spelling lost binding: %v", err)
+	}
 	directory := t.TempDir()
 	if err := Export(directory, body); err != nil {
 		t.Fatal(err)

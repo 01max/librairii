@@ -106,7 +106,7 @@ func (s State) Validate() error {
 
 func Encode(libraryID string, legacyBrokenTagID int64, state State) ([]byte, error) {
 	id, err := uuid.Parse(libraryID)
-	if err != nil || id.String() != libraryID || legacyBrokenTagID < 0 || legacyBrokenTagID > maxSafeID {
+	if err != nil || legacyBrokenTagID < 0 || legacyBrokenTagID > maxSafeID {
 		return nil, ErrInvalid
 	}
 	if err := state.Validate(); err != nil {
@@ -117,7 +117,7 @@ func Encode(libraryID string, legacyBrokenTagID int64, state State) ([]byte, err
 	if state.DismissedOperations == nil {
 		state.DismissedOperations = []string{}
 	}
-	body, err := json.Marshal(Document{"librairii.preference-handover", 1, libraryID, legacyBrokenTagID, state})
+	body, err := json.Marshal(Document{"librairii.preference-handover", 1, id.String(), legacyBrokenTagID, state})
 	if err != nil || len(body)+1 > MaxBytes {
 		return nil, ErrInvalid
 	}
