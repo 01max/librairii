@@ -6,6 +6,8 @@ on:
       - '.github/workflows/intel-input-diagnostic.yml'
       - 'qualification/section-17/intel-input-diagnostic.py'
       - 'qualification/section-17/input-probe-macos.swift'
+      - 'qualification/section-17/native-input-phases.py'
+      - 'qualification/section-17/input-phases-macos.swift'
   workflow_dispatch:
 
 permissions:
@@ -16,21 +18,34 @@ jobs:
   compare:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: macos-15-intel
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Compare retained native executables with bounded probes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 -I -B qualification/section-17/intel-input-diagnostic.py
+      - name: Install the workspace-pinned compiler
+        run: |
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal
+      - name: Reuse exact-dependency release build inputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: intel-input-phases-v1-${{ hashFiles('rust-toolchain.toml', '**/Cargo.toml', '**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/x86_64-apple-darwin/release/
+      - name: Trace actual callback and observer publication boundaries
+        run: python3 -I -B qualification/section-17/native-input-phases.py
       - name: Retain all diagnostic cohorts, including failures
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: intel-input-diagnostic-${{ github.sha }}
-          path: target/intel-input-diagnostic/
+          name: intel-input-phases-${{ github.sha }}
+          path: target/intel-input-phases/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
