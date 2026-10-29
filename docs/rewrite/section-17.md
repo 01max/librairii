@@ -31,10 +31,15 @@ The source control is never copied or replaced. Foreign journals/path strings
 remain data, not cleanup/rebinding authority.
 
 After Rust use, Go bridge opening of a native-owned root is explicitly refused
-before recovery or SQLite. An actual compatibility experiment on disposable
-copies exposes newer native Collection payloads that Go cannot faithfully
-interpret. The safe rollback is an independent pre-native source/snapshot; the
-newer candidate and its preferences remain intact for explicit reconciliation.
+before recovery or SQLite as the supported rollback policy. On disposable copies,
+actual Go reopening preserves the tested Collection query version5/payloads,
+Shelves, memberships, outcomes, existing tags and native-edited story fields.
+Go supports query version5. Its startup can refresh derived search names and add
+derived Age tags, so raw snapshot inequality is recorded separately from query
+compatibility. The rehearsal retains both full snapshots and classifies those
+observed deltas; it does not qualify arbitrary native edits for direct rollback.
+The supported rollback uses an independent pre-native source/snapshot, keeping
+the newer candidate and its preferences intact for explicit reconciliation.
 
 ## Version1 preference protocol
 

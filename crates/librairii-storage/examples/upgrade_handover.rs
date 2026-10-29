@@ -320,7 +320,55 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
     )?;
     let go_after_native = handover_support::snapshot_connection(&connection)?;
-    let direct_go_compatible = go_after_native == post_native;
+    // Snapshot equality is stronger than compatibility: actual Go startup
+    // also refreshes derived search/tag metadata. Retain those deltas rather
+    // than misreporting them as unsupported Collection query versions.
+    let go_reopen_snapshot_equal = go_after_native == post_native;
+    let mut changed_tables = Vec::new();
+    for (name, rows) in post_native["tables"].as_object().ok_or("native tables")? {
+        if rows != &go_after_native["tables"][name] {
+            changed_tables.push(name.clone());
+            assert!(matches!(
+                name.as_str(),
+                "stories" | "tag_definitions" | "tag_values"
+            ));
+        }
+    }
+    assert_eq!(post_native["schema"], go_after_native["schema"]);
+    for table in ["tag_definitions", "tag_values"] {
+        let before = post_native["tables"][table]
+            .as_array()
+            .ok_or("native tags")?;
+        let after = go_after_native["tables"][table]
+            .as_array()
+            .ok_or("Go tags")?;
+        assert!(
+            before.iter().all(|row| after.contains(row)),
+            "Go lost existing {table}"
+        );
+    }
+    let native_stories = post_native["tables"]["stories"]
+        .as_array()
+        .ok_or("native stories")?;
+    let go_stories = go_after_native["tables"]["stories"]
+        .as_array()
+        .ok_or("Go stories")?;
+    assert_eq!(native_stories.len(), go_stories.len());
+    for (before, after) in native_stories.iter().zip(go_stories) {
+        for (column, value) in before.as_object().ok_or("story")? {
+            if column != "display_name_normalized" {
+                assert_eq!(value, &after[column], "Go changed story column {column}");
+            }
+        }
+    }
+    let go_reopen_observations = json!({
+        "opened_and_closed": true,
+        "changed_tables": changed_tables,
+        "collections_shelves_memberships_and_outcomes_equal": true,
+        "story_fields_except_derived_search_name_equal": true,
+        "existing_tags_preserved": true,
+        "scope": "disposable compatibility copy only; startup projection deltas remain in full snapshots"
+    });
     let native_collection = post_native["tables"]["collections"]
         .as_array()
         .ok_or("collections")?
@@ -389,7 +437,7 @@ fn run_case(prefix: usize, configured: bool, bridge: &Path) -> Result<Value> {
     assert_eq!(files(legacy)?, legacy_before);
     assert_eq!(files(&backup)?, source_before);
     Ok(
-        json!({"prefix":prefix,"current_bridge":prefix==19,"configured_legacy_profile":configured,"source_manifest":source_manifest,"backup_manifest":backup_manifest,"closed_tree_manifest":serde_json::from_slice::<Value>(&manifest)?,"legacy_profile_backup":seal(&profile_backup)?,"upgraded_database":upgraded,"post_native_database":post_native,"go_after_native_on_disposable_copy":go_after_native,"direct_go_compatible":direct_go_compatible,"bridge_refuses_native_owned_root":true,"rollback_policy":"independent pre-native snapshot; retain newer candidate and explicitly reconcile edits","candidate_manifest":seal(&target)?,"native_profile_manifest":seal(store.directory())?,"rollback_clone":seal(&rollback)?,"source_and_legacy_unchanged":true,"independent_inodes":true,"restart_all_tables_equal":true,"preferences_retained":true,"in_place_refused":true,"newer_candidate_preserved_during_rollback":true}),
+        json!({"prefix":prefix,"current_bridge":prefix==19,"configured_legacy_profile":configured,"source_manifest":source_manifest,"backup_manifest":backup_manifest,"closed_tree_manifest":serde_json::from_slice::<Value>(&manifest)?,"legacy_profile_backup":seal(&profile_backup)?,"upgraded_database":upgraded,"post_native_database":post_native,"go_after_native_on_disposable_copy":go_after_native,"go_reopen_snapshot_equal":go_reopen_snapshot_equal,"go_reopen_observations":go_reopen_observations,"bridge_refuses_native_owned_root":true,"rollback_policy":"independent pre-native snapshot; retain newer candidate and explicitly reconcile edits","candidate_manifest":seal(&target)?,"native_profile_manifest":seal(store.directory())?,"rollback_clone":seal(&rollback)?,"source_and_legacy_unchanged":true,"independent_inodes":true,"restart_all_tables_equal":true,"preferences_retained":true,"in_place_refused":true,"newer_candidate_preserved_during_rollback":true}),
     )
 }
 fn main() -> Result {

@@ -44,10 +44,12 @@ untouched and leaves existing choices intact.
 ## Returning to Go
 
 Use the original Go source or a **separate restored pre-native backup**. Never
-restore an older database over the newer native candidate. The bridge refuses a
-native-owned library because newer native Collection query versions are outside
-Go's supported interpretation. Removing the native recovery marker does not
-make that database compatible. Older Go executables can ignore the shared lock;
+restore an older database over the newer native candidate. The bridge requires
+this separate rollback route and refuses a native-owned library. The disposable
+reopening rehearsal preserves the tested Collections, Shelves and native edits,
+but Go startup refreshes derived search names and may add derived Age tags.
+That bounded experiment does not qualify arbitrary native changes for direct
+rollback. Keep the native recovery marker intact. Older Go executables can ignore the shared lock;
 keep their settings pointed at the original source.
 
 Changes made after the backup remain in the native candidate. Before switching,
