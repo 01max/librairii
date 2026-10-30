@@ -29,7 +29,8 @@ class Session:
             quote = lambda value: '"'+str(value).replace('\\','\\\\').replace('"','\\"')+'"'
             policy = ('(version 1)(allow default)(deny network-outbound)'
                       '(allow network-outbound (remote ip "localhost:*"))'
-                      '(deny file-write*)(allow file-write* (subpath '+quote(fixture.root)+')'
+                      # Rust opens /dev/null before spawning the native launcher.
+                      '(deny file-write*)(allow file-write* (literal "/dev/null") (subpath '+quote(fixture.root)+')'
                       '(subpath '+quote(Path(os.environ.get('TMPDIR','/private/tmp')).resolve())+'))'
                       '(deny process-exec)(allow process-exec (literal '+quote(binary)+')'
                       '(literal "/usr/bin/open"))')
