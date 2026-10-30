@@ -190,7 +190,9 @@ class Driver:
             for node in desktop.nodes(application):
                 try:
                     value = node.queryText().getText(0, -1)
-                    if value == str(destination) or value == destination.as_uri():
+                    # Thunar's native location entry includes a directory slash.
+                    if value in (str(destination), str(destination)+'/',
+                                 destination.as_uri(), destination.as_uri()+'/'):
                         return {'role': node.getRoleName(), 'name': node.name, 'value': value}
                 except (NotImplementedError, *self.read_errors):
                     continue
