@@ -49,6 +49,7 @@ struct State {
     french: bool,
     modal: bool,
     editing: bool,
+    native_editing: bool,
     back: bool,
     forward: bool,
     ready: bool,
@@ -106,6 +107,10 @@ pub struct Menus {
     #[cfg(target_os = "macos")]
     edit: muda::Submenu,
     #[cfg(target_os = "macos")]
+    native_edit: muda::Submenu,
+    #[cfg(target_os = "macos")]
+    native_actions: [muda::PredefinedMenuItem; 6],
+    #[cfg(target_os = "macos")]
     navigation: muda::Submenu,
     #[cfg(target_os = "macos")]
     visibility: [muda::PredefinedMenuItem; 3],
@@ -117,6 +122,17 @@ impl std::fmt::Debug for Menus {
             .field("commands", &self.commands)
             .finish_non_exhaustive()
     }
+}
+#[cfg(target_os = "macos")]
+fn native_text_editing() -> bool {
+    use objc2::{ClassType, runtime::NSObjectProtocol};
+    let Some(thread) = objc2::MainThreadMarker::new() else {
+        return false;
+    };
+    objc2_app_kit::NSApplication::sharedApplication(thread)
+        .keyWindow()
+        .and_then(|window| window.firstResponder())
+        .is_some_and(|responder| responder.isKindOfClass(objc2_app_kit::NSText::class()))
 }
 impl Menus {
     fn install(_target: slint::Weak<DesktopWindow>) -> Result<Self> {
@@ -167,6 +183,20 @@ impl Menus {
                 &quit,
             ])?;
             let edit = Submenu::new("Edit", true);
+            // AppKit's native panel field editor requires responder-chain
+            // actions. Slint text fields retain their qualified explicit route.
+            let native_edit = Submenu::new("Edit", true);
+            let native_actions = [
+                Standard::undo(None),
+                Standard::redo(None),
+                Standard::cut(None),
+                Standard::copy(None),
+                Standard::paste(None),
+                Standard::select_all(None),
+            ];
+            for action in &native_actions {
+                native_edit.append(action)?;
+            }
             let mut labels = vec![about, settings, quit];
             for (id, label, code, modifiers) in [
                 ("undo", "Undo", Code::KeyZ, Modifiers::META),
@@ -251,6 +281,8 @@ impl Menus {
                 _bar: bar,
                 labels,
                 edit,
+                native_edit,
+                native_actions,
                 navigation,
                 visibility,
                 state: Default::default(),
@@ -335,15 +367,54 @@ impl Menus {
                 french: _ui.get_french(),
                 modal: _ui.get_modal() || _ui.get_closing() || _ui.get_review_data().committing,
                 editing: _ui.get_text_edit_focused(),
+                native_editing: native_text_editing(),
                 back: _ui.get_back_enabled(),
                 forward: _ui.get_forward_enabled(),
                 ready: _ui.get_settings_command_ready(),
                 library: _ui.get_startup_phase() == 3,
             };
-            if self.state.replace(Some(state)) == Some(state) {
+            let previous = self.state.get();
+            if previous == Some(state) {
                 return;
             }
+            if previous.is_some_and(|s| s.native_editing) != state.native_editing {
+                let (old, next) = if state.native_editing {
+                    (&self.edit, &self.native_edit)
+                } else {
+                    (&self.native_edit, &self.edit)
+                };
+                if self._bar.remove(old).is_err() {
+                    _ui.set_status(
+                        if state.french {
+                            "Le menu d’édition natif n’a pas pu être mis à jour."
+                        } else {
+                            "Native edit menu could not be updated."
+                        }
+                        .into(),
+                    );
+                    return;
+                }
+                if self._bar.insert(next, 1).is_err() {
+                    let restored = self._bar.insert(old, 1);
+                    _ui.set_status(
+                        if state.french && restored.is_ok() {
+                            "Le menu d’édition natif n’a pas pu être mis à jour."
+                        } else if state.french {
+                            "Le menu d’édition natif n’a pas pu être restauré. Redémarrez Librairii."
+                        } else if restored.is_ok() {
+                            "Native edit menu could not be updated."
+                        } else {
+                            "Native edit menu could not be restored. Restart Librairii."
+                        }
+                        .into(),
+                    );
+                    return;
+                }
+            }
+            self.state.set(Some(state));
             self.edit
+                .set_text(if state.french { "Édition" } else { "Edit" });
+            self.native_edit
                 .set_text(if state.french { "Édition" } else { "Edit" });
             self.navigation.set_text("Navigation");
             let visibility_labels = if state.french {
@@ -389,6 +460,9 @@ impl Menus {
                     "Save Diagnostic ZIP…",
                 ]
             };
+            for (item, label) in self.native_actions.iter().zip(&labels[3..9]) {
+                item.set_text(*label);
+            }
             for (index, (item, label)) in self.labels.iter().zip(labels).enumerate() {
                 item.set_text(label);
                 item.set_enabled(match index {
