@@ -14,6 +14,16 @@ class Driver:
         spec.loader.exec_module(self.module)
         self.observer = self.module.Observer(helper, output, pid)
         self.pid, self.output, self.helper = pid, output, helper
+        # A spawned process can precede AppKit registration on a warm reopen.
+        # Observe its actual visible main window before the single activation.
+        def ready():
+            status = self.observer.status()
+            return status if status['pid'] == pid and any(
+                window.get('kCGWindowOwnerPID') == pid and window.get('kCGWindowLayer') == 0
+                and window.get('kCGWindowIsOnscreen') is True and window.get('kCGWindowAlpha', 0) > 0
+                for window in status['windows']) else None
+        initial = self.observer.wait(ready)
+        (output/'initial-window-ready.json').write_text(json.dumps(initial, indent=2)+'\n')
         self.observer.call('activate')
         self.observer.wait(lambda: self.observer.status()['frontmost_pid'] == pid)
 

@@ -24,6 +24,42 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_mac_activation_waits_for_the_exact_owned_visible_window(self):
+        from packaged_acceptance.macos import Driver
+        pid = 123
+        state = {'ready': False, 'activated': False, 'reads': 0}
+        def status():
+            state['reads'] += 1
+            if state['activated']:
+                return {'pid': pid, 'frontmost_pid': pid, 'windows': []}
+            windows = ([] if state['reads'] == 1 else
+                       [{'kCGWindowOwnerPID': 456 if state['reads'] == 2 else pid,
+                         'kCGWindowLayer': 0, 'kCGWindowIsOnscreen': True,
+                         'kCGWindowAlpha': 0 if state['reads'] == 3 else 1}])
+            state['ready'] = state['reads'] >= 4
+            return {'pid': pid, 'frontmost_pid': 456, 'windows': windows}
+        def call(action):
+            self.assertEqual(action, 'activate')
+            if not state['ready']:
+                raise RuntimeError('activation preceded the owned visible window')
+            state['activated'] = True
+            return {'activated': True}
+        def wait(predicate):
+            for _ in range(4):
+                if value := predicate():
+                    return value
+            raise TimeoutError('owned native window never appeared')
+        observer = SimpleNamespace(status=status, call=Mock(side_effect=call), wait=wait)
+        module = SimpleNamespace(Observer=Mock(return_value=observer))
+        with tempfile.TemporaryDirectory() as temporary, \
+             patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
+             patch('packaged_acceptance.macos.importlib.util.spec_from_file_location') as spec, \
+             patch('packaged_acceptance.macos.importlib.util.module_from_spec', return_value=module):
+            root = Path(temporary)
+            Driver(root, root, pid, root/'unused-test-helper')
+            observer.call.assert_called_once_with('activate')
+            self.assertEqual(state['reads'], 5)
+
     def test_observer_closes_database_readers_before_product_relocation(self):
         # A connection context commits/rolls back; it does not close SQLite.
         # Keep collection out of this lifecycle check so ownership is explicit.

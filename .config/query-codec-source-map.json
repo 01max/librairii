@@ -6087,6 +6087,11 @@
         "position": 104,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_observer_closes_database_readers_before_product_relocation",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 105,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_activation_waits_for_the_exact_owned_visible_window",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
