@@ -518,6 +518,14 @@ class PackagedAdmission(unittest.TestCase):
             fixture = Fixture(source, evidence, True)
             owned = fixture.root
             try:
+                # The copied PK keeps the format suffix required by the frozen
+                # passthrough policy; generated review archives are actual ZIPs.
+                pk = [path for path in fixture.inputs.iterdir()
+                      if path.read_bytes() == (source/'preservation/corpus/archives/clockwork-forest.plain.pk').read_bytes()]
+                self.assertEqual(len(pk), 1)
+                self.assertTrue(pk[0].name.endswith('.plain.pk'))
+                self.assertEqual(len(list(fixture.review_inputs.iterdir())), 2)
+                self.assertTrue(all(path.name.endswith('.zip') for path in fixture.review_inputs.iterdir()))
                 environment = fixture.environment('winit-skia-software')
                 self.assertEqual(environment.get('HOME'), os.environ.get('HOME'))
                 self.assertEqual(environment['LIBRAIRII_ACCEPTANCE_LIBRARY'], str(owned/'library'))

@@ -27,7 +27,7 @@ class Fixture:
         self.inputs.mkdir()
         self.exports.mkdir()
         for old, new in [('clockwork-forest.zip', 'Été 日本語 故事.zip'),
-                         ('clockwork-forest.plain.pk', 'Deuxième archive 02.pk')]:
+                         ('clockwork-forest.plain.pk', 'Deuxième archive 02.plain.pk')]:
             shutil.copyfile(source/'preservation/corpus/archives'/old, self.inputs/new)
         self.input_bytes = inventory(self.inputs)
         self.original_uuid = '00112233-4455-4677-8899-aabbccddeeff'
@@ -35,7 +35,7 @@ class Fixture:
         self.review_inputs.mkdir()
         self.review_uuid = '90000000-0000-4000-8000-000000000018'
         with zipfile.ZipFile(source/'preservation/corpus/archives/clockwork-forest.zip') as original:
-            for filename in ('Nouvelle histoire 03.zip', 'Nouvelle archive 04.pk'):
+            for filename in ('Nouvelle histoire 03.zip', 'Nouvelle archive 04.zip'):
                 with zipfile.ZipFile(self.review_inputs/filename, 'x', compression=zipfile.ZIP_DEFLATED) as changed:
                     for entry in original.infolist():
                         relative = entry.filename.split('/', 1)[1]
