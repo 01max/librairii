@@ -150,7 +150,10 @@ def perform(driver, fixture, result, french):
                                       if node.get('role') in ('combo box', 'AXComboBox', 'AXPopUpButton')
                                       and fixture.review_uuid in (node.get('name','')+node.get('title','')+node.get('description',''))), None))
     name = review.get('name') or review.get('title') or review.get('description')
-    driver.choose(name, 1)
+    # Review decisions commit on each arrow and restore the focused row. A
+    # generic open/clamp/Return sequence would reopen the live choice popup.
+    driver.focus(name, roles=('combo box', 'AXComboBox', 'AXPopUpButton'))
+    driver.key('Down')
     reveal(driver, lambda: driver.find(words('Apply approved changes', 'Appliquer les modifications approuvées'),
                                       prefix=True, actionable=True))
     driver.press(words('Apply approved changes', 'Appliquer les modifications approuvées'), prefix=True)
