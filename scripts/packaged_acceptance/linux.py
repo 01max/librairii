@@ -50,13 +50,21 @@ class Driver:
             self.desktop.screenshot(self.output/(name+'.png'))
         return report
 
-    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None):
+    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None, actionable=False):
         a = self.desktop.a
         for node in self.nodes(root):
             try:
                 if ((node.name.startswith(name) if prefix else node.name == name)
                         and (not enabled or node.getState().contains(a.STATE_ENABLED))
                         and (roles is None or node.getRoleName() in roles)):
+                    if actionable:
+                        try:
+                            actions = node.queryAction()
+                            if not any(actions.getName(index).lower() in ('click','press','activate','toggle')
+                                       for index in range(actions.nActions)):
+                                continue
+                        except NotImplementedError:
+                            continue
                     return node
             except (RuntimeError, self.desktop.dbus.DBusException):
                 continue
@@ -73,7 +81,7 @@ class Driver:
         raise ValueError('native control has no activation action: '+node.name)
 
     def press(self, name, *, prefix=False):
-        node = self.wait(lambda: self.find(name, prefix=prefix))
+        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
         self.action(node)
         return {'name': node.name, 'role': node.getRoleName()}
 

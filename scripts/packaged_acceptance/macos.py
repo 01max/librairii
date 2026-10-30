@@ -27,16 +27,17 @@ class Driver:
     def wait(self, predicate, timeout=15):
         return self.observer.wait(predicate, timeout)
 
-    def find(self, name, *, prefix=False, enabled=True, roles=None):
+    def find(self, name, *, prefix=False, enabled=True, roles=None, actionable=False):
         matches = [node for node in self.snapshot()['nodes']
                    if any((value.startswith(name) if prefix else value == name)
                           for value in (node.get('title', ''), node.get('description', '')))
                    and (not enabled or node.get('enabled') is not False)
+                   and (not actionable or 'AXPress' in node.get('actions', []))
                    and (roles is None or node.get('role') in roles)]
         return next(iter(matches), None)
 
     def press(self, name, *, prefix=False):
-        node = self.wait(lambda: self.find(name, prefix=prefix))
+        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
         self.observer.call('press', selector=self.module.selector(node))
         time.sleep(.08)
         return node

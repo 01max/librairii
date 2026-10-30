@@ -5982,6 +5982,11 @@
         "position": 83,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 84,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

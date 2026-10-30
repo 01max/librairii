@@ -20,6 +20,15 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_native_press_selectors_exclude_duplicate_static_labels(self):
+        from packaged_acceptance.macos import Driver
+        driver = Driver.__new__(Driver)
+        label = {'title':'same story','role':'AXStaticText','enabled':True,'actions':[]}
+        button = {'title':'same story','role':'AXButton','enabled':True,'actions':['AXPress']}
+        driver.snapshot = lambda: {'nodes':[label,button]}
+        self.assertEqual(driver.find('same story'), label)
+        self.assertEqual(driver.find('same story', actionable=True), button)
+
     def test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes(self):
         from packaged_acceptance.exports import freeze, verify
         with tempfile.TemporaryDirectory() as temporary:

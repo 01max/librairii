@@ -85,6 +85,10 @@ func checkedText(_ element: AXUIElement, _ name: String, optional: Bool = false)
 
 func describe(_ element: AXUIElement) -> [String: Any] {
     var result: [String: Any] = [:]
+    var actions: CFArray?
+    if AXUIElementCopyActionNames(element, &actions) == .success {
+        result["actions"] = actions as? [String] ?? []
+    }
     for (key, name) in [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
                         ("title", kAXTitleAttribute), ("description", kAXDescriptionAttribute),
                         ("identifier", kAXIdentifierAttribute), ("value", kAXValueAttribute),
