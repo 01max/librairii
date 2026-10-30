@@ -51,7 +51,7 @@ def perform(driver, fixture, result, french):
     imported = terminal('import', previous)
     assert fixture.rows("SELECT uuid FROM stories WHERE uuid='00112233-4455-4677-8899-aabbccddeeff'")
     observe('import', {'terminal': imported, 'items': fixture.rows(
-        'SELECT source_name,status,outcome_code FROM file_operation_items')})
+        'SELECT source_name,status,outcome_code FROM file_operation_items'), 'managed':fixture.archives(reviewed=False)})
     closed()
     driver.press(words('Sync optional official metadata', 'Synchroniser les métadonnées officielles · facultatif'))
     driver.wait(lambda: fixture.rows("SELECT id FROM catalog_syncs WHERE status='succeeded'"), timeout=40)
@@ -130,8 +130,7 @@ def perform(driver, fixture, result, french):
     driver.wait(lambda: fixture.rows("SELECT story_uuid FROM shelf_stories WHERE story_uuid='"+fixture.review_uuid+"'"))
     observe('shelf-review', {'before': before, 'after': fixture.rows("SELECT story_uuid,position FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")})
     driver.press(words('Not now · close review', 'Pas maintenant · fermer la révision'))
-    archives = fixture.rows('SELECT s.id,s.uuid,s.is_broken,a.original_filename,a.managed_path,a.sha256,a.byte_size,a.validation_state '
-                            'FROM stories s JOIN story_archives a ON a.story_id=s.id ORDER BY s.id')
+    archives = fixture.archives(reviewed=True)
     all_uuids = {row['uuid'] for row in archives}
     shelf = fixture.rows("SELECT id,name FROM shelves WHERE name='Packaged approved'")
     collection = fixture.rows("SELECT id,name FROM collections WHERE name='Packaged all'")

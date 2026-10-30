@@ -30,6 +30,7 @@ class Fixture:
                          ('clockwork-forest.plain.pk', 'Deuxième archive 02.pk')]:
             shutil.copyfile(source/'preservation/corpus/archives'/old, self.inputs/new)
         self.input_bytes = inventory(self.inputs)
+        self.original_uuid = '00112233-4455-4677-8899-aabbccddeeff'
         self.review_inputs = self.root/'review-inputs'
         self.review_inputs.mkdir()
         self.review_uuid = '90000000-0000-4000-8000-000000000018'
@@ -40,6 +41,11 @@ class Fixture:
                         relative = entry.filename.split('/', 1)[1]
                         changed.writestr(self.review_uuid+'/'+relative, original.read(entry))
         self.review_bytes = inventory(self.review_inputs)
+        self.original_archives = {
+            self.original_uuid: {(name,facts['sha256'],facts['bytes']) for name,facts in self.input_bytes.items()},
+            self.review_uuid: {(name,facts['sha256'],facts['bytes']) for name,facts in self.review_bytes.items()},
+        }
+        self.initial_uuids = {self.original_uuid}
         self.candidate, self.moved = self.library/'candidate', self.library/'moved'
         self.candidate.mkdir()
         self.moved.mkdir()
@@ -56,6 +62,11 @@ class Fixture:
             self.legacy = self.library/'legacy-source'
             copy_tree(source/'preservation/corpus/libraries/schema018', self.legacy)
             self.legacy_before = inventory(self.legacy)
+            with sqlite3.connect((self.legacy/'db/librairii.sqlite3').as_uri()+'?immutable=1',uri=True) as connection:
+                for uuid,name,sha256,size in connection.execute(
+                        'SELECT s.uuid,a.original_filename,a.sha256,a.byte_size FROM stories s JOIN story_archives a ON a.story_id=s.id'):
+                    self.original_archives[uuid] = {(name,sha256,size)}
+                    self.initial_uuids.add(uuid)
             legacy_profile.mkdir(parents=True)
             write_json(legacy_profile/'settings.json', {
                 'version': 1, 'language': 'en', 'root': str(self.legacy),
@@ -170,6 +181,22 @@ class Fixture:
             connection.row_factory = sqlite3.Row
             return [{key: ({'blob_hex': value.hex()} if isinstance(value, bytes) else value)
                      for key,value in dict(row).items()} for row in connection.execute(statement)]
+
+    def archives(self, *, reviewed):
+        rows = self.rows('SELECT s.id,s.uuid,s.is_broken,a.original_filename,a.managed_path,a.sha256,a.byte_size,a.validation_state '
+                         'FROM stories s JOIN story_archives a ON a.story_id=s.id ORDER BY s.id')
+        expected = self.initial_uuids | ({self.review_uuid} if reviewed else set())
+        if len(rows) != len(expected) or {row['uuid'] for row in rows} != expected:
+            raise ValueError('imported UUIDs differ from independent original fixture identities')
+        root = self.current_root()
+        for row in rows:
+            if (row['original_filename'],row['sha256'],row['byte_size']) not in self.original_archives[row['uuid']]:
+                raise ValueError('managed archive identity differs from its independent original input')
+            path = root/row['managed_path']
+            if (not path.resolve().is_relative_to(root) or path.is_symlink() or path.stat().st_nlink != 1
+                    or path.stat().st_size != row['byte_size'] or digest(path) != row['sha256']):
+                raise ValueError('managed archive custody or bytes differ from the original fixture')
+        return rows
 
     def retain(self, *, process_retired=True):
         self.stop_catalog()

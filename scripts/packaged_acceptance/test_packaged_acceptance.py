@@ -20,6 +20,35 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_managed_imports_must_match_independent_original_identity_name_and_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root/'archives').mkdir()
+            archive = root/'archives/managed'
+            archive.write_bytes(b'original immutable input')
+            row = {'id':1,'uuid':'original','is_broken':0,'original_filename':'original.zip',
+                   'managed_path':'archives/managed','sha256':digest(archive),'byte_size':archive.stat().st_size,
+                   'validation_state':'valid'}
+            fixture = Fixture.__new__(Fixture)
+            fixture.initial_uuids,fixture.review_uuid = {'original'},'review'
+            fixture.original_archives = {'original':{('original.zip',row['sha256'],row['byte_size'])}}
+            fixture.current_root = lambda:root
+            fixture.rows = lambda _: [row]
+            self.assertEqual(fixture.archives(reviewed=False),[row])
+            with self.assertRaises(ValueError):
+                fixture.archives(reviewed=True)
+            for key,value in [('uuid','unexpected'),('original_filename','wrong.zip'),('sha256','f'*64),('byte_size',0)]:
+                changed = dict(row,**{key:value})
+                fixture.rows = lambda _,value=changed:[value]
+                with self.assertRaises(ValueError):
+                    fixture.archives(reviewed=False)
+            # A wrong input cannot become the oracle merely by agreeing with DB.
+            archive.write_bytes(b'other internally consistent bytes')
+            changed = dict(row,sha256=digest(archive),byte_size=archive.stat().st_size)
+            fixture.rows = lambda _:[changed]
+            with self.assertRaisesRegex(ValueError,'independent original'):
+                fixture.archives(reviewed=False)
+
     def test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup(self):
         from packaged_acceptance.macos import Driver as Mac
         from packaged_acceptance.linux import Driver as Linux
