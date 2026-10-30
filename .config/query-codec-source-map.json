@@ -6037,6 +6037,11 @@
         "position": 94,
         "identity": "test_packages.PlatformPackages.test_independent_candidate_checksum_refuses_before_host_install_or_execution",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 95,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

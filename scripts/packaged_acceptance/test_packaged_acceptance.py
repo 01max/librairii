@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -20,6 +21,44 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection(self):
+        from packaged_acceptance.linux import select_picker_rows
+        driver = Mock()
+        driver.desktop.a.ROLE_TABLE,driver.desktop.a.ROLE_TREE_TABLE = 1,2
+        driver.desktop.visible.return_value = True
+        def wait(predicate):
+            value = predicate()
+            if not value:
+                raise TimeoutError('unobserved native selection')
+            return value
+        driver.wait.side_effect = wait
+        table = Mock(nRows=3,nColumns=1)
+        node = Mock()
+        node.getRole.return_value = 1
+        node.queryTable.return_value = table
+        names = [{'unrelated'}, {'Été 日本語 故事.zip'}, {'Deuxième archive 02.pk'}]
+        table.getAccessibleAt.side_effect = lambda row,column:row
+        driver.desktop.nodes.side_effect = lambda row:[SimpleNamespace(name=name) for name in names[row]]
+        driver.desktop.find.side_effect = lambda predicate,root:node if predicate(node) else None
+        selected = {0}
+        table.isRowSelected.side_effect = lambda row:row in selected
+        table.addRowSelection.side_effect = lambda row:(selected.add(row) or True)
+        table.removeRowSelection.side_effect = lambda row:(selected.remove(row) or True)
+        table.getSelectedRows.side_effect = lambda:list(sorted(selected))
+        wanted = {'Été 日本語 故事.zip','Deuxième archive 02.pk'}
+        self.assertEqual(select_picker_rows(driver,object(),wanted)['selected_rows'],[1,2])
+        self.assertEqual(selected,{1,2})
+        for bad in ([{'Été 日本語 故事.zip'},{'Été 日本語 故事.zip'},{'Deuxième archive 02.pk'}],
+                    [{'unrelated'},wanted,set()], [{'unrelated'},{'Été 日本語 故事.zip'},set()]):
+            names[:] = bad
+            with self.assertRaises(TimeoutError):
+                select_picker_rows(driver,object(),wanted)
+        names[:] = [{'unrelated'}, {'Été 日本語 故事.zip'}, {'Deuxième archive 02.pk'}]
+        selected.clear()
+        table.addRowSelection.side_effect = lambda row:False
+        with self.assertRaisesRegex(ValueError,'selection refused'):
+            select_picker_rows(driver,object(),wanted)
+
     def test_managed_imports_must_match_independent_original_identity_name_and_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
