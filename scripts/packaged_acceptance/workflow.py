@@ -11,6 +11,16 @@ REQUIRED = ('setup', 'language', 'import', 'metadata-artwork', 'inspection', 'br
             'recovery', 'uninstall-reinstall')
 
 
+def reveal(driver, predicate):
+    """Reveal clipped controls using a bounded public native focus traversal."""
+    for step in range(33):
+        if found := predicate():
+            return found
+        if step == 32:
+            raise TimeoutError('native target was not revealed within 32 Tab steps')
+        driver.key('Tab')
+
+
 def perform(driver, fixture, result, french):
     def words(en, fr):
         return fr if french else en
@@ -134,11 +144,15 @@ def perform(driver, fixture, result, french):
     driver.press(words('Run', 'Exécuter'))
     before = fixture.rows("SELECT story_uuid FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")
     assert fixture.review_uuid not in {row['story_uuid'] for row in before}
-    review = driver.wait(lambda: next((node for node in driver.snapshot()['nodes']
+    driver.focus(words('Refresh and renew decisions', 'Actualiser et renouveler les décisions'),
+                 roles=('push button', 'AXButton'))
+    review = reveal(driver, lambda: next((node for node in driver.snapshot()['nodes']
                                       if node.get('role') in ('combo box', 'AXComboBox', 'AXPopUpButton')
                                       and fixture.review_uuid in (node.get('name','')+node.get('title','')+node.get('description',''))), None))
     name = review.get('name') or review.get('title') or review.get('description')
     driver.choose(name, 1)
+    reveal(driver, lambda: driver.find(words('Apply approved changes', 'Appliquer les modifications approuvées'),
+                                      prefix=True, actionable=True))
     driver.press(words('Apply approved changes', 'Appliquer les modifications approuvées'), prefix=True)
     driver.wait(lambda: fixture.rows("SELECT story_uuid FROM shelf_stories WHERE story_uuid='"+fixture.review_uuid+"'"))
     observe('shelf-review', {'before': before, 'after': fixture.rows("SELECT story_uuid,position FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")})

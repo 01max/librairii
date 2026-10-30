@@ -21,6 +21,21 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound(self):
+        from packaged_acceptance.workflow import reveal
+        driver=Mock()
+        target=object()
+        predicate=Mock(side_effect=[None,None,target])
+        self.assertIs(reveal(driver,predicate),target)
+        self.assertEqual(driver.key.call_args_list,[unittest.mock.call('Tab')]*2)
+        driver.key.reset_mock()
+        with self.assertRaisesRegex(TimeoutError,'32 Tab'):
+            reveal(driver,lambda:None)
+        self.assertEqual(driver.key.call_count,32)
+        driver.key.reset_mock()
+        self.assertIs(reveal(driver,lambda:target),target)
+        driver.key.assert_not_called()
+
     def test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing(self):
         from packaged_acceptance.macos import Driver as Mac
         from packaged_acceptance.linux import Driver as Linux
