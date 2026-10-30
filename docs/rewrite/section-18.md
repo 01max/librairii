@@ -90,6 +90,16 @@ does not establish notarization, stapling or Gatekeeper acceptance. Both macOS
 public-release gates remain incomplete until the final signed bytes pass those
 checks and installed clean-host GUI acceptance.
 
+`cargo xtask release inspect-package --directory <artifact-directory>
+--expected-source <externally-selected-commit> --target <triple> --output
+target/native-release/<new-installation>` verifies the distributed checksum,
+extracts the Linux archive or copies the mounted read-only DMG application into
+a fresh installation, compares every installed payload byte/mode, then checks
+native linkage and the actual installed executable's embedded identity. It
+runs from the installation directory and requires no Cargo invocation by the
+installed product. This command performs headless inspection only; its receipt
+cannot pass GUI qualification or public signing.
+
 Portable archive assembly sorts paths, rejects links/special files, normalizes
 UID/GID/names/modes and uses the source commit epoch with a fixed gzip header.
 Repeated assembly of identical payload bytes is deterministic. This is distinct
@@ -124,7 +134,7 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Fifteen additional Python checks cover compiler aliases
+startup configuration. Sixteen additional Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

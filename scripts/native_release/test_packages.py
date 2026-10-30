@@ -1,5 +1,6 @@
 """Package contents, final-byte binding and native dependency policy regressions."""
 import json
+import io
 import plistlib
 from pathlib import Path
 import sys
@@ -9,12 +10,54 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_release.files import digest
+from native_release.files import digest, inventory
+from native_release.archive import seal_artifact, tar_gzip
 from native_release.linkage import linux_report, macos_report
-from native_release import macos, package
+from native_release import install, macos, package
 
 
 class PlatformPackages(unittest.TestCase):
+    def test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members(self):
+        with tempfile.TemporaryDirectory(prefix='librairii-installed-test-') as temporary:
+            root = Path(temporary).resolve()
+            payload = root / 'payload'
+            payload.mkdir()
+            (payload / 'app').write_bytes(b'owned product')
+            artifact = root / 'candidate.tar.gz'
+            release = {key: 'synthetic' for key in ['source_tree', 'rust_version', 'native_toolkit_pin_sha256', 'minimum_os', 'cargo_lock_sha256']}
+            release.update(version='0.5.0', source_commit='a'*40, target='x86_64-unknown-linux-gnu', features=[], source_date_epoch=1234)
+            prefix = 'Librairii-0.5.0-x86_64-unknown-linux-gnu'
+            tar_gzip(payload, artifact, prefix, 1234)
+            record = seal_artifact(root, artifact, payload, release, 'tar.gz', {'state': 'synthetic'})
+            self.assertEqual(install.artifact_record(root, 'a'*40, release['target'])[1], record)
+            with self.assertRaisesRegex(ValueError, 'source/target'):
+                install.artifact_record(root, 'b'*40, release['target'])
+            valid = root / 'valid'
+            valid.mkdir()
+            install.extract(artifact, valid, record)
+            self.assertEqual(inventory(valid), inventory(payload))
+            with artifact.open('ab') as stream:
+                stream.write(b'tampering')
+            with self.assertRaisesRegex(ValueError, 'artifact bytes'):
+                install.artifact_record(root, 'a'*40, release['target'])
+            canary = root / 'preserved'
+            canary.write_bytes(b'never replace external state')
+            for index, name in enumerate(['../preserved', prefix+'/../preserved', prefix+'/app']):
+                hostile = root / f'hostile-{index}.tar.gz'
+                with tarfile.open(hostile, 'w:gz') as archive:
+                    entry = tarfile.TarInfo(name)
+                    if index == 2:
+                        entry.type, entry.linkname = tarfile.SYMTYPE, str(canary)
+                        archive.addfile(entry)
+                    else:
+                        entry.size, entry.mode = 12, 0o644
+                        archive.addfile(entry, io.BytesIO(b'foreign data'))
+                destination = root / f'refused-{index}'
+                destination.mkdir()
+                with self.assertRaises(ValueError):
+                    install.extract(hostile, destination, record)
+                self.assertEqual(canary.read_bytes(), b'never replace external state')
+
     def test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs(self):
         for target in ('aarch64-apple-darwin', 'x86_64-apple-darwin'):
             observed = plistlib.loads(plistlib.dumps(macos.app_info({'version': '0.5.0', 'target': target})))

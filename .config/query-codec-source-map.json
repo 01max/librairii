@@ -5895,6 +5895,11 @@
         "position": 72,
         "identity": "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 73,
+        "identity": "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

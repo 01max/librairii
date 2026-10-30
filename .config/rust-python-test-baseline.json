@@ -72,6 +72,7 @@
     "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution",
     "test_packages.PlatformPackages.test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment",
     "test_packages.PlatformPackages.test_linux_archive_contains_desktop_icons_notices_and_exact_final_checksums",
-    "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs"
+    "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
+    "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members"
   ]
 }
