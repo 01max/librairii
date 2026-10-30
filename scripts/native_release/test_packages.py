@@ -125,7 +125,7 @@ class PlatformPackages(unittest.TestCase):
             self.assertTrue(observed['LSRequiresNativeExecution'])
 
     def test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment(self):
-        dynamic = '0x1 (NEEDED) Shared library: [libc.so.6]\n'
+        dynamic = '0x1 (NEEDED) Shared library: [libc.so.6]\n(NEEDED) [libfontconfig.so.1]\n(NEEDED) [libfreetype.so.6]\n'
         versions = 'Name: GLIBC_2.39\nName: GLIBC_2.17\n'
         interpreter = '[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]'
         loaded = 'libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x1234)'

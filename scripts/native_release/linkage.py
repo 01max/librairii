@@ -6,7 +6,8 @@ from .identity import architecture, output
 
 def linux_report(dynamic, versions, interpreter, loaded):
     needed = re.findall(r'\(NEEDED\).*?\[([^\]]+)\]', dynamic)
-    allowed = {'libgcc_s.so.1', 'libstdc++.so.6', 'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2',
+    allowed = {'libgcc_s.so.1', 'libstdc++.so.6', 'libfontconfig.so.1', 'libfreetype.so.6',
+               'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2',
                'libpthread.so.0', 'libdl.so.2', 'librt.so.1'}
     if not needed or set(needed) - allowed:
         raise ValueError('undeclared Linux dynamic dependencies: ' + str(needed))
