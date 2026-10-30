@@ -283,7 +283,7 @@ counts and visible-control navigation. All earlier failed artifacts retain
 their original verdicts. Observer source and file hashes are recorded separately
 from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 110 Python identities, all passing;
+The cumulative required baseline contains 111 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
 Standards and Spec source reviews are recorded separately from native evidence.
 [Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
@@ -395,3 +395,41 @@ failed on colliding exclusive receipt paths and passes with separate immutable
 receipts. Both independent source reviews report zero remaining findings.
 Fresh installed Intel execution is still required; no runtime correction is
 claimed from these headless results.
+
+
+## Bounded accessibility snapshot batching
+
+The current-source Intel installed run completed the fresh lane's22 checks and
+20 upgraded checks, then failed before Locate activation during library recovery.
+Its visible, foreground recovery window returned two complete66-node snapshots
+with the enabled target button. Two subsequent full-tree reads exceeded the
+existing12-second observer command bound; no press was sent. All nine products
+were retired, owned cache anchors removed and fixture data archived. This report
+remains failed. Its post-failure sample shows software rendering/display-link
+work, which does not establish what blocked the earlier accessibility reads.
+
+The observer previously queried scalar attributes sequentially, including a
+second query for non-String text values. A snapshot now requests its12 scalar
+attributes and, only when traversing, children in one batch. Actions and
+settability remain separately observed. Every output field, selector/fingerprint,
+traversal bound, messaging timeout and command deadline is preserved. Positional
+CFNull and optional unsupported/no-value errors retain their absent-value
+meaning; malformed batches and communication errors fail observation. The
+[Apple multiple-attribute contract](https://developer.apple.com/documentation/applicationservices/1462051-axuielementcopymultipleattribute)
+defines these positional values and error markers.
+
+A headless executable compiles the actual observer declarations with module-local
+AX read fixtures, excluding the native entry point. The prior code fails its
+RPC-count assertion at15 scalar reads plus actions and settability; the batched
+code passes with one batch plus those same two reads. Fixtures also verify UTF-8,
+URLs, false booleans, optional fields, conditional child reads and rejection of
+communication errors and truncated results. It makes no real accessibility reads
+or native input. Both Mac foundation jobs run this check and retain source-bound
+receipts. The checker compiles captured input bytes, binds receipt hashes to those
+bytes and refuses changed originals before reporting success. Its regression
+first reproduced false success after input mutation; unchanged inputs now pass
+and either changed input is refused without a success receipt. All111 cumulative
+Python tests and source policy pass. This establishes
+the query-cost correction; a fresh exact-package replay must establish native
+workflow behavior, without changing the earlier failed verdict or claiming a
+sole cause.

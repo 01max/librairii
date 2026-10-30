@@ -6112,6 +6112,11 @@
         "position": 109,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 110,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

@@ -54,8 +54,9 @@ func elements(_ element: AXUIElement, _ name: String) -> [AXUIElement] {
 }
 
 func text(_ element: AXUIElement, _ name: String) -> String {
-    if let value = attribute(element, name) as? String { return value }
-    if let value = attribute(element, name), CFGetTypeID(value) == CFURLGetTypeID() {
+    let value = attribute(element, name)
+    if let value = value as? String { return value }
+    if let value, CFGetTypeID(value) == CFURLGetTypeID() {
         return (value as! URL).absoluteString
     }
     return ""
@@ -83,21 +84,56 @@ func checkedText(_ element: AXUIElement, _ name: String, optional: Bool = false)
     throw Failure.invalid("Finder attribute has unexpected type: " + name)
 }
 
-func describe(_ element: AXUIElement) -> [String: Any] {
+let snapshotTextAttributes = [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
+    ("title", kAXTitleAttribute), ("description", kAXDescriptionAttribute),
+    ("identifier", kAXIdentifierAttribute), ("value", kAXValueAttribute),
+    ("document", kAXDocumentAttribute), ("url", kAXURLAttribute)]
+let snapshotBoolAttributes = [("enabled", kAXEnabledAttribute), ("selected", kAXSelectedAttribute),
+    ("modal", kAXModalAttribute), ("focused", kAXFocusedAttribute)]
+
+func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false) throws -> [String: Any] {
+    let names = snapshotTextAttributes.map(\.1) + snapshotBoolAttributes.map(\.1)
+        + (includingChildren ? [kAXChildrenAttribute] : [])
+    var raw: CFArray?
+    let status = AXUIElementCopyMultipleAttributeValues(element, names as CFArray, [], &raw)
+    guard status == .success, let values = raw as? [Any], values.count == names.count else {
+        throw Failure.invalid("native snapshot attribute batch failed: " + String(status.rawValue))
+    }
+    var result: [String: Any] = [:]
+    for (name, value) in zip(names, values) {
+        if CFGetTypeID(value as CFTypeRef) == CFNullGetTypeID() { continue }
+        if CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() {
+            let encoded = value as! AXValue
+            if AXValueGetType(encoded) == .axError {
+                var error = AXError.success
+                guard AXValueGetValue(encoded, .axError, &error) else {
+                    throw Failure.invalid("native snapshot attribute error could not be decoded")
+                }
+                if error == .attributeUnsupported || error == .noValue { continue }
+                throw Failure.invalid("native snapshot attribute failed: " + name + ": " + String(error.rawValue))
+            }
+        }
+        result[name] = value
+    }
+    return result
+}
+
+func describe(_ element: AXUIElement, attributes: [String: Any]? = nil) throws -> [String: Any] {
+    let values: [String: Any]
+    if let attributes { values = attributes } else { values = try snapshotAttributes(element) }
     var result: [String: Any] = [:]
     var actions: CFArray?
     if AXUIElementCopyActionNames(element, &actions) == .success {
         result["actions"] = actions as? [String] ?? []
     }
-    for (key, name) in [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
-                        ("title", kAXTitleAttribute), ("description", kAXDescriptionAttribute),
-                        ("identifier", kAXIdentifierAttribute), ("value", kAXValueAttribute),
-                        ("document", kAXDocumentAttribute), ("url", kAXURLAttribute)] {
-        result[key] = text(element, name)
+    for (key, name) in snapshotTextAttributes {
+        if let value = values[name] as? String { result[key] = value }
+        else if let value = values[name], CFGetTypeID(value as CFTypeRef) == CFURLGetTypeID() {
+            result[key] = (value as! URL).absoluteString
+        } else { result[key] = "" }
     }
-    for (key, name) in [("enabled", kAXEnabledAttribute), ("selected", kAXSelectedAttribute),
-                        ("modal", kAXModalAttribute), ("focused", kAXFocusedAttribute)] {
-        if let value = attribute(element, name) as? Bool { result[key] = value }
+    for (key, name) in snapshotBoolAttributes {
+        if let value = values[name] as? Bool { result[key] = value }
     }
     var editable = DarwinBoolean(false)
     if AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &editable) == .success {
@@ -151,7 +187,7 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
         element = children[index]
     }
     if let fingerprint = selector["match"] as? [String: String] {
-        let observed = describe(element)
+        let observed = try describe(element)
         guard fingerprint.allSatisfy({ observed[$0.key] as? String == $0.value }) else {
             throw Failure.invalid("native selector fingerprint changed")
         }
@@ -160,7 +196,7 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
 }
 
 func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
-          rootsOnly: Bool = false) -> [[String: Any]] {
+          rootsOnly: Bool = false) throws -> [[String: Any]] {
     var result: [[String: Any]] = []
     for (root, location) in roots(app, sheetsOnly: sheetsOnly) {
         if let onlyWindow, location["window"] as? Int != onlyWindow { continue }
@@ -170,11 +206,13 @@ func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
         while next < queue.count && result.count < 2500 {
             let (element, path) = queue[next]
             next += 1
-            var node = describe(element)
+            let descend = !rootsOnly && path.count < 25
+            let attributes = try snapshotAttributes(element, includingChildren: descend)
+            var node = try describe(element, attributes: attributes)
             node["selector"] = location.merging(["path": path]) { _, new in new }
             result.append(node)
-            if !rootsOnly && path.count < 25 {
-                for (index, child) in elements(element, kAXChildrenAttribute).prefix(1000).enumerated() {
+            if descend {
+                for (index, child) in (attributes[kAXChildrenAttribute] as? [AXUIElement] ?? []).prefix(1000).enumerated() {
                     if queue.count >= 5000 { break }
                     queue.append((child, path + [index]))
                 }
@@ -256,14 +294,14 @@ func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [
             throw Failure.invalid("requested native menu item is missing, ambiguous or traversal incomplete")
         }
         if let element = items.first {
-            let before = describe(element)
+            let before = try describe(element)
             if submenu == nil {
                 guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
                     throw Failure.invalid("cannot open native menu")
                 }
                 Thread.sleep(forTimeInterval: 0.1)
             }
-            let after = describe(element)
+            let after = try describe(element)
             guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
                 throw Failure.invalid("cannot activate native menu item")
             }
@@ -274,6 +312,7 @@ func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [
     throw Failure.invalid("native menu item missing: " + title)
 }
 
+// NATIVE_OBSERVER_ENTRY_POINT: headless fixtures compile declarations above only.
 do {
     guard AXIsProcessTrusted(), CGPreflightPostEventAccess() else { throw Failure.invalid("native observer access unavailable") }
     guard CommandLine.arguments.count == 3, let data = CommandLine.arguments[2].data(using: .utf8),
@@ -543,8 +582,8 @@ do {
                     titles[index] == target.lastPathComponent
                 }
                 guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
-                let diagnostic = candidates.first.map { index, _ in
-                    tree(app, onlyWindow: index, sheetsOnly: false)
+                let diagnostic = try candidates.first.map { index, _ in
+                    try tree(app, onlyWindow: index, sheetsOnly: false)
                 } ?? []
                 let candidateWindows = candidates.first.map { _, window in
                     windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
@@ -556,7 +595,7 @@ do {
                     "unresolved_title_window_count": unresolvedTitles,
                     "owned_document_window_present": !candidates.isEmpty,
                     "finder_window_count": nativeWindows.count,
-                    "owned_title_candidates": candidates.map { describe($0.element) },
+                    "owned_title_candidates": try candidates.map { try describe($0.element) },
                     "owned_candidate_cg_windows": candidateWindows,
                     "owned_candidate_diagnostic_tree": diagnostic] as [String: Any])
                 exit(0)
@@ -571,7 +610,7 @@ do {
         }
         let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
                     "keyboard_input_source": inputSource(),
-                    "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
+                    "nodes": operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
                         sheetsOnly: request["document"] == nil,
                         rootsOnly: request["summary"] as? Bool ?? false), "windows": windows]
         try output(response.merging(documentObservation) { _, new in new })

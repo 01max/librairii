@@ -24,6 +24,46 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation(self):
+        import hashlib
+        import runpy
+        checker = Path(__file__).resolve().parents[2]/'qualification/section-2/native-macos/check-attributes.py'
+        marker = '// NATIVE_OBSERVER_ENTRY_POINT: headless fixtures compile declarations above only.'
+        prefix = '// Déclarations\r\n'
+        observer_bytes = (prefix + marker + '\nnever_execute_native_entry_point()\n').encode()
+        fixture_bytes = b'// inert fixture\r\n'
+        for mutation in (None, 'observer', 'fixture'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                script, observer = root/'check-attributes.py', root/'observer.swift'
+                fixture = root/'attribute-tests/main.swift'
+                fixture.parent.mkdir()
+                script.write_bytes(checker.read_bytes())
+                observer.write_bytes(observer_bytes)
+                fixture.write_bytes(fixture_bytes)
+                output, compiled = root/'output', []
+                def execute(command, **options):
+                    if command[0] == 'xcrun':
+                        compiled.append((output/'main.swift').read_bytes())
+                        if mutation:
+                            changed = observer if mutation == 'observer' else fixture
+                            changed.write_bytes(changed.read_bytes() + b'// changed after compilation\n')
+                    return SimpleNamespace(returncode=0)
+                with patch.object(sys, 'argv', [str(script), str(output)]), \
+                     patch('subprocess.run', side_effect=execute) as execute_mock:
+                    if mutation:
+                        with self.assertRaisesRegex(ValueError, 'inputs changed'):
+                            runpy.run_path(str(script), run_name='__main__')
+                        self.assertFalse((output/'receipt.json').exists())
+                    else:
+                        runpy.run_path(str(script), run_name='__main__')
+                        receipt = json.loads((output/'receipt.json').read_text())
+                        self.assertTrue(receipt['passed'])
+                        self.assertEqual(receipt['observer_sha256'], hashlib.sha256(observer_bytes).hexdigest())
+                        self.assertEqual(receipt['fixture_sha256'], hashlib.sha256(fixture_bytes).hexdigest())
+                    self.assertEqual(execute_mock.call_count, 2)
+                self.assertEqual(compiled, [prefix.encode() + b'\n' + fixture_bytes])
+
     def test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable(self):
         from packaged_acceptance.native_cache import BUNDLE
         source = Path(__file__).resolve().parents[2]
