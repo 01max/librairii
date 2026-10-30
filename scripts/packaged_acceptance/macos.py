@@ -62,9 +62,14 @@ class Driver:
                              for node in self.snapshot()['nodes']))
 
     def choose(self, name, index, *, prefix=False):
+        if not 0 <= index < 64:
+            raise ValueError('synthetic combo index exceeds the fixture model bound')
         self.focus(name, prefix=prefix, roles=('AXComboBox', 'AXPopUpButton'))
-        self.key('space')
-        self.key('home')
+        # The pinned Slint ComboBox opens with Return, supports clamped Up/Down,
+        # and does not handle Home. All these synthetic models contain <64 rows.
+        self.key('return')
+        for _ in range(64):
+            self.key('up')
         for _ in range(index):
             self.key('down')
         self.key('return')

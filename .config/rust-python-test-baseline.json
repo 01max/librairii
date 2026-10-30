@@ -91,6 +91,7 @@
     "test_signing.Signing.test_signature_requires_external_team_certificate_timestamp_and_hardened_runtime",
     "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure",
     "test_signing.Signing.test_credentialed_signing_never_executes_the_candidate_identity_or_gui",
-    "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci"
+    "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci",
+    "test_packaged_acceptance.PackagedAdmission.test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup"
   ]
 }

@@ -6022,6 +6022,11 @@
         "position": 91,
         "identity": "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 92,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

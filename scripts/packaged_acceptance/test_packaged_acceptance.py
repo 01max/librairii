@@ -20,6 +20,29 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup(self):
+        from packaged_acceptance.macos import Driver as Mac
+        from packaged_acceptance.linux import Driver as Linux
+        for cls in (Mac,Linux):
+            for initial in (0,3,8):
+                for selected in (0,1,7):
+                    with self.subTest(platform=cls.__module__,initial=initial,selected=selected):
+                        state = {'index':initial,'popup':False}
+                        driver = cls.__new__(cls)
+                        driver.focus = Mock()
+                        def native_key(key):
+                            # Pinned native ComboBox semantics: Return toggles
+                            # popup custody; arrows clamp and commit selection.
+                            if key.lower() == 'return':
+                                state['popup'] = not state['popup']
+                            elif key.lower() == 'up':
+                                state['index'] = max(0,state['index']-1)
+                            elif key.lower() == 'down':
+                                state['index'] = min(8,state['index']+1)
+                        driver.key = native_key
+                        driver.choose('actual native combo',selected)
+                        self.assertEqual(state,{'index':selected,'popup':False})
+
     def test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry(self):
         from packaged_acceptance.session import Session
         with tempfile.TemporaryDirectory() as temporary:
@@ -147,11 +170,13 @@ class PackagedAdmission(unittest.TestCase):
                 fixture.catalog_waiting.wait.return_value = True
                 fixture.rows.return_value = [{'id':'actual-running-id','status':'running'}]
                 valid = exited is None and code == -signal.SIGKILL and not alive and not errors
+                driver = Mock()
                 if valid:
-                    self.assertTrue(session.interrupt_catalog(Mock(), fixture, False)['retired'])
+                    self.assertTrue(session.interrupt_catalog(driver, fixture, False)['retired'])
                 else:
                     with self.assertRaises(ValueError):
-                        session.interrupt_catalog(Mock(), fixture, False)
+                        session.interrupt_catalog(driver, fixture, False)
+                driver.press.assert_called_once_with('Sync optional official metadata')
                 receipt = json.loads((session.output/'interruption.json').read_text())
                 self.assertEqual(receipt['retired'], valid)
                 fixture.catalog_release.set.assert_called_once()

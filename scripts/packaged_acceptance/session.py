@@ -126,7 +126,7 @@ class Session:
         fixture.catalog_waiting.clear()
         fixture.catalog_release.clear()
         fixture.pause_catalog = True
-        driver.press('Synchroniser les métadonnées' if french else 'Sync official metadata')
+        driver.press('Synchroniser les métadonnées officielles · facultatif' if french else 'Sync optional official metadata')
         if not fixture.catalog_waiting.wait(10):
             raise ValueError('no actual in-flight local catalog request before interruption')
         running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")

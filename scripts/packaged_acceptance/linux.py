@@ -105,9 +105,12 @@ class Driver:
                              for node in self.snapshot()['nodes']))
 
     def choose(self, name, index, *, prefix=False):
+        if not 0 <= index < 64:
+            raise ValueError('synthetic combo index exceeds the fixture model bound')
         self.focus(name, prefix=prefix, roles=('combo box',))
-        self.key('space')
-        self.key('Home')
+        self.key('Return')
+        for _ in range(64):
+            self.key('Up')
         for _ in range(index):
             self.key('Down')
         self.key('Return')
