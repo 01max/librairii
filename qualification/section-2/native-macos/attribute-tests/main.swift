@@ -18,6 +18,7 @@ var batchStatus = AXError.success
 var wrongLength = false
 var requestedNames: [String] = []
 var fixture: [String: Any] = [:]
+var scalarFixture: [String: Any] = [:]
 
 func encodedError(_ error: AXError) -> AXValue {
     var copy = error
@@ -27,7 +28,7 @@ func encodedError(_ error: AXError) -> AXValue {
 func AXUIElementCopyAttributeValue(_ element: AXUIElement, _ name: CFString,
                                   _ value: UnsafeMutablePointer<CFTypeRef?>) -> AXError {
     scalarReads += 1
-    guard let observed = fixture[name as String] else { return .noValue }
+    guard let observed = scalarFixture[name as String] ?? fixture[name as String] else { return .noValue }
     if CFGetTypeID(observed as CFTypeRef) == CFNullGetTypeID() { return .noValue }
     if CFGetTypeID(observed as CFTypeRef) == AXValueGetTypeID(),
        AXValueGetType(observed as! AXValue) == .axError {
@@ -89,6 +90,31 @@ do {
         "child traversal was not batched in order")
     try require((attributes[kAXChildrenAttribute] as? [AXUIElement])?.isEmpty == true,
         "empty native child inventory changed")
+    // AppKit's Go to Folder sheet returns a generic batch error for AXValue.
+    // Read that attribute directly before deciding whether a value is absent.
+    fixture[kAXValueAttribute] = encodedError(.failure)
+    scalarFixture[kAXValueAttribute] = "Exact folder text"
+    let scalarBefore = scalarReads
+    let recovered = try describe(element)
+    try require(recovered["value"] as? String == "Exact folder text" && scalarReads == scalarBefore + 1,
+        "generic batch failure did not preserve the directly observed value")
+    for error in [AXError.failure, .attributeUnsupported, .noValue] {
+        scalarFixture[kAXValueAttribute] = encodedError(error)
+        let absent = try describe(element)
+        try require(absent["value"] as? String == "", "optional direct-read failure changed")
+    }
+    for error in [AXError.cannotComplete, .invalidUIElement, .illegalArgument, .apiDisabled, .notImplemented] {
+        scalarFixture[kAXValueAttribute] = encodedError(error)
+        do { _ = try describe(element); throw TestFailure.mismatch("direct-read communication failure accepted") }
+        catch Failure.invalid(_) { }
+    }
+    scalarFixture.removeAll()
+    fixture[kAXValueAttribute] = encodedError(.noValue)
+    fixture[kAXChildrenAttribute] = encodedError(.failure)
+    do { _ = try snapshotAttributes(element, includingChildren: true)
+        throw TestFailure.mismatch("unavailable children silently truncated traversal") }
+    catch Failure.invalid(_) { }
+    fixture[kAXChildrenAttribute] = [] as [AXUIElement]
     fixture[kAXEnabledAttribute] = NSNull()
     fixture[kAXTitleAttribute] = encodedError(.attributeUnsupported)
     let optional = try describe(element)
@@ -108,7 +134,7 @@ do {
     do { _ = try describe(element); throw TestFailure.mismatch("truncated positional batch accepted") }
     catch Failure.invalid(_) { }
     #endif
-    print("headless AX snapshot fixtures passed; scalar reads=\(scalarReads)")
+    print("headless AX snapshot fixtures passed; inert scalar fallback reads=\(scalarReads)")
 } catch {
     FileHandle.standardError.write(Data((String(describing: error) + "\n").utf8))
     exit(1)

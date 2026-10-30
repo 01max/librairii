@@ -433,3 +433,15 @@ Python tests and source policy pass. This establishes
 the query-cost correction; a fresh exact-package replay must establish native
 workflow behavior, without changing the earlier failed verdict or claiming a
 sole cause.
+
+The first batched Intel replay failed in the fresh native picker before the first
+completed workflow check: the Go to Folder sheet returned a generic AXValue
+error inside a successful batch. This was an observer regression, distinct from
+the earlier recovery timeout. A generic per-field batch error now triggers one
+direct read of that field. Directly observed values are retained; unsupported or
+no-value results stay absent. Repeated generic errors in optional scalar metadata
+are explicitly traced as unavailable, preserving the previous scalar observer's
+output. Unavailable children, communication errors, invalid elements/arguments
+and whole-batch failures still abort observation. The inert regression reproduces
+the failed batch and checks these distinct direct-read outcomes. The failed
+replay remains failed; a further exact-package native replay is required.

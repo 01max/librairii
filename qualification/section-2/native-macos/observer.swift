@@ -110,6 +110,24 @@ func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false)
                     throw Failure.invalid("native snapshot attribute error could not be decoded")
                 }
                 if error == .attributeUnsupported || error == .noValue { continue }
+                if error == .failure {
+                    // AppKit sheets can encode a generic failure for an optional
+                    // attribute in a batch. Preserve any directly readable value
+                    // and the prior scalar reader's absent-value semantics.
+                    var direct: CFTypeRef?
+                    let status = AXUIElementCopyAttributeValue(element, name as CFString, &direct)
+                    trace("snapshot generic batch error: " + name + "; direct status: " + String(status.rawValue))
+                    if status == .success {
+                        if let direct { result[name] = direct }
+                        continue
+                    }
+                    if status == .attributeUnsupported || status == .noValue { continue }
+                    if status == .failure && name != kAXChildrenAttribute {
+                        trace("snapshot optional attribute unavailable: " + name)
+                        continue
+                    }
+                    throw Failure.invalid("native snapshot direct attribute failed: " + name + ": " + String(status.rawValue))
+                }
                 throw Failure.invalid("native snapshot attribute failed: " + name + ": " + String(error.rawValue))
             }
         }
