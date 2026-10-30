@@ -1,7 +1,9 @@
 """Signing admission, notarization and credential lifetime without Apple calls."""
 import base64
 import hashlib
+import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -14,6 +16,44 @@ from native_release import signing, package
 
 
 class Signing(unittest.TestCase):
+    def test_credentialed_signing_never_executes_the_candidate_identity_or_gui(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            prepared = root/'prepared'
+            (prepared/'Librairii.app/Contents').mkdir(parents=True)
+            (prepared/'Librairii.app/Contents/data').write_bytes(b'candidate bytes, never executed')
+            (prepared/'INSTALL.txt').write_text('This internal candidate uses an ad-hoc signature. It is NOT Developer ID\n'
+                                              'signed, notarized, stapled or qualified for public distribution.\n')
+            release = {'version':'0.5.0','target':'aarch64-apple-darwin'}
+            with patch.object(signing,'selection',return_value=release), \
+                 patch.object(signing.install,'artifact_record',return_value=(root/'unsigned.dmg',release)), \
+                 patch.object(signing.install,'copy_payload',return_value=(prepared,root/'never-executed')), \
+                 patch.object(signing.install,'inspect') as execute_inspection, \
+                 patch.object(signing.install,'verify_embedded') as execute_identity, \
+                 patch.object(signing,'Tools',return_value=Mock(return_value=('',''))), \
+                 patch.object(signing,'signature'), patch.object(signing,'notarize',return_value={'status':'Accepted'}), \
+                 patch.object(signing,'verify_final',return_value={'developer_id':True}), \
+                 patch.object(signing.package,'finish',return_value={'sealed':True}):
+                self.assertTrue(signing.sign(root,root,'a'*40,release['target'],'b'*64,
+                                             'target/native-release/signed',root/'keychain','profile','ABCDEFGHIJ','C'*40)['sealed'])
+                execute_inspection.assert_not_called()
+                execute_identity.assert_not_called()
+
+    def test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci(self):
+        path = Path(__file__).resolve().parents[1]/'sign-native-macos.py'
+        spec = importlib.util.spec_from_file_location('sign_native_macos_test',path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        arguments = [str(path),'--source-root','unused','--directory','unused','--expected-source','a'*40,
+                     '--expected-sha256','b'*64,'--target','aarch64-apple-darwin','--team','ABCDEFGHIJ',
+                     '--certificate','C'*40,'--output','target/native-release/unused']
+        with patch.dict(os.environ,{'NATIVE_SIGNING_KEYCHAIN_BASE64':'private','NATIVE_SIGNING_KEYCHAIN_PASSWORD':'private'},clear=True), \
+             patch.object(sys,'argv',arguments), patch.object(module.signing,'selection') as preflight:
+            with self.assertRaisesRegex(ValueError,'protected manual CI'):
+                module.main()
+            self.assertEqual(dict(os.environ),{})
+            preflight.assert_not_called()
+
     def test_signing_requires_external_candidate_digest_and_clean_matching_source(self):
         with tempfile.TemporaryDirectory() as temporary:
             artifact = Path(temporary)/'candidate.dmg'

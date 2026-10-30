@@ -144,9 +144,12 @@ def verify_final(artifact, app, team, certificate, output):
 def sign(root, directory, source, target, expected_sha256, requested_output, keychain, profile, team, certificate):
     release = selection(root, directory, source, target, expected_sha256)
     destination = fresh_output(root, requested_output)
-    inspected = install.inspect(root, directory, source, target, destination/'unsigned-inspection')
+    artifact, _ = install.artifact_record(directory,source,target)
+    unsigned = destination/'unsigned-byte-inspection'
+    unsigned.mkdir()
+    installed, _ = install.copy_payload(artifact,release,unsigned)
     image = destination/'image'
-    copy_tree(Path(inspected['installed']), image)
+    copy_tree(installed, image)
     app = image/'Librairii.app'
     install_text = image/'INSTALL.txt'
     text = install_text.read_text()

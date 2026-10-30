@@ -13,6 +13,8 @@ from native_release.files import write_json
 
 
 def main():
+    private = {name:os.environ.pop(name,'') for name in
+               ('NATIVE_SIGNING_KEYCHAIN_BASE64','NATIVE_SIGNING_KEYCHAIN_PASSWORD')}
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, required=True)
     parser.add_argument('--directory', type=Path, required=True)
@@ -34,7 +36,7 @@ def main():
         print(json.dumps({'source':args.expected_source,'unsigned_sha256':args.expected_sha256,'preflight':True}))
         return
     temporary = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
-    with signing.credentials(temporary,os.environ) as keychain:
+    with signing.credentials(temporary,private) as keychain:
         result = signing.sign(args.source_root,args.directory,args.expected_source,args.target,args.expected_sha256,
                               args.output,keychain,'librairii-notary',args.team,args.certificate)
     write_json(Path(args.source_root)/args.output/'credential-retirement.json',

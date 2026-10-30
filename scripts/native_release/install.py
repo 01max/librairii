@@ -133,10 +133,9 @@ def mounted(artifact, destination):
             write_json(destination / 'mount-cleanup.json', cleanup)
 
 
-def inspect(root, directory, source, target, requested_output, *, expected_team=None, expected_certificate=None):
-    artifact, release = artifact_record(directory, source, target)
-    host = runtime_host(root, target)
-    destination = fresh_output(root, requested_output)
+def copy_payload(artifact, release, destination):
+    """Install and verify bytes only. Safe to use without executing candidate code."""
+    target = release['target']
     installed = destination / 'installed'
     installed.mkdir()
     if target.endswith('apple-darwin'):
@@ -154,6 +153,14 @@ def inspect(root, directory, source, target, requested_output, *, expected_team=
     if inventory(installed) != release['payload']:
         raise ValueError('installed package differs from final sealed payload')
     architecture(binary, target)
+    return installed, binary
+
+
+def inspect(root, directory, source, target, requested_output, *, expected_team=None, expected_certificate=None):
+    artifact, release = artifact_record(directory, source, target)
+    host = runtime_host(root, target)
+    destination = fresh_output(root, requested_output)
+    installed, binary = copy_payload(artifact, release, destination)
     info = verify_embedded(installed, binary, release)
     dependencies = linkage.inspect(installed, binary, target)
     signing_evidence = None

@@ -6012,6 +6012,16 @@
         "position": 89,
         "identity": "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 90,
+        "identity": "test_signing.Signing.test_credentialed_signing_never_executes_the_candidate_identity_or_gui",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 91,
+        "identity": "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
