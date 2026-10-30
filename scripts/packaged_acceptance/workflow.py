@@ -151,7 +151,7 @@ def perform(driver, fixture, result, french):
         "SELECT story_uuid FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")}
     assert approved == all_uuids
     for index, scope in enumerate(('results', 'selection', 'collections', 'shelves')):
-        if scope == 'results':
+        if scope in ('results', 'selection'):
             driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
         if scope == 'selection' and not driver.find(words('Deselect · ', 'Désélectionner · ')+'The Clockwork Mountain', prefix=True):
             driver.press(words('Select · ', 'Sélectionner · ')+'The Clockwork Mountain', prefix=True)
@@ -178,7 +178,7 @@ def perform(driver, fixture, result, french):
             observation['actual_file_manager'] = driver.reveal(destination, exported)
         observe('export-'+scope, observation)
         closed()
-        if scope == 'results':
+        if scope == 'selection':
             driver.text(words('Search stories', 'Rechercher des histoires'), '')
     driver.press(words('History', 'Historique'))
     observe('history', {'terminal': fixture.rows('SELECT id,kind,status,finished_at FROM file_operations ORDER BY id')})

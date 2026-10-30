@@ -126,6 +126,7 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
         # Remove through the detail dialog, then independently verify managed
         # custody and unchanged original inputs. No direct DB mutation drives UI.
         driver.press(words('Library', 'Bibliothèque'))
+        driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
         driver.press('The Clockwork Mountain', prefix=True)
         driver.press(words('Details…', 'Détails…'))
         managed = fixture.rows("SELECT a.sha256,a.managed_path FROM story_archives a JOIN stories s ON s.id=a.story_id WHERE s.uuid='00112233-4455-4677-8899-aabbccddeeff'")
