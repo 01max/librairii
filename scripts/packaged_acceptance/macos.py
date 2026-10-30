@@ -31,7 +31,17 @@ class Driver:
                 window.get('kCGWindowOwnerPID') == pid and window.get('kCGWindowLayer') == 0
                 and window.get('kCGWindowIsOnscreen') is True and window.get('kCGWindowAlpha', 0) > 0
                 for window in status['windows']) else None
-        initial = self.observer.wait(ready)
+        try:
+            initial = self.observer.wait(ready)
+        except Exception:
+            try:
+                self.snapshot('initial-window-failure')
+            except Exception as error:
+                try:
+                    (output/'initial-window-failure.log').write_text(str(error)+'\n')
+                except Exception:
+                    pass
+            raise
         (output/'initial-window-ready.json').write_text(json.dumps(initial, indent=2)+'\n')
 
     def snapshot(self, name=None):

@@ -105,6 +105,19 @@ class PackagedAdmission(unittest.TestCase):
             self.assertEqual(observer.call.call_args_list,
                              [unittest.mock.call('launch-status')]*3+[unittest.mock.call('activate')])
             self.assertEqual(state['window_reads'], 5)
+            # Even two diagnostic failures must preserve the actual readiness
+            # failure, rather than turn a storage error into its replacement.
+            timeout = TimeoutError('original positive-window deadline')
+            observer.wait = Mock(side_effect=[{'pid': pid}, timeout])
+            write = Path.write_text
+            def failed_log(path, *args, **kwargs):
+                if path.name == 'initial-window-failure.log':
+                    raise OSError('diagnostic output is full')
+                return write(path, *args, **kwargs)
+            with patch.object(Driver, 'snapshot', side_effect=RuntimeError('snapshot failed')), \
+                 patch.object(Path, 'write_text', failed_log), self.assertRaises(TimeoutError) as raised:
+                Driver(root, root, pid, root/'unused-test-helper')
+            self.assertIs(raised.exception, timeout)
 
     def test_observer_closes_database_readers_before_product_relocation(self):
         # A connection context commits/rolls back; it does not close SQLite.
