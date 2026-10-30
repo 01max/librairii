@@ -143,6 +143,8 @@ def perform(driver, fixture, result, french):
     driver.wait(lambda: fixture.rows("SELECT story_uuid FROM shelf_stories WHERE story_uuid='"+fixture.review_uuid+"'"))
     observe('shelf-review', {'before': before, 'after': fixture.rows("SELECT story_uuid,position FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")})
     # Successful Apply closes the review; its close button no longer exists.
+    # Enter exports from Library so no current Shelf is implicitly preselected.
+    driver.press(words('Library', 'Bibliothèque'))
     archives = fixture.archives(reviewed=True)
     all_uuids = {row['uuid'] for row in archives}
     shelf = fixture.rows("SELECT id,name FROM shelves WHERE name='Packaged approved'")
