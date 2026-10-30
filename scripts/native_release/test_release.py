@@ -33,7 +33,8 @@ class ReleaseFiles(unittest.TestCase):
                    'CARGO_BUILD_RUSTC_WRAPPER', 'CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER',
                    'CARGO_BUILD_RUSTFLAGS', 'CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS',
                    'CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER',
-                   'CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_OPT_LEVEL', 'CARGO_UNSTABLE_BUILD_STD']
+                   'CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_OPT_LEVEL', 'CARGO_UNSTABLE_BUILD_STD',
+                   'CARGO_ALIAS_XTASK']
         with patch('native_release.build.plan', return_value={}), \
              patch('native_release.build.native_host') as host, \
              patch('native_release.build.fresh_output') as output:

@@ -6,7 +6,7 @@ import tomllib
 
 def check(root):
     direct = {'RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC'}
-    families = ('RUSTC_', 'CARGO_BUILD_', 'CARGO_TARGET_', 'CARGO_PROFILE_', 'CARGO_UNSTABLE_')
+    families = ('RUSTC_', 'CARGO_BUILD_', 'CARGO_TARGET_', 'CARGO_PROFILE_', 'CARGO_UNSTABLE_', 'CARGO_ALIAS_')
     modifiers = sorted(name for name in os.environ
                        if name in direct or name.startswith(families))
     if modifiers:
