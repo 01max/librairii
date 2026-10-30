@@ -53,6 +53,9 @@ def perform(driver, fixture, result, french):
     observe('import', {'terminal': imported, 'items': fixture.rows(
         'SELECT source_name,status,outcome_code FROM file_operation_items'), 'managed':fixture.archives(reviewed=False)})
     closed()
+    # The adopted library contains more rows than the viewport. Search through
+    # the public UI so the imported story is mounted before selecting it.
+    driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
     driver.press(words('Sync optional official metadata', 'Synchroniser les métadonnées officielles · facultatif'))
     driver.wait(lambda: fixture.rows("SELECT id FROM catalog_syncs WHERE status='succeeded'"), timeout=40)
     driver.wait(lambda: fixture.rows('SELECT id FROM official_story_metadata'), timeout=30)
@@ -61,8 +64,10 @@ def perform(driver, fixture, result, french):
     observe('metadata-artwork', {'sync': fixture.rows('SELECT id,status,matched_story_count FROM catalog_syncs'),
                                 'artwork': fixture.rows('SELECT id,sha256,byte_size,managed_path FROM catalog_artworks')})
     driver.press(words('Details…', 'Détails…'))
+    driver.key('End')
     driver.press(words('Show technical details', 'Afficher les détails techniques'))
     observe('inspection', {'uuid': '00112233-4455-4677-8899-aabbccddeeff'})
+    driver.key('Home')
     driver.press(words('Broken · ', 'Défectueuse · '), prefix=True)
     driver.wait(lambda: fixture.rows("SELECT id FROM stories WHERE uuid='00112233-4455-4677-8899-aabbccddeeff' AND is_broken=1"))
     driver.press(words('Undo Broken change', 'Annuler le changement de statut'))
@@ -79,7 +84,6 @@ def perform(driver, fixture, result, french):
     closed()
     driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
     driver.wait(lambda: driver.find('The Clockwork Mountain', prefix=True))
-    driver.text(words('Search stories', 'Rechercher des histoires'), '')
     driver.press(words('Details…', 'Détails…'))
     driver.press(words('Edit tags', 'Modifier les étiquettes'), prefix=True)
     driver.choose('Été packaged', 1, prefix=True)
@@ -88,6 +92,7 @@ def perform(driver, fixture, result, french):
     observe('tags-search', {'created': tag, 'assigned': assignments, 'native_utf8_text': 'Été packaged', 'search': 'Clockwork'})
     closed()
     closed()
+    driver.text(words('Search stories', 'Rechercher des histoires'), '')
     driver.press(words('Manage Collections…', 'Gérer les Collections…'))
     driver.choose(words('Collection to manage', 'Collection à gérer'), 0)
     driver.text(words('Collection name', 'Nom de la Collection'), 'Packaged all')
@@ -95,6 +100,8 @@ def perform(driver, fixture, result, french):
     collections = driver.wait(lambda: fixture.rows("SELECT id,name,position FROM collections WHERE name='Packaged all'"))
     observe('collections', {'saved': collections})
     closed()
+    driver.focus(words('All stories', 'Toutes les histoires'), roles=('list box', 'AXList'))
+    driver.key('End')
     driver.press(words('Select · ', 'Sélectionner · ')+'The Clockwork Mountain', prefix=True)
     driver.press(words('Manage Shelves…', 'Gérer les Étagères…'))
     driver.choose(words('Shelf to manage', 'Étagère à gérer'), 0)

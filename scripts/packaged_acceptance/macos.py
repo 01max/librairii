@@ -57,7 +57,7 @@ class Driver:
                              for node in self.snapshot()['nodes']))
 
     def key(self, value):
-        self.observer.call('key', key=value)
+        self.observer.call('key', key=value.lower())
         time.sleep(.08)
 
     def text(self, name, value):
