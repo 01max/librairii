@@ -441,7 +441,25 @@ the earlier recovery timeout. A generic per-field batch error now triggers one
 direct read of that field. Directly observed values are retained; unsupported or
 no-value results stay absent. Repeated generic errors in optional scalar metadata
 are explicitly traced as unavailable, preserving the previous scalar observer's
-output. Unavailable children, communication errors, invalid elements/arguments
-and whole-batch failures still abort observation. The inert regression reproduces
+output. Unavailable children, communication/argument errors and malformed batches
+still abort observation. The inert regression reproduces
 the failed batch and checks these distinct direct-read outcomes. The failed
 replay remains failed; a further exact-package native replay is required.
+
+The next Intel replay passed the picker and completed11 checks, then failed on
+an invalid element while capturing an export operation report. The preceding
+AXPress succeeded; the immediately following failure capture returned89 nodes
+for the same owned foreground product. This supports a transient read-lifetime
+invalidation during UI replacement without identifying the precise stale node.
+Unfiltered snapshot assembly now discards its entire partial tree and re-enumerates roots
+once, only for a typed invalid-element error. Both attempts stay inside the same
+helper invocation and existing12-second watchdog. Failed root enumeration cannot
+become an empty successful snapshot. Persistent invalidity, other batch failures
+and communication errors still fail; action execution is outside this handling.
+Document-selected Finder snapshots fail without rebuilding, so a retained window
+index cannot change document identity when windows reorder.
+Inert fixtures first reproduce the invalid-element failure, then verify fresh
+roots/child indices, discarded partial nodes, refused filtered-window reordering,
+bounded recurrence, failed root
+enumeration and zero performed actions. Native effectiveness remains subject to
+a further exact-byte replay; the failed11-check run retains its verdict.

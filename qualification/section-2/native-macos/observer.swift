@@ -5,7 +5,7 @@ import Carbon
 import CoreGraphics
 import Foundation
 
-enum Failure: Error { case invalid(String) }
+enum Failure: Error { case invalid(String), staleSnapshot(String) }
 
 func inputSource() -> String {
     let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
@@ -96,6 +96,9 @@ func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false)
         + (includingChildren ? [kAXChildrenAttribute] : [])
     var raw: CFArray?
     let status = AXUIElementCopyMultipleAttributeValues(element, names as CFArray, [], &raw)
+    if status == .invalidUIElement {
+        throw Failure.staleSnapshot("native snapshot attribute batch failed: " + String(status.rawValue))
+    }
     guard status == .success, let values = raw as? [Any], values.count == names.count else {
         throw Failure.invalid("native snapshot attribute batch failed: " + String(status.rawValue))
     }
@@ -110,6 +113,9 @@ func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false)
                     throw Failure.invalid("native snapshot attribute error could not be decoded")
                 }
                 if error == .attributeUnsupported || error == .noValue { continue }
+                if error == .invalidUIElement {
+                    throw Failure.staleSnapshot("native snapshot attribute failed: " + name + ": " + String(error.rawValue))
+                }
                 if error == .failure {
                     // AppKit sheets can encode a generic failure for an optional
                     // attribute in a batch. Preserve any directly readable value
@@ -117,6 +123,9 @@ func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false)
                     var direct: CFTypeRef?
                     let status = AXUIElementCopyAttributeValue(element, name as CFString, &direct)
                     trace("snapshot generic batch error: " + name + "; direct status: " + String(status.rawValue))
+                    if status == .invalidUIElement {
+                        throw Failure.staleSnapshot("native snapshot direct attribute failed: " + name + ": " + String(status.rawValue))
+                    }
                     if status == .success {
                         if let direct { result[name] = direct }
                         continue
@@ -175,12 +184,39 @@ func sheets(_ window: AXUIElement) -> [AXUIElement] {
     elements(window, kAXChildrenAttribute).filter { text($0, kAXRoleAttribute) == kAXSheetRole }
 }
 
-func roots(_ app: AXUIElement, sheetsOnly: Bool) -> [(AXUIElement, [String: Any])] {
+func rootAttribute(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> CFTypeRef? {
+    var value: CFTypeRef?
+    let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    if status == .invalidUIElement {
+        throw Failure.staleSnapshot("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
+    if optional && (status == .attributeUnsupported || status == .noValue) { return nil }
+    guard status == .success, let value else {
+        throw Failure.invalid("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
+    return value
+}
+
+func rootElements(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> [AXUIElement] {
+    guard let value = try rootAttribute(element, name, optional: optional) else { return [] }
+    guard let values = value as? [AXUIElement] else {
+        throw Failure.invalid("native snapshot root attribute is not an element array: " + name)
+    }
+    return values
+}
+
+func roots(_ app: AXUIElement, sheetsOnly: Bool) throws -> [(AXUIElement, [String: Any])] {
     var result: [(AXUIElement, [String: Any])] = []
     trace("reading AXWindows")
-    for (index, window) in elements(app, kAXWindowsAttribute).enumerated() {
+    for (index, window) in try rootElements(app, kAXWindowsAttribute).enumerated() {
         trace("reading child sheets of window " + String(index))
-        for (sheetIndex, sheet) in sheets(window).enumerated() {
+        let sheets = try rootElements(window, kAXChildrenAttribute, optional: true).filter {
+            guard let role = try rootAttribute($0, kAXRoleAttribute) as? String else {
+                throw Failure.invalid("native snapshot root role is not text")
+            }
+            return role == kAXSheetRole
+        }
+        for (sheetIndex, sheet) in sheets.enumerated() {
             result.append((sheet, ["window": index, "sheet": sheetIndex]))
         }
         if !sheetsOnly { result.append((window, ["window": index])) }
@@ -215,8 +251,19 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
 
 func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
           rootsOnly: Bool = false) throws -> [[String: Any]] {
+    do {
+        return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
+    } catch Failure.staleSnapshot(let reason) {
+        guard onlyWindow == nil else { throw Failure.staleSnapshot(reason) }
+        trace(reason + "; discarding partial snapshot and rebuilding roots once")
+        return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
+    }
+}
+
+func treeOnce(_ app: AXUIElement, onlyWindow: Int?, sheetsOnly: Bool,
+              rootsOnly: Bool) throws -> [[String: Any]] {
     var result: [[String: Any]] = []
-    for (root, location) in roots(app, sheetsOnly: sheetsOnly) {
+    for (root, location) in try roots(app, sheetsOnly: sheetsOnly) {
         if let onlyWindow, location["window"] as? Int != onlyWindow { continue }
         trace("traversing native root " + String(describing: location))
         var queue: [(AXUIElement, [Int])] = [(root, [])]
