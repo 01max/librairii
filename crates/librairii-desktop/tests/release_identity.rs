@@ -1,10 +1,20 @@
 use librairii_testkit::TestRoots;
 use std::process::{Command, Output};
 
+fn isolated_command() -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_librairii-desktop"));
+    command.env_clear();
+    // Coverage-instrumented children must retain the collector's output path;
+    // otherwise LLVM writes a default .profraw file into the isolated profile.
+    if let Some(path) = std::env::var_os("LLVM_PROFILE_FILE") {
+        command.env("LLVM_PROFILE_FILE", path);
+    }
+    command
+}
+
 fn identity_output(argument: &str) -> Result<Output, Box<dyn std::error::Error>> {
     let roots = TestRoots::new()?;
-    let output = Command::new(env!("CARGO_BIN_EXE_librairii-desktop"))
-        .env_clear()
+    let output = isolated_command()
         // If identity handling regresses, startup must refuse before any window
         // or normal profile access instead of launching the application.
         .env("LIBRAIRII_DATA_ROOT", "relative-startup-is-refused")
@@ -46,8 +56,7 @@ fn package_build_identity_is_available_without_profile_or_display()
 fn packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup()
 -> Result<(), Box<dyn std::error::Error>> {
     let roots = TestRoots::new()?;
-    let output = Command::new(env!("CARGO_BIN_EXE_librairii-desktop"))
-        .env_clear()
+    let output = isolated_command()
         .env("LIBRAIRII_PACKAGED_ACCEPTANCE", "1")
         .current_dir(roots.profile())
         .output()?;
