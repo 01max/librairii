@@ -5942,6 +5942,31 @@
         "position": 75,
         "identity": "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 76,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_fixture_preserves_source_inputs_and_uses_only_explicit_roots_and_loopback",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 77,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_admission_refuses_stale_source_or_changed_installed_resources_before_execution",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 78,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_missing_ci_or_incomplete_gui_checkpoint_and_process_inventory_cannot_qualify",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 79,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_container_retirement_requires_exact_creation_image_and_invocation_receipts",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 80,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

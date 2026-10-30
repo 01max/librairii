@@ -159,6 +159,7 @@ def inspect(root, directory, source, target, requested_output):
     report = {'format': 'librairii.native-package-inspection', 'schema': 1,
               'source_commit': source, 'target': target, 'artifact': release['artifact'], 'host': host,
               'installed': str(installed), 'binary': str(binary), 'binary_sha256': digest(binary),
+              'installed_payload': release['payload'],
               'build_info': info, 'linkage': dependencies, 'installed_payload_verified': True,
               'signing': release['signing'], 'gui_qualification': {'state': 'not performed'},
               'public_release_qualified': False}

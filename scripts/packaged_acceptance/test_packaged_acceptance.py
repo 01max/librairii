@@ -1,0 +1,151 @@
+"""Admission and custody regressions; never runs a native GUI."""
+import copy
+import importlib.util
+from http.client import HTTPConnection
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from native_release.files import digest, inventory
+from native_release.files import write_json
+from packaged_acceptance.fixture import Fixture
+from packaged_acceptance.run import admit, qualified, run
+from packaged_acceptance.workflow import REQUIRED
+
+
+class PackagedAdmission(unittest.TestCase):
+    def orchestration(self):
+        spec = importlib.util.spec_from_file_location('packaged_orchestration',
+                    Path(__file__).resolve().parents[1]/'verify-native-packages.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_container_retirement_requires_exact_creation_image_and_invocation_receipts(self):
+        from subprocess import CompletedProcess
+        module = self.orchestration()
+        with tempfile.TemporaryDirectory(prefix='librairii-container-custody-') as temporary:
+            receipt = Path(temporary)/'container-id'
+            receipt.write_text('a'*64)
+            observed = {'Id': 'a'*64, 'Name': '/owned', 'Image': 'sha256:image',
+                        'Config': {'Labels': {'librairii.packaged-observer': 'nonce'}},
+                        'State': {'Running': False}}
+            with patch.object(module.subprocess, 'check_output', return_value=json.dumps([observed])), \
+                 patch.object(module.subprocess, 'run', return_value=CompletedProcess([], 0)) as remove:
+                self.assertEqual(module.retire(receipt, 'sha256:image', 'owned', 'nonce', False), 'a'*64)
+                self.assertEqual(remove.call_args.args[0], ['docker', 'rm', 'a'*64])
+            for key, value in [('Id','b'*64), ('Name','/foreign'), ('Image','sha256:foreign'),
+                               ('State',{'Running':True}), ('Config',{'Labels':{'librairii.packaged-observer':'foreign'}})]:
+                changed = dict(observed, **{key:value})
+                with patch.object(module.subprocess, 'check_output', return_value=json.dumps([changed])), \
+                     patch.object(module.subprocess, 'run') as remove:
+                    with self.assertRaises(ValueError):
+                        module.retire(receipt, 'sha256:image', 'owned', 'nonce', False)
+                    remove.assert_not_called()
+
+    def test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files(self):
+        module = self.orchestration()
+        with tempfile.TemporaryDirectory(prefix='librairii-gui-receipt-') as temporary:
+            root = Path(temporary)
+            raw = root/'native-observation.txt'
+            raw.write_bytes(b'synthetic unit-test observation')
+            report = {'format':'librairii.packaged-gui','schema':1,'complete':True,'errors':[],
+                      'checks':{name:{'observed':True} for name in REQUIRED},
+                      'processes':[{'retired':True} for _ in range(5)],
+                      'source_commit':'a'*40,'target':'x86_64-unknown-linux-gnu',
+                      'artifact':{'sha256':'b'*64,'name':'unit.tar.gz','bytes':123},
+                      'backend':'winit-skia-software','case':'fresh','session':'x11','files':inventory(root)}
+            path = root/'report.json'
+            write_json(path, report)
+            args = [path,'a'*40,report['target'],report['artifact'],report['backend'],'fresh','x11']
+            self.assertTrue(module.verify_report(*args)['passed'])
+            for position, value in [(1,'c'*40),(2,'x86_64-apple-darwin'),
+                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'upgraded'),(6,'wayland')]:
+                changed = list(args)
+                changed[position] = value
+                with self.assertRaises(ValueError):
+                    module.verify_report(*changed)
+            raw.write_bytes(b'tampered raw observation')
+            with self.assertRaisesRegex(ValueError, 'retained GUI files'):
+                module.verify_report(*args)
+
+    def test_fixture_preserves_source_inputs_and_uses_only_explicit_roots_and_loopback(self):
+        source = Path(__file__).resolve().parents[2]
+        original = inventory(source/'preservation/corpus/libraries/schema018')
+        with tempfile.TemporaryDirectory(prefix='librairii-acceptance-evidence-') as temporary:
+            evidence = Path(temporary)
+            fixture = Fixture(source, evidence, True)
+            owned = fixture.root
+            try:
+                environment = fixture.environment('winit-skia-software')
+                self.assertEqual(environment.get('HOME'), os.environ.get('HOME'))
+                self.assertEqual(environment['LIBRAIRII_ACCEPTANCE_LIBRARY'], str(owned/'library'))
+                self.assertEqual(environment['LIBRAIRII_ACCEPTANCE_PROFILE'], str(owned/'profile'))
+                self.assertNotIn('LIBRAIRII_DATA_ROOT', environment)
+                connection = HTTPConnection('127.0.0.1', fixture.server.server_port, timeout=2)
+                try:
+                    connection.request('GET', '/v2/packs')
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 200)
+                    data = json.loads(response.read())
+                    self.assertEqual(data['response']['fixture-pack-001']['uuid'], '00112233-4455-4677-8899-aabbccddeeff')
+                finally:
+                    connection.close()
+            finally:
+                fixture.retain()
+            self.assertFalse(owned.exists())
+            self.assertEqual(inventory(source/'preservation/corpus/libraries/schema018'), original)
+            self.assertTrue((evidence/'fixture-final.tar.gz').is_file())
+            self.assertEqual(json.loads((evidence/'local-network.json').read_text())['errors'], [])
+
+    def test_gui_admission_refuses_stale_source_or_changed_installed_resources_before_execution(self):
+        with tempfile.TemporaryDirectory(prefix='librairii-gui-admission-') as temporary:
+            installed = Path(temporary).resolve()
+            binary = installed/'bin/librairii-desktop'
+            binary.parent.mkdir()
+            binary.write_bytes(b'synthetic executable')
+            binary.chmod(0o755)
+            asset = installed/'asset'
+            asset.write_bytes(b'sealed resource')
+            report = {'format': 'librairii.native-package-inspection', 'schema': 1,
+                      'source_commit': 'a'*40, 'target': 'x86_64-unknown-linux-gnu',
+                      'installed_payload_verified': True, 'public_release_qualified': False,
+                      'installed': str(installed), 'binary': str(binary),
+                      'binary_sha256': digest(binary), 'installed_payload': inventory(installed),
+                      'build_info': {'source_commit': 'a'*40}}
+            with patch('packaged_acceptance.run.verify_embedded') as execute:
+                self.assertEqual(admit(report, 'a'*40, report['target']), (installed, Path('bin/librairii-desktop')))
+                execute.assert_called_once()
+                execute.reset_mock()
+                with self.assertRaises(ValueError):
+                    admit(report, 'b'*40, report['target'])
+                asset.write_bytes(b'changed resource')
+                with self.assertRaises(ValueError):
+                    admit(report, 'a'*40, report['target'])
+                execute.assert_not_called()
+
+    def test_missing_ci_or_incomplete_gui_checkpoint_and_process_inventory_cannot_qualify(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, 'disposable CI host'):
+                run(Path('/unused'), Path('/missing'), 'a'*40, 'x86_64-unknown-linux-gnu',
+                    'target/native-release/refused', 'fresh', 'winit-skia-software')
+        complete = {'format': 'librairii.packaged-gui', 'schema': 1, 'complete': True, 'errors': [],
+                    'checks': {name: {'observed': True} for name in REQUIRED},
+                    'processes': [{'retired': True} for _ in range(5)]}
+        self.assertTrue(qualified(complete))
+        for name in REQUIRED:
+            changed = copy.deepcopy(complete)
+            del changed['checks'][name]
+            self.assertFalse(qualified(changed))
+        for change in ({'complete': False}, {'errors': ['native picker failed']}, {'processes': []},
+                       {'processes': [{'retired': True}]*4+[{'retired': False}]}):
+            self.assertFalse(qualified(dict(complete, **change)))
+
+
+if __name__ == '__main__':
+    unittest.main()

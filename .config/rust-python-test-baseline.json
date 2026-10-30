@@ -75,6 +75,11 @@
     "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
     "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members",
     "test_packages.PlatformPackages.test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools",
-    "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount"
+    "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount",
+    "test_packaged_acceptance.PackagedAdmission.test_fixture_preserves_source_inputs_and_uses_only_explicit_roots_and_loopback",
+    "test_packaged_acceptance.PackagedAdmission.test_gui_admission_refuses_stale_source_or_changed_installed_resources_before_execution",
+    "test_packaged_acceptance.PackagedAdmission.test_missing_ci_or_incomplete_gui_checkpoint_and_process_inventory_cannot_qualify",
+    "test_packaged_acceptance.PackagedAdmission.test_container_retirement_requires_exact_creation_image_and_invocation_receipts",
+    "test_packaged_acceptance.PackagedAdmission.test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files"
   ]
 }

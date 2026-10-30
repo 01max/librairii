@@ -193,7 +193,8 @@ func post(_ code: CGKeyCode, down: Bool, flags: CGEventFlags, modifier: Bool = f
 func key(_ name: String) throws {
     let codes: [String: CGKeyCode] = ["a": 0, "g": 5, "c": 8, "v": 9, "x": 7, "z": 6,
         "q": 12, "2": 19, "comma": 43, "escape": 53, "return": 36, "tab": 48,
-        "delete": 51, "space": 49, "left": 123, "right": 124, "home": 115, "end": 119, "f": 3]
+        "delete": 51, "space": 49, "left": 123, "right": 124, "down": 125, "up": 126,
+        "home": 115, "end": 119, "f": 3]
     let parts = name.split(separator: "+").map(String.init)
     guard let last = parts.last, let code = codes[last] else { throw Failure.invalid("unknown key") }
     var flags = CGEventFlags()
@@ -493,6 +494,14 @@ do {
             "selection_observed": observed, "selection_status": status.rawValue,
             "selection_location": range.location, "selection_length": range.length,
             "selected_text": text(element, kAXSelectedTextAttribute)] as [String: Any])
+    case "snapshot-window":
+        guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("installed GUI observation requires a disposable native CI host")
+        }
+        try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+            "nodes": tree(app, sheetsOnly: false), "windows":
+                (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                 as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }])
     case "snapshot", "status":
         trace("reading owned CG windows and foreground status")
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
@@ -614,12 +623,17 @@ do {
             try post(code, down: false, flags: [])
         }
         try output(["posted": true])
-    case "press", "set", "select":
+    case "press", "set", "select", "focus":
         guard let selector = request["selector"] as? [String: Any] else { throw Failure.invalid("control selector required") }
         let element = try resolve(app, selector)
         var status: AXError
         if operation == "press" {
             status = AXUIElementPerformAction(element, kAXPressAction as CFString)
+        } else if operation == "focus" {
+            guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+                throw Failure.invalid("installed GUI focus requires a disposable native CI host")
+            }
+            status = AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         } else if operation == "set" {
             status = AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString,
                 (request["value"] as? String ?? "") as CFString)

@@ -100,7 +100,7 @@ def finder_fixture_window(snapshot, fixture):
     return None
 
 
-def verified_finder_snapshot(snapshot, fixture):
+def verified_finder_snapshot(snapshot, fixture, expected_files=None):
     window = finder_fixture_window(snapshot, fixture)
     if window is not None:
         return snapshot, window, {'method': 'root-file-url', 'directory': str(fixture)}
@@ -118,11 +118,14 @@ def verified_finder_snapshot(snapshot, fixture):
     if len(views) != 1:
         return None
     view_path = views[0]['selector']['path']
-    expected = {fixture / name for name in ('Été 日本語 故事.zip', 'Deuxième archive 02.pk')}
+    names = ('Été 日本語 故事.zip', 'Deuxième archive 02.pk') if expected_files is None else expected_files
+    if not names or any(pathlib.Path(name).name != name for name in names):
+        return None
+    expected = {fixture / name for name in names}
     images = [n for n in nodes if same_root(n, window) and n['role'] == 'AXImage'
         and n['selector']['path'][:len(view_path)] == view_path
         and n.get('title') in {p.name for p in expected}]
-    if len(images) != 2:
+    if len(images) != len(expected):
         return None
     observed = []
     for node in images:
@@ -163,8 +166,8 @@ def finder_window_id(snapshot, pid):
     return windows[0]['kCGWindowNumber']
 
 
-def ready_finder_snapshot(snapshot, fixture, pid):
-    result = verified_finder_snapshot(snapshot, fixture)
+def ready_finder_snapshot(snapshot, fixture, pid, expected_files=None):
+    result = verified_finder_snapshot(snapshot, fixture, expected_files)
     if result is None or not result[0].get('windows'):
         return None  # AX content can precede CG window registration.
     return *result, finder_window_id(result[0], pid)
@@ -327,7 +330,7 @@ class Observer:
             raise RuntimeError('actual native window capture failed')
 
 
-def close_finder(finder, fixture, window_id):
+def close_finder(finder, fixture, window_id, expected_files=None):
     def retired(snapshot):
         status = finder.call('window-status', window_id=window_id)
         if finder_window_retired(snapshot, status, finder.pid, window_id):
@@ -336,7 +339,7 @@ def close_finder(finder, fixture, window_id):
                 'unresolved_title_window_count': snapshot.get('unresolved_title_window_count')}
         return None
     observed = finder.snapshot(document=fixture)
-    result = verified_finder_snapshot(observed, fixture)
+    result = verified_finder_snapshot(observed, fixture, expected_files)
     if result is None:
         if proof := retired(observed):
             return proof  # The verified document window has already closed.

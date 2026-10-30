@@ -34,6 +34,9 @@ def main():
     installed.add_argument('--expected-source', required=True)
     installed.add_argument('--target', choices=TARGETS, required=True)
     installed.add_argument('--output', required=True)
+    gui = commands.add_parser('qualify-gui', help='run installed GUI qualification on disposable native CI only')
+    gui.add_argument('--inspection', type=Path, required=True)
+    gui.add_argument('--output', required=True)
     args = parser.parse_args()
     if args.action == 'plan':
         print(json.dumps(plan(ROOT, args.target, require_clean=False), indent=2))
@@ -48,6 +51,9 @@ def main():
         print(json.dumps(macos.assemble(ROOT, args.stage, args.output), indent=2))
     elif args.action == 'inspect-package':
         print(json.dumps(install.inspect(ROOT, args.directory, args.expected_source, args.target, args.output), indent=2))
+    elif args.action == 'qualify-gui':
+        subprocess.run([sys.executable, '-I', '-B', str(ROOT/'scripts/verify-native-packages.py'),
+                        '--inspection', str(args.inspection), '--output', args.output], check=True)
 
 
 if __name__ == '__main__':

@@ -159,6 +159,29 @@ production startup and its fixed catalog endpoints retain their existing
 behavior. This route changes only isolation and networking; the installed
 production binary still constructs its normal GUI, worker and workflows.
 
+The `cargo xtask release qualify-gui --inspection <inspection.json> --output
+target/native-release/<new-run>` facade runs only on disposable CI. The
+installed application is copied byte for byte into its temporary fixture and
+launched from an unrelated empty working directory. Public AX on macOS and
+AT-SPI on Linux operate the actual product window, native pickers and menus.
+Screenshots, control observations, SQLite results, managed/exported hashes,
+native file-manager location/retirement and process shutdown evidence are
+retained against the artifact checksum. Missing checkpoints fail qualification.
+
+Each target runs fresh English/GPU-API and upgraded French/forced-CPU cases;
+Linux repeats both under private X11 and Wayland desktops. The Linux observer
+image contains runtime libraries, the GTK portal and Thunar, with no build or
+archive tools. It runs read-only with no external network and no source checkout
+mounted. macOS restricts application writes/networking and executable children
+with a per-process sandbox; qualification observers remain outside it. Five
+owned launches cover the complete workflow, ordinary reopen, a real in-flight
+catalog SIGKILL/reopen, missing-location recovery and application-only
+uninstall/reinstall with retained library/profile bytes.
+
+The driver implementation and its custody checks are prepared. These commands
+do not count as passing installed evidence until their actual native CI reports
+pass. All Task18 GUI and public-signing checkboxes remain open at this point.
+
 ## Verification
 
 The three required Rust integration tests execute the actual product's identity
@@ -166,7 +189,7 @@ commands with no display or normal profile environment and deliberately invalid
 startup configuration, including missing packaged-acceptance roots. Three
 additional Rust checks exercise fixture/catalog admission, persisted foreign
 roots and picker substitution before controller execution. Eighteen additional
-Python checks cover compiler aliases
+Python checks, plus five packaged-GUI custody checks, cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

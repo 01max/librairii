@@ -33,7 +33,7 @@ def main():
     baseline = json.loads((root / '.config/rust-python-test-baseline.json').read_text(encoding='utf-8'))
     suite = unittest.TestSuite([
         unittest.TestLoader().discover(str(root / directory), pattern='test_*.py')
-        for directory in ['xtask/tests', 'scripts/native_release']
+        for directory in ['xtask/tests', 'scripts/native_release', 'scripts/packaged_acceptance']
     ])
     run_suite(suite, baseline['required'])
 
