@@ -137,26 +137,8 @@ class Driver:
         if self.desktop.session == 'x11':
             # Leave the empty Recent view before entering a location. In that
             # view GTK can keep folder confirmation disabled despite entry text.
-            place = self.wait(lambda: self.find('/', root=application, roles=('label',)))
-            attempts, activated = [], False
-            for _ in range(6):
-                if place is None:
-                    break
-                names = []
-                try:
-                    actions = place.queryAction()
-                    names = [actions.getName(index).lower() for index in range(actions.nActions)]
-                except NotImplementedError:
-                    pass
-                attempts.append({'name': place.name, 'role': place.getRoleName(), 'actions': names})
-                if any(name in ('click','press','activate','toggle') for name in names):
-                    self.action(place)
-                    activated = True
-                    break
-                place = place.parent
+            attempts = open_picker_root(self, application)
             (self.output/(prefix+'-root-place.json')).write_text(json.dumps(attempts, indent=2)+'\n')
-            if not activated:
-                raise ValueError('native root location has no activation action')
             self.wait(lambda: {'etc','tmp','usr'} <= {node.name for node in self.nodes(application)})
         self.key('ctrl+l')
         self.desktop.text(str(directory))
@@ -278,3 +260,24 @@ def select_picker_rows(driver, application, wanted):
                 raise ValueError('native picker row deselection refused')
     selected = driver.wait(lambda: set(table.getSelectedRows()) == observed['chosen'] and list(table.getSelectedRows()))
     return {'wanted_names': sorted(wanted), 'observed_names': observed['names'], 'selected_rows': selected}
+
+
+def open_picker_root(driver, application):
+    place = driver.wait(lambda: driver.find('/', root=application, roles=('label',)))
+    attempts = []
+    for _ in range(6):
+        if place is None:
+            break
+        observed = {'name': place.name, 'role': place.getRoleName()}
+        attempts.append(observed)
+        if observed['role'] == 'list item':
+            # GtkPlacesSidebar rows expose Component focus, not an Action.
+            # Return on that actual focused row emits native row activation.
+            if not place.queryComponent().grabFocus():
+                raise ValueError('native root location focus refused')
+            driver.wait(lambda: place.getState().contains(driver.desktop.a.STATE_FOCUSED))
+            driver.key('Return')
+            observed['focused_native_return'] = True
+            return attempts
+        place = place.parent
+    raise ValueError('native root location list row was not found')

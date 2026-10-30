@@ -6052,6 +6052,11 @@
         "position": 97,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 98,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

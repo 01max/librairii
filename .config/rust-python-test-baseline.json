@@ -97,6 +97,7 @@
     "test_packages.PlatformPackages.test_independent_candidate_checksum_refuses_before_host_install_or_execution",
     "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
     "test_packaged_acceptance.PackagedAdmission.test_linux_press_keeps_observed_identity_when_action_replaces_native_node",
-    "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors"
+    "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors",
+    "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus"
   ]
 }

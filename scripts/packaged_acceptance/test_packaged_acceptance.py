@@ -21,6 +21,35 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus(self):
+        from packaged_acceptance.linux import open_picker_root
+        driver = Mock()
+        driver.desktop.a.STATE_FOCUSED = 'focused'
+        def wait(predicate):
+            value=predicate()
+            if not value:
+                raise TimeoutError('native focus was not observed')
+            return value
+        driver.wait.side_effect=wait
+        row=SimpleNamespace(parent=None,name='',getRoleName=Mock(return_value='list item'),
+                            queryAction=Mock(side_effect=NotImplementedError),queryComponent=Mock(),getState=Mock())
+        row.getState.return_value.contains.return_value=True
+        label=SimpleNamespace(parent=row,name='/',getRoleName=Mock(return_value='label'),
+                              queryAction=Mock(side_effect=NotImplementedError))
+        driver.find.return_value=label
+        observed=open_picker_root(driver,object())
+        self.assertEqual(observed[-1]['role'],'list item')
+        row.queryComponent().grabFocus.assert_called_once()
+        driver.key.assert_called_once_with('Return')
+        driver.action.assert_not_called()
+        for accepted,focused in ((False,True),(True,False)):
+            driver.key.reset_mock()
+            row.queryComponent().grabFocus.return_value=accepted
+            row.getState.return_value.contains.return_value=focused
+            with self.assertRaises((ValueError,TimeoutError)):
+                open_picker_root(driver,object())
+            driver.key.assert_not_called()
+
     def test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors(self):
         from packaged_acceptance.macos import Driver
         driver = Driver.__new__(Driver)
