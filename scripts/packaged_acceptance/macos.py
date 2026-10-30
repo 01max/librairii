@@ -44,10 +44,19 @@ class Driver:
         return next(iter(matches), None)
 
     def press(self, name, *, prefix=False):
-        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
-        self.observer.call('press', selector=self.module.selector(node))
-        time.sleep(.08)
-        return node
+        for attempt in range(2):
+            node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
+            try:
+                self.observer.call('press', selector=self.module.selector(node))
+            except RuntimeError as error:
+                # This exact helper refusal occurs in resolve(), before AXPress.
+                # Reobserve once; never retry an action refusal or unknown error.
+                stale = 'press failed: {"returncode": 1, "errors": []}; invalid("native control changed")'
+                if attempt == 0 and str(error).strip() == stale:
+                    continue
+                raise
+            time.sleep(.08)
+            return node
 
     def focus(self, name, *, prefix=False, roles=None):
         node = self.wait(lambda: self.find(name, prefix=prefix, roles=roles))

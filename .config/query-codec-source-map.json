@@ -6072,6 +6072,11 @@
         "position": 101,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_location_removes_only_selected_inline_filename_completion",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 102,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

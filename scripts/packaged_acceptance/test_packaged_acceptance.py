@@ -21,6 +21,25 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once(self):
+        from packaged_acceptance.macos import Driver
+        driver=Driver.__new__(Driver)
+        nodes=[{'path':1},{'path':2}]
+        driver.find=Mock(side_effect=nodes)
+        driver.wait=lambda predicate:predicate()
+        driver.module=SimpleNamespace(selector=lambda node:node)
+        stale=RuntimeError('press failed: {"returncode": 1, "errors": []}; invalid("native control changed")\n')
+        driver.observer=SimpleNamespace(call=Mock(side_effect=[stale,{'performed':True}]))
+        with patch('packaged_acceptance.macos.time.sleep'):
+            self.assertIs(driver.press('Close'),nodes[1])
+        self.assertEqual(driver.observer.call.call_count,2)
+        for error in (RuntimeError('native control action failed'),stale):
+            driver.find=Mock(side_effect=nodes)
+            driver.observer.call=Mock(side_effect=error)
+            with self.assertRaises(RuntimeError),patch('packaged_acceptance.macos.time.sleep'):
+                driver.press('Close')
+            self.assertEqual(driver.observer.call.call_count,2 if error is stale else 1)
+
     def test_picker_location_removes_only_selected_inline_filename_completion(self):
         from packaged_acceptance.linux import picker_location
         driver=Mock()
