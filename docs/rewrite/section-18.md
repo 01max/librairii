@@ -259,17 +259,38 @@ trusted workflow definition; it has not been executed or claimed qualified.
 
 ## Current retained diagnostics
 
-At implementation `79d5422`, provider merge source
-`fb6e108571fd3095a6f120cd13a0d6addd1d8e0c`, [run 41037835075](https://github.com/01max/librairii/actions/runs/41037835075)
-built all three native packages and passed their separate installed-byte
-inspections. GUI qualification failed: Linux's temporary mount refused execution,
-and both Mac pickers exposed missing AppKit edit-menu routing. The original
-failure artifacts are retained, not rescored. Separate commits correct the
-mount, production menu routing and synthetic picker filenames. Fresh native GUI
-evidence remains required for the corrected implementation.
+[Run 41046270632](https://github.com/01max/librairii/actions/runs/41046270632)
+built all three native packages from provider merge source
+`ed5d3585503f3b428c531a4e57e59adb2ff4b087`. Separate installed-byte inspections
+passed on all three hosts. The package digests are:
 
-Headless source review closes the acceptance fixes at `b4ecfeb` (Standards 0,
-Spec 0) and signing isolation at `93d7059` (Standards 0, Spec 0). The additive
-Python baseline now contains 92 required identities; original identities and
-frozen fixture/oracle inputs remain intact. These source/CPU checks do not
-replace the remaining installed-GUI or real-signing gates.
+| Target | Package SHA-256 |
+| --- | --- |
+| macOS ARM | `56f336990b4e75ceee385cfa5ff6fd67924bb519ef738337615cfa0892b4713b` |
+| macOS Intel | `911ff1da3df3829389dbd163f7527b8af5b3b266ab2f7c862a842ac88eec204d` |
+| Linux x64 | `72577eebb2eafa81781c2a2c01e8b9cffe581ecb4449ef4e7acad59fd51f6f28` |
+
+Actual GUI acceptance has not passed. Retained failures led to separate fixes
+for AppKit picker edit routing, the Linux trust-store prerequisite, private
+AT-SPI activation, native picker selection and visible-control navigation.
+Older failure artifacts remain failed and retained. The current observer
+`67818b11621789d492c60696be5062f70b4d4041` is being checked against these same
+package bytes in [Linux run 41052593302](https://github.com/01max/librairii/actions/runs/41052593302),
+[ARM run 41052599284](https://github.com/01max/librairii/actions/runs/41052599284)
+and [Intel run 41052606164](https://github.com/01max/librairii/actions/runs/41052606164).
+Observer source and file hashes are recorded separately from candidate source.
+
+The cumulative required baseline contains 99 Python identities, all passing;
+original identities and frozen fixture/oracle inputs remain intact. Independent
+Standards and Spec source reviews through `67818b1` report zero required
+findings. [Rust quality run 41046270538](https://github.com/01max/librairii/actions/runs/41046270538)
+passed on all three native targets. These checks do not replace installed GUI,
+scale or real signing evidence.
+
+[Native foundation run 41046270625](https://github.com/01max/librairii/actions/runs/41046270625)
+passed on both Macs but failed the existing Linux 100ms input budget: X11 early
+Settings measured p95 158.28226399992218ms. Its six native picker cases,
+Wayland native cases and actual Orca speech passed. The failed input result
+remains incomplete; the budget has not changed. Public signing, notarization,
+stapling and final signed-byte launch remain unexecuted because credentials
+have not been provisioned.
