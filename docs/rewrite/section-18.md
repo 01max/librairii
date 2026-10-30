@@ -259,38 +259,38 @@ trusted workflow definition; it has not been executed or claimed qualified.
 
 ## Current retained diagnostics
 
-[Run 41046270632](https://github.com/01max/librairii/actions/runs/41046270632)
+[Run 41053772648](https://github.com/01max/librairii/actions/runs/41053772648)
 built all three native packages from provider merge source
-`ed5d3585503f3b428c531a4e57e59adb2ff4b087`. Separate installed-byte inspections
-passed on all three hosts. The package digests are:
+`9acfef8753fbed84ec192dae78653e58a97e8e3c`. Separate installed-byte inspections
+passed on all three hosts. Provider archive and inner package hashes were
+independently verified. The package digests are:
 
 | Target | Package SHA-256 |
 | --- | --- |
-| macOS ARM | `56f336990b4e75ceee385cfa5ff6fd67924bb519ef738337615cfa0892b4713b` |
-| macOS Intel | `911ff1da3df3829389dbd163f7527b8af5b3b266ab2f7c862a842ac88eec204d` |
-| Linux x64 | `72577eebb2eafa81781c2a2c01e8b9cffe581ecb4449ef4e7acad59fd51f6f28` |
+| macOS ARM | `c6a582c65a58fc3a1419002c7aabb3180fa7152b666e45cfe05dcae152bec4b1` |
+| macOS Intel | `9c113abf9304c60d4bab89c7a5d98201597fca4d6551784ba00fb2efea475d54` |
+| Linux x64 | `679fcc18103b3adc6bcc75ce1734e21aec92bc076300611d0115aafdc7974b96` |
 
 Actual GUI acceptance has not passed. Retained failures led to separate fixes
 for AppKit picker edit routing, the Linux trust-store prerequisite, private
-AT-SPI activation, native picker selection and visible-control navigation.
-Older failure artifacts remain failed and retained. The current observer
-`67818b11621789d492c60696be5062f70b4d4041` is being checked against these same
-package bytes in [Linux run 41052593302](https://github.com/01max/librairii/actions/runs/41052593302),
-[ARM run 41052599284](https://github.com/01max/librairii/actions/runs/41052599284)
-and [Intel run 41052606164](https://github.com/01max/librairii/actions/runs/41052606164).
-Observer source and file hashes are recorded separately from candidate source.
+AT-SPI activation, native picker selection, exact text clearing, Shelf label
+counts and visible-control navigation. All earlier failed artifacts retain
+their original verdicts. Observer source and file hashes are recorded separately
+from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 99 Python identities, all passing;
+The cumulative required baseline contains 103 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
-Standards and Spec source reviews through `67818b1` report zero required
-findings. [Rust quality run 41046270538](https://github.com/01max/librairii/actions/runs/41046270538)
-passed on all three native targets. These checks do not replace installed GUI,
-scale or real signing evidence.
+Standards and Spec source reviews are recorded separately from native evidence.
+[Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
+and [scale run 41053772763](https://github.com/01max/librairii/actions/runs/41053772763)
+passed on all three native targets. These checks do not replace installed GUI
+or real signing evidence.
 
-[Native foundation run 41046270625](https://github.com/01max/librairii/actions/runs/41046270625)
-passed on both Macs but failed the existing Linux 100ms input budget: X11 early
-Settings measured p95 158.28226399992218ms. Its six native picker cases,
-Wayland native cases and actual Orca speech passed. The failed input result
-remains incomplete; the budget has not changed. Public signing, notarization,
-stapling and final signed-byte launch remain unexecuted because credentials
-have not been provisioned.
+[Native foundation run 41053773048](https://github.com/01max/librairii/actions/runs/41053773048)
+passed on Linux and ARM but failed the existing Intel 100ms input budget:
+p95 110.303635ms, with five of 64 observations above 100ms. The original raw
+artifact remains failed and retained. The earlier Linux foundation run measured
+p95 158.28226399992218ms and also remains failed; its later fresh passing run
+does not rescore it. No workload, sample count or budget was relaxed.
+Public signing, notarization, stapling and final signed-byte launch remain
+unexecuted because credentials have not been provisioned. Task18 remains open.
