@@ -86,7 +86,11 @@ def perform(driver, fixture, result, french):
     driver.wait(lambda: driver.find('The Clockwork Mountain', prefix=True))
     driver.press(words('Details…', 'Détails…'))
     driver.press(words('Edit tags', 'Modifier les étiquettes'), prefix=True)
-    driver.choose('Été packaged', 1, prefix=True)
+    # This live assignment commits on each arrow and disables while saving.
+    # Focus the observed unassigned value and issue exactly one native change.
+    driver.focus('Été packaged · 0 / 1 · '+words('Not assigned', 'Non attribuée'),
+                 roles=('combo box', 'AXComboBox', 'AXPopUpButton'))
+    driver.key('Down')
     assignments = driver.wait(lambda: fixture.rows(
         "SELECT a.story_id,a.definition_id FROM story_tag_assignments a JOIN tag_definitions d ON d.id=a.definition_id WHERE d.key='packaged-test'"))
     observe('tags-search', {'created': tag, 'assigned': assignments, 'native_utf8_text': 'Été packaged', 'search': 'Clockwork'})
