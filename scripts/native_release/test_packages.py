@@ -18,6 +18,23 @@ from native_release import install, macos, package
 
 
 class PlatformPackages(unittest.TestCase):
+    def test_independent_candidate_checksum_refuses_before_host_install_or_execution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            artifact = root/'candidate.tar.gz'
+            artifact.write_bytes(b'synthetic selected artifact')
+            with patch.object(install,'artifact_record',return_value=(artifact,{})), \
+                 patch.object(install,'runtime_host') as host, patch.object(install,'copy_payload') as copy, \
+                 patch.object(install,'verify_embedded') as execute:
+                for checksum in ('','not-a-digest','f'*64):
+                    with self.assertRaisesRegex(ValueError,'independently selected'):
+                        install.inspect(root,root,'a'*40,'x86_64-unknown-linux-gnu','target/native-release/refused',
+                                        expected_sha256=checksum)
+                host.assert_not_called()
+                copy.assert_not_called()
+                execute.assert_not_called()
+                self.assertFalse((root/'target').exists())
+
     def test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount(self):
         import subprocess
         with tempfile.TemporaryDirectory(prefix='librairii-mount-test-') as temporary:

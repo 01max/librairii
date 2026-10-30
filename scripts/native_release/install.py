@@ -156,8 +156,10 @@ def copy_payload(artifact, release, destination):
     return installed, binary
 
 
-def inspect(root, directory, source, target, requested_output, *, expected_team=None, expected_certificate=None):
+def inspect(root, directory, source, target, requested_output, *, expected_team=None, expected_certificate=None, expected_sha256=None):
     artifact, release = artifact_record(directory, source, target)
+    if expected_sha256 is not None and (not re.fullmatch('[0-9a-f]{64}',expected_sha256) or digest(artifact) != expected_sha256):
+        raise ValueError('candidate differs from the independently selected package SHA-256')
     host = runtime_host(root, target)
     destination = fresh_output(root, requested_output)
     installed, binary = copy_payload(artifact, release, destination)

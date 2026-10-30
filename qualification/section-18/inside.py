@@ -38,7 +38,8 @@ def main():
         desktop.run(['gio', 'mime', 'inode/directory', 'thunar.desktop'])
         report = run(Path('/work'), args.inspection, args.source, 'x86_64-unknown-linux-gnu',
                      'target/native-release/case', args.case, args.backend, desktop=desktop,
-                     fixture_source=Path('/fixtures'))
+                     fixture_source=Path('/fixtures'), observer_source=Path('/checks'),
+                     method=json.loads(Path('/checks/method.json').read_text()))
         if not qualified(report):
             raise ValueError('installed GUI report is incomplete')
     finally:

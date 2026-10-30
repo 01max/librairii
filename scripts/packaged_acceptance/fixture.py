@@ -123,6 +123,7 @@ class Fixture:
         try:
             write_json(evidence/'fixture.json', {'owner': str(self.root), 'upgraded': upgraded,
                        'profile': str(self.profile), 'library': str(self.library),
+                       'expected_archive_inputs': {uuid:sorted(values) for uuid,values in self.original_archives.items()},
                        'input_files': self.input_bytes, 'legacy_before': self.legacy_before if upgraded else None})
         except Exception:
             self.server.server_close()

@@ -33,18 +33,30 @@ def retire(cid_file, image_id, name, invocation, force):
     return cid
 
 
-def context(destination, root=ROOT):
+def method_record():
+    paths = [*sorted((ROOT/'scripts/native_release').glob('*.py')),
+             *sorted((ROOT/'scripts/packaged_acceptance').glob('*.py')),
+             ROOT/'scripts/verify-native-packages.py', ROOT/'scripts/native-speech/desktop.py',
+             ROOT/'qualification/section-2/native-macos/observer.swift',
+             ROOT/'qualification/section-2/check-native-macos.py',
+             ROOT/'qualification/section-18/inside.py', ROOT/'qualification/section-18/Dockerfile']
+    return {'format':'librairii.packaged-gui-method','schema':1,'source_commit':clean_source(ROOT),
+            'files':{path.relative_to(ROOT).as_posix():{'sha256':digest(path),'bytes':regular(path).st_size} for path in paths}}
+
+
+def context(destination, root, method):
     destination.mkdir()
     checks = destination/'checks'
     checks.mkdir()
     for package in ('native_release', 'packaged_acceptance'):
         selected = checks/package
         selected.mkdir()
-        for file in sorted((root/'scripts'/package).glob('*.py')):
+        for file in sorted((ROOT/'scripts'/package).glob('*.py')):
             copy_file(file, selected/file.name)
-    copy_file(root/'scripts/native-speech/desktop.py', checks/'desktop.py')
-    copy_file(root/'qualification/section-18/inside.py', checks/'inside.py')
-    copy_file(root/'qualification/section-18/Dockerfile', destination/'Dockerfile')
+    copy_file(ROOT/'scripts/native-speech/desktop.py', checks/'desktop.py')
+    copy_file(ROOT/'qualification/section-18/inside.py', checks/'inside.py')
+    copy_file(ROOT/'qualification/section-18/Dockerfile', destination/'Dockerfile')
+    write_json(checks/'method.json',method)
     fixtures = destination/'fixtures'
     fixtures.mkdir()
     copy_tree(root/'preservation/corpus/libraries/schema018', fixtures/'legacy-copy')
@@ -58,11 +70,11 @@ def context(destination, root=ROOT):
         copy_file(root/path, fixtures/path)
 
 
-def verify_report(path, source, target, expected_artifact, backend, case, session):
+def verify_report(path, source, target, expected_artifact, backend, case, session, expected_method):
     report = json.loads(path.read_text())
     if (not qualified(report) or report['source_commit'] != source or report['target'] != target
             or report['artifact'] != expected_artifact or report['backend'] != backend
-            or report['case'] != case or report['session'] != session):
+            or report['case'] != case or report['session'] != session or report['method'] != expected_method):
         raise ValueError('package GUI receipt does not match the exact candidate/lane')
     actual = inventory(path.parent)
     actual.pop(path.name)
@@ -83,6 +95,7 @@ def main():
         raise ValueError('native GUI qualification requires disposable CI; do not run on a personal desktop')
     root = args.source_root.resolve(strict=True)
     source = clean_source(root)
+    method = method_record()
     if source != (args.expected_source or os.environ['GITHUB_SHA']):
         raise ValueError('source differs from the actual CI commit')
     target = os.environ['RUST_TARGET']
@@ -92,26 +105,28 @@ def main():
         raise ValueError('installed package source/target differs from current qualification')
     output = fresh_output(root, args.output)
     result = {'source_commit': source, 'target': target, 'host': host, 'artifact': inspection['artifact'],
+              'method':method,
               'complete': False, 'public_release_qualified': False, 'lanes': [], 'errors': []}
     try:
         if target.endswith('apple-darwin'):
             helper = output/'macos-observer'
             subprocess.run(['xcrun', 'swiftc', '-module-cache-path', str(output/'swift-modules'),
-                            str(root/'qualification/section-2/native-macos/observer.swift'), '-o', str(helper)], check=True)
+                            str(ROOT/'qualification/section-2/native-macos/observer.swift'), '-o', str(helper)], check=True)
             for case, backend in [('fresh', 'winit-skia'), ('upgraded', 'winit-skia-software')]:
                 lane = {'name': case, 'passed': False}
                 result['lanes'].append(lane)
                 try:
-                    run(root, args.inspection, source, target, output/case, case, backend, helper=helper)
+                    run(root, args.inspection, source, target, output/case, case, backend, helper=helper,
+                        method=method, observer_source=ROOT)
                     lane.update(verify_report(output/case/'report.json', source, target, inspection['artifact'],
-                                              backend, case, 'macOS'))
+                                              backend, case, 'macOS',method))
                 except Exception as error:
                     lane['error'] = str(error)
                     result['errors'].append(case+': '+str(error))
                     break  # No further native input after a failed custody lane.
         else:
             build_context = output/'runtime-context'
-            context(build_context, root)
+            context(build_context, root, method)
             result['runtime_context'] = inventory(build_context)
             image = 'librairii-packaged:'+source
             with (output/'image-build.log').open('x') as log:
@@ -146,7 +161,7 @@ def main():
                         with (output/(name+'.log')).open('x') as log:
                             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
                         lane.update(verify_report(destination/'case/report.json', source, target, inspection['artifact'],
-                                                  backend, case, session))
+                                                  backend, case, session,method))
                         clean = json.loads((destination/'clean-host.json').read_text())
                         if not clean['desktop_processes_retired'] or clean['observer_overflow']:
                             raise ValueError('private desktop did not retire cleanly')
@@ -160,7 +175,7 @@ def main():
                             lane['retired_container'] = retire(cid_file, image_id, container, invocation, timed_out)
                         else:
                             raise ValueError('no observer creation receipt; do not retire by name')
-        if clean_source(root) != source:
+        if clean_source(root) != source or method_record() != method:
             raise ValueError('source changed during installed GUI qualification')
         result['complete'] = not result['errors'] and all(lane['passed'] for lane in result['lanes'])
         if not result['complete']:

@@ -63,15 +63,20 @@ def admit(inspection, expected_source, target):
 def qualified(report):
     return (report.get('format') == 'librairii.packaged-gui' and report.get('schema') == 1
             and report.get('complete') is True and report.get('errors') == []
+            and report.get('method', {}).get('format') == 'librairii.packaged-gui-method'
+            and bool(report['method'].get('files'))
             and set(report.get('checks', {})) == set(REQUIRED)
             and all(isinstance(value, dict) and value for value in report['checks'].values())
             and len(report.get('processes', [])) == 5
             and all(process.get('retired') is True for process in report['processes']))
 
 
-def run(root, inspection_path, source, target, requested_output, case, backend, *, desktop=None, helper=None, fixture_source=None):
+def run(root, inspection_path, source, target, requested_output, case, backend, *, desktop=None, helper=None,
+        fixture_source=None, method=None, observer_source=None):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('installed GUI execution requires a disposable CI host')
+    if not method or method.get('format') != 'librairii.packaged-gui-method' or not method.get('files'):
+        raise ValueError('installed GUI qualification requires independently recorded observer source')
     inspection = json.loads(Path(inspection_path).read_text())
     installed, relative = admit(inspection, source, target)
     host = runtime_host(root, target)
@@ -79,6 +84,7 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
     report = {'format': 'librairii.packaged-gui', 'schema': 1, 'source_commit': source,
               'target': target, 'artifact': inspection['artifact'], 'host': host, 'case': case,
               'backend': backend, 'session': desktop.session if desktop else 'macOS',
+              'method': method,
               'checks': {}, 'processes': [], 'errors': [], 'complete': False,
               'signing': inspection['signing'], 'public_release_qualified': False}
     fixture = Fixture(fixture_source or root, output, case == 'upgraded')
@@ -95,10 +101,10 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
         process['pid'] = application.pid
         if desktop:
             from .linux import Driver
-            driver = Driver(root, output/name, application.pid, desktop)
+            driver = Driver(observer_source or root, output/name, application.pid, desktop)
         else:
             from .macos import Driver
-            driver = Driver(root, output/name, application.pid, helper)
+            driver = Driver(observer_source or root, output/name, application.pid, helper)
         return process
     def close(process):
         process['shutdown'] = application.close(driver, french)

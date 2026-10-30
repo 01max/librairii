@@ -249,6 +249,7 @@ class PackagedAdmission(unittest.TestCase):
             raw = root/'native-observation.txt'
             raw.write_bytes(b'synthetic unit-test observation')
             report = {'format':'librairii.packaged-gui','schema':1,'complete':True,'errors':[],
+                      'method':{'format':'librairii.packaged-gui-method','files':{'observer.py':{'sha256':'c'*64}}},
                       'checks':{name:{'observed':True} for name in REQUIRED},
                       'processes':[{'retired':True} for _ in range(5)],
                       'source_commit':'a'*40,'target':'x86_64-unknown-linux-gnu',
@@ -256,10 +257,11 @@ class PackagedAdmission(unittest.TestCase):
                       'backend':'winit-skia-software','case':'fresh','session':'x11','files':inventory(root)}
             path = root/'report.json'
             write_json(path, report)
-            args = [path,'a'*40,report['target'],report['artifact'],report['backend'],'fresh','x11']
+            args = [path,'a'*40,report['target'],report['artifact'],report['backend'],'fresh','x11',report['method']]
             self.assertTrue(module.verify_report(*args)['passed'])
             for position, value in [(1,'c'*40),(2,'x86_64-apple-darwin'),
-                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'upgraded'),(6,'wayland')]:
+                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'upgraded'),(6,'wayland'),
+                                    (7,dict(report['method'],source_commit='d'*40))]:
                 changed = list(args)
                 changed[position] = value
                 with self.assertRaises(ValueError):
@@ -346,6 +348,7 @@ class PackagedAdmission(unittest.TestCase):
                 run(Path('/unused'), Path('/missing'), 'a'*40, 'x86_64-unknown-linux-gnu',
                     'target/native-release/refused', 'fresh', 'winit-skia-software')
         complete = {'format': 'librairii.packaged-gui', 'schema': 1, 'complete': True, 'errors': [],
+                    'method':{'format':'librairii.packaged-gui-method','files':{'observer.py':{'sha256':'c'*64}}},
                     'checks': {name: {'observed': True} for name in REQUIRED},
                     'processes': [{'retired': True} for _ in range(5)]}
         self.assertTrue(qualified(complete))
@@ -353,7 +356,7 @@ class PackagedAdmission(unittest.TestCase):
             changed = copy.deepcopy(complete)
             del changed['checks'][name]
             self.assertFalse(qualified(changed))
-        for change in ({'complete': False}, {'errors': ['native picker failed']}, {'processes': []},
+        for change in ({'complete': False}, {'errors': ['native picker failed']}, {'processes': []}, {'method':{}},
                        {'processes': [{'retired': True}]*4+[{'retired': False}]}):
             self.assertFalse(qualified(dict(complete, **change)))
 

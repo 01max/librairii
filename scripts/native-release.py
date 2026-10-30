@@ -36,6 +36,7 @@ def main():
     installed.add_argument('--output', required=True)
     installed.add_argument('--expected-team')
     installed.add_argument('--expected-certificate')
+    installed.add_argument('--expected-sha256')
     installed.add_argument('--source-root', type=Path, default=ROOT)
     gui = commands.add_parser('qualify-gui', help='run installed GUI qualification on disposable native CI only')
     gui.add_argument('--inspection', type=Path, required=True)
@@ -54,7 +55,8 @@ def main():
         print(json.dumps(macos.assemble(ROOT, args.stage, args.output), indent=2))
     elif args.action == 'inspect-package':
         print(json.dumps(install.inspect(args.source_root, args.directory, args.expected_source, args.target, args.output,
-                                       expected_team=args.expected_team, expected_certificate=args.expected_certificate), indent=2))
+                                       expected_team=args.expected_team, expected_certificate=args.expected_certificate,
+                                       expected_sha256=args.expected_sha256), indent=2))
     elif args.action == 'qualify-gui':
         subprocess.run([sys.executable, '-I', '-B', str(ROOT/'scripts/verify-native-packages.py'),
                         '--inspection', str(args.inspection), '--output', args.output], check=True)
