@@ -109,10 +109,15 @@ def mounted(artifact, destination):
             observed = subprocess.run(['/usr/bin/hdiutil', 'info', '-plist'],
                                       capture_output=True, check=True, timeout=15)
             images = plistlib.loads(observed.stdout).get('images', [])
+            devices = [image for image in images
+                       if Path(image.get('image-path', '')).resolve() == artifact.resolve()]
             owners = [image for image in images
                       if any(entity.get('mount-point') == str(mount)
                              for entity in image.get('system-entities', []))]
+            write_json(destination / 'mount-reconciliation.json', {'matching_images': devices, 'mount_owners': owners})
             if not owners:
+                if devices:
+                    raise ValueError('image device remains attached without its expected owned mount')
                 if mount.is_mount():
                     raise ValueError('mount exists without an image ownership receipt')
                 cleanup['state'] = 'not mounted'

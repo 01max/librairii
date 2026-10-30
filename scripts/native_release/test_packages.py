@@ -46,6 +46,17 @@ class PlatformPackages(unittest.TestCase):
                         self.fail('invalid receipt cannot grant installation')
             self.assertEqual(run.call_count, 2)
             self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'uncertain')
+            destination = root / 'partial-device'
+            destination.mkdir()
+            image = {'image-path': str(artifact), 'system-entities': [{'dev-entry': '/dev/disk123'}]}
+            with patch('native_release.install.subprocess.run', side_effect=[subprocess.CalledProcessError(1, 'hdiutil', b'partial', b'attach error'),
+                       subprocess.CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b'')]) as run:
+                with self.assertRaisesRegex(ValueError, 'cleanup remains uncertain'):
+                    with install.mounted(artifact, destination):
+                        self.fail('partial image cannot grant installation')
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'uncertain')
+            self.assertEqual(json.loads((destination/'mount-reconciliation.json').read_text())['matching_images'], [image])
 
     def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
         from subprocess import CompletedProcess
