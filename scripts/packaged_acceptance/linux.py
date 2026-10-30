@@ -133,12 +133,16 @@ class Driver:
             {'owner': owner, 'portal_pid': self.portal_pid, 'nodes': before}, ensure_ascii=False, indent=2)+'\n')
         self.key('ctrl+l')
         self.desktop.text(str(directory))
+        # GTK can select an inline-completed trailing slash. Commit that native
+        # completion, then observe the exact directory with or without the slash.
+        self.key('Right')
         def location():
             for node in self.nodes(application):
                 try:
-                    if (node.getState().contains(self.desktop.a.STATE_FOCUSED)
-                            and node.queryText().getText(0, -1) == str(directory)):
-                        return {'name': node.name, 'role': node.getRoleName(), 'value': str(directory), 'focused': True}
+                    if node.getState().contains(self.desktop.a.STATE_FOCUSED):
+                        value = node.queryText().getText(0, -1)
+                        if value in (str(directory), str(directory)+'/'):
+                            return {'name': node.name, 'role': node.getRoleName(), 'value': value, 'focused': True}
                 except (NotImplementedError, RuntimeError, self.desktop.dbus.DBusException):
                     continue
             return None
