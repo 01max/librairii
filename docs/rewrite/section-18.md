@@ -278,13 +278,33 @@ counts and visible-control navigation. All earlier failed artifacts retain
 their original verdicts. Observer source and file hashes are recorded separately
 from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 103 Python identities, all passing;
+The cumulative required baseline contains 105 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
 Standards and Spec source reviews are recorded separately from native evidence.
 [Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
 and [scale run 41053772763](https://github.com/01max/librairii/actions/runs/41053772763)
 passed on all three native targets. These checks do not replace installed GUI
 or real signing evidence.
+
+The subsequent [scale run 41060966731](https://github.com/01max/librairii/actions/runs/41060966731)
+and [foundation run 41060966982](https://github.com/01max/librairii/actions/runs/41060966982)
+passed on all three hosts. Fresh Intel foundation input p95 was40.688995ms,
+with none of64 observations above100ms. The historical failed measurements
+below retain their verdicts; a sole cause has not been established.
+
+[Quality run 41060966741](https://github.com/01max/librairii/actions/runs/41060966741)
+passed on Intel and Linux but failed on ARM when an optional Cancel raced an
+already completed first import. The observer now records that exact terminal
+receipt separately. Cancellation of the second live import and its positive
+cancelled-item assertion remain mandatory. Fresh qualification is required.
+
+The [ARM installed replay 41067069023](https://github.com/01max/librairii/actions/runs/41067069023)
+passed all four export scopes, exact Finder location and window retirement,
+then failed relocation because observer SQLite readers retained sidecar files.
+The observer now closes its read-only connections explicitly; a real WAL
+regression failed before this correction for successful and failing queries
+and passes afterward. Storage closure requirements are unchanged. The report
+remains failed until a fresh complete installed workflow passes.
 
 [Native foundation run 41053773048](https://github.com/01max/librairii/actions/runs/41053773048)
 passed on Linux and ARM but failed the existing Intel 100ms input budget:
