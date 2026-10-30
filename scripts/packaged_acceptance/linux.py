@@ -201,7 +201,8 @@ class Driver:
         desktop.screenshot(self.output/'actual-reveal.png')
         if desktop.active_pid() != pid:
             raise ValueError('owned file manager lost focus before close')
-        desktop.key('ctrl+w')
+        # Thunar binds Close Window to Ctrl+Q; Ctrl+W only closes a tab.
+        desktop.key('ctrl+q')
         self.wait(lambda: not desktop.find(
             lambda node: node.getRole() in (desktop.a.ROLE_FRAME, desktop.a.ROLE_DIALOG)
                          and node.get_process_id() == pid and desktop.visible(node)))
