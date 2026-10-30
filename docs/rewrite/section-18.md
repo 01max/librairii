@@ -103,8 +103,9 @@ cannot pass GUI qualification or public signing.
 The `Rust native packages` workflow builds on `macos-15`, `macos-15-intel` and
 `ubuntu-24.04`, then downloads each exact candidate to a separate installation
 job. Installed-host validation needs no Rust toolchain and refuses an Intel
-result running through Rosetta. This initial job qualifies byte installation
-and headless inspection only. The checksum-keyed GUI reports remain separate.
+result running through Rosetta. The installation job also runs the checksum-keyed
+production GUI workflow; byte inspection and GUI qualification remain separate
+receipts and gates.
 The pinned official download-artifact6.0.0 commit
 `018cc2cf5baa6db3ef3c5f8a56943fffe632ef53` was checked against its official tag
 and GitHub's valid release-commit signature before use; existing checkout,
@@ -196,3 +197,76 @@ final-byte records and actual compiled-graph selection. They are registered in
 the cumulative Python runner's required baseline. Existing identities and
 original source-index/baseline pins remain preserved through explicitly recorded
 additions; no source, algorithm or historical parity row is reclassified.
+The fixture gate also physically checks the derived legacy fallback root and
+refuses any persisted native relocation journal before startup. These cases
+exercise regular relocation, missing-location recovery and interrupted metadata
+work; accepting a persisted relocation journal would require a separately
+bounded fixture authority check.
+
+Each export freezes its independently selected UUIDs, original filenames,
+managed hashes/sizes, group provenance and eligible/skipped item outcomes before
+starting. Completion requires the exact new durable operation and exact output
+set, including the expected Broken-story skip in the upgraded fixture. Partial
+copies or a different scope cannot qualify. Reopen also runs with the catalog
+listener stopped and connection refusal observed, at an actual native display
+scale of 1.25 after the initial scale 1 launch. Native scale/geometry diagnostics,
+visible controls and screenshots must agree. SIGKILL recovery requires the
+actual signal exit status and positive output-reader retirement.
+
+## Protected Mac signing
+
+The manually triggered `Sign reviewed native Mac candidate` workflow accepts an
+exact reviewed source commit, unsigned package run, native target and independently
+checked DMG SHA-256. It runs only from `main` or the Rust integration branch.
+Signing code is checked out from the trusted workflow revision separately from
+the candidate source. Pull-request jobs receive no signing credentials.
+
+Before enabling signing, the owner must configure the `native-macos-signing`
+environment with a required reviewer and deployment restricted to those trusted
+branches. Supply environment secrets `NATIVE_SIGNING_KEYCHAIN_BASE64` (an encrypted,
+dedicated keychain containing only the selected Developer ID Application identity
+and a notarytool credential profile named `librairii-notary`) and
+`NATIVE_SIGNING_KEYCHAIN_PASSWORD`. Use GitHub's secure secret entry, never PR
+comments or chat. Set nonsecret repository variables `NATIVE_MACOS_TEAM_ID` and
+`NATIVE_MACOS_CERT_SHA1` to the independently selected team and certificate.
+Prepare the dedicated keychain with Apple's Keychain Access/security tools and
+`notarytool store-credentials --keychain`; no normal login keychain is exported.
+No credentials have been provisioned or used by this task.
+
+The entry point consumes both secret environment variables before any preflight
+child process. The credential-bearing job only copies/verifies candidate bytes
+and invokes trusted Apple tools; it never executes the candidate, including an
+identity command before keychain creation. An encrypted keychain copy exists
+only in a private fresh runner-temporary directory, is selected explicitly by
+signing/notary tools and must retire positively before success.
+
+The app receives a timestamped Developer ID signature with hardened runtime.
+An accepted app ZIP submission leads to stapling/validation of the actual app;
+the resulting DMG is separately signed, accepted, stapled and validated. Final
+checksums/payload inventories are produced afterward. A separate credentialless
+matching native job installs those final bytes and independently checks the
+selected certificate/team, both tickets, Gatekeeper, linkage and full GUI cases.
+Signing alone never sets public-release qualification true. Both architectures
+must complete this flow independently; Intel still requires actual Intel hardware.
+
+This sequence follows Apple's [custom notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow)
+and [distribution packaging guidance](https://developer.apple.com/documentation/xcode/packaging-mac-software-for-distribution).
+The new manual workflow becomes dispatchable once GitHub has registered its
+trusted workflow definition; it has not been executed or claimed qualified.
+
+## Current retained diagnostics
+
+At implementation `79d5422`, provider merge source
+`fb6e108571fd3095a6f120cd13a0d6addd1d8e0c`, [run 41037835075](https://github.com/01max/librairii/actions/runs/41037835075)
+built all three native packages and passed their separate installed-byte
+inspections. GUI qualification failed: Linux's temporary mount refused execution,
+and both Mac pickers exposed missing AppKit edit-menu routing. The original
+failure artifacts are retained, not rescored. Separate commits correct the
+mount, production menu routing and synthetic picker filenames. Fresh native GUI
+evidence remains required for the corrected implementation.
+
+Headless source review closes the acceptance fixes at `b4ecfeb` (Standards 0,
+Spec 0) and signing isolation at `93d7059` (Standards 0, Spec 0). The additive
+Python baseline now contains 92 required identities; original identities and
+frozen fixture/oracle inputs remain intact. These source/CPU checks do not
+replace the remaining installed-GUI or real-signing gates.
