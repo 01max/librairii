@@ -591,6 +591,9 @@ export component DesktopWindow inherits Window {
     callback quit();
     callback request-panel(int);
     callback search(string);
+    // Optional observer hooks; handlers are installed only by the scale fixture.
+    callback qualification-search-dispatched(string);
+    callback qualification-browser-focused();
     in property <[FilterRow]> filter-rows;
     in property <[ActiveFilterRow]> active-filter-rows;
     in property <string> active-filter-summary;
@@ -643,7 +646,7 @@ export component DesktopWindow inherits Window {
     public function show-schema-confirmation(){if (root.dialog==2 || root.dialog==5) && root.settings-data.can-preserve && !root.settings-data.busy {root.schema-parent=root.dialog;root.dialog=22;dialog-scroll.content-y=0px;root.schema-focus=0;keep-schema.focus();}}
     public function confirm-schema-recovery(){if root.dialog==22 && root.settings-data.can-preserve {root.dialog=root.schema-parent;root.schema-parent=0;settings-panel.activate();root.settings-preserve-schema();}}
     out property <bool> schema-keep-focused:root.dialog==22 && root.schema-focus==0 && keep-schema.has-focus;
-    callback settings-choose();callback settings-confirm();callback settings-retry();callback settings-locate();callback settings-diagnostics();callback settings-cancel();callback settings-retry-move();callback settings-keep-source();
+    callback settings-choose();callback settings-confirm();callback settings-retry();callback settings-locate();callback settings-diagnostics();callback settings-import-preferences();callback settings-cancel();callback settings-retry-move();callback settings-keep-source();
     private property <int> settings-parent;
     private property <int> quit-parent;
     public function finish-settings-startup(){root.settings-parent=0;if root.dialog==4 || root.dialog==5 {root.dialog=2;settings-panel.activate();}else if root.dialog==2 && (settings-panel.confirm-focused || settings-panel.retry-focused) {settings-panel.activate();}}
@@ -652,10 +655,12 @@ export component DesktopWindow inherits Window {
     public function focus-settings-confirm(){settings-panel.focus-confirm();}
     public function focus-settings-retry(){settings-panel.focus-retry();}
     public function focus-settings-diagnostics(){settings-panel.focus-diagnostics();}
+    public function focus-settings-transfer(){settings-panel.focus-transfer();}
     out property <bool> settings-first-focused:settings-panel.first-focused;
     out property <bool> settings-cancel-focused:settings-panel.cancel-focused;
     out property <bool> settings-confirm-focused:settings-panel.confirm-focused;
     out property <bool> settings-retry-focused:settings-panel.retry-focused;
+    out property <bool> settings-transfer-focused:settings-panel.transfer-focused;
     out property <bool> settings-command-ready:root.startup-phase!=4 && !root.closing && !root.picker-open && (!root.modal || root.dialog==2 || root.dialog==4 || root.dialog==5);
     in property <bool> platform-menu: false;
     if !root.platform-menu: MenuBar {
@@ -714,7 +719,7 @@ export component DesktopWindow inherits Window {
                         Caption { text: root.counts; horizontal-stretch: 0; }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
-                        search-entry := SearchField {reveal(y,h)=>{root.reveal-controls(y,h);} horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
+                        search-entry := SearchField {reveal(y,h)=>{root.reveal-controls(y,h);} horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); root.qualification-search-dispatched(self.text); } }
                         ModeChoice {reveal(y,h)=>{root.reveal-controls(y,h);} visible: !root.shelf-active; horizontal-stretch: 0; width: root.shelf-active ? 0px : (root.compact ? 180px : 230px); accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
                         Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
@@ -754,7 +759,7 @@ export component DesktopWindow inherits Window {
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
                             library-scroll := ScrollView { content-width: self.visible-width; content-height: library-layout.preferred-height;
                                 library-layout := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 8px;
-                                    browser := StoryBrowser { height: library-scroll.visible-height; french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Toutes les histoires" : "All stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } reveal(y,h) => {root.reveal-library(y,h);} }
+                                    browser := StoryBrowser { height: library-scroll.visible-height; french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; root.qualification-browser-focused(); } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Toutes les histoires" : "All stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } reveal(y,h) => {root.reveal-library(y,h);} }
                                     for preview in root.collection-previews: VerticalBox { padding: 8px; spacing: 8px;
                                         Caption { text: preview.title; font-weight: 600; }
                                         Caption { text: preview.caption; }
@@ -889,7 +894,7 @@ export component DesktopWindow inherits Window {
                         exports:=ExportPanel {visible:root.dialog==20;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==20 && root.startup-phase==3 && !root.closing;picking:root.picker-open;data:root.export-data;modes:root.export-modes;mode <=> root.export-mode;groups:root.export-groups;selection-epoch:root.export-selection-epoch;items:root.export-items;select(i)=>{root.export-scope(i);}toggle(i)=>{root.export-toggle(i);}group-page(i)=>{root.export-group-page(i);}pick=>{root.pick-export-destination();}refresh=>{root.refresh-export();}start=>{root.start-export();}page(i)=>{root.export-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
                         history:=HistoryPanel {visible:root.dialog==21;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==21 && !root.picker-open && !root.closing;entries:root.history-entries;summary:root.history-summary;error:root.history-error;older:root.history-older;inspect(i)=>{root.show-history-report(i);root.inspect-history(i);}refresh=>{root.history-refresh();}load-older=>{root.history-load-older();}retry=>{root.history-retry();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
                         operations:=Operations {visible:root.dialog==19;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==19 && root.startup-phase==3 && !root.closing;loading:root.operation-loading;history-report:root.operation-from-history;back-history=>{root.return-to-history();}picking:root.picker-open;revealable:root.operation-revealable;reveal-notice:root.operation-reveal-notice;reveal-destination=>{root.reveal-export();}choices:root.operation-choices;selected <=> root.operation-index;choice:root.operation-choice;summary:root.operation-summary;notice:root.operation-notice;runtime:root.operation-runtime;items:root.operation-items;groups:root.operation-groups;cancellable:root.operation-cancellable;retryable:root.operation-retryable;retry-label:root.operation-retry-label;previous:root.operation-previous;next:root.operation-next;pick=>{root.pick-import();}retry=>{root.retry-import();}cancel=>{root.cancel-operation();}select(i)=>{root.select-operation(i);}refresh=>{root.refresh-operations();}page(i)=>{root.operation-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
-                        settings-panel:=SettingsPanel {visible:root.dialog==2 || root.dialog==4 || root.dialog==5;height:self.visible ? self.preferred-height : 0px;french:root.french;active:(root.dialog==2 || root.dialog==4 || root.dialog==5) && !root.closing;picking:root.picker-open;data:root.settings-data;language(code)=>{root.change-language(code);}choose=>{root.settings-choose();}confirm=>{root.settings-confirm();}retry=>{root.settings-retry();}locate=>{root.settings-locate();}diagnostics=>{root.settings-diagnostics();}cancel=>{root.settings-cancel();}retry-move=>{root.settings-retry-move();}keep-source=>{root.settings-keep-source();}preserve-schema=>{root.show-schema-confirmation();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        settings-panel:=SettingsPanel {visible:root.dialog==2 || root.dialog==4 || root.dialog==5;height:self.visible ? self.preferred-height : 0px;french:root.french;active:(root.dialog==2 || root.dialog==4 || root.dialog==5) && !root.closing;picking:root.picker-open;data:root.settings-data;language(code)=>{root.change-language(code);}choose=>{root.settings-choose();}confirm=>{root.settings-confirm();}retry=>{root.settings-retry();}locate=>{root.settings-locate();}diagnostics=>{root.settings-diagnostics();}preferences=>{root.settings-import-preferences();}cancel=>{root.settings-cancel();}retry-move=>{root.settings-retry-move();}keep-source=>{root.settings-keep-source();}preserve-schema=>{root.show-schema-confirmation();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
                         if root.dialog==22:Caption {text:root.settings-data.schema-explanation;}
                         if root.dialog == 1: AboutSlint { }
                         dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); }

@@ -3,6 +3,7 @@ package preferences
 import (
 	"encoding/json"
 	"errors"
+	"github.com/01max/librairii/internal/storage"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,16 +11,20 @@ import (
 )
 
 type Store struct {
-	mu        sync.Mutex
-	directory string
-	profile   Profile
-	loaded    bool
-	failure   error
-	publish   func(string, any) error
+	mu              sync.Mutex
+	directory       string
+	profile         Profile
+	loaded          bool
+	failure         error
+	publish         func(string, any) error
+	initialLanguage string
 }
 
 func NewStore(directory string) *Store { return &Store{directory: directory} }
-func (s *Store) Directory() string     { return s.directory }
+func NewStoreWithLanguage(directory, language string) *Store {
+	return &Store{directory: directory, initialLanguage: language}
+}
+func (s *Store) Directory() string { return s.directory }
 func (s *Store) Load() (Profile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -29,9 +34,6 @@ func (s *Store) Load() (Profile, error) {
 func (s *Store) loadLocked() (Profile, error) {
 	if s.failure != nil {
 		return Profile{}, s.failure
-	}
-	if s.loaded {
-		return s.profile, nil
 	}
 	file, err := os.Open(filepath.Join(s.directory, "settings.json"))
 	if err != nil {
@@ -53,19 +55,37 @@ func (s *Store) loadLocked() (Profile, error) {
 	return p, nil
 }
 func (s *Store) Update(change func(*Profile) error) (Profile, error) {
+	return s.update(change, s.initialLanguage)
+}
+func (s *Store) update(change func(*Profile) error, initialLanguage string) (Profile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.failure != nil {
 		return s.profile, s.failure
 	}
-	if !s.loaded {
-		if _, err := s.loadLocked(); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.MkdirAll(s.directory, 0700); err != nil {
+		return s.profile, err
+	}
+	guard, err := storage.AcquirePreferenceUpdate(s.directory)
+	if err != nil {
+		return s.profile, err
+	}
+	defer guard.Close()
+	wasLoaded := s.loaded
+	if _, err := s.loadLocked(); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
 			return s.profile, err
+		}
+		if wasLoaded {
+			return s.profile, ErrInvalid
 		}
 	}
 	next := s.profile
 	if !s.loaded {
 		next = Profile{Version: Version, Language: "en"}
+		if initialLanguage == "fr" {
+			next.Language = "fr"
+		}
 	}
 	if err := change(&next); err != nil {
 		return s.profile, err

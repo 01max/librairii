@@ -1,5 +1,7 @@
 //! Current production worker/view/menu composition on an owned 1,000-story fixture.
 #![forbid(unsafe_code)]
+#[path = "scale-native/dispatch.rs"]
+mod dispatch;
 #[path = "scale-native/fixture.rs"]
 mod fixture;
 #[allow(dead_code)]
@@ -42,6 +44,8 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     };
     let (ui, menus) = menus::create_window()?;
     let view = view::install(&ui, worker.clone(), first)?;
+    let dispatch = dispatch::Witnesses::install(&ui);
+    let dispatch_timer = dispatch.clone();
     let closing = worker.clone();
     ui.on_quit(move || closing.borrow().request_shutdown());
     let weak = ui.as_weak();
@@ -71,6 +75,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let mut geometry_sequence = 0u64;
     let failure_output = output.clone();
     let mut last_projection = None;
+    let mut clock_sequence = 0u64;
     timer.start(slint::TimerMode::Repeated,Duration::from_millis(16),move||{
       // Quit is asynchronous. Preserve the first diagnostic if another timer
       // tick arrives before the native event loop actually returns.
@@ -87,6 +92,15 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             pending.borrow().request_shutdown();
             if pending.borrow().finished(){slint::quit_event_loop()?;}
             return Ok(())
+        }
+        if let Ok(text)=fs::read_to_string(output.join("dispatch-clock-request")) {
+            let sequence=text.parse::<u64>()?;
+            if sequence>clock_sequence {
+                if sequence!=clock_sequence+1 || sequence>64 {return Err("bounded ordered dispatch clock request required".into())}
+                let response=json!({"sequence":sequence,"native_ns":dispatch_timer.borrow().clock()});
+                atomic(&output.join("dispatch-clock-response"),serde_json::to_vec(&response)?)?;
+                clock_sequence=sequence;
+            }
         }
         stage="projection";
         view.borrow_mut().resize(&ui);menus.dispatch(&ui);
@@ -158,7 +172,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         }
         stage="state";
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
-        let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"active_imports":active_imports,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
+        let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"dispatch":dispatch_timer.borrow().summary(),"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"active_imports":active_imports,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
         let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}
         if pending.borrow().finished(){slint::quit_event_loop()?;}
@@ -210,6 +224,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         .into());
     }
     joined?;
+    atomic(
+        &failure_output.join("dispatch-events.json"),
+        serde_json::to_vec(dispatch.borrow().events()?)?,
+    )?;
     println!("scale_complete; workers_joined=true");
     Ok(())
 }

@@ -13,6 +13,27 @@ beforeEach(() => {
     window.history.replaceState(null, '', '/');
 });
 
+test('exports bounded semantic back and forward history without raw browser state', async () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.replace(applicationDefault, null, 'all');
+    history.push({...applicationDefault, name: 'Bonjour é'}, 7);
+    history.pushShelf(7, {...applicationDefault, name: 'Revue'}, false);
+    const unsubscribe = history.subscribe(() => {});
+    expect(history.handover()).toMatchObject({position: 2, frames: [
+        {kind: 'library'}, {kind: 'collection', id: 7}, {kind: 'shelf', id: 7, manualOrder: false},
+    ]});
+    window.history.back();
+    await waitFor(() => expect(history.handover().position).toBe(1));
+    expect(history.handover().frames).toHaveLength(3);
+    expect(JSON.stringify(history.handover())).not.toContain('handoverKey');
+    window.history.forward();
+    await waitFor(() => expect(history.handover().position).toBe(2));
+    for (let page = 1; page <= 110; page++) history.push({...applicationDefault, page}, null, 'all');
+    expect(history.handover().frames).toHaveLength(100);
+    expect(history.handover().position).toBe(99);
+    unsubscribe();
+});
+
 test('restores the same query when history is reconstructed like a reload', () => {
     const history = new CollectionQueryHistory(window, applicationDefault);
     const pushed = history.push({
@@ -25,6 +46,21 @@ test('restores the same query when history is reconstructed like a reload', () =
     expect(reloaded.current()).toEqual(pushed);
     expect(reloaded.currentShelfID()).toBe(7);
     expect(reloaded.currentScope()).toBe('collection');
+});
+
+test('older browser entries cannot collide with keys allocated after reload', async () => {
+    const first = new CollectionQueryHistory(window, applicationDefault);
+    first.replace({...applicationDefault, name: 'A'}, null);
+    first.push({...applicationDefault, name: 'B'}, null);
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    reloaded.handover();
+    reloaded.push({...applicationDefault, name: 'C'}, null);
+    window.history.back();
+    await waitFor(() => expect(reloaded.current().name).toBe('b'));
+    reloaded.handover();
+    window.history.back();
+    await waitFor(() => expect(reloaded.current().name).toBe('a'));
+    expect(reloaded.handover()).toEqual({frames: [{hash: window.location.hash, kind: 'custom'}], position: 0});
 });
 
 test('restores back and forward query states', async () => {

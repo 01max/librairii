@@ -90,6 +90,9 @@ func testStorageReadinessRecoversForeignDatabase(t *testing.T, mode string) {
 	}
 
 	if mode == "configured-restart" {
+		if err := readiness.Close(); err != nil {
+			t.Fatal(err)
+		}
 		readiness = NewConfiguredStorageReadiness(directory, root, "en")
 	}
 	report, err = readiness.Check(context.Background())

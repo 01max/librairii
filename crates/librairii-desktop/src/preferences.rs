@@ -14,6 +14,13 @@ pub struct Memory {
     warnings: Mutex<Option<Vec<u8>>>,
 }
 pub trait Preferences {
+    fn import_handover_file(
+        &self,
+        _path: &std::path::Path,
+        _id: LibraryId,
+    ) -> Result<librairii_storage::profile::HandoverImport> {
+        Err(StorageError::InvalidNavigation)
+    }
     fn require_alive(&self) -> Result<()>;
     fn save_language(
         &self,
@@ -28,6 +35,13 @@ pub trait Preferences {
     fn save_shelf_warnings(&self, value: &WarningAcknowledgements) -> Result<()>;
 }
 impl Preferences for NativeProfileStore {
+    fn import_handover_file(
+        &self,
+        path: &std::path::Path,
+        id: LibraryId,
+    ) -> Result<librairii_storage::profile::HandoverImport> {
+        NativeProfileStore::import_handover_file(self, path, id)
+    }
     fn save_language(
         &self,
         presentation: &mut librairii_ui::settings::SettingsPresentation,

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import hashlib
 import json
 import os
+import stat
 from pathlib import Path
 import tempfile
 
@@ -17,7 +18,19 @@ def frozen_module(root, prefix):
         for entry in json.loads(manifest_bytes)["files"]:
             path = entry["path"]
             if path.startswith("internal/") or path in ("go.mod", "go.sum"):
-                body = (root / path).read_bytes()
+                # The working bridge can evolve without changing oracle input.
+                # Retained bytes still require the ORIGINAL manifest checksum.
+                retained = root / 'preservation/oracle-files' / (path + '.in')
+                source = retained if retained.exists() else root / path
+                for parent in (source, *source.parents):
+                    if parent == root:
+                        break
+                    if parent.is_symlink():
+                        raise ValueError(f'aliased frozen source: {path}')
+                metadata = source.stat()
+                if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+                    raise ValueError(f'nonregular frozen source: {path}')
+                body = source.read_bytes()
                 if hashlib.sha256(body).hexdigest() != entry["sha256"]:
                     raise ValueError(f"frozen source changed: {path}")
                 target = work / path

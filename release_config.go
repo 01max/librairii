@@ -56,6 +56,7 @@ var bindingMethodAllowlist = []string{
 	"DismissSettings",
 	"DuplicateCollection",
 	"DuplicateShelf",
+	"ExportNativePreferences",
 	"FrontendRendered",
 	"LibraryCompatibility",
 	"ListCollections",

@@ -161,6 +161,9 @@ func TestInterruptedSetupRetriesConfirmedFolderAfterRestart(t *testing.T) {
 	if err := r.InitializeLibrary(ctx, root); err == nil {
 		t.Fatal("cancelled initialization succeeded")
 	}
+	if err := r.Close(); err != nil {
+		t.Fatal(err)
+	}
 	next := NewConfiguredStorageReadiness(directory, "/unused", "en")
 	if _, err := next.Check(context.Background()); !errors.Is(err, preferences.ErrSetupRequired) {
 		t.Fatal(err)

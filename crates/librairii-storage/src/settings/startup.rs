@@ -264,7 +264,7 @@ fn validate_native_namespace(
         }
         Err(e) => return Err(e),
     };
-    let entries = root.entries(5, cancel)?;
+    let entries = root.entries(6, cancel)?;
     if entries.is_empty() {
         return Ok(());
     }
@@ -274,10 +274,12 @@ fn validate_native_namespace(
             && name != "navigation.json"
             && name != "shelf-warnings.json"
             && name != "interface.json"
+            && name != "handover.json"
     }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
     root.regular_entry(std::ffi::OsStr::new("interface.json"))?;
+    root.regular_entry(std::ffi::OsStr::new("handover.json"))?;
     let mut marker = root.open_regular(
         std::ffi::OsStr::new(profile::MARKER),
         rustix::fs::OFlags::RDONLY,

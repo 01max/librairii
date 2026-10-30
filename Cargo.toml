@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*", "xtask"]
-exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo", "third_party/accesskit-atspi-common", "third_party/accesskit-unix"]
+exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo", "third_party/accesskit-atspi-common", "third_party/accesskit-unix", "third_party/fontique"]
 resolver = "3"
 
 [workspace.package]
@@ -70,6 +70,7 @@ missing_safety_doc = "deny"
 sevenz-turbo = { path = "third_party/sevenz-turbo" }
 accesskit_atspi_common = { path = "third_party/accesskit-atspi-common" }
 accesskit_unix = { path = "third_party/accesskit-unix" }
+fontique = { path = "third_party/fontique" }
 
 # Native renderer symbols are supplied by reviewed upstream libraries. Keep the
 # routine multi-target build small enough for the native CI host disk budget.

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -77,7 +78,7 @@ func Bootstrap(ctx context.Context, s *Store, legacy, language string) (Profile,
 		return p, err
 	}
 	if identity == database.IdentityAbsent {
-		entries, readErr := os.ReadDir(legacy)
+		entries, readErr := storage.LibraryEntries(legacy)
 		if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
 			return p, readErr
 		}
@@ -93,8 +94,8 @@ func Bootstrap(ctx context.Context, s *Store, legacy, language string) (Profile,
 	if err != nil {
 		return p, err
 	}
-	return s.Update(func(next *Profile) error {
-		*next = Profile{Version: Version, Language: language, Root: legacy, LibraryID: id, Complete: true}
+	return s.update(func(next *Profile) error {
+		next.Root, next.LibraryID, next.Complete, next.Recovering = legacy, id, true, false
 		return nil
-	})
+	}, language)
 }

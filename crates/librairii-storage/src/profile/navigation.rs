@@ -50,7 +50,11 @@ impl NativeProfileStore {
     ) -> Result<Option<Navigation>> {
         let _state = self.reserve()?;
         self.revalidate_namespace()?;
-        self.ui_bytes(NAME)?
+        let saved = self.ui_bytes(NAME)?;
+        if saved.is_none() {
+            return self.handover_navigation(library, generation);
+        }
+        saved
             .map(|(bytes, _, _)| {
                 Navigation::decode(&bytes, library, generation)
                     .map_err(|_| StorageError::InvalidNavigation)
@@ -101,6 +105,16 @@ impl NativeProfileStore {
         validate: impl Fn(&[u8]) -> Result<()>,
     ) -> Result<()> {
         let mut state = self.reserve()?;
+        self.save_ui_document_locked(&mut state, name, bytes, validate)
+    }
+
+    pub(super) fn save_ui_document_locked(
+        &self,
+        state: &mut State,
+        name: &'static str,
+        bytes: &[u8],
+        validate: impl Fn(&[u8]) -> Result<()>,
+    ) -> Result<()> {
         self.revalidate_namespace()?;
         let previous = self.ui_bytes(name)?;
         // Preserve invalid/future documents rather than overwriting them.
@@ -198,7 +212,7 @@ impl NativeProfileStore {
             Ok(())
         })();
         if let Err(cause) = after {
-            retain(&mut state, published, old);
+            retain(state, published, old);
             return Err(StorageError::ProfilePublicationUncertain {
                 cause: Box::new(cause),
             });

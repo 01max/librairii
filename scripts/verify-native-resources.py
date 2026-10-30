@@ -33,6 +33,7 @@ def main():
     if scale.TARGETS[target] != (platform.system(), platform.machine()):
         raise ValueError('matching native resource host required')
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resources.py')], check=True)
+    subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_dispatch.py')], check=True)
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resource_linux.py')], check=True)
     destination = ROOT / 'target/quality/native-scale/resources'
     if destination.exists():
@@ -40,6 +41,7 @@ def main():
     destination.mkdir()
     source = scale.output(['git', 'rev-parse', 'HEAD'])
     report = {'source_commit': source, 'target': target, 'complete': False, 'hardware': scale.hardware(),
+              'native_input_method_version': native.input_method_version(),
               'cargo_lock_sha256': scale.digest(ROOT / 'Cargo.lock'), 'compiler': scale.output(['rustc', '-vV'])}
     with (destination / 'compiler-artifacts.jsonl').open('w') as out, (destination / 'build.log').open('w') as err:
         subprocess.run(['cargo', 'build', '--locked', '--release', '--target', target, '-p', 'librairii-desktop',

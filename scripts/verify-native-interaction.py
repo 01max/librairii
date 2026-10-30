@@ -33,7 +33,7 @@ def main():
     destination.mkdir()
     source = scale.output(['git', 'rev-parse', 'HEAD'])
     manifest = {'source_commit': source, 'target': target, 'hardware': scale.hardware(), 'complete': False,
-                'native_input_method_version': 2,
+                'native_input_method_version': native.input_method_version(),
                 'performance_profile': 'production release; opt-level3; debug assertions and overflow checks disabled',
                 'compiler': scale.output(['rustc', '-vV']), 'cargo_lock_sha256': scale.digest(ROOT / 'Cargo.lock')}
     with (destination / 'compiler-artifacts.jsonl').open('w') as out, (destination / 'build.log').open('w') as err:
@@ -67,7 +67,7 @@ def main():
     (destination / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     if not manifest['complete']:
         raise ValueError('both actual rendering paths required')
-    print(json.dumps({'source': source, 'native_input_method_version': 2, 'native_input_loading_cache': 'passed'}))
+    print(json.dumps({'source': source, 'native_input_method_version': native.input_method_version(), 'native_input_loading_cache': 'passed'}))
 
 
 if __name__ == '__main__':
