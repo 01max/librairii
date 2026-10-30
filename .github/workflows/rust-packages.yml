@@ -94,7 +94,7 @@ jobs:
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    timeout-minutes: 75
     env:
       RUST_TARGET: ${{ matrix.target }}
     steps:
@@ -110,12 +110,16 @@ jobs:
         env:
           EXPECTED_SOURCE: ${{ github.sha }}
         run: python3 -I -B scripts/native-release.py inspect-package --directory target/native-release/provider/package --expected-source "$EXPECTED_SOURCE" --target "$RUST_TARGET" --output target/native-release/inspection
+      - name: Actual installed production GUI, workflows, reopen, recovery and reinstall
+        run: python3 -I -B scripts/verify-native-packages.py --inspection target/native-release/inspection/inspection.json --output target/native-release/gui
       - name: Retain installation inspection independently of build success
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-installation-${{ matrix.target }}-${{ github.sha }}
-          path: target/native-release/inspection/
+          path: |
+            target/native-release/inspection/
+            target/native-release/gui/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
