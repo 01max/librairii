@@ -34,7 +34,7 @@ class Fixture:
         self.review_inputs.mkdir()
         self.review_uuid = '90000000-0000-4000-8000-000000000018'
         with zipfile.ZipFile(source/'preservation/corpus/archives/clockwork-forest.zip') as original:
-            for filename in ('Été 日本語 故事.zip', 'Deuxième archive 02.pk'):
+            for filename in ('Nouvelle histoire 03.zip', 'Nouvelle archive 04.pk'):
                 with zipfile.ZipFile(self.review_inputs/filename, 'x', compression=zipfile.ZIP_DEFLATED) as changed:
                     for entry in original.infolist():
                         relative = entry.filename.split('/', 1)[1]

@@ -82,6 +82,7 @@
     "test_packaged_acceptance.PackagedAdmission.test_container_retirement_requires_exact_creation_image_and_invocation_receipts",
     "test_packaged_acceptance.PackagedAdmission.test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files",
     "test_packaged_acceptance.PackagedAdmission.test_interruption_requires_exact_signal_and_retired_error_free_capture",
-    "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture"
+    "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
+    "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes"
   ]
 }

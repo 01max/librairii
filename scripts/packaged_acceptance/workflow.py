@@ -2,6 +2,7 @@
 import json
 
 from native_release.files import inventory
+from .exports import freeze, verify
 
 REQUIRED = ('setup', 'language', 'import', 'metadata-artwork', 'inspection', 'broken-undo',
             'tags-search', 'collections', 'shelf-create', 'shelf-review',
@@ -20,9 +21,13 @@ def perform(driver, fixture, result, french):
     def closed():
         driver.press(words('Close', 'Fermer'))
     def terminal(kind, previous):
-        return driver.wait(lambda: (rows := fixture.rows(
-            "SELECT id,status,finished_at FROM file_operations WHERE kind='"+kind+"' AND finished_at IS NOT NULL"))
-            and len(rows) > previous and rows, timeout=40)
+        def completed():
+            rows = [row for row in fixture.rows("SELECT * FROM file_operations WHERE kind='"+kind+"' AND finished_at IS NOT NULL")
+                    if row['id'] not in previous]
+            if len(rows) > 1:
+                raise ValueError('multiple new terminal operations cannot identify the GUI action')
+            return rows[0] if rows else None
+        return driver.wait(completed, timeout=40)
     # Both fresh setup and Go-era independent-copy adoption use the real native
     # picker and explicit confirmation. The source fixture remains immutable.
     driver.wait(lambda: driver.find('Choose library folder…') or driver.find('Set up…'))
@@ -38,7 +43,7 @@ def perform(driver, fixture, result, french):
         driver.wait(lambda: json.loads((fixture.native_profile/'settings.json').read_text())['language'] == 'fr')
     observe('language', {'persisted': json.loads((fixture.native_profile/'settings.json').read_text())['language']})
     closed()
-    previous = len(fixture.rows("SELECT id FROM file_operations WHERE kind='import' AND finished_at IS NOT NULL"))
+    previous = {row['id'] for row in fixture.rows("SELECT id FROM file_operations")}
     driver.press(words('Import…', 'Importer…'))
     driver.press(words('Choose archives…', 'Choisir des archives…'))
     driver.picker(fixture.inputs, files=True)
@@ -105,7 +110,7 @@ def perform(driver, fixture, result, french):
     # Add a new actual archive after establishing a linked source. A review may
     # suggest it but cannot approve it until the visible explicit Apply action.
     driver.press(words('Import…', 'Importer…'))
-    previous = len(fixture.rows("SELECT id FROM file_operations WHERE kind='import' AND finished_at IS NOT NULL"))
+    previous = {row['id'] for row in fixture.rows("SELECT id FROM file_operations")}
     driver.press(words('Choose archives…', 'Choisir des archives…'))
     driver.picker(fixture.review_inputs, files=True)
     terminal('import', previous)
@@ -124,7 +129,17 @@ def perform(driver, fixture, result, french):
     driver.wait(lambda: fixture.rows("SELECT story_uuid FROM shelf_stories WHERE story_uuid='"+fixture.review_uuid+"'"))
     observe('shelf-review', {'before': before, 'after': fixture.rows("SELECT story_uuid,position FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")})
     driver.press(words('Not now · close review', 'Pas maintenant · fermer la révision'))
+    archives = fixture.rows('SELECT s.id,s.uuid,s.is_broken,a.original_filename,a.managed_path,a.sha256,a.byte_size,a.validation_state '
+                            'FROM stories s JOIN story_archives a ON a.story_id=s.id ORDER BY s.id')
+    all_uuids = {row['uuid'] for row in archives}
+    shelf = fixture.rows("SELECT id,name FROM shelves WHERE name='Packaged approved'")
+    collection = fixture.rows("SELECT id,name FROM collections WHERE name='Packaged all'")
+    approved = {row['story_uuid'] for row in fixture.rows(
+        "SELECT story_uuid FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")}
+    assert approved == all_uuids
     for index, scope in enumerate(('results', 'selection', 'collections', 'shelves')):
+        if scope == 'results':
+            driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
         if scope == 'selection' and not driver.find(words('Deselect · ', 'Désélectionner · ')+'The Clockwork Mountain', prefix=True):
             driver.press(words('Select · ', 'Sélectionner · ')+'The Clockwork Mountain', prefix=True)
         driver.press(words('Export…', 'Exporter…'))
@@ -133,20 +148,25 @@ def perform(driver, fixture, result, french):
             driver.press('Packaged all' if index == 2 else 'Packaged approved', prefix=True)
         destination = fixture.exports/scope
         destination.mkdir()
+        uuids = {'00112233-4455-4677-8899-aabbccddeeff'} if index < 2 else all_uuids
+        expectation = freeze(archives, fixture.current_root(), uuids,
+                             ('current_query','selection','collection','curated_shelf')[index],
+                             collection if index == 2 else shelf if index == 3 else [], destination)
         driver.press(words('Choose', 'Choisir'), prefix=True)
         driver.picker(destination)
-        previous = len(fixture.rows("SELECT id FROM file_operations WHERE kind='export' AND finished_at IS NOT NULL"))
+        previous = {row['id'] for row in fixture.rows('SELECT id FROM file_operations')}
         driver.press(words('Export eligible archives', 'Exporter les archives éligibles'))
-        terminal('export', previous)
+        operation = terminal('export', previous)
         exported = inventory(destination)
-        known = {row['sha256'] for row in fixture.rows('SELECT sha256 FROM story_archives')}
-        assert exported and all(value['sha256'] in known for value in exported.values())
-        observation = {'files': exported}
+        items = fixture.rows("SELECT * FROM file_operation_items WHERE operation_id='"+operation['id']+"' ORDER BY id")
+        observation = verify(expectation, operation, items, exported)
         if scope == 'results':
             driver.press(words('Reveal destination', 'Afficher la destination'))
             observation['actual_file_manager'] = driver.reveal(destination, exported)
         observe('export-'+scope, observation)
         closed()
+        if scope == 'results':
+            driver.text(words('Search stories', 'Rechercher des histoires'), '')
     driver.press(words('History', 'Historique'))
     observe('history', {'terminal': fixture.rows('SELECT id,kind,status,finished_at FROM file_operations ORDER BY id')})
     closed()

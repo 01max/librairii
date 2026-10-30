@@ -20,6 +20,50 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes(self):
+        from packaged_acceptance.exports import freeze, verify
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root/'archives').mkdir()
+            rows = []
+            for index in range(3):
+                path = root/'archives'/str(index)
+                path.write_bytes(('archive '+str(index)).encode())
+                rows.append({'id':index+1,'uuid':'uuid-'+str(index),'managed_path':'archives/'+str(index),
+                             'validation_state':'valid','byte_size':path.stat().st_size,'sha256':digest(path),
+                             'original_filename':str(index)+'.zip','is_broken':int(index==2)})
+            expected = freeze(rows, root, {row['uuid'] for row in rows}, 'curated_shelf',
+                              [{'id':7,'name':'approved'}], root/'destination')
+            operation = {'id':'new-operation','kind':'export','status':'partially_succeeded','error_code':'partial_export',
+                         'export_source_type':'curated_shelf','export_destination':str(root/'destination'),
+                         'completed_items':3,'total_items':3,'total_bytes':expected['total_bytes'],'cancel_requested':0,
+                         'finished_at':'2000-01-01T00:00:00Z','export_source_shelf_ids':'[7]',
+                         'export_source_shelf_names':'["approved"]'}
+            items = [dict(value, story_uuid=uuid, operation_id=operation['id']) for uuid,value in expected['items'].items()]
+            files = copy.deepcopy(expected['files'])
+            self.assertEqual(verify(expected, operation, items, files)['expected'], expected)
+            for change in ({'status':'failed'},{'status':'succeeded'},{'export_source_type':'selection'},
+                           {'export_source_shelf_ids':'[8]'},{'export_source_shelf_names':'["other"]'},
+                           {'total_items':2},{'completed_items':2},{'total_bytes':0},{'finished_at':None},
+                           {'export_destination':str(root/'wrong')},{'error_code':'export_failed'}):
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    verify(expected, dict(operation, **change), items, files)
+            for changed in (items[:-1], items+[items[0]],
+                            [dict(items[0],status='failed')]+items[1:],
+                            [dict(items[0],archive_sha256='f'*64)]+items[1:],
+                            [dict(items[0],completed_bytes=0)]+items[1:],
+                            [dict(items[0],operation_id='old-operation')]+items[1:]):
+                with self.assertRaises(ValueError):
+                    verify(expected, operation, changed, files)
+            for changed in ({'0.zip':files['0.zip']}, {'renamed.zip':files['0.zip'],'1.zip':files['1.zip']},
+                            dict(files, **{'extra.zip':files['0.zip']}),
+                            dict(files, **{'0.zip':dict(files['0.zip'],bytes=0)})):
+                with self.assertRaises(ValueError):
+                    verify(expected, operation, items, changed)
+            (root/'archives/0').write_bytes(b'changed bytes')
+            with self.assertRaisesRegex(ValueError, 'stored bytes'):
+                freeze(rows, root, {'uuid-0'}, 'selection', [], root/'destination')
+
     def test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture(self):
         from packaged_acceptance.session import Session
         from packaged_acceptance.run import retire_owned
