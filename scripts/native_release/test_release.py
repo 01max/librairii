@@ -2,17 +2,21 @@
 import gzip
 import io
 import json
+import os
 from pathlib import Path
 import struct
 import sys
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_release.archive import seal_artifact, tar_gzip
 from native_release.files import copy_file, copy_tree, fresh_output, inventory, write_json
 from native_release.identity import architecture, cargo_executable, verify_embedded
+from native_release.build import build
+from native_release.compiler_policy import check as check_compiler_policy
 
 
 class ReleaseFiles(unittest.TestCase):
@@ -20,6 +24,43 @@ class ReleaseFiles(unittest.TestCase):
         self.owner = tempfile.TemporaryDirectory(prefix='librairii-release-test-')
         self.addCleanup(self.owner.cleanup)
         self.root = Path(self.owner.name).resolve()
+
+    def test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution(self):
+        cargo_home = self.root / 'cargo-home'
+        environment = {'CARGO_HOME': str(cargo_home)}
+        aliases = ['RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
+                   'CARGO_ENCODED_RUSTFLAGS', 'CARGO_BUILD_RUSTC',
+                   'CARGO_BUILD_RUSTC_WRAPPER', 'CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER',
+                   'CARGO_BUILD_RUSTFLAGS', 'CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS',
+                   'CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER',
+                   'CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_OPT_LEVEL', 'CARGO_UNSTABLE_BUILD_STD']
+        with patch('native_release.build.plan', return_value={}), \
+             patch('native_release.build.native_host') as host, \
+             patch('native_release.build.fresh_output') as output:
+            for name in aliases:
+                for value in ['override', '']:
+                    with self.subTest(name=name, value=value), patch.dict(os.environ, dict(environment, **{name: value}), clear=True):
+                        with self.assertRaisesRegex(ValueError, 'ambient compiler configuration'):
+                            build(self.root, 'synthetic-target', 'target/native-release/refused')
+            host.assert_not_called()
+            output.assert_not_called()
+        with patch.dict(os.environ, environment, clear=True):
+            check_compiler_policy(self.root)
+            committed = self.root / '.cargo/config.toml'
+            committed.parent.mkdir()
+            committed.write_text('[alias]\nxtask = "run --locked --package xtask --"\n')
+            check_compiler_policy(self.root)
+            for config in [cargo_home / 'config', cargo_home / 'config.toml',
+                           self.root / 'nested/.cargo/config.toml']:
+                config.parent.mkdir(parents=True, exist_ok=True)
+                config.write_text('[build]\nrustc = "foreign-compiler"\n')
+                with self.assertRaisesRegex(ValueError, 'Cargo configuration'):
+                    check_compiler_policy(self.root / 'nested/checkout' if 'nested' in config.parts else self.root)
+                config.unlink()
+            committed.write_text('[build]\nrustflags = ["--cfg", "foreign"]\n')
+            with self.assertRaisesRegex(ValueError, 'alias-only'):
+                check_compiler_policy(self.root)
+        self.assertFalse((self.root / 'target').exists())
 
     def test_output_refuses_existing_external_parent_and_boundary_links(self):
         destination = fresh_output(self.root, 'target/native-release/new')

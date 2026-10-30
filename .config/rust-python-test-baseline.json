@@ -68,6 +68,7 @@
     "test_release.ReleaseFiles.test_output_refuses_existing_external_parent_and_boundary_links",
     "test_sbom.CompiledGraph.test_sbom_describes_actual_compiler_graph_and_excludes_unused_dev_metadata",
     "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices",
-    "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files"
+    "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files",
+    "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution"
   ]
 }

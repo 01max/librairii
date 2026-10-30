@@ -6,17 +6,13 @@ import subprocess
 
 from .files import copy_file, digest, fresh_output, inventory, write_json
 from .identity import architecture, cargo_executable, clean_source, native_host, output, plan, verify_embedded
-from . import sbom
+from . import compiler_policy, sbom
 
 
 def build(root, target, requested_output):
     release = plan(root, target)
+    compiler_policy.check(root)
     host = native_host(root, release)
-    modifiers = ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
-                 'RUSTC_WORKSPACE_WRAPPER', 'RUSTC_BOOTSTRAP', 'CARGO_BUILD_RUSTFLAGS']
-    modifiers += [name for name in os.environ if name.startswith('CARGO_PROFILE_RELEASE_')]
-    if any(os.environ.get(name) for name in modifiers):
-        raise ValueError('release refuses ambient Rust compiler/profile overrides')
     destination = fresh_output(root, requested_output)
     environment = dict(os.environ)
     environment.update({

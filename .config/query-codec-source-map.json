@@ -5875,6 +5875,11 @@
         "position": 68,
         "identity": "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files",
         "reason": "Task18 actual ARM release build exposed supplemental-only dependency notices; regression preserves the pinned license texts without weakening a missing-notice refusal."
+      },
+      {
+        "position": 69,
+        "identity": "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution",
+        "reason": "Task 18.1 refuses effective Cargo compiler aliases and inherited configuration before build or output creation."
       }
     ]
   },

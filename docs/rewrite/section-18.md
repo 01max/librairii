@@ -19,11 +19,15 @@ supported triples are the three recorded in `.config/rust-checks.toml`.
 
 `cargo xtask release build --target <triple> --output target/native-release/<new-name>`
 requires a clean committed tree, matching native host and pinned Rust/Cargo. It
-refuses ambient Rust compiler/profile overrides, existing outputs and linked or
+refuses ambient Rust compiler/profile overrides (including Cargo aliases),
+inherited Cargo configuration layers, existing outputs and linked or
 escaping output paths. Compiler output must identify exactly one production
 binary with opt-level3, assertions disabled and overflow checks disabled. The
 copied executable must have the exact architecture and report the same embedded
 version, source/tree, lock digest and target through `--build-info`.
+The repository's alias-only `.cargo/config.toml` is the only admitted Cargo
+configuration. A builder with global or ancestor Cargo config must use an
+isolated checkout and Cargo home without those files.
 
 The `payload` contains the executable, embedded-identity record, original icons,
 compiled dependency inventory, SPDX document and required notices. `stage.json`
@@ -86,7 +90,8 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Eleven additional Python checks cover no-clobber paths,
+startup configuration. Twelve additional Python checks cover compiler aliases
+and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in
 the cumulative Python runner's required baseline. Existing identities and
