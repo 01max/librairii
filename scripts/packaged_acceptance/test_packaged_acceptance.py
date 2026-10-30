@@ -358,36 +358,49 @@ class PackagedAdmission(unittest.TestCase):
     def test_interruption_requires_exact_signal_and_retired_error_free_capture(self):
         from packaged_acceptance.session import Session
         import signal
-        for exited, code, alive, errors in [(None,-signal.SIGKILL,False,[]),
+        for french,compact in ((False,False),(False,True),(True,False),(True,True)):
+            for exited, code, alive, errors in [(None,-signal.SIGKILL,False,[]),
                                             (0,-signal.SIGKILL,False,[]),
                                             (None,0,False,[]), (None,-signal.SIGKILL,True,[]),
                                             (None,-signal.SIGKILL,False,['capture failed'])]:
-            with self.subTest(exited=exited, code=code, alive=alive, errors=errors), tempfile.TemporaryDirectory() as temporary:
-                session = Session.__new__(Session)
-                session.output = Path(temporary)
-                session.process = Mock()
-                session.process.poll.return_value = exited
-                session.process.wait.return_value = code
-                session.reader = Mock()
-                session.reader.is_alive.return_value = alive
-                session.errors = errors
-                fixture = Mock()
-                fixture.catalog_waiting.wait.return_value = True
-                fixture.rows.return_value = [{'id':'actual-running-id','status':'running'}]
-                valid = exited is None and code == -signal.SIGKILL and not alive and not errors
-                driver = Mock()
-                if valid:
-                    self.assertTrue(session.interrupt_catalog(driver, fixture, False)['retired'])
-                else:
-                    with self.assertRaises(ValueError):
-                        session.interrupt_catalog(driver, fixture, False)
-                driver.press.assert_called_once_with('Sync optional official metadata')
-                receipt = json.loads((session.output/'interruption.json').read_text())
-                self.assertEqual(receipt['retired'], valid)
-                fixture.catalog_release.set.assert_called_once()
-                self.assertFalse(fixture.pause_catalog)
-                if exited is not None:
-                    session.process.kill.assert_not_called()
+                with self.subTest(exited=exited, code=code, alive=alive, errors=errors), tempfile.TemporaryDirectory() as temporary:
+                    session = Session.__new__(Session)
+                    session.output = Path(temporary)
+                    session.process = Mock()
+                    session.process.poll.return_value = exited
+                    session.process.wait.return_value = code
+                    session.reader = Mock()
+                    session.reader.is_alive.return_value = alive
+                    session.errors = errors
+                    fixture = Mock()
+                    fixture.catalog_waiting.wait.return_value = True
+                    fixture.rows.return_value = [{'id':'actual-running-id','status':'running'}]
+                    valid = exited is None and code == -signal.SIGKILL and not alive and not errors
+                    driver = Mock()
+                    label='Synchroniser les métadonnées' if french else 'Sync official metadata'
+                    driver.find.side_effect=lambda name,**kwargs: object() if name==label or (name=='Navigation' and compact) else None
+                    def press(name):
+                        if name not in (label,'Navigation'):
+                            raise ValueError('retired first-sync banner')
+                    driver.press.side_effect=press
+                    if valid:
+                        self.assertTrue(session.interrupt_catalog(driver, fixture, french)['retired'])
+                    else:
+                        with self.assertRaises(ValueError):
+                            session.interrupt_catalog(driver, fixture, french)
+                    expected=[unittest.mock.call('Navigation'),unittest.mock.call(label)] if compact else [unittest.mock.call(label)]
+                    self.assertEqual(driver.press.call_args_list,expected)
+                    if compact:
+                        driver.key.assert_called_once_with('shift+Tab')
+                    else:
+                        driver.key.assert_not_called()
+                        driver.focus.assert_called_once_with('Historique' if french else 'History',roles=('push button','AXButton'))
+                    receipt = json.loads((session.output/'interruption.json').read_text())
+                    self.assertEqual(receipt['retired'], valid)
+                    fixture.catalog_release.set.assert_called_once()
+                    self.assertFalse(fixture.pause_catalog)
+                    if exited is not None:
+                        session.process.kill.assert_not_called()
 
     def orchestration(self):
         spec = importlib.util.spec_from_file_location('packaged_orchestration',

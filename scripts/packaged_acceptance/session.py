@@ -8,6 +8,7 @@ import subprocess
 import threading
 
 from native_release.files import digest, write_json
+from .workflow import reveal
 
 
 class Session:
@@ -126,7 +127,16 @@ class Session:
         fixture.catalog_waiting.clear()
         fixture.catalog_release.clear()
         fixture.pause_catalog = True
-        driver.press('Synchroniser les métadonnées officielles · facultatif' if french else 'Sync optional official metadata')
+        # The completed first sync retires its opt-in banner. Reopen uses the
+        # ordinary sidebar command, including the compact Navigation disclosure.
+        label = 'Synchroniser les métadonnées' if french else 'Sync official metadata'
+        if driver.find('Navigation', roles=('push button','AXButton'), actionable=True):
+            driver.press('Navigation')
+            driver.key('shift+Tab')  # Close-navigation wraps backwards to Settings.
+        else:
+            driver.focus('Historique' if french else 'History', roles=('push button','AXButton'))
+        reveal(driver, lambda: driver.find(label, actionable=True))
+        driver.press(label)
         if not fixture.catalog_waiting.wait(10):
             raise ValueError('no actual in-flight local catalog request before interruption')
         running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")

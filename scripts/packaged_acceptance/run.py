@@ -178,6 +178,8 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
         settled = driver.wait(lambda: (rows := fixture.rows(
             "SELECT id,status,error_code FROM file_operations WHERE kind='metadata_sync'")) and
             all(any(row['id'] == identity and row['status'] == 'interrupted' for row in rows) for identity in ids) and rows)
+        if driver.find('Navigation', roles=('push button','AXButton'), actionable=True):
+            driver.press('Navigation')
         driver.press(words('History', 'Historique'))
         driver.snapshot('interrupted-history')
         driver.press(words('Close', 'Fermer'))
