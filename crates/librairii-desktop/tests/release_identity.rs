@@ -41,3 +41,23 @@ fn package_build_identity_is_available_without_profile_or_display()
     assert_eq!(info["debug_assertions"], cfg!(debug_assertions));
     Ok(())
 }
+
+#[test]
+fn packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup()
+-> Result<(), Box<dyn std::error::Error>> {
+    let roots = TestRoots::new()?;
+    let output = Command::new(env!("CARGO_BIN_EXE_librairii-desktop"))
+        .env_clear()
+        .env("LIBRAIRII_PACKAGED_ACCEPTANCE", "1")
+        .current_dir(roots.profile())
+        .output()?;
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("packaged acceptance requires explicit owned isolated roots")
+    );
+    assert!(!String::from_utf8_lossy(&output.stderr).contains("native_startup"));
+    assert_eq!(std::fs::read_dir(roots.profile())?.count(), 0);
+    assert_eq!(std::fs::read_dir(roots.library())?.count(), 0);
+    Ok(())
+}

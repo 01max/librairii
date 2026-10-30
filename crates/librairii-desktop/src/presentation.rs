@@ -110,7 +110,7 @@ impl Worker {
     pub fn start_with(
         environment: impl crate::startup::StartupEnvironment + Send + 'static,
     ) -> Result<Self, std::io::Error> {
-        let commands = Arc::new(Intake::default());
+        let commands = Arc::new(Intake::with_scope(environment.acceptance_scope()));
         let receiver = commands.clone();
         let latest = Arc::new(Mutex::new(None));
         let stop = Arc::new(AtomicBool::new(false));

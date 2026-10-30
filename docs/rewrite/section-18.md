@@ -140,11 +140,33 @@ targets until actual installed-package reports establish support. Windows is
 outside this change. Task19 release-readiness and Task20 runtime retirement do
 not become complete through packaging alone.
 
+## Installed GUI isolation
+
+`LIBRAIRII_PACKAGED_ACCEPTANCE=1` enables the installed product's fixture
+admission. It requires all four explicit variables: `LIBRAIRII_ACCEPTANCE_ROOT`,
+`LIBRAIRII_ACCEPTANCE_PROFILE`, `LIBRAIRII_ACCEPTANCE_LIBRARY` and
+`LIBRAIRII_ACCEPTANCE_CATALOG`. The owner must be a physically unaliased fresh
+temporary fixture directory with its exact marker; profile/library must be its
+explicit separate children. The catalog route must be HTTP on a numeric
+loopback address. Missing or invalid inputs fail before native menus, a worker,
+normal home discovery or a window. Profile selection uses explicit locations;
+qualification does not repurpose the process HOME variable.
+
+Saved native/legacy profile roots must remain in that fixture. New picker paths
+are checked lexically at bounded UI intake and physically again on the worker
+before command execution, including link/hardlink substitution. Ordinary
+production startup and its fixed catalog endpoints retain their existing
+behavior. This route changes only isolation and networking; the installed
+production binary still constructs its normal GUI, worker and workflows.
+
 ## Verification
 
-The two required Rust integration tests execute the actual product's identity
+The three required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Eighteen additional Python checks cover compiler aliases
+startup configuration, including missing packaged-acceptance roots. Three
+additional Rust checks exercise fixture/catalog admission, persisted foreign
+roots and picker substitution before controller execution. Eighteen additional
+Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

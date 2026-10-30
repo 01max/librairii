@@ -4079,6 +4079,22 @@
     {
       "suite": "librairii-desktop::release_identity",
       "name": "package_build_identity_is_available_without_profile_or_display"
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "acceptance::tests::packaged_context_requires_owned_roots_and_loopback_before_profile_discovery"
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "acceptance::tests::foreign_persisted_library_and_fixture_alias_refuse_without_external_access"
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "acceptance::tests::intake_rejects_external_paths_and_rechecks_owned_picker_paths_off_ui_thread"
+    },
+    {
+      "suite": "librairii-desktop::release_identity",
+      "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup"
     }
   ]
 }

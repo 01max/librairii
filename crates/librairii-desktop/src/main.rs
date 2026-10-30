@@ -1,6 +1,8 @@
 //! The native event loop and every window/menu stay on the process main thread.
 #![forbid(unsafe_code)]
-use librairii_desktop::{menus, presentation::Worker};
+use librairii_desktop::{
+    acceptance::ProcessEnvironment, menus, presentation::Worker, startup::NativeEnvironment,
+};
 use slint::ComponentHandle;
 use std::{
     cell::RefCell,
@@ -10,9 +12,9 @@ use std::{
 };
 mod view;
 
-fn launch() -> Result<(), Box<dyn std::error::Error>> {
+fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Error>> {
     let launched = Instant::now();
-    let worker = Rc::new(RefCell::new(Worker::start()?));
+    let worker = Rc::new(RefCell::new(Worker::start_with(environment)?));
     eprintln!(
         "native_startup; stage=controller_started; elapsed_ms={:.3}",
         launched.elapsed().as_secs_f64() * 1000.
@@ -139,7 +141,12 @@ fn main() -> ExitCode {
             return ExitCode::SUCCESS;
         }
     }
-    match menus::prepare_process().and_then(|()| launch()) {
+    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        let environment = ProcessEnvironment::read(&NativeEnvironment)?;
+        menus::prepare_process()?;
+        launch(environment)
+    })();
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("{error}");
