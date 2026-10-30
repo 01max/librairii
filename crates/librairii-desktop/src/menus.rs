@@ -367,7 +367,9 @@ impl Menus {
                 french: _ui.get_french(),
                 modal: _ui.get_modal() || _ui.get_closing() || _ui.get_review_data().committing,
                 editing: _ui.get_text_edit_focused(),
-                native_editing: native_text_editing(),
+                // Native panel text editors can live outside our responder
+                // chain. Keep AppKit actions throughout explicit picker custody.
+                native_editing: _ui.get_picker_open() || native_text_editing(),
                 back: _ui.get_back_enabled(),
                 forward: _ui.get_forward_enabled(),
                 ready: _ui.get_settings_command_ready(),
