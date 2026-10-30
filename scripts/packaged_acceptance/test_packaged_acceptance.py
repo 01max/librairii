@@ -1,5 +1,7 @@
 """Admission and custody regressions; never runs a native GUI."""
 import copy
+import gc
+from contextlib import closing
 import importlib.util
 import io
 from http.client import HTTPConnection
@@ -7,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import sqlite3
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -21,6 +24,38 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_observer_closes_database_readers_before_product_relocation(self):
+        # A connection context commits/rolls back; it does not close SQLite.
+        # Keep collection out of this lifecycle check so ownership is explicit.
+        enabled = gc.isenabled()
+        gc.disable()
+        try:
+            for invalid in (False, True):
+                with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    (root/'db').mkdir()
+                    path = root/'db/librairii.sqlite3'
+                    fixture = Fixture.__new__(Fixture)
+                    fixture.current_root = lambda: root
+                    with closing(sqlite3.connect(path)) as writer:
+                        writer.execute('PRAGMA journal_mode=WAL')
+                        writer.execute('CREATE TABLE sample(data BLOB)')
+                        writer.execute("INSERT INTO sample VALUES (X'0102')")
+                        writer.commit()
+                        if invalid:
+                            with self.assertRaises(sqlite3.OperationalError):
+                                fixture.rows('SELECT * FROM missing_table')
+                        else:
+                            self.assertEqual(fixture.rows('SELECT * FROM sample'),
+                                             [{'data': {'blob_hex': '0102'}}])
+                    self.assertFalse(path.with_name(path.name+'-wal').exists(),
+                                     'observer reader retained WAL after product closure')
+                    self.assertFalse(path.with_name(path.name+'-shm').exists(),
+                                     'observer reader retained shared memory after product closure')
+        finally:
+            if enabled:
+                gc.enable()
+
     def test_runtime_requires_one_observed_renderer_matching_the_requested_route(self):
         from packaged_acceptance.session import Session
         with tempfile.TemporaryDirectory(prefix='librairii-renderer-witness-') as temporary:

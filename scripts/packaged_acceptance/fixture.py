@@ -1,4 +1,5 @@
 """Owned temporary profiles/libraries and local catalog for installed GUI runs."""
+from contextlib import closing
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
@@ -62,7 +63,7 @@ class Fixture:
             self.legacy = self.library/'legacy-source'
             copy_tree(source/'preservation/corpus/libraries/schema018', self.legacy)
             self.legacy_before = inventory(self.legacy)
-            with sqlite3.connect((self.legacy/'db/librairii.sqlite3').as_uri()+'?immutable=1',uri=True) as connection:
+            with closing(sqlite3.connect((self.legacy/'db/librairii.sqlite3').as_uri()+'?immutable=1',uri=True)) as connection:
                 for uuid,name,sha256,size in connection.execute(
                         'SELECT s.uuid,a.original_filename,a.sha256,a.byte_size FROM stories s JOIN story_archives a ON a.story_id=s.id'):
                     self.original_archives[uuid] = {(name,sha256,size)}
@@ -178,7 +179,7 @@ class Fixture:
     def rows(self, statement):
         root = self.current_root()
         uri = (root/'db/librairii.sqlite3').as_uri()+'?mode=ro'
-        with sqlite3.connect(uri, uri=True) as connection:
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
             connection.execute('PRAGMA query_only=ON')
             connection.row_factory = sqlite3.Row
             return [{key: ({'blob_hex': value.hex()} if isinstance(value, bytes) else value)
