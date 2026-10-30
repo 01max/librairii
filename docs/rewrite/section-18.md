@@ -278,7 +278,7 @@ counts and visible-control navigation. All earlier failed artifacts retain
 their original verdicts. Observer source and file hashes are recorded separately
 from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 105 Python identities, all passing;
+The cumulative required baseline contains 106 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
 Standards and Spec source reviews are recorded separately from native evidence.
 [Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
@@ -305,6 +305,24 @@ The observer now closes its read-only connections explicitly; a real WAL
 regression failed before this correction for successful and failing queries
 and passes afterward. Storage closure requirements are unchanged. The report
 remains failed until a fresh complete installed workflow passes.
+
+The subsequent Linux replay completed all22 workflow checkpoints for both X11
+cases. Its Wayland cases still failed actual Thunar window retirement; the
+observer now operates the observed File → Close Window menu and retains its
+native controls. The Mac replay passed relocation and ordinary reopen, then
+failed scaling because the early timer sampled default geometry. Mac acceptance
+now records native surface dimensions and effective scale at the first visible
+native redraw request. This changes the candidate binary and requires newly
+built packages; earlier package bytes cannot establish the correction.
+
+The latest ARM quality run passed all629 Rust tests and both native component
+scales, then failed the strict disk-full relocation rehearsal with SQLite
+`SHMSIZE` rather than the required operation errno28. It remains failed. The
+synthetic disk-full case now injects at a copy checkpoint while a further16MiB
+archive is demonstrably uncopied, still requiring both real operation and filler
+errno28. A full storage-only APFS run from the clean committed correction passed
+all eight SIGKILL boundaries, permissions, disk-full, source/archive/profile
+recovery and normal owned-volume detachment. Provider qualification is pending.
 
 [Native foundation run 41053773048](https://github.com/01max/librairii/actions/runs/41053773048)
 passed on Linux and ARM but failed the existing Intel 100ms input budget:
