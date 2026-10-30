@@ -290,8 +290,11 @@ class Observer:
         self.wait(lambda: not any(same_root(n, root) and n.get('identifier') == 'GoToWindow'
             for n in self.snapshot()['nodes']))
 
-    def rows(self, fixture, root, multiple):
-        wanted = ['Été 日本語 故事.zip'] + (['Deuxième archive 02.pk'] if multiple else [])
+    def rows(self, fixture, root, multiple, expected_files=None):
+        wanted = (list(expected_files) if expected_files is not None else
+                  ['Été 日本語 故事.zip'] + (['Deuxième archive 02.pk'] if multiple else []))
+        if not wanted or len(wanted) != len(set(wanted)) or (not multiple and len(wanted) != 1):
+            raise ValueError('native picker expected files must be explicit and distinct')
         def candidates():
             snapshot = self.snapshot()
             nodes = [n for n in snapshot['nodes'] if same_root(n, root)]

@@ -75,7 +75,7 @@ class Driver:
         self.observer.go_folder(directory, root)
         if files:
             self.observer.call('key', key='cmd+2')
-            self.observer.rows(directory, root, True)
+            self.observer.rows(directory, root, True, tuple(sorted(path.name for path in directory.iterdir())))
         self.observer.button(self.observer.snapshot(), root, ('Open', 'Choose', 'Select', 'Ouvrir', 'Choisir'))
         self.wait(lambda: not self.module.picker_root(self.observer.snapshot(summary=True)))
         self.wait(lambda: self.observer.status()['frontmost_pid'] == self.pid)
