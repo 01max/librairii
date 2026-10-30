@@ -145,9 +145,9 @@ class Driver:
             self.wait(lambda: {'etc','tmp','usr'} <= {node.name for node in self.nodes(application)})
         self.key('ctrl+l')
         self.desktop.text(str(directory))
-        # GTK can select an inline-completed trailing slash. Commit that native
-        # completion, then observe the exact directory with or without the slash.
-        self.key('Right')
+        # Keep GTK's selected trailing slash tentative: committing it with
+        # Right can start a second completion into this directory's filenames.
+        # The native Open action accepts the exact observed directory directly.
         entered = picker_location(self, application, directory)
         (self.output/(prefix+'-location.json')).write_text(json.dumps(entered, ensure_ascii=False, indent=2)+'\n')
         self.desktop.screenshot(self.output/(prefix+'-location.png'))
