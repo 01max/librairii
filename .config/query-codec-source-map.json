@@ -5890,6 +5890,11 @@
         "position": 71,
         "identity": "test_packages.PlatformPackages.test_linux_archive_contains_desktop_icons_notices_and_exact_final_checksums",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 72,
+        "identity": "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

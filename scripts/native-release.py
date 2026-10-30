@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_release.build import build, verify_stage
 from native_release.identity import TARGETS, plan
-from native_release import package
+from native_release import macos, package
 
 
 def main():
@@ -26,6 +26,9 @@ def main():
     linux = commands.add_parser('package-linux', help='assemble a Linux archive from the current verified stage')
     linux.add_argument('--stage', type=Path, required=True)
     linux.add_argument('--output', required=True)
+    mac = commands.add_parser('package-macos', help='assemble an explicitly unsigned .app/DMG from the current native stage')
+    mac.add_argument('--stage', type=Path, required=True)
+    mac.add_argument('--output', required=True)
     args = parser.parse_args()
     if args.action == 'plan':
         print(json.dumps(plan(ROOT, args.target, require_clean=False), indent=2))
@@ -36,6 +39,8 @@ def main():
         print(json.dumps(verify_stage(args.directory), indent=2))
     elif args.action == 'package-linux':
         print(json.dumps(package.linux(ROOT, args.stage, args.output), indent=2))
+    elif args.action == 'package-macos':
+        print(json.dumps(macos.assemble(ROOT, args.stage, args.output), indent=2))
 
 
 if __name__ == '__main__':

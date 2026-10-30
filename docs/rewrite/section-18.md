@@ -73,6 +73,23 @@ dependencies. Font, graphics and portal libraries loaded at runtime have
 separately declared Ubuntu packages. Installed X11/Wayland and rendering tests
 must establish those prerequisites in use; inspection alone cannot pass them.
 
+## macOS application and disk image
+
+`cargo xtask release package-macos --stage <current-stage> --output
+target/native-release/<new-package>` requires the matching native host (real
+Intel hardware for the Intel target). It copies the verified thin executable
+and full notices/SBOM into a versioned `Librairii.app`, supplies macOS15.0 metadata,
+native icons and embedded-catalog declarations, and checks all linked libraries
+against system paths. It builds and verifies a compressed read-only DMG with
+Apple's `hdiutil`. The final artifact inventory follows application assembly
+and the internal ad-hoc signature.
+
+The `-unsigned.dmg` suffix and signing record deliberately distinguish these
+internal candidates from Developer ID distribution. An ad-hoc integrity check
+does not establish notarization, stapling or Gatekeeper acceptance. Both macOS
+public-release gates remain incomplete until the final signed bytes pass those
+checks and installed clean-host GUI acceptance.
+
 Portable archive assembly sorts paths, rejects links/special files, normalizes
 UID/GID/names/modes and uses the source commit epoch with a fixed gzip header.
 Repeated assembly of identical payload bytes is deterministic. This is distinct
@@ -107,7 +124,7 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Fourteen additional Python checks cover compiler aliases
+startup configuration. Fifteen additional Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

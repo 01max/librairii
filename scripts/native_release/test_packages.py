@@ -1,5 +1,6 @@
 """Package contents, final-byte binding and native dependency policy regressions."""
 import json
+import plistlib
 from pathlib import Path
 import sys
 import tarfile
@@ -10,10 +11,20 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_release.files import digest
 from native_release.linkage import linux_report, macos_report
-from native_release import package
+from native_release import macos, package
 
 
 class PlatformPackages(unittest.TestCase):
+    def test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs(self):
+        for target in ('aarch64-apple-darwin', 'x86_64-apple-darwin'):
+            observed = plistlib.loads(plistlib.dumps(macos.app_info({'version': '0.5.0', 'target': target})))
+            self.assertEqual(observed['CFBundleShortVersionString'], '0.5.0')
+            self.assertEqual(observed['CFBundleVersion'], '0.5.0')
+            self.assertEqual(observed['LSMinimumSystemVersion'], '15.0')
+            self.assertEqual(observed['CFBundleExecutable'], 'librairii-desktop')
+            self.assertEqual(observed['CFBundleLocalizations'], ['en', 'fr'])
+            self.assertTrue(observed['LSRequiresNativeExecution'])
+
     def test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment(self):
         dynamic = '0x1 (NEEDED) Shared library: [libc.so.6]\n'
         versions = 'Name: GLIBC_2.39\nName: GLIBC_2.17\n'
