@@ -12,6 +12,7 @@ members = ["vendor/accesskit-atspi-common"]
 
 [patch.crates-io]
 accesskit_atspi_common = { path = "vendor/accesskit-atspi-common" }
+i-slint-backend-winit = { path = "../../third_party/slint-backend-winit" }
 
 [features]
 default = []

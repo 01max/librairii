@@ -271,14 +271,19 @@ independently verified. The package digests are:
 | macOS Intel | `9c113abf9304c60d4bab89c7a5d98201597fca4d6551784ba00fb2efea475d54` |
 | Linux x64 | `679fcc18103b3adc6bcc75ce1734e21aec92bc076300611d0115aafdc7974b96` |
 
-Actual GUI acceptance has not passed. Retained failures led to separate fixes
+Complete unsigned installed-GUI reports have passed all22 checkpoints in each
+required lane on ARM, Intel and Linux using source77 packages with observer78.
+The subsequent provider-merge78 packages pass on ARM and Linux; Intel remains
+failed at an initially transparent window. These distinct candidate and observer
+identities are retained. Public signed-byte acceptance remains incomplete.
+Retained failures led to separate fixes
 for AppKit picker edit routing, the Linux trust-store prerequisite, private
 AT-SPI activation, native picker selection, exact text clearing, Shelf label
 counts and visible-control navigation. All earlier failed artifacts retain
 their original verdicts. Observer source and file hashes are recorded separately
 from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 106 Python identities, all passing;
+The cumulative required baseline contains 108 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
 Standards and Spec source reviews are recorded separately from native evidence.
 [Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
@@ -322,7 +327,9 @@ synthetic disk-full case now injects at a copy checkpoint while a further16MiB
 archive is demonstrably uncopied, still requiring both real operation and filler
 errno28. A full storage-only APFS run from the clean committed correction passed
 all eight SIGKILL boundaries, permissions, disk-full, source/archive/profile
-recovery and normal owned-volume detachment. Provider qualification is pending.
+recovery and normal owned-volume detachment. The subsequent provider-merge78 quality run passes all three targets, including
+actual operation/filler errno28 on ARM; independent ARM raw reviews report zero
+findings. The earlier failed attempt retains its verdict.
 
 [Native foundation run 41053773048](https://github.com/01max/librairii/actions/runs/41053773048)
 passed on Linux and ARM but failed the existing Intel 100ms input budget:
@@ -332,3 +339,30 @@ p95 158.28226399992218ms and also remains failed; its later fresh passing run
 does not rescore it. No workload, sample count or budget was relaxed.
 Public signing, notarization, stapling and final signed-byte launch remain
 unexecuted because credentials have not been provisioned. Task18 remains open.
+
+## First-frame reveal ownership correction
+
+The current Intel candidate failed before its first workflow action despite
+AppKit launch readiness and successful activation. Its owned native window
+remained at alpha0. A separate replay of those exact bytes reproduced the
+failure, while a supporting source77 package completed both GUI cases. Neither
+success rescored the failing candidate. Failure-only AX capture preserves the
+original deadline; bounded sampling of its unreaped owned child also preserves
+cleanup, including when symbol processing exceeds the tool timeout.
+
+The pinned backend's lazy window creation can recursively enter its show path
+before the outer call submits a frame. Replacing the live reveal guard then
+captures zero opacity; dropping that replacement can restore zero after a
+successful frame. The production helper now retains the first guard until the
+existing frame/hide cleanup consumes it. Its headless Rust regression failed
+with replacement and passes with preservation, including non-default opacity,
+subsequent shows and initially unavailable windows. This establishes the
+ownership defect; fresh installed native runs must establish the correction.
+
+The checked-in i-slint-backend-winit1.18.1 derivative retains the checksum-verified
+registry source and all original licenses. UPSTREAM.json records its40 original
+file hashes, the two modified upstream files and added helper. Both Cargo graphs
+select the sealed derivative; toolkit versions and renderer features stay fixed.
+The native inventory records the new source origin, and distribution notices
+retain the modification statement. New candidate binaries and three-target
+qualification are required; earlier packages cannot qualify this change.

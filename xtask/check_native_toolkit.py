@@ -11,7 +11,7 @@ def inventory():
     pin = json.loads((ROOT / '.config/native-toolkit.json').read_text())
     cargo = tomllib.loads((ROOT / 'Cargo.toml').read_text())
     lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())
-    for name, expected in [('slint', '1.18.1'), ('winit', '0.30.13'), ('skia-bindings', '0.153.3'), ('accesskit_atspi_common', '0.19.1'), ('accesskit_unix', '0.22.1'), ('fontique', '0.11.1')]:
+    for name, expected in [('slint', '1.18.1'), ('winit', '0.30.13'), ('skia-bindings', '0.153.3'), ('accesskit_atspi_common', '0.19.1'), ('accesskit_unix', '0.22.1'), ('fontique', '0.11.1'), ('i-slint-backend-winit', '1.18.1')]:
         if {p['version'] for p in lock['package'] if p['name'] == name} != {expected}:
             raise ValueError('native graph changed; qualification must be reopened: ' + name)
     dep = cargo['workspace']['dependencies']['slint']
@@ -33,7 +33,7 @@ def inventory():
     if (origin['version'] != '0.19.1' or origin['backport_commit'] != '6ee0558b6315b3ef1594db24ce45a030ecac7cb5'):
         raise ValueError('qualified AccessKit provenance changed')
     companions = pin.get('companion_patches', [])
-    if [(p['name'], p['version']) for p in companions] != [('accesskit_unix', '0.22.1'), ('fontique', '0.11.1')]:
+    if [(p['name'], p['version']) for p in companions] != [('accesskit_unix', '0.22.1'), ('fontique', '0.11.1'), ('i-slint-backend-winit', '1.18.1')]:
         raise ValueError('unqualified native companion patch')
     companion_inventory = []
     for companion in companions:
@@ -52,6 +52,7 @@ def inventory():
         expected = {
             'accesskit_unix': ('0.22.1', 'c88605b96d04431f9c3c792464a0f2f253480e94', 'librairii-task15-atspi-cache-signal-arguments', '03e156ed3802e35eefe894ef2671bc6c889303d8a7e110b5e1b48f504b91362f'),
             'fontique': ('0.11.1', 'eea3503dd6cf17130cbb07348e0ff2c918300e94', 'librairii-task17-bounded-macos-font-index', '6688bc1294fe7117d788937b6c53480169b29c566954af490830d4c09da9516a'),
+            'i-slint-backend-winit': ('1.18.1', '372cf0ee5577c3dfec309a45e7b778ba4e81b734', 'librairii-task18-first-frame-reveal-owner', 'dae4fcf1b19e9cb109984d2af87d2b9485388c619265bff71dd523133888bee2'),
         }[companion['name']]
         observed = (provenance['version'], provenance['source_commit'], provenance['local_corrections'][0]['id'], provenance['registry_crate_sha256'])
         if observed != expected:
