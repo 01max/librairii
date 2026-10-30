@@ -23,6 +23,7 @@ pub mod menus;
 pub mod workflows;
 
 mod host;
+pub mod release_info;
 
 mod export_preparation;
 

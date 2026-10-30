@@ -125,6 +125,20 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     closed.map_err(Into::into)
 }
 fn main() -> ExitCode {
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.len() == 1 {
+        if arguments[0] == "--version" {
+            println!(
+                "Librairii {}",
+                librairii_desktop::release_info::VERSION.trim()
+            );
+            return ExitCode::SUCCESS;
+        }
+        if arguments[0] == "--build-info" {
+            println!("{}", librairii_desktop::release_info::build_info());
+            return ExitCode::SUCCESS;
+        }
+    }
     match menus::prepare_process().and_then(|()| launch()) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {

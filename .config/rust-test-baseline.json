@@ -4071,6 +4071,14 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-desktop::release_identity",
+      "name": "product_version_is_available_without_profile_or_display"
+    },
+    {
+      "suite": "librairii-desktop::release_identity",
+      "name": "package_build_identity_is_available_without_profile_or_display"
     }
   ]
 }
