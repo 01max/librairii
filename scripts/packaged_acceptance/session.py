@@ -1,4 +1,5 @@
 """Own the actual installed process, bounded raw logs and native shutdown."""
+from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import platform
@@ -51,6 +52,7 @@ class Session:
         # The caller already holds this Session before a child can exist.
         log = (self.output/'product.log').open('xb')
         try:
+            self.started_utc = datetime.now(timezone.utc)
             self.process = subprocess.Popen(self.command, cwd=self.working, env=self.environment,
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
         except Exception:
@@ -78,7 +80,8 @@ class Session:
             log.close()
             self.process.stdout.close()
             raise
-        write_json(self.output/'launch.json', dict(self.launch_receipt, pid=self.pid))
+        write_json(self.output/'launch.json', dict(self.launch_receipt, pid=self.pid,
+                                                  started_utc=self.started_utc.isoformat()))
 
     def display(self):
         text = (self.output/'product.log').read_text(errors='strict')
@@ -180,14 +183,43 @@ class Session:
                         # The Popen child remains unreaped while sampling, so its
                         # PID cannot identify a replacement process. Diagnostics
                         # never replace the original failure or prevent cleanup.
+                        diagnostic_cutoff_utc = datetime.now(timezone.utc)
+                        receipt['failure_sample'] = {'pid': self.process.pid, 'collection_seconds': 1,
+                                                     'watchdog_seconds': 30,
+                                                     'started_utc': diagnostic_cutoff_utc.isoformat()}
                         try:
+                            command = ['/usr/bin/sample', str(self.process.pid), '1', '1',
+                                       '-file', str(self.output/'failure.sample.txt')]
+                            receipt['failure_sample']['command'] = command
                             with (self.output/'failure-sample.log').open('xb') as log:
-                                result = subprocess.run(['/usr/bin/sample', str(self.process.pid), '1', '1',
-                                    '-file', str(self.output/'failure.sample.txt')], stdout=log,
-                                    stderr=subprocess.STDOUT, timeout=5, check=False)
-                            receipt['failure_sample'] = {'pid': self.process.pid, 'returncode': result.returncode}
+                                result = subprocess.run(command, stdout=log,
+                                    stderr=subprocess.STDOUT, timeout=30, check=False)
+                            receipt['failure_sample']['returncode'] = result.returncode
                         except Exception as error:
-                            receipt['failure_sample'] = {'pid': self.process.pid, 'error': str(error)}
+                            receipt['failure_sample']['error'] = str(error)
+                        receipt['failure_sample']['ended_utc'] = datetime.now(timezone.utc).isoformat()
+                        # Query only this launch's final two minutes, ending at
+                        # failure-retirement entry, after snapshots and before either probe.
+                        # The still-owned child pins the PID until both probes end.
+                        receipt['failure_system_log'] = {'pid': self.process.pid, 'watchdog_seconds': 5}
+                        try:
+                            start = max(self.started_utc, diagnostic_cutoff_utc-timedelta(minutes=2))
+                            predicate = (f'(processIdentifier == {self.process.pid}) OR '
+                                         '((process == "kernel" OR process == "sandboxd") AND '
+                                         f'eventMessage CONTAINS "({self.process.pid})")')
+                            command = ['/usr/bin/log', 'show', '--style', 'json', '--info', '--debug',
+                                       '--start', start.strftime('%Y-%m-%d %H:%M:%S%z'),
+                                       '--end', diagnostic_cutoff_utc.strftime('%Y-%m-%d %H:%M:%S%z'),
+                                       '--predicate', predicate]
+                            receipt['failure_system_log'].update(command=command,
+                                start_utc=start.isoformat(), end_utc=diagnostic_cutoff_utc.isoformat())
+                            with (self.output/'failure-system.log').open('xb') as log:
+                                result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
+                                                        timeout=5, check=False)
+                            receipt['failure_system_log']['returncode'] = result.returncode
+                        except Exception as error:
+                            receipt['failure_system_log']['error'] = str(error)
+                        receipt['failure_system_log']['ended_utc'] = datetime.now(timezone.utc).isoformat()
                     self.process.kill()
                 receipt['returncode'] = self.process.wait(timeout=10)
         except Exception as error:

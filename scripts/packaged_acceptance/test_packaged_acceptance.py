@@ -27,13 +27,16 @@ class PackagedAdmission(unittest.TestCase):
     def test_failed_mac_session_samples_only_its_unreaped_child_before_retirement(self):
         from packaged_acceptance.session import Session
         import subprocess
-        cases = [('Darwin', 'true', True, False), ('Darwin', 'true', True, True),
+        cases = [('Darwin', 'true', True, False), ('Darwin', 'true', True, 'sample'),
+                 ('Darwin', 'true', True, 'log'), ('Darwin', 'true', True, 'both'),
                  ('Darwin', 'false', True, False), ('Linux', 'true', True, False),
                  ('Darwin', 'true', False, False)]
         for system, ci, live, failed in cases:
             with self.subTest(system=system, ci=ci, live=live, sample_failed=failed), tempfile.TemporaryDirectory() as temporary:
                 session = Session.__new__(Session)
                 session.output, session.errors = Path(temporary), []
+                from datetime import datetime, timezone
+                session.started_utc = datetime.now(timezone.utc)
                 child = session.process = Mock(pid=123)
                 child.poll.return_value = None if live else 0
                 child.kill.side_effect = lambda: setattr(child.poll, 'return_value', -9)
@@ -42,18 +45,37 @@ class PackagedAdmission(unittest.TestCase):
                 session.reader.is_alive.return_value = False
                 def sample(command, **options):
                     child.kill.assert_not_called()
-                    self.assertEqual(command, ['/usr/bin/sample', '123', '1', '1', '-file',
-                                                str(session.output/'failure.sample.txt')])
-                    self.assertEqual(options['timeout'], 5)
-                    if failed:
-                        raise subprocess.TimeoutExpired(command, 5)
+                    if command[0] == '/usr/bin/sample':
+                        self.assertEqual(command, ['/usr/bin/sample', '123', '1', '1', '-file',
+                                                    str(session.output/'failure.sample.txt')])
+                        self.assertEqual(options['timeout'], 30)
+                    else:
+                        self.assertEqual(command[:3], ['/usr/bin/log', 'show', '--style'])
+                        self.assertEqual(options['timeout'], 5)
+                        self.assertEqual(command[-1], '(processIdentifier == 123) OR '
+                                         '((process == "kernel" OR process == "sandboxd") AND '
+                                         'eventMessage CONTAINS "(123)")')
+                        self.assertIn('--start', command)
+                        self.assertIn('--end', command)
+                    if failed in ('both', 'sample' if command[0] == '/usr/bin/sample' else 'log'):
+                        raise subprocess.TimeoutExpired(command, options['timeout'])
                     return SimpleNamespace(returncode=0)
                 with patch.dict(os.environ, {'GITHUB_ACTIONS': ci}), \
                      patch('packaged_acceptance.session.platform.system', return_value=system), \
                      patch('packaged_acceptance.session.subprocess.run', side_effect=sample) as sampled:
                     receipt = session.retire_failure()
                 if system == 'Darwin' and ci == 'true' and live:
-                    sampled.assert_called_once()
+                    self.assertEqual(sampled.call_count, 2)
+                    self.assertIn('error' if failed in ('sample', 'both') else 'returncode',
+                                  receipt['failure_sample'])
+                    system_log = receipt['failure_system_log']
+                    self.assertIn('error' if failed in ('log', 'both') else 'returncode', system_log)
+                    self.assertEqual(system_log['end_utc'], receipt['failure_sample']['started_utc'])
+                    start = datetime.fromisoformat(system_log['start_utc'])
+                    end = datetime.fromisoformat(system_log['end_utc'])
+                    self.assertGreaterEqual(start, session.started_utc)
+                    self.assertGreaterEqual((end-start).total_seconds(), 0)
+                    self.assertLessEqual((end-start).total_seconds(), 120)
                 else:
                     sampled.assert_not_called()
                 if live:
