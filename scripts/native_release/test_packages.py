@@ -61,6 +61,7 @@ class PlatformPackages(unittest.TestCase):
             output = root / 'target/native-release/linux'
             artifact = output / report['artifact']['name']
             self.assertEqual(report['artifact']['sha256'], digest(artifact))
+            self.assertEqual(report['payload']['bin/librairii-desktop']['mode'], 0o755)
             self.assertFalse(report['public_release_qualified'])
             self.assertEqual(report['qualification']['state'], 'not performed')
             self.assertEqual(run.call_args.args[0][0], 'desktop-file-validate')
@@ -69,6 +70,7 @@ class PlatformPackages(unittest.TestCase):
             with tarfile.open(artifact) as archive:
                 prefix = 'Librairii-0.5.0-x86_64-unknown-linux-gnu/'
                 self.assertEqual(archive.extractfile(prefix+'bin/librairii-desktop').read(), b'synthetic production bytes')
+                self.assertEqual(archive.getmember(prefix+'bin/librairii-desktop').mode, 0o755)
                 self.assertIn(b'Exec=librairii-desktop\n', archive.extractfile(prefix+'share/applications/io.github.librairii.native.desktop').read())
                 prerequisites = json.load(archive.extractfile(prefix+'share/librairii/runtime-requirements.json'))
                 self.assertIn('xdg-desktop-portal', prerequisites['packages'])

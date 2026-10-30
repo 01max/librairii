@@ -48,7 +48,7 @@ def copy_tree(source, destination):
         if stat.S_ISDIR(entry.lstat().st_mode):
             copy_tree(entry, destination / entry.name)
         else:
-            copy_file(entry, destination / entry.name)
+            copy_file(entry, destination / entry.name, executable=bool(entry.lstat().st_mode & 0o111))
 
 
 def inventory(directory):
