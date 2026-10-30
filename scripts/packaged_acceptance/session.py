@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import signal
 import subprocess
 import threading
 
@@ -89,12 +90,26 @@ class Session:
         running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")
         if not running:
             raise ValueError('metadata job was not durably running before interruption')
-        self.process.kill()
-        code = self.process.wait(timeout=10)
-        self.reader.join(timeout=5)
-        fixture.catalog_release.set()
-        fixture.pause_catalog = False
-        return {'returncode': code, 'actual_local_request_in_flight': True, 'signal': 'SIGKILL', 'running': running}
+        receipt = {'actual_local_request_in_flight': True, 'running': running, 'retired': False}
+        try:
+            if self.process.poll() is not None:
+                raise ValueError('product exited before the requested interruption')
+            self.process.kill()
+            receipt['returncode'] = self.process.wait(timeout=10)
+            self.reader.join(timeout=5)
+            receipt['reader_retired'] = not self.reader.is_alive()
+            receipt['capture_errors'] = list(self.errors)
+            if receipt['returncode'] != -signal.SIGKILL or not receipt['reader_retired'] or self.errors:
+                raise ValueError('interruption lacks an exact SIGKILL and retired error-free capture')
+            receipt.update(signal='SIGKILL', retired=True)
+            return receipt
+        except Exception as error:
+            receipt['error'] = str(error)
+            raise
+        finally:
+            fixture.catalog_release.set()
+            fixture.pause_catalog = False
+            write_json(self.output/'interruption.json', receipt)
 
     def retire_failure(self):
         # Popen owns this unreaped child; no name/PID search authorizes killing.

@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_release.files import digest, inventory
@@ -19,6 +19,38 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_interruption_requires_exact_signal_and_retired_error_free_capture(self):
+        from packaged_acceptance.session import Session
+        import signal
+        for exited, code, alive, errors in [(None,-signal.SIGKILL,False,[]),
+                                            (0,-signal.SIGKILL,False,[]),
+                                            (None,0,False,[]), (None,-signal.SIGKILL,True,[]),
+                                            (None,-signal.SIGKILL,False,['capture failed'])]:
+            with self.subTest(exited=exited, code=code, alive=alive, errors=errors), tempfile.TemporaryDirectory() as temporary:
+                session = Session.__new__(Session)
+                session.output = Path(temporary)
+                session.process = Mock()
+                session.process.poll.return_value = exited
+                session.process.wait.return_value = code
+                session.reader = Mock()
+                session.reader.is_alive.return_value = alive
+                session.errors = errors
+                fixture = Mock()
+                fixture.catalog_waiting.wait.return_value = True
+                fixture.rows.return_value = [{'id':'actual-running-id','status':'running'}]
+                valid = exited is None and code == -signal.SIGKILL and not alive and not errors
+                if valid:
+                    self.assertTrue(session.interrupt_catalog(Mock(), fixture, False)['retired'])
+                else:
+                    with self.assertRaises(ValueError):
+                        session.interrupt_catalog(Mock(), fixture, False)
+                receipt = json.loads((session.output/'interruption.json').read_text())
+                self.assertEqual(receipt['retired'], valid)
+                fixture.catalog_release.set.assert_called_once()
+                self.assertFalse(fixture.pause_catalog)
+                if exited is not None:
+                    session.process.kill.assert_not_called()
+
     def orchestration(self):
         spec = importlib.util.spec_from_file_location('packaged_orchestration',
                     Path(__file__).resolve().parents[1]/'verify-native-packages.py')
