@@ -6102,6 +6102,16 @@
         "position": 107,
         "identity": "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 108,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 109,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

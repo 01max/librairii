@@ -94,6 +94,8 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
     binary = installation/relative
     def launch(name):
         nonlocal application, driver
+        if target.endswith('apple-darwin'):
+            fixture.prepare_graphics_cache()
         application = Session(binary, fixture, backend, output/name)
         process = {'name': name, 'pid': None, 'binary_sha256': digest(binary), 'retired': False}
         report['processes'].append(process)

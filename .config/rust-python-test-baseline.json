@@ -107,6 +107,8 @@
     "test_packaged_acceptance.PackagedAdmission.test_observer_closes_database_readers_before_product_relocation",
     "test_packaged_acceptance.PackagedAdmission.test_mac_activation_waits_for_the_exact_owned_visible_window",
     "test_packaged_acceptance.PackagedAdmission.test_failed_mac_session_samples_only_its_unreaped_child_before_retirement",
-    "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner"
+    "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner",
+    "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty",
+    "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable"
   ]
 }

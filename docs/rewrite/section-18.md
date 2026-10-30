@@ -283,7 +283,7 @@ counts and visible-control navigation. All earlier failed artifacts retain
 their original verdicts. Observer source and file hashes are recorded separately
 from candidate source, so a new observer cannot silently replace the package.
 
-The cumulative required baseline contains 108 Python identities, all passing;
+The cumulative required baseline contains 110 Python identities, all passing;
 original identities and frozen fixture/oracle inputs remain intact. Independent
 Standards and Spec source reviews are recorded separately from native evidence.
 [Rust quality run 41053772592](https://github.com/01max/librairii/actions/runs/41053772592)
@@ -366,3 +366,32 @@ select the sealed derivative; toolkit versions and renderer features stay fixed.
 The native inventory records the new source origin, and distribution notices
 retain the modification statement. New candidate binaries and three-target
 qualification are required; earlier packages cannot qualify this change.
+
+
+## Owned native graphics cache experiment
+
+The provider-merge81 Intel package still failed before its first action after
+the reveal ownership correction. A replay of those identical package bytes
+retained a completed one-second stack sample inside Metal shader compilation.
+Its partial unified log positively records the owned product being denied
+creation of its bundle cache directory, followed by repeated cache-folder
+errors. The log timed out and is incomplete. A separate system language-worker
+attempt to execute defaults was also denied; this experiment does not authorize
+that executable or establish either denial as the sole cause.
+
+On disposable Mac CI, the observer now exclusively reserves a fresh bundle
+cache alias pointing into the marked fixture. Existing files, directories and
+dangling aliases are refused. Root, parent, target and alias identities remain
+pinned; uncertain process retirement or changed ownership retains the fixture.
+Five launch receipts and a distinct final retirement receipt are immutable,
+and the retained fixture archive includes cache contents. HOME, the product
+sandbox policy, package bytes and startup deadlines are unchanged.
+
+An owned headless sandbox reproduction denied the direct external write and
+allowed the same write through the alias into the fixture. All110 cumulative
+Python tests pass, including substitution/uncertain-retirement cases and the
+actual five-launch fixture retention lifecycle. That lifecycle regression first
+failed on colliding exclusive receipt paths and passes with separate immutable
+receipts. Both independent source reviews report zero remaining findings.
+Fresh installed Intel execution is still required; no runtime correction is
+claimed from these headless results.

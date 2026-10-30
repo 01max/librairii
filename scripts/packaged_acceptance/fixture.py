@@ -7,6 +7,7 @@ from pathlib import Path
 import platform
 import shutil
 import sqlite3
+import subprocess
 import tempfile
 import threading
 import zipfile
@@ -21,6 +22,8 @@ class Fixture:
         # automatic TemporaryDirectory finalizer under a still-running child.
         self.root = Path(tempfile.mkdtemp(prefix='librairii-packaged-')).resolve()
         self.profile, self.library = self.root/'profile', self.root/'library'
+        self.graphics_cache = None
+        self.graphics_cache_checks = 0
         self.profile.mkdir()
         self.library.mkdir()
         (self.root/'.librairii-packaged-fixture').write_bytes(b'librairii-packaged-acceptance-v1\n')
@@ -169,6 +172,28 @@ class Fixture:
         })
         return environment
 
+    def prepare_graphics_cache(self):
+        if platform.system() != 'Darwin' or os.environ.get('GITHUB_ACTIONS') != 'true':
+            raise ValueError('native graphics cache reservation requires disposable macOS CI')
+        if self.graphics_cache_checks >= 5:
+            raise ValueError('native graphics cache exceeds the five owned launches')
+        if self.graphics_cache is None:
+            from .native_cache import NativeGraphicsCache
+            observed = subprocess.check_output(['/usr/bin/getconf', 'DARWIN_USER_CACHE_DIR'],
+                                                text=True, timeout=5).strip()
+            if not Path(observed).is_absolute() or '\n' in observed:
+                raise ValueError('native cache lookup did not return one absolute directory')
+            parent = Path(observed).resolve(strict=True)
+            # Keep the owner reachable before its first filesystem mutation.
+            self.graphics_cache = NativeGraphicsCache(self.root, parent)
+            self.graphics_cache.prepare()
+        else:
+            self.graphics_cache.verify()
+        index = self.graphics_cache_checks+1
+        write_json(self.evidence/('native-graphics-cache-launch-'+str(index)+'.json'),
+                   dict(self.graphics_cache.receipt(), launch_index=index))
+        self.graphics_cache_checks = index
+
     def current_root(self):
         profile = json.loads((self.native_profile/'settings.json').read_text())
         root = Path(profile['root'])
@@ -211,12 +236,19 @@ class Fixture:
             failures.append('generated review import fixtures changed')
         if self.legacy and inventory(self.legacy) != self.legacy_before:
             failures.append('Go-era source changed during independent adoption')
+        if self.graphics_cache is not None:
+            try:
+                self.graphics_cache.retire(process_retired)
+            except Exception as error:
+                failures.append('native graphics cache custody: '+str(error))
+                process_retired = False
+            write_json(self.evidence/'native-graphics-cache-retirement.json', self.graphics_cache.receipt())
         write_json(self.evidence/'fixture-final.json', inventory(self.root))
         tar_gzip(self.root, self.evidence/'fixture-final.tar.gz', 'owned-fixture', 0)
         if process_retired:
             shutil.rmtree(self.root)
         else:
             # Preserve data still potentially held by an unresolved process.
-            failures.append('product retirement uncertain; fixture retained at '+str(self.root))
+            failures.append('product or cache retirement uncertain; fixture retained at '+str(self.root))
         if failures:
             raise ValueError('fixture custody/network failure: '+str(failures))

@@ -24,6 +24,120 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable(self):
+        from packaged_acceptance.native_cache import BUNDLE
+        source = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix='librairii-cache-lifecycle-') as temporary:
+            root = Path(temporary).resolve()
+            evidence, parent = root/'evidence', root/'synthetic-os-cache'
+            evidence.mkdir()
+            parent.mkdir()
+            fixture = Fixture(source, evidence, False)
+            try:
+                with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
+                     patch('packaged_acceptance.fixture.platform.system', return_value='Darwin'), \
+                     patch('packaged_acceptance.fixture.subprocess.check_output', return_value=str(parent)+'\n'):
+                    for _ in range(5):
+                        fixture.prepare_graphics_cache()
+                    self.assertTrue((parent/BUNDLE).is_symlink())
+                    (fixture.graphics_cache.target/'shader').write_bytes(b'owned fixture cache')
+                fixture.retain()
+                self.assertFalse((parent/BUNDLE).exists())
+                self.assertFalse(fixture.root.exists())
+                launches = sorted(evidence.glob('native-graphics-cache-launch-*.json'))
+                self.assertEqual(len(launches), 5)
+                self.assertEqual([json.loads(p.read_text())['launch_index'] for p in launches], list(range(1, 6)))
+                retired = json.loads((evidence/'native-graphics-cache-retirement.json').read_text())
+                self.assertTrue(retired['retired'])
+                self.assertFalse(retired['reserved'])
+                retained = json.loads((evidence/'fixture-final.json').read_text())
+                self.assertIn('native-graphics-cache/shader', retained)
+            finally:
+                # Own and retire the red implementation's resources as well.
+                if fixture.root.exists():
+                    if fixture.graphics_cache is not None:
+                        fixture.graphics_cache.retire(True)
+                        fixture.graphics_cache = None
+                    if not (evidence/'local-network.json').exists():
+                        fixture.retain()
+
+    def test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty(self):
+        from packaged_acceptance.native_cache import BUNDLE, MARKER, NativeGraphicsCache
+        import shutil
+        def layout(temporary):
+            root = Path(temporary).resolve()
+            fixture, parent = root/'fixture', root/'synthetic-os-cache'
+            fixture.mkdir()
+            parent.mkdir()
+            (fixture/'.librairii-packaged-fixture').write_bytes(MARKER)
+            return NativeGraphicsCache(fixture, parent), parent/BUNDLE
+        for existing in ('file', 'directory', 'dangling-link'):
+            with self.subTest(existing=existing), tempfile.TemporaryDirectory() as temporary:
+                owner, anchor = layout(temporary)
+                if existing == 'file':
+                    anchor.write_bytes(b'foreign sentinel')
+                elif existing == 'directory':
+                    anchor.mkdir()
+                    (anchor/'sentinel').write_bytes(b'foreign sentinel')
+                else:
+                    anchor.symlink_to(anchor.parent/'missing')
+                before = (anchor.lstat(), os.readlink(anchor) if anchor.is_symlink() else None)
+                with self.assertRaises(FileExistsError):
+                    owner.prepare()
+                owner.retire(True)
+                after = anchor.lstat()
+                self.assertEqual((after.st_dev, after.st_ino, after.st_mode, after.st_size),
+                                 (before[0].st_dev, before[0].st_ino, before[0].st_mode, before[0].st_size))
+                if existing == 'dangling-link':
+                    self.assertEqual(os.readlink(anchor), before[1])
+                else:
+                    self.assertEqual((anchor/'sentinel' if existing == 'directory' else anchor).read_bytes(),
+                                     b'foreign sentinel')
+        for substitution in ('none', 'anchor', 'target', 'parent'):
+            with self.subTest(substitution=substitution), tempfile.TemporaryDirectory() as temporary:
+                owner, anchor = layout(temporary)
+                owner.prepare()
+                parent_fd, target_fd = owner.fd, owner.target_fd
+                with self.assertRaisesRegex(ValueError, 'uncertain'):
+                    owner.retire(False)
+                self.assertTrue(anchor.is_symlink())
+                owner.verify()
+                (anchor/'shader-cache').write_bytes(b'owned synthetic cache')
+                self.assertEqual((owner.target/'shader-cache').read_bytes(), b'owned synthetic cache')
+                if substitution != 'none':
+                    original = {'anchor': anchor, 'target': owner.target, 'parent': owner.parent}[substitution]
+                    saved = original.with_name(original.name+'-saved')
+                    original.rename(saved)
+                    if substitution == 'anchor':
+                        original.write_bytes(b'foreign sentinel')
+                    else:
+                        original.mkdir()
+                        (original/'sentinel').write_bytes(b'foreign sentinel')
+                    with self.assertRaises(ValueError):
+                        owner.retire(True)
+                    self.assertTrue(owner.reserved)
+                    if original.is_dir():
+                        self.assertEqual((original/'sentinel').read_bytes(), b'foreign sentinel')
+                        shutil.rmtree(original)  # The test owns this synthetic substitution.
+                    else:
+                        self.assertEqual(original.read_bytes(), b'foreign sentinel')
+                        original.unlink()
+                    saved.rename(original)
+                owner.retire(True)
+                self.assertFalse(anchor.exists())
+                self.assertTrue(owner.receipt()['retired'])
+                self.assertEqual((owner.target/'shader-cache').read_bytes(), b'owned synthetic cache')
+                for descriptor in (parent_fd, target_fd):
+                    with self.assertRaises(OSError):
+                        os.fstat(descriptor)
+        fixture = Fixture.__new__(Fixture)
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), \
+             patch('packaged_acceptance.fixture.platform.system', return_value='Darwin'), \
+             patch('packaged_acceptance.fixture.subprocess.check_output') as lookup:
+            with self.assertRaisesRegex(ValueError, 'disposable macOS CI'):
+                fixture.prepare_graphics_cache()
+            lookup.assert_not_called()
+
     def test_failed_mac_session_samples_only_its_unreaped_child_before_retirement(self):
         from packaged_acceptance.session import Session
         import subprocess
