@@ -142,7 +142,7 @@ def perform(driver, fixture, result, french):
     driver.press(words('Apply approved changes', 'Appliquer les modifications approuvées'), prefix=True)
     driver.wait(lambda: fixture.rows("SELECT story_uuid FROM shelf_stories WHERE story_uuid='"+fixture.review_uuid+"'"))
     observe('shelf-review', {'before': before, 'after': fixture.rows("SELECT story_uuid,position FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")})
-    driver.press(words('Not now · close review', 'Pas maintenant · fermer la révision'))
+    # Successful Apply closes the review; its close button no longer exists.
     archives = fixture.archives(reviewed=True)
     all_uuids = {row['uuid'] for row in archives}
     shelf = fixture.rows("SELECT id,name FROM shelves WHERE name='Packaged approved'")
