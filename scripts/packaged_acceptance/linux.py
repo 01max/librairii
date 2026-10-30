@@ -148,17 +148,7 @@ class Driver:
         # GTK can select an inline-completed trailing slash. Commit that native
         # completion, then observe the exact directory with or without the slash.
         self.key('Right')
-        def location():
-            for node in self.nodes(application):
-                try:
-                    if node.getState().contains(self.desktop.a.STATE_FOCUSED):
-                        value = node.queryText().getText(0, -1)
-                        if value in (str(directory), str(directory)+'/'):
-                            return {'name': node.name, 'role': node.getRoleName(), 'value': value, 'focused': True}
-                except (NotImplementedError, *self.read_errors):
-                    continue
-            return None
-        entered = self.wait(location)
+        entered = picker_location(self, application, directory)
         (self.output/(prefix+'-location.json')).write_text(json.dumps(entered, ensure_ascii=False, indent=2)+'\n')
         self.desktop.screenshot(self.output/(prefix+'-location.png'))
         candidates = ('Open', 'Select', 'Choose', 'Ouvrir', 'Sélectionner', 'Choisir')
@@ -292,3 +282,34 @@ def open_picker_root(driver, application):
             return attempts
         place = place.parent
     raise ValueError('native root location list row was not found')
+
+
+def picker_location(driver, application, directory):
+    expected = str(directory)
+    def location(allow_completion):
+        for node in driver.nodes(application):
+            try:
+                if not node.getState().contains(driver.desktop.a.STATE_FOCUSED):
+                    continue
+                text = node.queryText()
+                value = text.getText(0, -1)
+                observed = {'name': node.name, 'role': node.getRoleName(), 'value': value, 'focused': True}
+                if value in (expected, expected+'/'):
+                    return observed
+                if allow_completion and value.startswith(expected+'/') and text.getNSelections() == 1:
+                    start,end = text.getSelection(0)
+                    if start == len(expected)+1 and end == len(value):
+                        observed['selected_completion'] = [start,end]
+                        return observed
+            except (NotImplementedError, *driver.read_errors):
+                continue
+        return None
+    entered = driver.wait(lambda: location(True))
+    if 'selected_completion' in entered:
+        # GTK can complete a common filename prefix after the directory slash.
+        # Delete only that observed selected suffix, then require the exact path.
+        driver.key('BackSpace')
+        exact = driver.wait(lambda: location(False))
+        exact['removed_native_completion'] = entered
+        return exact
+    return entered

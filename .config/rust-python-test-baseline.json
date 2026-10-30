@@ -100,6 +100,7 @@
     "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors",
     "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus",
     "test_packaged_acceptance.PackagedAdmission.test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing",
-    "test_packaged_acceptance.PackagedAdmission.test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound"
+    "test_packaged_acceptance.PackagedAdmission.test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound",
+    "test_packaged_acceptance.PackagedAdmission.test_picker_location_removes_only_selected_inline_filename_completion"
   ]
 }

@@ -21,6 +21,38 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_picker_location_removes_only_selected_inline_filename_completion(self):
+        from packaged_acceptance.linux import picker_location
+        driver=Mock()
+        driver.desktop.a.STATE_FOCUSED='focused'
+        driver.read_errors=(RuntimeError,)
+        directory=Path('/tmp/owned/review-inputs')
+        expected=str(directory)+'/'
+        state={'value':expected+'Nouvelle','selection':(len(expected),len(expected+'Nouvelle'))}
+        text=Mock()
+        text.getText.side_effect=lambda start,end:state['value']
+        text.getNSelections.return_value=1
+        text.getSelection.side_effect=lambda index:state['selection']
+        node=SimpleNamespace(name='Location',getRoleName=lambda:'text',getState=Mock(),queryText=lambda:text)
+        node.getState.return_value.contains.return_value=True
+        driver.nodes.return_value=[node]
+        def wait(predicate):
+            if value:=predicate():return value
+            raise TimeoutError('exact picker directory was not observed')
+        driver.wait.side_effect=wait
+        def key(value):
+            self.assertEqual(value,'BackSpace')
+            state['value']=expected
+        driver.key.side_effect=key
+        observed=picker_location(driver,object(),directory)
+        self.assertEqual(observed['value'],expected)
+        driver.key.assert_called_once_with('BackSpace')
+        for selection in ((0,len(expected+'Nouvelle')),(len(expected)-1,len(expected+'Nouvelle'))):
+            driver.key.reset_mock()
+            state.update(value=expected+'Nouvelle',selection=selection)
+            with self.assertRaises(TimeoutError):picker_location(driver,object(),directory)
+            driver.key.assert_not_called()
+
     def test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound(self):
         from packaged_acceptance.workflow import reveal
         driver=Mock()
