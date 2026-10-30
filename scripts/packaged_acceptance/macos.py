@@ -77,9 +77,11 @@ class Driver:
     def picker(self, directory, *, files=False):
         snapshot = self.wait(lambda: (value := self.observer.snapshot(summary=True)) and self.module.picker_root(value) and value)
         root = self.module.picker_root(snapshot)
+        # Column view also exposes ancestor-directory rows. Choose native list
+        # view before navigation so observation stays within the selected folder.
+        self.observer.call('key', key='cmd+2')
         self.observer.go_folder(directory, root)
         if files:
-            self.observer.call('key', key='cmd+2')
             self.observer.rows(directory, root, True, tuple(sorted(path.name for path in directory.iterdir())))
         self.observer.button(self.observer.snapshot(), root, ('Open', 'Choose', 'Select', 'Ouvrir', 'Choisir'))
         self.wait(lambda: not self.module.picker_root(self.observer.snapshot(summary=True)))
