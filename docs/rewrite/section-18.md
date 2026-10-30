@@ -100,6 +100,16 @@ runs from the installation directory and requires no Cargo invocation by the
 installed product. This command performs headless inspection only; its receipt
 cannot pass GUI qualification or public signing.
 
+The `Rust native packages` workflow builds on `macos-15`, `macos-15-intel` and
+`ubuntu-24.04`, then downloads each exact candidate to a separate installation
+job. Installed-host validation needs no Rust toolchain and refuses an Intel
+result running through Rosetta. This initial job qualifies byte installation
+and headless inspection only. The checksum-keyed GUI reports remain separate.
+The pinned official download-artifact6.0.0 commit
+`018cc2cf5baa6db3ef3c5f8a56943fffe632ef53` was checked against its official tag
+and GitHub's valid release-commit signature before use; existing checkout,
+cache and upload revisions remain the previously reviewed pins.
+
 Portable archive assembly sorts paths, rejects links/special files, normalizes
 UID/GID/names/modes and uses the source commit epoch with a fixed gzip header.
 Repeated assembly of identical payload bytes is deterministic. This is distinct
@@ -134,7 +144,7 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Sixteen additional Python checks cover compiler aliases
+startup configuration. Seventeen additional Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

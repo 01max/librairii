@@ -5900,6 +5900,11 @@
         "position": 73,
         "identity": "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 74,
+        "identity": "test_packages.PlatformPackages.test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

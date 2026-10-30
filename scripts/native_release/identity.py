@@ -51,25 +51,33 @@ def plan(root, target, require_clean=True):
     }
 
 
-def native_host(root, release):
-    system, arch, _ = TARGETS[release['target']]
+def runtime_host(root, target):
+    system, arch, _ = TARGETS[target]
     if platform.system() != system or platform.machine() != arch:
-        raise ValueError('packaging requires the matching native host')
-    compiler = output(root, ['rustc', '-vV'])
-    if ('host: ' + release['target']) not in compiler.splitlines() or ('release: ' + release['rust_version']) not in compiler.splitlines():
-        raise ValueError('release requires the pinned compiler on the native target')
-    evidence = {'rustc': compiler, 'system': system, 'arch': arch,
+        raise ValueError('package verification requires the matching native host')
+    evidence = {'system': system, 'arch': arch,
                 'os_release': platform.release(), 'os_version': platform.version()}
-    cargo = output(root, [os.environ.get('CARGO', 'cargo'), '--version'])
-    if not cargo.startswith('cargo ' + release['rust_version'] + ' '):
-        raise ValueError('release requires the pinned Cargo version')
-    evidence['cargo'] = cargo
-    if release['target'] == 'x86_64-apple-darwin':
+    if system == 'Darwin' and int(platform.mac_ver()[0].split('.')[0]) < 15:
+        raise ValueError('macOS package verification requires macOS15 or later')
+    if target == 'x86_64-apple-darwin':
         brand = output(root, ['sysctl', '-n', 'machdep.cpu.brand_string'])
         translated = subprocess.run(['sysctl', '-in', 'sysctl.proc_translated'], capture_output=True, text=True, check=False)
         if 'Intel' not in brand or translated.stdout.strip() == '1':
             raise ValueError('Intel release requires actual Intel hardware')
         evidence['cpu'] = brand
+    return evidence
+
+
+def native_host(root, release):
+    evidence = runtime_host(root, release['target'])
+    compiler = output(root, ['rustc', '-vV'])
+    if ('host: ' + release['target']) not in compiler.splitlines() or ('release: ' + release['rust_version']) not in compiler.splitlines():
+        raise ValueError('release requires the pinned compiler on the native target')
+    evidence['rustc'] = compiler
+    cargo = output(root, [os.environ.get('CARGO', 'cargo'), '--version'])
+    if not cargo.startswith('cargo ' + release['rust_version'] + ' '):
+        raise ValueError('release requires the pinned Cargo version')
+    evidence['cargo'] = cargo
     return evidence
 
 

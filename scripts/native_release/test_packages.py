@@ -13,10 +13,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_release.files import digest, inventory
 from native_release.archive import seal_artifact, tar_gzip
 from native_release.linkage import linux_report, macos_report
+from native_release.identity import runtime_host
 from native_release import install, macos, package
 
 
 class PlatformPackages(unittest.TestCase):
+    def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
+        from subprocess import CompletedProcess
+        with patch('native_release.identity.platform.system', return_value='Darwin'), \
+             patch('native_release.identity.platform.machine', return_value='x86_64'), \
+             patch('native_release.identity.platform.mac_ver', return_value=('15.7', (), '')), \
+             patch('native_release.identity.output', return_value='Intel(R) Core(TM) processor') as output, \
+             patch('native_release.identity.subprocess.run', return_value=CompletedProcess([], 1, stdout='', stderr='')) as run:
+            observed = runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+            self.assertIn('Intel', observed['cpu'])
+            self.assertEqual(output.call_args.args[1], ['sysctl', '-n', 'machdep.cpu.brand_string'])
+            self.assertEqual(run.call_args.args[0], ['sysctl', '-in', 'sysctl.proc_translated'])
+            run.return_value = CompletedProcess([], 0, stdout='1\n', stderr='')
+            with self.assertRaisesRegex(ValueError, 'actual Intel hardware'):
+                runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+
     def test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members(self):
         with tempfile.TemporaryDirectory(prefix='librairii-installed-test-') as temporary:
             root = Path(temporary).resolve()

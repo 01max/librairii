@@ -9,7 +9,7 @@ import subprocess
 import tarfile
 
 from .files import digest, fresh_output, inventory, regular, write_json
-from .identity import architecture, verify_embedded
+from .identity import architecture, runtime_host, verify_embedded
 from . import linkage
 
 
@@ -92,6 +92,7 @@ def mounted(artifact, destination):
 
 def inspect(root, directory, source, target, requested_output):
     artifact, release = artifact_record(directory, source, target)
+    host = runtime_host(root, target)
     destination = fresh_output(root, requested_output)
     installed = destination / 'installed'
     installed.mkdir()
@@ -113,7 +114,7 @@ def inspect(root, directory, source, target, requested_output):
     info = verify_embedded(installed, binary, release)
     dependencies = linkage.inspect(installed, binary, target)
     report = {'format': 'librairii.native-package-inspection', 'schema': 1,
-              'source_commit': source, 'target': target, 'artifact': release['artifact'],
+              'source_commit': source, 'target': target, 'artifact': release['artifact'], 'host': host,
               'installed': str(installed), 'binary': str(binary), 'binary_sha256': digest(binary),
               'build_info': info, 'linkage': dependencies, 'installed_payload_verified': True,
               'signing': release['signing'], 'gui_qualification': {'state': 'not performed'},
