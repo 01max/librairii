@@ -6,7 +6,7 @@ RUN if ! getent group "$QUALIFICATION_GID" >/dev/null; then groupadd --gid "$QUA
     && if ! getent passwd "$QUALIFICATION_UID" >/dev/null; then \
         useradd --uid "$QUALIFICATION_UID" --gid "$QUALIFICATION_GID" --create-home --no-log-init qualification; fi
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgcc-s1 libstdc++6 libfontconfig1 libfreetype6 fonts-dejavu-core fonts-noto-cjk \
+    ca-certificates libgcc-s1 libstdc++6 libfontconfig1 libfreetype6 fonts-dejavu-core fonts-noto-cjk \
     libx11-6 libx11-xcb1 libxcursor1 libxi6 libxrandr2 libxkbcommon0 libxkbcommon-x11-0 \
     libwayland-client0 libwayland-cursor0 libwayland-egl1 libegl1 libgl1 libvulkan1 mesa-vulkan-drivers \
     libdbus-1-3 libglib2.0-bin xdg-desktop-portal xdg-desktop-portal-gtk thunar \

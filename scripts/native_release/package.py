@@ -37,7 +37,7 @@ def requirements(target):
     if target.endswith('linux-gnu'):
         return {
             'baseline': 'Ubuntu 24.04 LTS x86-64; glibc 2.39',
-            'packages': ['libgcc-s1', 'libstdc++6', 'libfontconfig1', 'libfreetype6', 'libx11-6', 'libx11-xcb1',
+            'packages': ['ca-certificates', 'libgcc-s1', 'libstdc++6', 'libfontconfig1', 'libfreetype6', 'libx11-6', 'libx11-xcb1',
                          'libxcursor1', 'libxi6', 'libxrandr2', 'libxkbcommon0', 'libxkbcommon-x11-0',
                          'libwayland-client0', 'libegl1', 'libgl1', 'libvulkan1', 'mesa-vulkan-drivers',
                          'libdbus-1-3', 'xdg-desktop-portal', 'xdg-desktop-portal-gtk', 'libglib2.0-bin'],

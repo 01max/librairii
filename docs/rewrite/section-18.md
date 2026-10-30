@@ -70,7 +70,10 @@ available to the desktop through PATH and XDG_DATA_DIRS for integration.
 
 The system library allowlist excludes browser runtimes and build-directory
 dependencies. Font, graphics and portal libraries loaded at runtime have
-separately declared Ubuntu packages. Installed X11/Wayland and rendering tests
+separately declared Ubuntu packages. The platform TLS verifier also requires
+`ca-certificates`, including when an isolated acceptance catalog uses loopback
+HTTP, because the client initializes its platform trust store before requests.
+Installed X11/Wayland and rendering tests
 must establish those prerequisites in use; inspection alone cannot pass them.
 
 ## macOS application and disk image
