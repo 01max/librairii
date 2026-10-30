@@ -42,7 +42,8 @@ class Session:
         self.launch_receipt = {'binary': str(binary), 'binary_sha256': digest(binary),
                    'cwd': str(working), 'backend': backend, 'path': environment['PATH'],
                    'qualification_root': str(fixture.root),
-                   'profile': str(fixture.profile), 'library': str(fixture.library)}
+                   'profile': str(fixture.profile), 'library': str(fixture.library),
+                   'requested_scale': environment['SLINT_SCALE_FACTOR'], 'catalog_online': fixture.online}
 
     def start(self):
         # The caller already holds this Session before a child can exist.
@@ -77,6 +78,26 @@ class Session:
             raise
         write_json(self.output/'launch.json', dict(self.launch_receipt, pid=self.pid))
 
+    def display(self):
+        text = (self.output/'product.log').read_text(errors='strict')
+        pattern = (r'native_acceptance; stage=display; pid=(\d+); scale_factor=([0-9.]+); '
+                   r'physical=(\d+)x(\d+); logical=([0-9.]+)x([0-9.]+)')
+        matches = re.findall(pattern, text)
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise ValueError('ambiguous installed display witness')
+        pid, scale, width, height, logical_width, logical_height = matches[0]
+        scale = float(scale)
+        if (int(pid) != self.pid or scale != float(self.launch_receipt['requested_scale'])
+                or min(float(width),float(height),float(logical_width),float(logical_height)) <= 0
+                or abs(float(width)-float(logical_width)*scale) > 1
+                or abs(float(height)-float(logical_height)*scale) > 1):
+            raise ValueError('observed native display scale/geometry differs from request')
+        return {'pid':self.pid, 'observed_scale':scale, 'physical':[int(width),int(height)],
+                'logical':[float(logical_width),float(logical_height)],
+                'raw_log':self.output.name+'/product.log', 'observed_fields':matches[0]}
+
     def runtime(self):
         if platform.system() == 'Linux':
             mappings = Path('/proc')/str(self.pid)/'maps'
@@ -102,6 +123,8 @@ class Session:
         return {'returncode': code, 'actual_worker_joined': True}
 
     def interrupt_catalog(self, driver, fixture, french):
+        fixture.catalog_waiting.clear()
+        fixture.catalog_release.clear()
         fixture.pause_catalog = True
         driver.press('Synchroniser les métadonnées' if french else 'Sync official metadata')
         if not fixture.catalog_waiting.wait(10):

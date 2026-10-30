@@ -7,7 +7,8 @@ from .exports import freeze, verify
 REQUIRED = ('setup', 'language', 'import', 'metadata-artwork', 'inspection', 'broken-undo',
             'tags-search', 'collections', 'shelf-create', 'shelf-review',
             'export-results', 'export-selection', 'export-collections', 'export-shelves',
-            'history', 'trash-removal', 'relocation', 'reopen', 'recovery', 'uninstall-reinstall')
+            'history', 'trash-removal', 'relocation', 'reopen', 'scaling', 'offline-startup',
+            'recovery', 'uninstall-reinstall')
 
 
 def perform(driver, fixture, result, french):

@@ -20,6 +20,24 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry(self):
+        from packaged_acceptance.session import Session
+        with tempfile.TemporaryDirectory() as temporary:
+            session = Session.__new__(Session)
+            session.output, session.pid = Path(temporary), 123
+            session.launch_receipt = {'requested_scale':'1.25'}
+            log = session.output/'product.log'
+            line = 'native_acceptance; stage=display; pid=123; scale_factor=1.250; physical=1000x750; logical=800.000x600.000\n'
+            log.write_text('startup only\n')
+            self.assertIsNone(session.display())
+            log.write_text(line)
+            self.assertEqual(session.display()['observed_scale'], 1.25)
+            for changed in (line.replace('pid=123','pid=124'), line.replace('1.250','1.000'),
+                            line.replace('1000x750','9999x750'), line.replace('1000x750','0x750'), line+line):
+                log.write_text(changed)
+                with self.assertRaises(ValueError):
+                    session.display()
+
     def test_native_press_selectors_exclude_duplicate_static_labels(self):
         from packaged_acceptance.macos import Driver
         driver = Driver.__new__(Driver)
@@ -216,6 +234,23 @@ class PackagedAdmission(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     data = json.loads(response.read())
                     self.assertEqual(data['response']['fixture-pack-001']['uuid'], '00112233-4455-4677-8899-aabbccddeeff')
+                finally:
+                    connection.close()
+                import socket
+                fixture.stop_catalog()
+                self.assertFalse(fixture.online)
+                self.assertFalse(fixture.thread.is_alive())
+                with self.assertRaises(ConnectionRefusedError):
+                    socket.create_connection(('127.0.0.1', fixture.port), timeout=2)
+                fixture.scale = '1.25'
+                self.assertEqual(fixture.environment('winit-skia')['SLINT_SCALE_FACTOR'], '1.25')
+                fixture.start_catalog()
+                connection = HTTPConnection('127.0.0.1', fixture.port, timeout=2)
+                try:
+                    connection.request('GET', '/guest/create')
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 200)
+                    response.read()
                 finally:
                     connection.close()
             finally:

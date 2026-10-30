@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import socket
 import traceback
 
 from native_release.files import copy_tree, digest, fresh_output, inventory, write_json
@@ -115,6 +116,7 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
             raise ValueError('isolated installed copy differs from the final distributed payload')
         first = launch('workflow')
         perform(driver, fixture, report, french)
+        first_display = driver.wait(application.display)
         # Remove through the detail dialog, then independently verify managed
         # custody and unchanged original inputs. No direct DB mutation drives UI.
         driver.press(words('Library', 'Bibliothèque'))
@@ -140,11 +142,26 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
         first['runtime'] = application.runtime()
         close(first)
         saved = durable(fixture)
+        fixture.stop_catalog()
+        try:
+            with socket.create_connection(('127.0.0.1',fixture.port), timeout=2):
+                raise ValueError('offline startup still has a listening local catalog')
+        except ConnectionRefusedError:
+            pass
+        offline_requests = len(fixture.requests)
+        fixture.scale = '1.25'
         second = launch('reopen')
         driver.wait(lambda: driver.find(words('Search stories', 'Rechercher des histoires')))
         assert durable(fixture) == saved
         assert json.loads((fixture.native_profile/'settings.json').read_text())['language'] == ('fr' if french else 'en')
         observe('reopen', {'root': str(fixture.current_root()), 'durable_state': saved, 'same_package_sha256': inspection['artifact']['sha256']})
+        observe('scaling', {'initial': first_display, 'reopen': driver.wait(application.display),
+                            'native_window_and_controls_observed': True})
+        if fixture.online or fixture.thread.is_alive() or len(fixture.requests) != offline_requests:
+            raise ValueError('offline startup unexpectedly contacted a catalog listener')
+        observe('offline-startup', {'catalog_connection_refused': True, 'catalog_thread_retired': True,
+                                    'retained_catalog_requests': offline_requests, 'durable_state_unchanged': True})
+        fixture.start_catalog()
         interruption = application.interrupt_catalog(driver, fixture, french)
         second['interrupted'] = interruption
         second['retired'] = True

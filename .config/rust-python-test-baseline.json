@@ -84,6 +84,7 @@
     "test_packaged_acceptance.PackagedAdmission.test_interruption_requires_exact_signal_and_retired_error_free_capture",
     "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
     "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes",
-    "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels"
+    "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels",
+    "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry"
   ]
 }

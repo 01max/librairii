@@ -61,6 +61,7 @@ class Fixture:
                 'version': 1, 'language': 'en', 'root': str(self.legacy),
                 'libraryId': (self.legacy/'.librairii-library').read_text().strip(), 'complete': True})
         self.requests, self.errors = [], []
+        self.scale = '1'
         self.pause_catalog = False
         self.catalog_waiting = threading.Event()
         self.catalog_release = threading.Event()
@@ -104,6 +105,7 @@ class Fixture:
             def log_message(self, *_):
                 pass
         self.server = HTTPServer(('127.0.0.1', 0), Handler)
+        self.handler, self.port, self.online = Handler, self.server.server_port, True
         self.server.timeout = 1
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.evidence = evidence
@@ -116,6 +118,28 @@ class Fixture:
             raise
         self.thread.start()
 
+    def stop_catalog(self):
+        if self.online:
+            self.catalog_release.set()
+            self.server.shutdown()
+            self.server.server_close()
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                raise ValueError('local catalog thread did not stop')
+            self.online = False
+
+    def start_catalog(self):
+        if self.online or self.thread.is_alive():
+            raise ValueError('previous local catalog is still active')
+        self.server = HTTPServer(('127.0.0.1', self.port), self.handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        try:
+            self.thread.start()
+            self.online = True
+        except Exception:
+            self.server.server_close()
+            raise
+
     def environment(self, backend):
         environment = dict(os.environ)
         environment.pop('LIBRAIRII_DATA_ROOT', None)
@@ -125,9 +149,9 @@ class Fixture:
             'LIBRAIRII_ACCEPTANCE_ROOT': str(self.root),
             'LIBRAIRII_ACCEPTANCE_PROFILE': str(self.profile),
             'LIBRAIRII_ACCEPTANCE_LIBRARY': str(self.library),
-            'LIBRAIRII_ACCEPTANCE_CATALOG': 'http://127.0.0.1:'+str(self.server.server_port)+'/',
+            'LIBRAIRII_ACCEPTANCE_CATALOG': 'http://127.0.0.1:'+str(self.port)+'/',
             'SLINT_BACKEND': backend,
-            'SLINT_SCALE_FACTOR': '1',
+            'SLINT_SCALE_FACTOR': self.scale,
         })
         return environment
 
@@ -148,12 +172,7 @@ class Fixture:
                      for key,value in dict(row).items()} for row in connection.execute(statement)]
 
     def retain(self, *, process_retired=True):
-        self.catalog_release.set()
-        self.server.shutdown()
-        self.server.server_close()
-        self.thread.join(timeout=5)
-        if self.thread.is_alive():
-            raise ValueError('local catalog thread did not stop')
+        self.stop_catalog()
         write_json(self.evidence/'local-network.json', {'requests': self.requests, 'errors': self.errors})
         failures = list(self.errors)
         if inventory(self.inputs) != self.input_bytes:

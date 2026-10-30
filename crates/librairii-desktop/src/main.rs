@@ -1,7 +1,10 @@
 //! The native event loop and every window/menu stay on the process main thread.
 #![forbid(unsafe_code)]
 use librairii_desktop::{
-    acceptance::ProcessEnvironment, menus, presentation::Worker, startup::NativeEnvironment,
+    acceptance::ProcessEnvironment,
+    menus,
+    presentation::Worker,
+    startup::{NativeEnvironment, StartupEnvironment},
 };
 use slint::ComponentHandle;
 use std::{
@@ -14,6 +17,7 @@ mod view;
 
 fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Error>> {
     let launched = Instant::now();
+    let acceptance = environment.acceptance_scope().is_some();
     let worker = Rc::new(RefCell::new(Worker::start_with(environment)?));
     eprintln!(
         "native_startup; stage=controller_started; elapsed_ms={:.3}",
@@ -103,6 +107,15 @@ fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Err
                         size.height,
                         launched.elapsed().as_secs_f64() * 1000.
                     );
+                    if acceptance {
+                        let scale = ui.window().scale_factor();
+                        let logical = size.to_logical(scale);
+                        eprintln!(
+                            "native_acceptance; stage=display; pid={}; scale_factor={:.3}; physical={}x{}; logical={:.3}x{:.3}",
+                            std::process::id(), scale, size.width, size.height,
+                            logical.width, logical.height
+                        );
+                    }
                     first_tick = false;
                 }
                 if pending.borrow().finished() {
