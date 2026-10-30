@@ -60,6 +60,7 @@ def perform(driver, fixture, result, french):
     driver.wait(lambda: fixture.rows('SELECT id FROM catalog_artworks WHERE cached_at IS NOT NULL'), timeout=30)
     observe('metadata-artwork', {'sync': fixture.rows('SELECT id,status,matched_story_count FROM catalog_syncs'),
                                 'artwork': fixture.rows('SELECT id,sha256,byte_size,managed_path FROM catalog_artworks')})
+    driver.press(words('Details…', 'Détails…'))
     driver.press(words('Show technical details', 'Afficher les détails techniques'))
     observe('inspection', {'uuid': '00112233-4455-4677-8899-aabbccddeeff'})
     driver.press(words('Broken · ', 'Défectueuse · '), prefix=True)
@@ -67,6 +68,7 @@ def perform(driver, fixture, result, french):
     driver.press(words('Undo Broken change', 'Annuler le changement de statut'))
     driver.wait(lambda: fixture.rows("SELECT id FROM stories WHERE uuid='00112233-4455-4677-8899-aabbccddeeff' AND is_broken=0"))
     observe('broken-undo', {'restored': True})
+    closed()
     driver.press(words('Tags', 'Étiquettes'))
     driver.choose(words('Tag to edit', 'Étiquette à modifier'), 0)
     driver.text(words('Immutable tag key', 'Clé immuable de l’étiquette'), 'packaged-test')
