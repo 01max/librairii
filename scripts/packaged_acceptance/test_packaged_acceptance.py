@@ -22,7 +22,7 @@ from packaged_acceptance.workflow import REQUIRED
 class PackagedAdmission(unittest.TestCase):
     def test_managed_imports_must_match_independent_original_identity_name_and_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             (root/'archives').mkdir()
             archive = root/'archives/managed'
             archive.write_bytes(b'original immutable input')
