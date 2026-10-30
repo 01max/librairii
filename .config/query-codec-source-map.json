@@ -5992,6 +5992,26 @@
         "position": 85,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 86,
+        "identity": "test_signing.Signing.test_signing_requires_external_candidate_digest_and_clean_matching_source",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 87,
+        "identity": "test_signing.Signing.test_notarization_staples_actual_app_only_after_accepted_submission_and_retained_log",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 88,
+        "identity": "test_signing.Signing.test_signature_requires_external_team_certificate_timestamp_and_hardened_runtime",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 89,
+        "identity": "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

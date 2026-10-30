@@ -133,7 +133,7 @@ def mounted(artifact, destination):
             write_json(destination / 'mount-cleanup.json', cleanup)
 
 
-def inspect(root, directory, source, target, requested_output):
+def inspect(root, directory, source, target, requested_output, *, expected_team=None, expected_certificate=None):
     artifact, release = artifact_record(directory, source, target)
     host = runtime_host(root, target)
     destination = fresh_output(root, requested_output)
@@ -156,12 +156,20 @@ def inspect(root, directory, source, target, requested_output):
     architecture(binary, target)
     info = verify_embedded(installed, binary, release)
     dependencies = linkage.inspect(installed, binary, target)
+    signing_evidence = None
+    if release['signing'].get('developer_id') is True:
+        from .signing import verify_final
+        verification = destination/'signature-verification'
+        verification.mkdir()
+        signing_evidence = verify_final(artifact,installed/'Librairii.app',expected_team or '',
+                                        expected_certificate or '',verification)
     report = {'format': 'librairii.native-package-inspection', 'schema': 1,
               'source_commit': source, 'target': target, 'artifact': release['artifact'], 'host': host,
               'installed': str(installed), 'binary': str(binary), 'binary_sha256': digest(binary),
               'installed_payload': release['payload'],
               'build_info': info, 'linkage': dependencies, 'installed_payload_verified': True,
               'signing': release['signing'], 'gui_qualification': {'state': 'not performed'},
+              'installed_signature_verification': signing_evidence,
               'public_release_qualified': False}
     write_json(destination / 'inspection.json', report)
     return report

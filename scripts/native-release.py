@@ -34,6 +34,9 @@ def main():
     installed.add_argument('--expected-source', required=True)
     installed.add_argument('--target', choices=TARGETS, required=True)
     installed.add_argument('--output', required=True)
+    installed.add_argument('--expected-team')
+    installed.add_argument('--expected-certificate')
+    installed.add_argument('--source-root', type=Path, default=ROOT)
     gui = commands.add_parser('qualify-gui', help='run installed GUI qualification on disposable native CI only')
     gui.add_argument('--inspection', type=Path, required=True)
     gui.add_argument('--output', required=True)
@@ -50,7 +53,8 @@ def main():
     elif args.action == 'package-macos':
         print(json.dumps(macos.assemble(ROOT, args.stage, args.output), indent=2))
     elif args.action == 'inspect-package':
-        print(json.dumps(install.inspect(ROOT, args.directory, args.expected_source, args.target, args.output), indent=2))
+        print(json.dumps(install.inspect(args.source_root, args.directory, args.expected_source, args.target, args.output,
+                                       expected_team=args.expected_team, expected_certificate=args.expected_certificate), indent=2))
     elif args.action == 'qualify-gui':
         subprocess.run([sys.executable, '-I', '-B', str(ROOT/'scripts/verify-native-packages.py'),
                         '--inspection', str(args.inspection), '--output', args.output], check=True)

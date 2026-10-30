@@ -33,21 +33,21 @@ def retire(cid_file, image_id, name, invocation, force):
     return cid
 
 
-def context(destination):
+def context(destination, root=ROOT):
     destination.mkdir()
     checks = destination/'checks'
     checks.mkdir()
     for package in ('native_release', 'packaged_acceptance'):
         selected = checks/package
         selected.mkdir()
-        for file in sorted((ROOT/'scripts'/package).glob('*.py')):
+        for file in sorted((root/'scripts'/package).glob('*.py')):
             copy_file(file, selected/file.name)
-    copy_file(ROOT/'scripts/native-speech/desktop.py', checks/'desktop.py')
-    copy_file(ROOT/'qualification/section-18/inside.py', checks/'inside.py')
-    copy_file(ROOT/'qualification/section-18/Dockerfile', destination/'Dockerfile')
+    copy_file(root/'scripts/native-speech/desktop.py', checks/'desktop.py')
+    copy_file(root/'qualification/section-18/inside.py', checks/'inside.py')
+    copy_file(root/'qualification/section-18/Dockerfile', destination/'Dockerfile')
     fixtures = destination/'fixtures'
     fixtures.mkdir()
-    copy_tree(ROOT/'preservation/corpus/libraries/schema018', fixtures/'legacy-copy')
+    copy_tree(root/'preservation/corpus/libraries/schema018', fixtures/'legacy-copy')
     # Keep the original expected fixture paths, without exposing a checkout.
     target = fixtures/'preservation/corpus/libraries'
     target.mkdir(parents=True)
@@ -55,7 +55,7 @@ def context(destination):
     for path in ('preservation/corpus/archives/clockwork-forest.zip',
                  'preservation/corpus/archives/clockwork-forest.plain.pk',
                  'crates/librairii-app/tests/fixtures/lunii-catalog.json', 'build/appicon.png'):
-        copy_file(ROOT/path, fixtures/path)
+        copy_file(root/path, fixtures/path)
 
 
 def verify_report(path, source, target, expected_artifact, backend, case, session):
@@ -76,30 +76,33 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inspection', type=Path, required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--source-root', type=Path, default=ROOT)
+    parser.add_argument('--expected-source')
     args = parser.parse_args()
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('native GUI qualification requires disposable CI; do not run on a personal desktop')
-    source = clean_source(ROOT)
-    if source != os.environ['GITHUB_SHA']:
+    root = args.source_root.resolve(strict=True)
+    source = clean_source(root)
+    if source != (args.expected_source or os.environ['GITHUB_SHA']):
         raise ValueError('source differs from the actual CI commit')
     target = os.environ['RUST_TARGET']
-    host = runtime_host(ROOT, target)
+    host = runtime_host(root, target)
     inspection = json.loads(args.inspection.read_text())
     if inspection['source_commit'] != source or inspection['target'] != target:
         raise ValueError('installed package source/target differs from current qualification')
-    output = fresh_output(ROOT, args.output)
+    output = fresh_output(root, args.output)
     result = {'source_commit': source, 'target': target, 'host': host, 'artifact': inspection['artifact'],
               'complete': False, 'public_release_qualified': False, 'lanes': [], 'errors': []}
     try:
         if target.endswith('apple-darwin'):
             helper = output/'macos-observer'
             subprocess.run(['xcrun', 'swiftc', '-module-cache-path', str(output/'swift-modules'),
-                            str(ROOT/'qualification/section-2/native-macos/observer.swift'), '-o', str(helper)], check=True)
+                            str(root/'qualification/section-2/native-macos/observer.swift'), '-o', str(helper)], check=True)
             for case, backend in [('fresh', 'winit-skia'), ('upgraded', 'winit-skia-software')]:
                 lane = {'name': case, 'passed': False}
                 result['lanes'].append(lane)
                 try:
-                    run(ROOT, args.inspection, source, target, output/case, case, backend, helper=helper)
+                    run(root, args.inspection, source, target, output/case, case, backend, helper=helper)
                     lane.update(verify_report(output/case/'report.json', source, target, inspection['artifact'],
                                               backend, case, 'macOS'))
                 except Exception as error:
@@ -108,7 +111,7 @@ def main():
                     break  # No further native input after a failed custody lane.
         else:
             build_context = output/'runtime-context'
-            context(build_context)
+            context(build_context, root)
             result['runtime_context'] = inventory(build_context)
             image = 'librairii-packaged:'+source
             with (output/'image-build.log').open('x') as log:
@@ -157,7 +160,7 @@ def main():
                             lane['retired_container'] = retire(cid_file, image_id, container, invocation, timed_out)
                         else:
                             raise ValueError('no observer creation receipt; do not retire by name')
-        if clean_source(ROOT) != source:
+        if clean_source(root) != source:
             raise ValueError('source changed during installed GUI qualification')
         result['complete'] = not result['errors'] and all(lane['passed'] for lane in result['lanes'])
         if not result['complete']:

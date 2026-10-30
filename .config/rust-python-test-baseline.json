@@ -85,6 +85,10 @@
     "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
     "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes",
     "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels",
-    "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry"
+    "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry",
+    "test_signing.Signing.test_signing_requires_external_candidate_digest_and_clean_matching_source",
+    "test_signing.Signing.test_notarization_staples_actual_app_only_after_accepted_submission_and_retained_log",
+    "test_signing.Signing.test_signature_requires_external_team_certificate_timestamp_and_hardened_runtime",
+    "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure"
   ]
 }
