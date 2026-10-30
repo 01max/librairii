@@ -5870,6 +5870,11 @@
         "position": 67,
         "identity": "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 68,
+        "identity": "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files",
+        "reason": "Task18 actual ARM release build exposed supplemental-only dependency notices; regression preserves the pinned license texts without weakening a missing-notice refusal."
       }
     ]
   },

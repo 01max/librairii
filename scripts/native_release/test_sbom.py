@@ -66,3 +66,15 @@ class CompiledGraph(unittest.TestCase):
         with self.assertRaises(ValueError):
             sbom.write(self.root, changed, self.release, self.metadata, self.events)
         self.assertFalse((changed / 'sbom.spdx.json').exists())
+
+    def test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files(self):
+        (self.root / 'registry/runtime/LICENSE').unlink()
+        source = self.root / '.config/upstream-notices/runtime-1.0.0'
+        source.mkdir()
+        (source / 'LICENSE-MIT').write_bytes(b'synthetic pinned supplemental license')
+        directory = self.root / 'supplemental-release'
+        directory.mkdir()
+        sbom.write(self.root, directory, self.release, self.metadata, self.events)
+        self.assertEqual((directory / 'notices/runtime-1.0.0/supplemental/LICENSE-MIT').read_bytes(),
+                         b'synthetic pinned supplemental license')
+        self.assertTrue((directory / 'sbom.spdx.json').is_file())

@@ -26,8 +26,7 @@ def notice_files(package, destination):
         else:
             copy_file(entry, destination / entry.name)
             found += 1
-    if found == 0:
-        raise ValueError('no distribution notices found for ' + package['name'])
+    return found
 
 
 def write(root, directory, release, metadata, events):
@@ -67,10 +66,14 @@ def write(root, directory, release, metadata, events):
         if not local or relative.startswith('third_party/'):
             folder = notices / (p['name'] + '-' + p['version'])
             folder.mkdir()
-            notice_files(p, folder)
+            count = notice_files(p, folder)
             supplemental = root / '.config/upstream-notices' / folder.name
             if supplemental.is_dir():
                 copy_tree(supplemental, folder / 'supplemental')
+                count += sum(Path(path).name.upper().startswith(('LICENSE', 'NOTICE', 'COPYING'))
+                             for path in inventory(supplemental))
+            if count == 0:
+                raise ValueError('no distribution notices found for ' + p['name'])
         feature_rows.append({'name': p['name'], 'version': p['version'],
                              'source': origin, 'features': sorted(compiled[package_id])})
         records.append(row)
