@@ -260,6 +260,28 @@ func unavailableSnapshotReply(_ error: Error, operation: String, pid: Int,
             "pid": pid, "attribute": kAXWindowsAttribute, "status": AXError.cannotComplete.rawValue]
 }
 
+func unavailableDocumentSnapshotReply(_ error: Error, operation: String, pid: Int,
+                                      document: String?) -> [String: Any]? {
+    guard operation == "snapshot", pid > 0, let document, !document.isEmpty,
+          let failure = error as? Failure, case .staleSnapshot = failure else { return nil }
+    return ["format": "librairii.native-document-snapshot-unavailable", "schema": 1,
+            "pid": pid, "document": document, "status": AXError.invalidUIElement.rawValue]
+}
+
+func snapshotReadReply(operation: String, pid: Int, document: String?,
+                       read: () throws -> [String: Any]) throws -> (value: [String: Any], exitCode: Int32) {
+    do {
+        return (try read(), 0)
+    } catch {
+        guard let reply = unavailableSnapshotReply(error, operation: operation, pid: pid,
+            filtered: document != nil) ?? unavailableDocumentSnapshotReply(error,
+            operation: operation, pid: pid, document: document) else { throw error }
+        // No partial observation or selected index escapes. The caller must
+        // invoke the whole helper and select the requested document afresh.
+        return (reply, 75)
+    }
+}
+
 func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
           rootsOnly: Bool = false) throws -> [[String: Any]] {
     do {
@@ -634,84 +656,77 @@ do {
             exit(75)
         }
     case "snapshot", "status":
-        trace("reading owned CG windows and foreground status")
-        var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
-            as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
-        var onlyWindow: Int?
-        var documentObservation: [String: Any] = [:]
-        if let document = request["document"] as? String {
-            let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
-            guard let nativeWindows = try checkedWindows(app) else {
-                // A busy Finder may temporarily reject the read. Preserve the
-                // exact result for the existing bounded read-only poll, never
-                // as an empty successful inventory or a closed-window witness.
-                try output(["pid": pid, "nodes": [], "windows": [],
-                    "document_window_query_status": AXError.cannotComplete.rawValue,
-                    "document_window_list_observed": false,
-                    "document_windows_observed": false] as [String: Any])
-                exit(0)
-            }
-            // A newly opening Finder window can expose AXTitle=noValue before
-            // its title exists. Keep this as incomplete read-only observation,
-            // never as proof that our previously verified window has closed.
-            let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute, optional: true) }
-            let unresolvedTitles = titles.filter(\.isEmpty).count
-            let matches = try nativeWindows.enumerated().filter { _, window in
-                try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
-                    guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
-                    return url.resolvingSymlinksInPath().standardizedFileURL == target
+        let reply = try snapshotReadReply(operation: operation, pid: Int(pid),
+                                           document: request["document"] as? String) {
+            trace("reading owned CG windows and foreground status")
+            var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
+            var onlyWindow: Int?
+            var documentObservation: [String: Any] = [:]
+            if let document = request["document"] as? String {
+                let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
+                guard let nativeWindows = try checkedWindows(app) else {
+                    // A busy Finder may temporarily reject the read. Preserve the
+                    // exact result for the existing bounded read-only poll, never
+                    // as an empty successful inventory or a closed-window witness.
+                    return ["pid": pid, "nodes": [], "windows": [],
+                        "document_window_query_status": AXError.cannotComplete.rawValue,
+                        "document_window_list_observed": false,
+                        "document_windows_observed": false] as [String: Any]
                 }
-            }
-            guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
-            guard let (index, _) = matches.first else {
-                // Only root metadata with the exact owned fixture title may be
-                // retained when URL matching fails; no other folder is walked.
-                let candidates = nativeWindows.enumerated().filter { index, _ in
-                    titles[index] == target.lastPathComponent
+                // A newly opening Finder window can expose AXTitle=noValue before
+                // its title exists. Keep this as incomplete read-only observation,
+                // never as proof that our previously verified window has closed.
+                let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute, optional: true) }
+                let unresolvedTitles = titles.filter(\.isEmpty).count
+                let matches = try nativeWindows.enumerated().filter { _, window in
+                    try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
+                        guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
+                        return url.resolvingSymlinksInPath().standardizedFileURL == target
+                    }
                 }
-                guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
-                let diagnostic = try candidates.first.map { index, _ in
-                    try tree(app, onlyWindow: index, sheetsOnly: false)
-                } ?? []
-                let candidateWindows = candidates.first.map { _, window in
-                    windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
-                } ?? []
-                guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
-                try output(["pid": pid, "nodes": [], "windows": [],
+                guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
+                guard let (index, _) = matches.first else {
+                    // Only root metadata with the exact owned fixture title may be
+                    // retained when URL matching fails; no other folder is walked.
+                    let candidates = nativeWindows.enumerated().filter { index, _ in
+                        titles[index] == target.lastPathComponent
+                    }
+                    guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
+                    let diagnostic = try candidates.first.map { index, _ in
+                        try tree(app, onlyWindow: index, sheetsOnly: false)
+                    } ?? []
+                    let candidateWindows = candidates.first.map { _, window in
+                        windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
+                    } ?? []
+                    guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
+                    return ["pid": pid, "nodes": [], "windows": [],
+                        "document_window_list_observed": true,
+                        "document_windows_observed": unresolvedTitles == 0,
+                        "unresolved_title_window_count": unresolvedTitles,
+                        "owned_document_window_present": !candidates.isEmpty,
+                        "finder_window_count": nativeWindows.count,
+                        "owned_title_candidates": try candidates.map { try describe($0.element) },
+                        "owned_candidate_cg_windows": candidateWindows,
+                        "owned_candidate_diagnostic_tree": diagnostic] as [String: Any]
+                }
+                onlyWindow = index
+                documentObservation = ["document_windows_observed": unresolvedTitles == 0,
                     "document_window_list_observed": true,
-                    "document_windows_observed": unresolvedTitles == 0,
-                    "unresolved_title_window_count": unresolvedTitles,
-                    "owned_document_window_present": !candidates.isEmpty,
-                    "finder_window_count": nativeWindows.count,
-                    "owned_title_candidates": try candidates.map { try describe($0.element) },
-                    "owned_candidate_cg_windows": candidateWindows,
-                    "owned_candidate_diagnostic_tree": diagnostic] as [String: Any])
-                exit(0)
+                    "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
+                let title = titles[index]
+                windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
+                guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
             }
-            onlyWindow = index
-            documentObservation = ["document_windows_observed": unresolvedTitles == 0,
-                "document_window_list_observed": true,
-                "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
-            let title = titles[index]
-            windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
-            guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
-        }
-        let nodes: [[String: Any]]
-        do {
-            nodes = operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
+            let nodes = operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
                 sheetsOnly: request["document"] == nil, rootsOnly: request["summary"] as? Bool ?? false)
-        } catch {
-            guard let reply = unavailableSnapshotReply(error, operation: operation, pid: Int(pid),
-                                                       filtered: request["document"] != nil) else { throw error }
-            // A bounded caller may keep polling this incomplete read. Do not
-            // emit nodes/windows or turn root uncertainty into successful data.
-            try output(reply)
-            exit(75)
+            let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                        "keyboard_input_source": inputSource(),
+                        "nodes": nodes, "windows": windows]
+            return response.merging(documentObservation) { _, new in new }
         }
-        let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
-                    "keyboard_input_source": inputSource(),
-                    "nodes": nodes, "windows": windows]
-        try output(response.merging(documentObservation) { _, new in new })
+        try output(reply.value)
+        if reply.exitCode != 0 { exit(reply.exitCode) }
     case "window-status":
         guard let number = request["window_id"] as? Int, number > 0,
               let wanted = CGWindowID(exactly: number),

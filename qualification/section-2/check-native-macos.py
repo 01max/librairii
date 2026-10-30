@@ -38,8 +38,8 @@ class ObservationWait:
         self.mutations = parent.mutations if parent else [0]
 
 
-class SnapshotRootUnavailable(RuntimeError):
-    """An incomplete root read, never a successful or empty native snapshot."""
+class SnapshotUnavailable(RuntimeError):
+    """An incomplete bound read, never a successful or empty native snapshot."""
 
 
 def session_passed(report, binary_sha):
@@ -249,7 +249,7 @@ class Observer:
         context = _ACTIVE_WAIT.get()
         if context is not None and action not in READ_ONLY_OPERATIONS:
             context.mutations[0] += 1
-        if action in ('snapshot', 'snapshot-window') and 'document' not in request and context is not None:
+        if action in ('snapshot', 'snapshot-window') and context is not None:
             remaining = context.deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError('native macOS observation deadline')
@@ -261,17 +261,23 @@ class Observer:
         if not common.wayland.passed(result):
             message = action + ' failed: ' + json.dumps({key: result[key]
                 for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000]
-            if (action in ('snapshot', 'snapshot-window') and 'document' not in request
+            expected = None
+            if action in ('snapshot', 'snapshot-window') and 'document' not in request:
+                expected = {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+                    'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204}
+            elif action == 'snapshot' and isinstance(request.get('document'), str) and request['document']:
+                expected = {'format': 'librairii.native-document-snapshot-unavailable', 'schema': 1,
+                    'pid': self.pid, 'document': request['document'], 'status': -25202}
+            if (expected is not None
+                    and type(self.pid) is int and self.pid > 0
                     and type(result['returncode']) is int and result['returncode'] == 75
                     and result['errors'] == []):
                 try:
                     reply = json.loads(result['output'].splitlines()[-1])
                 except (ValueError, IndexError):
                     reply = None
-                expected = {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
-                    'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204}
                 if (reply == expected and all(type(reply[key]) is int for key in ('schema', 'pid', 'status'))):
-                    raise SnapshotRootUnavailable(message)
+                    raise SnapshotUnavailable(message)
             raise RuntimeError(message)
         # The helper retains stage diagnostics before its final JSON reply, so
         # a killed AX command still identifies where observation stopped.
@@ -295,7 +301,7 @@ class Observer:
                 serial = context.mutations[0]
                 try:
                     value = predicate()
-                except SnapshotRootUnavailable:
+                except SnapshotUnavailable:
                     # Only read-only predicates may continue. A preceding input
                     # or action in this iteration must never be repeated.
                     if serial != context.mutations[0]:

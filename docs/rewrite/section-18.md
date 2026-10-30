@@ -502,3 +502,23 @@ wrong identities, other native failures and command timeouts still fail.
 Headless regressions retain the old failure, exercise pending-to-ready and
 persistent-unavailable sequences, check shrinking command budgets and prove
 actions are not repeated. Fresh native evidence is required for this change.
+
+Current89 Intel exercises that root continuation: the incomplete receipt is
+followed by84 nodes for the same process without an intervening action. It later
+fails after ten checks during the first result-export Reveal, when the selected
+Finder document tree becomes invalid. The refusal to reuse its numeric window
+index is correct; the run remains failed and Finder-window retirement is unproven.
+
+That document snapshot failure now has a separate incomplete receipt bound to the
+exact requested document, PID and invalid-element status. Only the existing
+read-only wait may continue, by invoking the entire helper again and selecting
+the exact document URL afresh. No index, selector, nodes or windows survive the
+failed observation. Document reads share the original remaining deadline and
+cross-observer action guard; the filtered-tree internal retry remains refused.
+The typed conversion covers complete snapshot construction, including Finder's
+title-candidate diagnostic traversal and description while URL metadata is pending.
+Headless regressions reproduce the prior failure and verify new-observer polling,
+shrinking budgets, expiry and rejection of changed identities or preceding actions.
+Inert Swift fixtures validate the five-field wire receipt, reproduce stale
+candidate traversal/description through the production wrapper and retain the
+window-reordering refusal. Full native acceptance still requires a fresh run.

@@ -183,6 +183,34 @@ do {
     catch Failure.staleSnapshot(_) { }
     try require(batchReads == beforeFiltered + 2,
         "filtered snapshot re-enumerated a previously selected window")
+    for staleStage in ["candidate-tree", "candidate-description"] {
+        scalarFixture[kAXWindowsAttribute] = [oldRoot, newRoot] as [AXUIElement]
+        let beforeCandidate = batchReads
+        let candidate = try snapshotReadReply(operation: "snapshot", pid: 395,
+            document: "/owned/Été 日本語/export") {
+            // The production wrapper includes both the URL-selected tree and
+            // Finder's title-candidate traversal/description before any output.
+            if staleStage == "candidate-tree" {
+                return ["owned_candidate_diagnostic_tree": try tree(element, onlyWindow: 0, sheetsOnly: false)]
+            }
+            return ["owned_title_candidates": [try describe(oldChild)]]
+        }
+        try require(candidate.exitCode == 75 && candidate.value.count == 5
+            && candidate.value["document"] as? String == "/owned/Été 日本語/export"
+            && candidate.value["nodes"] == nil && candidate.value["owned_title_candidates"] == nil
+            && candidate.value["owned_candidate_diagnostic_tree"] == nil,
+            "stale Finder candidate escaped or retained partial observation")
+        try require(batchReads == beforeCandidate + (staleStage == "candidate-tree" ? 2 : 1),
+            "document construction retried a stale selected index")
+    }
+    let completeDocument = try snapshotReadReply(operation: "snapshot", pid: 395,
+        document: "/owned/Été 日本語/export") { ["nodes": ["complete"]] }
+    try require(completeDocument.exitCode == 0 && completeDocument.value["nodes"] as? [String] == ["complete"],
+        "complete document observation changed")
+    do { _ = try snapshotReadReply(operation: "snapshot", pid: 395,
+        document: "/owned/Été 日本語/export") { throw Failure.invalid("communication error") }
+        throw TestFailure.mismatch("document construction swallowed another failure") }
+    catch Failure.invalid(_) { }
     for error in [AXError.invalidUIElement, .cannotComplete, .illegalArgument] {
         scalarFixture[kAXWindowsAttribute] = [oldRoot] as [AXUIElement]
         fixture[kAXChildrenAttribute] = [] as [AXUIElement]
@@ -263,6 +291,31 @@ do {
     for error in [Failure.invalid("AXChildren: -25204"), .staleSnapshot("AXWindows: -25202")] {
         try require(unavailableSnapshotReply(error, operation: "snapshot", pid: 123, filtered: false) == nil,
             "pending root protocol admitted a different failure")
+    }
+    let document = "/owned/Été 日本語/export"
+    guard let pendingDocument = unavailableDocumentSnapshotReply(Failure.staleSnapshot("batch: -25202"),
+        operation: "snapshot", pid: 395, document: document), let documentWire = try JSONSerialization.jsonObject(
+        with: JSONSerialization.data(withJSONObject: pendingDocument)) as? [String: Any] else {
+        throw TestFailure.mismatch("missing unavailable document wire receipt")
+    }
+    try require(documentWire["format"] as? String == "librairii.native-document-snapshot-unavailable"
+        && documentWire["schema"] as? Int == 1 && documentWire["pid"] as? Int == 395
+        && documentWire["status"] as? Int == -25202 && documentWire["document"] as? String == document
+        && documentWire.count == 5 && documentWire["nodes"] == nil && documentWire["windows"] == nil
+        && documentWire["selector"] == nil && documentWire["window"] == nil,
+        "unavailable document retained partial data or a selected window index")
+    for (operation, pid, path) in [("press", 395, document), ("status", 395, document),
+        ("snapshot-window", 395, document), ("snapshot", 0, document), ("snapshot", 395, "")] {
+        try require(unavailableDocumentSnapshotReply(Failure.staleSnapshot("batch: -25202"),
+            operation: operation, pid: pid, document: path) == nil,
+            "pending document admitted an action, unbound read or invalid identity")
+    }
+    try require(unavailableDocumentSnapshotReply(Failure.staleSnapshot("batch: -25202"),
+        operation: "snapshot", pid: 395, document: nil) == nil,
+        "pending document admitted a missing document")
+    for error in [Failure.invalid("batch: -25202"), .unavailableRoot("AXWindows: -25204")] {
+        try require(unavailableDocumentSnapshotReply(error, operation: "snapshot", pid: 395,
+            document: document) == nil, "pending document admitted a different failure")
     }
     #endif
     print("headless AX snapshot fixtures passed; inert scalar fallback reads=\(scalarReads)")
