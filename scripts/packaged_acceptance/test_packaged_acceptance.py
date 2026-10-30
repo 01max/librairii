@@ -21,6 +21,30 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_runtime_requires_one_observed_renderer_matching_the_requested_route(self):
+        from packaged_acceptance.session import Session
+        with tempfile.TemporaryDirectory(prefix='librairii-renderer-witness-') as temporary:
+            session = Session.__new__(Session)
+            session.pid, session.output = 123, Path(temporary)
+            with patch('packaged_acceptance.session.platform.system', return_value='Darwin'), \
+                 patch('packaged_acceptance.session.subprocess.check_output', return_value='n/usr/lib/libSystem.B.dylib\n'):
+                for backend, surfaces, accepted in [
+                        ('winit-skia', [], False),
+                        ('winit-skia', ['software'], False),
+                        ('winit-skia-software', ['OpenGL'], False),
+                        ('winit-skia', ['OpenGL', 'software'], False),
+                        ('winit-skia', ['OpenGL'], True),
+                        ('winit-skia-software', ['software'], True)]:
+                    with self.subTest(backend=backend, surfaces=surfaces):
+                        session.launch_receipt = {'backend': backend}
+                        (session.output/'product.log').write_text(''.join(
+                            'Skia renderer (skia backend '+surface+'; test-only diagnostic)\n' for surface in surfaces))
+                        if accepted:
+                            self.assertEqual(session.runtime()['active_surface'], surfaces)
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'actual installed renderer'):
+                                session.runtime()
+
     def test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once(self):
         from packaged_acceptance.macos import Driver
         driver=Driver.__new__(Driver)

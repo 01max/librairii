@@ -163,6 +163,7 @@ class Fixture:
             'LIBRAIRII_ACCEPTANCE_LIBRARY': str(self.library),
             'LIBRAIRII_ACCEPTANCE_CATALOG': 'http://127.0.0.1:'+str(self.port)+'/',
             'SLINT_BACKEND': backend,
+            'SLINT_DEBUG_PERFORMANCE': 'refresh_lazy,console',
             'SLINT_SCALE_FACTOR': self.scale,
         })
         return environment

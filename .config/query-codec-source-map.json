@@ -6077,6 +6077,11 @@
         "position": 102,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 103,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_runtime_requires_one_observed_renderer_matching_the_requested_route",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

@@ -100,6 +100,11 @@ class Session:
                 'raw_log':self.output.name+'/product.log', 'observed_fields':matches[0]}
 
     def runtime(self):
+        surfaces = set(re.findall(r'Skia renderer \(skia backend ([^;]+);',
+                                 (self.output/'product.log').read_text()))
+        requested = self.launch_receipt['backend']
+        if len(surfaces) != 1 or ('software' in surfaces) != (requested == 'winit-skia-software'):
+            raise ValueError('actual installed renderer differs from the requested native route')
         if platform.system() == 'Linux':
             mappings = Path('/proc')/str(self.pid)/'maps'
             observed = mappings.read_text()
@@ -112,6 +117,7 @@ class Session:
             raise ValueError('installed product loaded an undeclared browser/Node runtime')
         return {'pid': self.pid, 'mappings_sha256': digest(self.output/'runtime-mappings.txt'),
                 'method': 'proc-maps' if platform.system() == 'Linux' else 'lsof',
+                'requested_backend': requested, 'active_surface': sorted(surfaces),
                 'forbidden_runtime_found': False}
 
     def close(self, driver, french):
