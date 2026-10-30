@@ -16,8 +16,9 @@ from native_release.files import copy_tree, digest, inventory, write_json
 
 class Fixture:
     def __init__(self, source, evidence, upgraded):
-        self.owner = tempfile.TemporaryDirectory(prefix='librairii-packaged-')
-        self.root = Path(self.owner.name).resolve()
+        # Explicit custody: unresolved product ownership must never trigger an
+        # automatic TemporaryDirectory finalizer under a still-running child.
+        self.root = Path(tempfile.mkdtemp(prefix='librairii-packaged-')).resolve()
         self.profile, self.library = self.root/'profile', self.root/'library'
         self.profile.mkdir()
         self.library.mkdir()
@@ -146,7 +147,7 @@ class Fixture:
             return [{key: ({'blob_hex': value.hex()} if isinstance(value, bytes) else value)
                      for key,value in dict(row).items()} for row in connection.execute(statement)]
 
-    def retain(self):
+    def retain(self, *, process_retired=True):
         self.catalog_release.set()
         self.server.shutdown()
         self.server.server_close()
@@ -163,6 +164,10 @@ class Fixture:
             failures.append('Go-era source changed during independent adoption')
         write_json(self.evidence/'fixture-final.json', inventory(self.root))
         tar_gzip(self.root, self.evidence/'fixture-final.tar.gz', 'owned-fixture', 0)
-        self.owner.cleanup()
+        if process_retired:
+            shutil.rmtree(self.root)
+        else:
+            # Preserve data still potentially held by an unresolved process.
+            failures.append('product retirement uncertain; fixture retained at '+str(self.root))
         if failures:
             raise ValueError('fixture custody/network failure: '+str(failures))

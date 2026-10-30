@@ -37,26 +37,45 @@ class Session:
                 policy += '(deny file-read* (subpath '+quote(Path(checkout).resolve())+'))'
             (output/'product.sb').write_text(policy+'\n')
             command = ['/usr/bin/sandbox-exec', '-p', policy, str(binary)]
-        self.process = subprocess.Popen(command, cwd=working, env=environment,
-                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
+        self.command, self.environment, self.working = command, environment, working
+        self.process, self.reader = None, None
+        self.launch_receipt = {'binary': str(binary), 'binary_sha256': digest(binary),
+                   'cwd': str(working), 'backend': backend, 'path': environment['PATH'],
+                   'qualification_root': str(fixture.root),
+                   'profile': str(fixture.profile), 'library': str(fixture.library)}
+
+    def start(self):
+        # The caller already holds this Session before a child can exist.
+        log = (self.output/'product.log').open('xb')
+        try:
+            self.process = subprocess.Popen(self.command, cwd=self.working, env=self.environment,
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
+        except Exception:
+            log.close()
+            raise
         self.pid = self.process.pid
-        write_json(output/'launch.json', {'pid': self.pid, 'binary': str(binary),
-                   'binary_sha256': digest(binary), 'cwd': str(working), 'backend': backend,
-                   'path': environment['PATH'], 'qualification_root': str(fixture.root),
-                   'profile': str(fixture.profile), 'library': str(fixture.library)})
         def capture():
             total = 0
-            with self.process.stdout as source, (output/'product.log').open('xb') as log:
-                while data := source.read1(65536):
-                    total += len(data)
-                    log.write(data[:max(0, 4194304-(total-len(data)))])
-                    log.flush()
-                    if total > 4194304:
-                        self.errors.append('product output exceeded4MiB')
-                        self.process.kill()
-                        return
-        self.reader = threading.Thread(target=capture)
-        self.reader.start()
+            try:
+                with self.process.stdout as source, log:
+                    while data := source.read1(65536):
+                        total += len(data)
+                        log.write(data[:max(0, 4194304-(total-len(data)))])
+                        log.flush()
+                        if total > 4194304:
+                            self.errors.append('product output exceeded4MiB')
+                            self.process.kill()
+                            return
+            except Exception as error:
+                self.errors.append('product capture failed: '+str(error))
+        self.reader = threading.Thread(target=capture, daemon=True)
+        try:
+            self.reader.start()
+        except Exception:
+            log.close()
+            self.process.stdout.close()
+            raise
+        write_json(self.output/'launch.json', dict(self.launch_receipt, pid=self.pid))
 
     def runtime(self):
         if platform.system() == 'Linux':
@@ -113,9 +132,24 @@ class Session:
 
     def retire_failure(self):
         # Popen owns this unreaped child; no name/PID search authorizes killing.
-        if self.process.poll() is None:
-            self.process.kill()
-        self.process.wait(timeout=10)
-        self.reader.join(timeout=5)
-        if self.reader.is_alive():
-            raise ValueError('product output reader survived owned retirement')
+        receipt = {'spawned': self.process is not None, 'retired': False, 'errors': []}
+        try:
+            if self.process is not None:
+                if self.process.poll() is None:
+                    self.process.kill()
+                receipt['returncode'] = self.process.wait(timeout=10)
+        except Exception as error:
+            receipt['errors'].append('process retirement: '+str(error))
+        try:
+            if self.reader is not None and self.reader.ident is not None:
+                self.reader.join(timeout=5)
+        except Exception as error:
+            receipt['errors'].append('reader retirement: '+str(error))
+        receipt['reader_retired'] = self.reader is None or not self.reader.is_alive()
+        receipt['retired'] = (not receipt['errors'] and receipt['reader_retired']
+                              and (self.process is None or self.process.poll() is not None))
+        receipt['capture_errors'] = list(self.errors)
+        write_json(self.output/'retirement.json', receipt)
+        if not receipt['retired']:
+            raise ValueError('owned product process/capture retirement remains uncertain')
+        return receipt

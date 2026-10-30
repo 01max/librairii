@@ -105,6 +105,7 @@ def main():
                 except Exception as error:
                     lane['error'] = str(error)
                     result['errors'].append(case+': '+str(error))
+                    break  # No further native input after a failed custody lane.
         else:
             build_context = output/'runtime-context'
             context(build_context)

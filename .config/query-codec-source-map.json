@@ -5972,6 +5972,11 @@
         "position": 81,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_interruption_requires_exact_signal_and_retired_error_free_capture",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 82,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },

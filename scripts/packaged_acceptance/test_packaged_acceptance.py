@@ -1,6 +1,7 @@
 """Admission and custody regressions; never runs a native GUI."""
 import copy
 import importlib.util
+import io
 from http.client import HTTPConnection
 import json
 import os
@@ -19,6 +20,42 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture(self):
+        from packaged_acceptance.session import Session
+        from packaged_acceptance.run import retire_owned
+        with tempfile.TemporaryDirectory() as temporary:
+            session = Session.__new__(Session)
+            session.output = Path(temporary)
+            session.command, session.environment, session.working = ['/unused'], {}, temporary
+            session.launch_receipt, session.errors = {}, []
+            session.process, session.reader = None, None
+            child = Mock()
+            child.pid = 123
+            child.stdout = io.BytesIO(b'')
+            child.poll.return_value = None
+            child.kill.side_effect = lambda: setattr(child.poll, 'return_value', -9)
+            child.wait.return_value = -9
+            reader = Mock()
+            reader.ident = 1
+            reader.is_alive.return_value = False
+            with patch('packaged_acceptance.session.subprocess.Popen', return_value=child), \
+                 patch('packaged_acceptance.session.threading.Thread', return_value=reader) as thread, \
+                 patch('packaged_acceptance.session.write_json', side_effect=OSError('receipt failed')):
+                reader.start.side_effect = lambda: thread.call_args.kwargs['target']()
+                with self.assertRaises(OSError):
+                    session.start()
+            self.assertIs(session.process, child)
+            self.assertTrue(session.retire_failure()['retired'])
+            child.kill.assert_called_once()
+            reader.join.assert_called_once()
+        application, fixture = Mock(), Mock()
+        application.retire_failure.side_effect = ValueError('unresolved process')
+        processes = [{'retired':True}]
+        errors = retire_owned(application, fixture, processes)
+        self.assertEqual(len(errors), 1)
+        self.assertFalse(processes[0]['retired'])
+        fixture.retain.assert_called_once_with(process_retired=False)
+
     def test_interruption_requires_exact_signal_and_retired_error_free_capture(self):
         from packaged_acceptance.session import Session
         import signal

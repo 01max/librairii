@@ -21,6 +21,25 @@ def durable(fixture):
     return {table: fixture.rows('SELECT * FROM '+table+' ORDER BY rowid') for table in TABLES}
 
 
+def retire_owned(application, fixture, processes):
+    errors, retired = [], application is None
+    try:
+        if application:
+            receipt = application.retire_failure()
+            retired = receipt['retired']
+            if processes:
+                processes[-1]['retirement'] = receipt
+    except Exception:
+        errors.append('owned process cleanup: '+traceback.format_exc())
+    if application and processes:
+        processes[-1]['retired'] = retired
+    try:
+        fixture.retain(process_retired=retired)
+    except Exception:
+        errors.append('owned fixture cleanup: '+traceback.format_exc())
+    return errors
+
+
 def admit(inspection, expected_source, target):
     if (inspection.get('format') != 'librairii.native-package-inspection' or inspection.get('schema') != 1
             or inspection.get('source_commit') != expected_source or inspection.get('target') != target
@@ -69,8 +88,10 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
     def launch(name):
         nonlocal application, driver
         application = Session(binary, fixture, backend, output/name)
-        process = {'name': name, 'pid': application.pid, 'binary_sha256': digest(binary), 'retired': False}
+        process = {'name': name, 'pid': None, 'binary_sha256': digest(binary), 'retired': False}
         report['processes'].append(process)
+        application.start()
+        process['pid'] = application.pid
         if desktop:
             from .linux import Driver
             driver = Driver(root, output/name, application.pid, desktop)
@@ -178,15 +199,10 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
                 report['errors'].append('failure snapshot: '+traceback.format_exc())
         raise
     finally:
-        try:
-            if application:
-                application.retire_failure()
-                if report['processes']:
-                    report['processes'][-1]['retired'] = True
-            fixture.retain()
-        except Exception:
+        cleanup_errors = retire_owned(application, fixture, report['processes'])
+        if cleanup_errors:
             report['complete'] = False
-            report['errors'].append('owned cleanup: '+traceback.format_exc())
+            report['errors'].extend(cleanup_errors)
         report['files'] = inventory(output)
         write_json(output/'report.json', report)
     return report
