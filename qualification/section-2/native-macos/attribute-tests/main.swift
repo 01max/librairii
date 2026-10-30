@@ -240,6 +240,30 @@ do {
         throw TestFailure.mismatch("failed sheet enumeration became an empty snapshot") }
     catch is Failure { }
     try require(performedActions == 0, "snapshot rebuild performed a native action")
+    let pending = unavailableSnapshotReply(Failure.unavailableRoot("AXWindows: -25204"),
+        operation: "snapshot", pid: 123, filtered: false)
+    guard let pending, let wire = try JSONSerialization.jsonObject(
+        with: JSONSerialization.data(withJSONObject: pending)) as? [String: Any] else {
+        throw TestFailure.mismatch("missing unavailable root wire receipt")
+    }
+    try require(wire["format"] as? String == "librairii.native-snapshot-unavailable"
+        && wire["pid"] as? Int == 123 && wire["status"] as? Int == -25204
+        && wire["attribute"] as? String == kAXWindowsAttribute
+        && wire.count == 5 && wire["nodes"] == nil && wire["windows"] == nil,
+        "unavailable root was represented as successful or partial data")
+    try require(unavailableSnapshotReply(Failure.unavailableRoot("AXWindows: -25204"),
+        operation: "snapshot-window", pid: 123, filtered: false) != nil,
+        "unfiltered window root unavailability lost its typed receipt")
+    for (operation, filtered, pid) in [("press", false, 123), ("status", false, 123),
+        ("snapshot", true, 123), ("snapshot", false, 0)] {
+        try require(unavailableSnapshotReply(Failure.unavailableRoot("AXWindows: -25204"),
+            operation: operation, pid: pid, filtered: filtered) == nil,
+            "pending root protocol admitted an action, filtered read or invalid identity")
+    }
+    for error in [Failure.invalid("AXChildren: -25204"), .staleSnapshot("AXWindows: -25202")] {
+        try require(unavailableSnapshotReply(error, operation: "snapshot", pid: 123, filtered: false) == nil,
+            "pending root protocol admitted a different failure")
+    }
     #endif
     print("headless AX snapshot fixtures passed; inert scalar fallback reads=\(scalarReads)")
 } catch {

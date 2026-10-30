@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Observe the packaged app's actual macOS sheets, menus, clipboard and Finder path."""
 import argparse
+import contextvars
 import hashlib
 import importlib.util
 import itertools
@@ -25,6 +26,20 @@ CASES = [('files-multiple', 'files', 'selected'), ('files-single', 'files', 'sel
     ('folder-cancel', 'folder', 'cancelled'), ('folder-reject', 'folder', 'rejected'),
     ('early-settings', 'early-settings', 'delivered'), ('reveal', 'reveal', 'requested')]
 COMMAND_IDS = itertools.count(1)
+READ_ONLY_OPERATIONS = {'snapshot', 'snapshot-window', 'status', 'window-status',
+    'launch-status', 'input-sources', 'input-method-status', 'clipboard-get', 'finder', 'display-preferences'}
+_ACTIVE_WAIT = contextvars.ContextVar('native_macos_observation_wait', default=None)
+
+
+class ObservationWait:
+    def __init__(self, deadline, parent):
+        self.deadline = min(deadline, parent.deadline) if parent else deadline
+        # Nested waits and other Observer instances share this action counter.
+        self.mutations = parent.mutations if parent else [0]
+
+
+class SnapshotRootUnavailable(RuntimeError):
+    """An incomplete root read, never a successful or empty native snapshot."""
 
 
 def session_passed(report, binary_sha):
@@ -231,13 +246,33 @@ class Observer:
         self.binary, self.output, self.pid = binary, output, pid
 
     def call(self, action, *, command_timeout=12, **request):
+        context = _ACTIVE_WAIT.get()
+        if context is not None and action not in READ_ONLY_OPERATIONS:
+            context.mutations[0] += 1
+        if action in ('snapshot', 'snapshot-window') and 'document' not in request and context is not None:
+            remaining = context.deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('native macOS observation deadline')
+            command_timeout = min(command_timeout, remaining)
         sequence = next(COMMAND_IDS)
         result = common.wayland.command([str(self.binary), action,
             json.dumps({'pid': self.pid, **request}, ensure_ascii=False)], os.environ.copy(),
             self.output / f'command-{sequence:04}-{action}.log', timeout=command_timeout)
         if not common.wayland.passed(result):
-            raise RuntimeError(action + ' failed: ' + json.dumps({key: result[key]
-                for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000])
+            message = action + ' failed: ' + json.dumps({key: result[key]
+                for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000]
+            if (action in ('snapshot', 'snapshot-window') and 'document' not in request
+                    and type(result['returncode']) is int and result['returncode'] == 75
+                    and result['errors'] == []):
+                try:
+                    reply = json.loads(result['output'].splitlines()[-1])
+                except (ValueError, IndexError):
+                    reply = None
+                expected = {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+                    'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204}
+                if (reply == expected and all(type(reply[key]) is int for key in ('schema', 'pid', 'status'))):
+                    raise SnapshotRootUnavailable(message)
+            raise RuntimeError(message)
         # The helper retains stage diagnostics before its final JSON reply, so
         # a killed AX command still identifies where observation stopped.
         return json.loads(result['output'].splitlines()[-1])
@@ -252,13 +287,28 @@ class Observer:
         return self.call('status')
 
     def wait(self, predicate, timeout=12):
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            value = predicate()
-            if value:
-                return value
-            time.sleep(0.05)
-        raise TimeoutError('native macOS observation deadline')
+        context = ObservationWait(time.monotonic() + timeout, _ACTIVE_WAIT.get())
+        deadline = context.deadline
+        token = _ACTIVE_WAIT.set(context)
+        try:
+            while time.monotonic() < deadline:
+                serial = context.mutations[0]
+                try:
+                    value = predicate()
+                except SnapshotRootUnavailable:
+                    # Only read-only predicates may continue. A preceding input
+                    # or action in this iteration must never be repeated.
+                    if serial != context.mutations[0]:
+                        raise
+                    value = None
+                remaining = deadline - time.monotonic()
+                if value and remaining > 0:
+                    return value
+                if remaining > 0:
+                    time.sleep(min(0.05, remaining))
+            raise TimeoutError('native macOS observation deadline')
+        finally:
+            _ACTIVE_WAIT.reset(token)
 
     def button(self, snapshot, root, titles):
         def ready(value):

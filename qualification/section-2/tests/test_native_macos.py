@@ -1,6 +1,7 @@
 """A build or partial macOS summary cannot qualify missing native observations."""
 import copy
 import importlib.util
+import json
 import pathlib
 import subprocess
 import sys
@@ -15,6 +16,131 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_pending_root_can_only_continue_a_read_only_wait_within_its_original_deadline(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+            'pid': 123, 'attribute': 'AXWindows', 'status': -25204})}
+        ready = {'returncode': 0, 'errors': [], 'output': '{"pid":123,"nodes":[{"role":"AXSheet"}]}'}
+        now, calls = [0.0], []
+        def command(argv, env, log, timeout):
+            calls.append((argv[1], timeout))
+            now[0] += min(2, timeout)
+            return pending if len(calls) == 1 else ready
+        def sleep(duration):
+            now[0] += duration
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=command), \
+                mock.patch.object(macos.time, 'monotonic', side_effect=lambda: now[0]), \
+                mock.patch.object(macos.time, 'sleep', side_effect=sleep):
+            self.assertEqual(observer.wait(lambda: observer.wait(
+                lambda: observer.snapshot(summary=True), timeout=30))['nodes'], [{'role': 'AXSheet'}])
+        self.assertEqual([action for action, _ in calls], ['snapshot', 'snapshot'])
+        self.assertEqual(calls[0][1], 12)
+        self.assertAlmostEqual(calls[1][1], 9.95)
+        self.assertLess(now[0], 12)
+        self.assertIsNone(macos._ACTIVE_WAIT.get())
+
+    def test_persistent_pending_root_expires_without_a_successful_empty_snapshot(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+            'pid': 123, 'attribute': 'AXWindows', 'status': -25204})}
+        now, timeouts = [0.0], []
+        def command(argv, env, log, timeout):
+            self.assertEqual(argv[1], 'snapshot')
+            self.assertGreater(timeout, 0)
+            self.assertLessEqual(timeout, 12 - now[0])
+            timeouts.append(timeout)
+            now[0] += min(2, timeout)
+            return pending
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=command), \
+                mock.patch.object(macos.time, 'monotonic', side_effect=lambda: now[0]), \
+                mock.patch.object(macos.time, 'sleep', side_effect=lambda duration: now.__setitem__(0, now[0] + duration)), \
+                self.assertRaises(TimeoutError):
+            observer.wait(lambda: observer.snapshot(summary=True))
+        self.assertEqual(len(timeouts), 6)
+        self.assertEqual(now[0], 12)
+        self.assertIsNone(macos._ACTIVE_WAIT.get())
+
+    def test_unfiltered_window_snapshot_uses_the_same_pending_read_protocol(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+            'pid': 123, 'attribute': 'AXWindows', 'status': -25204})}
+        ready = {'returncode': 0, 'errors': [], 'output': '{"pid":123,"nodes":[{"role":"AXWindow"}]}'}
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=[pending, ready]) as command, \
+                mock.patch.object(macos.time, 'sleep'):
+            self.assertEqual(observer.wait(lambda: observer.call('snapshot-window'))['nodes'], [{'role': 'AXWindow'}])
+        self.assertEqual([call.args[0][1] for call in command.call_args_list], ['snapshot-window', 'snapshot-window'])
+
+    def test_pending_root_protocol_refuses_wrong_identity_actions_filtered_reads_and_command_errors(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        reply = {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+                 'pid': 123, 'attribute': 'AXWindows', 'status': -25204}
+        result = {'returncode': 75, 'errors': [], 'output': json.dumps(reply)}
+        changes = [{'returncode': 1}, {'returncode': -9}, {'errors': ['deadline']},
+            {'output': '{}'}, {'output': 'not JSON'},
+            *({'output': json.dumps({**reply, **change})} for change in [
+                {'pid': 456}, {'pid': True}, {'schema': True}, {'status': -25202},
+                {'attribute': 'AXChildren'}, {'nodes': []}])]
+        for change in changes:
+            with self.subTest(change=change), mock.patch.object(macos.common.wayland, 'command',
+                    return_value={**result, **change}) as command, self.assertRaises(RuntimeError):
+                observer.wait(lambda: observer.snapshot(summary=True))
+            self.assertEqual(command.call_count, 1)
+        for action, request in [('press', {}), ('status', {}),
+                                ('snapshot', {'document': '/owned/folder'}),
+                                ('snapshot-window', {'document': '/owned/folder'})]:
+            with self.subTest(action=action), mock.patch.object(macos.common.wayland, 'command',
+                    return_value=result) as command, self.assertRaises(RuntimeError):
+                observer.wait(lambda: observer.call(action, **request))
+            self.assertEqual(command.call_count, 1)
+        with mock.patch.object(macos.common.wayland, 'command', return_value=result), self.assertRaises(RuntimeError):
+            observer.snapshot(summary=True)
+
+    def test_wait_never_repeats_an_action_before_a_pending_root_read(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+            'pid': 123, 'attribute': 'AXWindows', 'status': -25204})}
+        success = {'returncode': 0, 'errors': [], 'output': '{"performed":true}'}
+        def predicate():
+            observer.call('press', selector={'window': 0, 'path': [1]})
+            return observer.snapshot(summary=True)
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=[success, pending]) as command, \
+                self.assertRaises(RuntimeError):
+            observer.wait(predicate)
+        self.assertEqual(command.call_count, 2)
+
+    def test_wait_never_repeats_an_action_from_another_observer(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        other = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/other'), 456)
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+            'pid': 123, 'attribute': 'AXWindows', 'status': -25204})}
+        success = {'returncode': 0, 'errors': [], 'output': '{"performed":true}'}
+        def predicate():
+            other.call('press', selector={'window': 0, 'path': [1]})
+            return observer.snapshot(summary=True)
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=[success, pending]) as command, \
+                self.assertRaises(RuntimeError):
+            observer.wait(predicate)
+        self.assertEqual(command.call_count, 2)
+
+    def test_nested_wait_from_another_observer_inherits_the_outer_deadline(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        other = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/other'), 456)
+        now, budgets = [0.0], []
+        def command(argv, env, log, timeout):
+            budgets.append(timeout)
+            now[0] += timeout
+            return {'returncode': -9, 'errors': ['deadline'], 'output': ''}
+        with mock.patch.object(macos.common.wayland, 'command', side_effect=command), \
+                mock.patch.object(macos.time, 'monotonic', side_effect=lambda: now[0]), self.assertRaises(RuntimeError):
+            observer.wait(lambda: other.wait(lambda: other.snapshot(summary=True), timeout=30), timeout=1)
+        self.assertEqual(budgets, [1])
+        self.assertEqual(now[0], 1)
+
     def test_go_folder_uses_native_editing_and_exact_readback_before_one_return(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = pathlib.Path(temporary)

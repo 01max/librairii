@@ -252,6 +252,14 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
     return element
 }
 
+func unavailableSnapshotReply(_ error: Error, operation: String, pid: Int,
+                              filtered: Bool) -> [String: Any]? {
+    guard ["snapshot", "snapshot-window"].contains(operation), !filtered, pid > 0,
+          let failure = error as? Failure, case .unavailableRoot = failure else { return nil }
+    return ["format": "librairii.native-snapshot-unavailable", "schema": 1,
+            "pid": pid, "attribute": kAXWindowsAttribute, "status": AXError.cannotComplete.rawValue]
+}
+
 func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
           rootsOnly: Bool = false) throws -> [[String: Any]] {
     do {
@@ -614,10 +622,17 @@ do {
         guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
             throw Failure.invalid("installed GUI observation requires a disposable native CI host")
         }
-        try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
-            "nodes": tree(app, sheetsOnly: false), "windows":
-                (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
-                 as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }])
+        do {
+            try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                "nodes": tree(app, sheetsOnly: false), "windows":
+                    (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                     as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }])
+        } catch {
+            guard let reply = unavailableSnapshotReply(error, operation: operation, pid: Int(pid),
+                                                       filtered: request["document"] != nil) else { throw error }
+            try output(reply)
+            exit(75)
+        }
     case "snapshot", "status":
         trace("reading owned CG windows and foreground status")
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
@@ -681,11 +696,21 @@ do {
             windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
             guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
         }
+        let nodes: [[String: Any]]
+        do {
+            nodes = operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
+                sheetsOnly: request["document"] == nil, rootsOnly: request["summary"] as? Bool ?? false)
+        } catch {
+            guard let reply = unavailableSnapshotReply(error, operation: operation, pid: Int(pid),
+                                                       filtered: request["document"] != nil) else { throw error }
+            // A bounded caller may keep polling this incomplete read. Do not
+            // emit nodes/windows or turn root uncertainty into successful data.
+            try output(reply)
+            exit(75)
+        }
         let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
                     "keyboard_input_source": inputSource(),
-                    "nodes": operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
-                        sheetsOnly: request["document"] == nil,
-                        rootsOnly: request["summary"] as? Bool ?? false), "windows": windows]
+                    "nodes": nodes, "windows": windows]
         try output(response.merging(documentObservation) { _, new in new })
     case "window-status":
         guard let number = request["window_id"] as? Int, number > 0,

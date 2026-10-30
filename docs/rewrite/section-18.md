@@ -477,3 +477,28 @@ fail, and failed enumeration never becomes an empty success. The existing
 12-second helper deadline and all action checks remain unchanged. Inert fixtures
 reproduce the root error and verify recovery, recurrence, mixed errors and
 filtered-window refusal. This replay remains failed pending fresh native evidence.
+
+The current88 Intel installation repeats AXWindows/cannotComplete through both
+helper attempts after a successful picker press. The next failure-capture read
+returns229 picker nodes for the same PID. Its zero-check lane remains failed;
+this establishes read unavailability during the transition, without explaining
+the underlying product or OS cause.
+
+An exhausted, unfiltered picker snapshot can now return a distinct incomplete
+root receipt with exit75, the exact PID/attribute/status and no nodes or windows.
+The same receipt covers unfiltered full-window reads: the separate exact84
+package replay reaches four checks before that root query fails in the details
+wait. Both failed runs keep their original verdicts.
+Only the existing read-only wait accepts that exact receipt as pending. The
+helper still makes at most two root attempts, retains its one-second AX messaging
+limit and12-second command watchdog, and performs no action during recovery.
+The caller caps subsequent snapshot commands to the time remaining in its
+original wait; nested waits cannot extend it. Persistent unavailability still
+fails at that deadline. A preceding action in the same predicate prevents
+continuation, including actions through another observer. The deadline and
+action context spans participating observers and nested waits. Direct snapshots,
+filtered Finder reads, malformed receipts,
+wrong identities, other native failures and command timeouts still fail.
+Headless regressions retain the old failure, exercise pending-to-ready and
+persistent-unavailable sequences, check shrinking command budgets and prove
+actions are not repeated. Fresh native evidence is required for this change.
