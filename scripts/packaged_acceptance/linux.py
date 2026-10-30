@@ -271,12 +271,20 @@ def open_picker_root(driver, application):
         observed = {'name': place.name, 'role': place.getRoleName()}
         attempts.append(observed)
         if observed['role'] == 'list item':
-            # GtkPlacesSidebar rows expose Component focus, not an Action.
-            # Return on that actual focused row emits native row activation.
+            # GtkPlacesSidebar opens the selected row on Return; focus alone
+            # only moves its cursor and would reopen the previous Recent row.
+            index = place.getIndexInParent()
+            box = place.parent
+            if box.getRoleName() != 'list box' or index < 0:
+                raise ValueError('native root location has no owning list')
+            if not box.querySelection().selectChild(index):
+                raise ValueError('native root location selection refused')
+            driver.wait(lambda: place.getState().contains(driver.desktop.a.STATE_SELECTED))
             if not place.queryComponent().grabFocus():
                 raise ValueError('native root location focus refused')
             driver.wait(lambda: place.getState().contains(driver.desktop.a.STATE_FOCUSED))
             driver.key('Return')
+            observed['selected_index'] = index
             observed['focused_native_return'] = True
             return attempts
         place = place.parent

@@ -25,15 +25,25 @@ class PackagedAdmission(unittest.TestCase):
         from packaged_acceptance.linux import open_picker_root
         driver = Mock()
         driver.desktop.a.STATE_FOCUSED = 'focused'
+        driver.desktop.a.STATE_SELECTED = 'selected'
         def wait(predicate):
             value=predicate()
             if not value:
                 raise TimeoutError('native focus was not observed')
             return value
         driver.wait.side_effect=wait
-        row=SimpleNamespace(parent=None,name='',getRoleName=Mock(return_value='list item'),
+        selection=Mock()
+        state={'selected':False,'focused':True}
+        def select(index):
+            self.assertEqual(index,3)
+            state['selected']=True
+            return True
+        selection.selectChild.side_effect=select
+        box=SimpleNamespace(querySelection=Mock(return_value=selection),getRoleName=Mock(return_value='list box'))
+        row=SimpleNamespace(parent=box,name='',getIndexInParent=Mock(return_value=3),getRoleName=Mock(return_value='list item'),
                             queryAction=Mock(side_effect=NotImplementedError),queryComponent=Mock(),getState=Mock())
-        row.getState.return_value.contains.return_value=True
+        row.getState.return_value.contains.side_effect=lambda flag:state[flag]
+        driver.key.side_effect=lambda key:self.assertTrue(state['selected'],'Return would reopen the previously selected Recent row')
         label=SimpleNamespace(parent=row,name='/',getRoleName=Mock(return_value='label'),
                               queryAction=Mock(side_effect=NotImplementedError))
         driver.find.return_value=label
@@ -42,13 +52,21 @@ class PackagedAdmission(unittest.TestCase):
         row.queryComponent().grabFocus.assert_called_once()
         driver.key.assert_called_once_with('Return')
         driver.action.assert_not_called()
+        selection.selectChild.assert_called_once_with(3)
         for accepted,focused in ((False,True),(True,False)):
             driver.key.reset_mock()
             row.queryComponent().grabFocus.return_value=accepted
-            row.getState.return_value.contains.return_value=focused
+            state['focused']=focused
             with self.assertRaises((ValueError,TimeoutError)):
                 open_picker_root(driver,object())
             driver.key.assert_not_called()
+        state['focused']=True
+        driver.key.reset_mock()
+        selection.selectChild.side_effect=None
+        selection.selectChild.return_value=False
+        with self.assertRaisesRegex(ValueError,'selection refused'):
+            open_picker_root(driver,object())
+        driver.key.assert_not_called()
 
     def test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors(self):
         from packaged_acceptance.macos import Driver
