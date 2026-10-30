@@ -176,6 +176,18 @@ class Session:
         try:
             if self.process is not None:
                 if self.process.poll() is None:
+                    if platform.system() == 'Darwin' and os.environ.get('GITHUB_ACTIONS') == 'true':
+                        # The Popen child remains unreaped while sampling, so its
+                        # PID cannot identify a replacement process. Diagnostics
+                        # never replace the original failure or prevent cleanup.
+                        try:
+                            with (self.output/'failure-sample.log').open('xb') as log:
+                                result = subprocess.run(['/usr/bin/sample', str(self.process.pid), '1', '1',
+                                    '-file', str(self.output/'failure.sample.txt')], stdout=log,
+                                    stderr=subprocess.STDOUT, timeout=5, check=False)
+                            receipt['failure_sample'] = {'pid': self.process.pid, 'returncode': result.returncode}
+                        except Exception as error:
+                            receipt['failure_sample'] = {'pid': self.process.pid, 'error': str(error)}
                     self.process.kill()
                 receipt['returncode'] = self.process.wait(timeout=10)
         except Exception as error:

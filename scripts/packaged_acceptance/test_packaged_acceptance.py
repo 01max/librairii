@@ -24,6 +24,45 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_failed_mac_session_samples_only_its_unreaped_child_before_retirement(self):
+        from packaged_acceptance.session import Session
+        import subprocess
+        cases = [('Darwin', 'true', True, False), ('Darwin', 'true', True, True),
+                 ('Darwin', 'false', True, False), ('Linux', 'true', True, False),
+                 ('Darwin', 'true', False, False)]
+        for system, ci, live, failed in cases:
+            with self.subTest(system=system, ci=ci, live=live, sample_failed=failed), tempfile.TemporaryDirectory() as temporary:
+                session = Session.__new__(Session)
+                session.output, session.errors = Path(temporary), []
+                child = session.process = Mock(pid=123)
+                child.poll.return_value = None if live else 0
+                child.kill.side_effect = lambda: setattr(child.poll, 'return_value', -9)
+                child.wait.return_value = -9 if live else 0
+                session.reader = Mock(ident=1)
+                session.reader.is_alive.return_value = False
+                def sample(command, **options):
+                    child.kill.assert_not_called()
+                    self.assertEqual(command, ['/usr/bin/sample', '123', '1', '1', '-file',
+                                                str(session.output/'failure.sample.txt')])
+                    self.assertEqual(options['timeout'], 5)
+                    if failed:
+                        raise subprocess.TimeoutExpired(command, 5)
+                    return SimpleNamespace(returncode=0)
+                with patch.dict(os.environ, {'GITHUB_ACTIONS': ci}), \
+                     patch('packaged_acceptance.session.platform.system', return_value=system), \
+                     patch('packaged_acceptance.session.subprocess.run', side_effect=sample) as sampled:
+                    receipt = session.retire_failure()
+                if system == 'Darwin' and ci == 'true' and live:
+                    sampled.assert_called_once()
+                else:
+                    sampled.assert_not_called()
+                if live:
+                    child.kill.assert_called_once()
+                else:
+                    child.kill.assert_not_called()
+                self.assertTrue(receipt['retired'])
+                self.assertEqual(receipt['returncode'], -9 if live else 0)
+
     def test_mac_activation_waits_for_the_exact_owned_visible_window(self):
         from packaged_acceptance.macos import Driver
         pid = 123
@@ -497,7 +536,8 @@ class PackagedAdmission(unittest.TestCase):
                 with self.assertRaises(OSError):
                     session.start()
             self.assertIs(session.process, child)
-            self.assertTrue(session.retire_failure()['retired'])
+            with patch('packaged_acceptance.session.subprocess.run', return_value=SimpleNamespace(returncode=0)):
+                self.assertTrue(session.retire_failure()['retired'])
             child.kill.assert_called_once()
             reader.join.assert_called_once()
         application, fixture = Mock(), Mock()
