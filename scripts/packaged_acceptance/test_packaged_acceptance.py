@@ -21,6 +21,34 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing(self):
+        from packaged_acceptance.macos import Driver as Mac
+        from packaged_acceptance.linux import Driver as Linux
+        for cls in (Mac,Linux):
+            with self.subTest(platform=cls.__module__):
+                driver=cls.__new__(cls)
+                state={'value':'Clockwork','selected':False}
+                driver.focus=Mock()
+                def key(value):
+                    if value in ('ctrl+a','cmd+a'):
+                        state['selected']=True
+                    elif value in ('BackSpace','delete') and state['selected']:
+                        state['value']=''
+                driver.key=key
+                def wait(predicate):
+                    value=predicate()
+                    if not value:
+                        raise TimeoutError('search still contains selected text')
+                    return value
+                driver.wait=wait
+                driver.snapshot=lambda:{'nodes':[{'name':'Search stories','title':'Search stories','value':state['value']}]}
+                driver.desktop=SimpleNamespace(text=Mock())
+                driver.observer=SimpleNamespace(call=Mock())
+                driver.text('Search stories','')
+                self.assertEqual(state['value'],'')
+                driver.desktop.text.assert_not_called()
+                driver.observer.call.assert_not_called()
+
     def test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus(self):
         from packaged_acceptance.linux import open_picker_root
         driver = Mock()

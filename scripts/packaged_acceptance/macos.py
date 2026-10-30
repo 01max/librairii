@@ -62,9 +62,12 @@ class Driver:
 
     def text(self, name, value):
         self.focus(name, roles=('AXTextField', 'AXTextArea', 'AXSearchField'))
-        self.observer.call('clipboard-set', text=value)
         self.key('cmd+a')
-        self.key('cmd+v')
+        if value:
+            self.observer.call('clipboard-set', text=value)
+            self.key('cmd+v')
+        else:
+            self.key('delete')
         self.wait(lambda: any(node.get('value') == value and name in (node.get('title'), node.get('description'))
                              for node in self.snapshot()['nodes']))
 

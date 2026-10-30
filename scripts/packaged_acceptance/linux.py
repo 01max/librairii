@@ -104,7 +104,10 @@ class Driver:
     def text(self, name, value):
         self.focus(name, roles=('text', 'entry'))
         self.key('ctrl+a')
-        self.desktop.text(value)
+        if value:
+            self.desktop.text(value)
+        else:
+            self.key('BackSpace')
         self.wait(lambda: any(node.get('name') == name and node.get('value') == value
                              for node in self.snapshot()['nodes']))
 

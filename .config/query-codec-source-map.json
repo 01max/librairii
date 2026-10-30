@@ -6057,6 +6057,11 @@
         "position": 98,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 99,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
