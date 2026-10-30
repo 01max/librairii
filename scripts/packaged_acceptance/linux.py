@@ -30,10 +30,10 @@ class Driver:
     def nodes(self, root=None):
         return (node for node in self.desktop.nodes(self.application if root is None else root) if node is not None)
 
-    def snapshot(self, name=None):
+    def snapshot(self, name=None, *, root=None):
         nodes = []
         a = self.desktop.a
-        for node in self.nodes():
+        for node in self.nodes(root):
             try:
                 state = node.getState()
                 value = {'name': node.name, 'role': node.getRoleName(),
@@ -47,7 +47,8 @@ class Driver:
                 nodes.append(value)
             except self.read_errors:
                 continue
-        report = {'pid': self.pid, 'frontmost_pid': self.desktop.active_pid(), 'nodes': nodes}
+        report = {'pid': self.pid if root is None else root.get_process_id(),
+                  'frontmost_pid': self.desktop.active_pid(), 'nodes': nodes}
         if name:
             (self.output/(name+'.json')).write_text(json.dumps(report, indent=2, ensure_ascii=False)+'\n')
             self.desktop.screenshot(self.output/(name+'.png'))
@@ -198,11 +199,20 @@ class Driver:
                     continue
             return None
         observed = self.wait(location)
-        desktop.screenshot(self.output/'actual-reveal.png')
+        self.snapshot('actual-reveal', root=application)
         if desktop.active_pid() != pid:
             raise ValueError('owned file manager lost focus before close')
-        # Thunar binds Close Window to Ctrl+Q; Ctrl+W only closes a tab.
-        desktop.key('ctrl+q')
+        # Operate Thunar's observed native menu rather than assuming a keyboard
+        # accelerator was delivered while its location entry retained focus.
+        menu = self.wait(lambda: self.find('File', root=application,
+                                          roles=('menu', 'menu item'), actionable=True))
+        self.action(menu)
+        close = self.wait(lambda: self.find('Close Window', root=application,
+                                           roles=('menu item',), actionable=True))
+        self.snapshot('reveal-close-menu', root=application)
+        if desktop.active_pid() != pid:
+            raise ValueError('owned file manager lost focus before its Close Window action')
+        self.action(close)
         self.wait(lambda: not desktop.find(
             lambda node: node.getRole() in (desktop.a.ROLE_FRAME, desktop.a.ROLE_DIALOG)
                          and node.get_process_id() == pid and desktop.visible(node)))
