@@ -316,9 +316,16 @@ mod tests {
             locations.native.join("settings.json"),
             serde_json::to_vec(&serde_json::json!({
                 "version":1,"language":"en","root":external.library(),
-                "library_id":"a0000000-0000-4000-8000-000000000018","complete":true
+            "libraryId":"a0000000-0000-4000-8000-000000000018","complete":true
             }))?,
         )?;
+        assert_eq!(
+            read_legacy(&locations.native)?
+                .ok_or("valid foreign profile")?
+                .profile()
+                .root,
+            external.library().to_str().ok_or("fixture path")?
+        );
         assert!(ProcessEnvironment::read(&environment).is_err());
         fs::remove_file(locations.native.join("settings.json"))?;
         fs::rename(
