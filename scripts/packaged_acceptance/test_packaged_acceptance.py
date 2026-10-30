@@ -27,25 +27,31 @@ class PackagedAdmission(unittest.TestCase):
     def test_mac_activation_waits_for_the_exact_owned_visible_window(self):
         from packaged_acceptance.macos import Driver
         pid = 123
-        state = {'ready': False, 'activated': False, 'reads': 0}
+        state = {'launch_reads': 0, 'window_reads': 0, 'activated': False}
         def status():
-            state['reads'] += 1
-            if state['activated']:
-                return {'pid': pid, 'frontmost_pid': pid, 'windows': []}
-            windows = ([] if state['reads'] == 1 else
-                       [{'kCGWindowOwnerPID': 456 if state['reads'] == 2 else pid,
+            if not state['activated']:
+                raise RuntimeError('transparent startup window needs activation')
+            state['window_reads'] += 1
+            count = state['window_reads']
+            windows = ([] if count == 1 else
+                       [{'kCGWindowOwnerPID': 456 if count == 2 else pid,
                          'kCGWindowLayer': 0, 'kCGWindowIsOnscreen': True,
-                         'kCGWindowAlpha': 0 if state['reads'] == 3 else 1}])
-            state['ready'] = state['reads'] >= 4
-            return {'pid': pid, 'frontmost_pid': 456, 'windows': windows}
+                         'kCGWindowAlpha': 0 if count == 3 else 1}])
+            return {'pid': pid, 'frontmost_pid': pid if count >= 5 else 456,
+                    'windows': windows}
         def call(action):
+            if action == 'launch-status':
+                state['launch_reads'] += 1
+                return {'pid': pid, 'registered': state['launch_reads'] >= 2,
+                        'finished_launching': state['launch_reads'] >= 3,
+                        'regular_activation': True, 'terminated': False}
             self.assertEqual(action, 'activate')
-            if not state['ready']:
-                raise RuntimeError('activation preceded the owned visible window')
+            if state['launch_reads'] < 3:
+                raise RuntimeError('activation preceded AppKit launch readiness')
             state['activated'] = True
             return {'activated': True}
         def wait(predicate):
-            for _ in range(4):
+            for _ in range(6):
                 if value := predicate():
                     return value
             raise TimeoutError('owned native window never appeared')
@@ -53,12 +59,13 @@ class PackagedAdmission(unittest.TestCase):
         module = SimpleNamespace(Observer=Mock(return_value=observer))
         with tempfile.TemporaryDirectory() as temporary, \
              patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
-             patch('packaged_acceptance.macos.importlib.util.spec_from_file_location') as spec, \
+             patch('packaged_acceptance.macos.importlib.util.spec_from_file_location'), \
              patch('packaged_acceptance.macos.importlib.util.module_from_spec', return_value=module):
             root = Path(temporary)
             Driver(root, root, pid, root/'unused-test-helper')
-            observer.call.assert_called_once_with('activate')
-            self.assertEqual(state['reads'], 5)
+            self.assertEqual(observer.call.call_args_list,
+                             [unittest.mock.call('launch-status')]*3+[unittest.mock.call('activate')])
+            self.assertEqual(state['window_reads'], 5)
 
     def test_observer_closes_database_readers_before_product_relocation(self):
         # A connection context commits/rolls back; it does not close SQLite.

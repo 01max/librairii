@@ -585,6 +585,15 @@ do {
         try output(["observed": true, "pid": pid, "window_id": number,
             "present": windows.contains { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid)
                 && ($0[kCGWindowNumber as String] as? Int) == Int(wanted) }] as [String: Any])
+    case "launch-status":
+        guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("installed launch observation requires disposable native CI")
+        }
+        let running = NSRunningApplication(processIdentifier: pid)
+        try output(["pid": pid, "registered": running != nil,
+            "finished_launching": running?.isFinishedLaunching ?? false,
+            "regular_activation": running?.activationPolicy == .regular,
+            "terminated": running?.isTerminated ?? false] as [String: Any])
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")
