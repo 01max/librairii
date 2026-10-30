@@ -83,7 +83,7 @@ fn start_import(f: &Fixture, ui: &DesktopWindow, paths: Vec<PathBuf>) -> Result<
         std::thread::sleep(Duration::from_millis(2));
     }
 }
-fn cancel(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
+fn cancel(f: &Fixture, ui: &DesktopWindow, allow_finished: bool) -> Result<Snapshot> {
     let id = f
         .view
         .borrow()
@@ -104,6 +104,23 @@ fn cancel(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
         )?;
         let snapshot = f.settle(ui)?;
         let data = &snapshot.workflows.operations;
+        // Optional cleanup can race a completed import after the displayed
+        // Cancel control was observed. Preserve that distinct terminal receipt;
+        // it is neither an accepted cancellation nor permission to retry.
+        if allow_finished
+            && data.error.as_deref() == Some("storage.snapshot_changed")
+            && !data.recovery_required
+            && data.details.as_ref().is_some_and(|d| {
+                d.card.operation.identity.id == id && is_terminal(d.card.operation.state)
+            })
+            && data
+                .cards
+                .iter()
+                .any(|c| c.operation.identity.id == id && is_terminal(c.operation.state))
+        {
+            eprintln!("native optional Cancel AlreadyFinished: {id}");
+            return Ok(snapshot);
+        }
         if data.error.as_deref() != Some("storage.queue_full") {
             check(
                 data.error.is_none(),
@@ -396,7 +413,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     ui.invoke_select_operation(first_index as i32);
     f.settle(ui)?;
     if ui.get_operation_cancellable() {
-        cancel(&f, ui)?;
+        cancel(&f, ui, true)?;
     }
     let second_index = f
         .view
@@ -410,7 +427,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         .ok_or("second active import missing")?;
     ui.invoke_select_operation(second_index as i32);
     f.settle(ui)?;
-    cancel(&f, ui)?;
+    cancel(&f, ui, false)?;
     let cancelled = complete(&f, ui)?;
     check(
         cancelled
@@ -437,7 +454,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     ui.invoke_select_operation(index as i32);
     f.settle(ui)?;
     if ui.get_operation_cancellable() {
-        cancel(&f, ui)?;
+        cancel(&f, ui, true)?;
         complete(&f, ui)?;
     }
     ui.invoke_close_dialog();
