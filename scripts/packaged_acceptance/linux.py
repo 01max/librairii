@@ -134,6 +134,30 @@ class Driver:
         before = [{'name': node.name, 'role': node.getRoleName()} for node in self.nodes(application)]
         (self.output/(prefix+'-opened.json')).write_text(json.dumps(
             {'owner': owner, 'portal_pid': self.portal_pid, 'nodes': before}, ensure_ascii=False, indent=2)+'\n')
+        if self.desktop.session == 'x11':
+            # Leave the empty Recent view before entering a location. In that
+            # view GTK can keep folder confirmation disabled despite entry text.
+            place = self.wait(lambda: self.find('/', root=application, roles=('label',)))
+            attempts, activated = [], False
+            for _ in range(6):
+                if place is None:
+                    break
+                names = []
+                try:
+                    actions = place.queryAction()
+                    names = [actions.getName(index).lower() for index in range(actions.nActions)]
+                except NotImplementedError:
+                    pass
+                attempts.append({'name': place.name, 'role': place.getRoleName(), 'actions': names})
+                if any(name in ('click','press','activate','toggle') for name in names):
+                    self.action(place)
+                    activated = True
+                    break
+                place = place.parent
+            (self.output/(prefix+'-root-place.json')).write_text(json.dumps(attempts, indent=2)+'\n')
+            if not activated:
+                raise ValueError('native root location has no activation action')
+            self.wait(lambda: {'etc','tmp','usr'} <= {node.name for node in self.nodes(application)})
         self.key('ctrl+l')
         self.desktop.text(str(directory))
         # GTK can select an inline-completed trailing slash. Commit that native
