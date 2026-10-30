@@ -132,7 +132,7 @@ def main():
                                '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--network=none',
                                '--user', str(os.getuid())+':'+str(os.getgid()),
                                '--memory=4g', '--cpus=2', '--pids-limit=256',
-                               '--tmpfs', '/tmp:rw,nosuid,nodev,mode=1777,size=2g',
+                               '--tmpfs', '/tmp:rw,exec,nosuid,nodev,mode=1777,size=2g',
                                '--mount', 'type=bind,src='+str(args.inspection.resolve().parent)+',dst='+str(args.inspection.resolve().parent)+',readonly',
                                '--mount', 'type=bind,src='+str(destination)+',dst=/work/target/native-release',
                                '--env', 'GITHUB_ACTIONS=true', image_id,
