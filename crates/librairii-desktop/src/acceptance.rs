@@ -126,6 +126,18 @@ impl Scope {
                 return Err(StorageError::InvalidProfile);
             }
         }
+        // Fixture recovery never admits persisted relocation authority. Its
+        // acceptance cases exercise regular moves and missing-location recovery;
+        // normal production journal recovery remains in the storage layer.
+        let journal = locations.native.join("native-relocation-v1.json");
+        match fs::symlink_metadata(journal) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            _ => return Err(StorageError::InvalidProfile),
+        }
+        let fallback = librairii_storage::settings::default_legacy_root(locations)?;
+        if !self.physical(&fallback) {
+            return Err(StorageError::InvalidProfile);
+        }
         for path in [Some(&locations.native), locations.legacy.as_ref()]
             .into_iter()
             .flatten()
@@ -328,6 +340,19 @@ mod tests {
         );
         assert!(ProcessEnvironment::read(&environment).is_err());
         fs::remove_file(locations.native.join("settings.json"))?;
+        let journal = locations.native.join("native-relocation-v1.json");
+        fs::write(&journal, b"untrusted persisted relocation authority")?;
+        assert!(ProcessEnvironment::read(&environment).is_err());
+        assert_eq!(
+            fs::read(&journal)?,
+            b"untrusted persisted relocation authority"
+        );
+        fs::remove_file(journal)?;
+        let fallback = librairii_storage::settings::default_legacy_root(&locations)?;
+        fs::create_dir_all(fallback.parent().ok_or("fallback parent")?)?;
+        std::os::unix::fs::symlink(external.library(), &fallback)?;
+        assert!(ProcessEnvironment::read(&environment).is_err());
+        fs::remove_file(fallback)?;
         fs::rename(
             roots.library(),
             roots.library().with_file_name("retained-library"),
