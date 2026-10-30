@@ -65,7 +65,7 @@ class PackagedAdmission(unittest.TestCase):
         node.queryTable.return_value = table
         names = [{'unrelated'}, {'Été 日本語 故事.zip'}, {'Deuxième archive 02.pk'}]
         table.getAccessibleAt.side_effect = lambda row,column:row
-        driver.desktop.nodes.side_effect = lambda row:[SimpleNamespace(name=name) for name in names[row]]
+        driver.desktop.nodes.side_effect = lambda row:[None,*[SimpleNamespace(name=name) for name in names[row]]]
         driver.desktop.find.side_effect = lambda predicate,root:node if predicate(node) else None
         selected = {0}
         table.isRowSelected.side_effect = lambda row:row in selected

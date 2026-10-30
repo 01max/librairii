@@ -256,7 +256,7 @@ def select_picker_rows(driver, application, wanted):
         if not 0 < table.nRows <= 128 or not 0 < table.nColumns <= 16:
             return False
         names = [{str(child.name) for column in range(table.nColumns)
-                  for child in driver.desktop.nodes(table.getAccessibleAt(row, column))}
+                  for child in driver.desktop.nodes(table.getAccessibleAt(row, column)) if child is not None}
                  for row in range(table.nRows)]
         found = [values & wanted for values in names]
         if (set().union(*found) != wanted or sum(len(values) for values in found) != len(wanted)
