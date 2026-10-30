@@ -32,6 +32,16 @@ def main():
     spec.loader.exec_module(desktop_module)
     desktop = desktop_module.Desktop(args.session, desktop_output)
     try:
+        # AccessKit registers only after the private session enables semantic
+        # accessibility. Match the existing native accessibility qualification.
+        status = desktop.dbus.Interface(desktop.bus.get_object('org.a11y.Bus', '/org/a11y/bus'),
+                                        'org.freedesktop.DBus.Properties')
+        status.Set('org.a11y.Status', 'IsEnabled', desktop.dbus.Boolean(True))
+        enabled = bool(status.Get('org.a11y.Status', 'IsEnabled'))
+        (desktop_output/'accessibility-activation.json').write_text(json.dumps(
+            {'private_session': True, 'semantic_accessibility_enabled': enabled})+'\n')
+        if not enabled:
+            raise ValueError('private native accessibility did not activate')
         portal = Path(os.environ['XDG_CONFIG_HOME'])/'xdg-desktop-portal/portals.conf'
         portal.parent.mkdir(parents=True)
         portal.write_text('[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.FileChooser=gtk\n')
