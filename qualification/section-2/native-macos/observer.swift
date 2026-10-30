@@ -5,7 +5,7 @@ import Carbon
 import CoreGraphics
 import Foundation
 
-enum Failure: Error { case invalid(String), staleSnapshot(String) }
+enum Failure: Error { case invalid(String), staleSnapshot(String), unavailableRoot(String) }
 
 func inputSource() -> String {
     let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
@@ -190,6 +190,9 @@ func rootAttribute(_ element: AXUIElement, _ name: String, optional: Bool = fals
     if status == .invalidUIElement {
         throw Failure.staleSnapshot("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
     }
+    if name == kAXWindowsAttribute && status == .cannotComplete {
+        throw Failure.unavailableRoot("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
     if optional && (status == .attributeUnsupported || status == .noValue) { return nil }
     guard status == .success, let value else {
         throw Failure.invalid("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
@@ -253,8 +256,13 @@ func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
           rootsOnly: Bool = false) throws -> [[String: Any]] {
     do {
         return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
-    } catch Failure.staleSnapshot(let reason) {
-        guard onlyWindow == nil else { throw Failure.staleSnapshot(reason) }
+    } catch let failure as Failure {
+        let reason: String
+        switch failure {
+        case .staleSnapshot(let value), .unavailableRoot(let value): reason = value
+        default: throw failure
+        }
+        guard onlyWindow == nil else { throw failure }
         trace(reason + "; discarding partial snapshot and rebuilding roots once")
         return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
     }

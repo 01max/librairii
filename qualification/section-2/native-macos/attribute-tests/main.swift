@@ -20,6 +20,7 @@ var requestedNames: [String] = []
 var fixture: [String: Any] = [:]
 var scalarFixture: [String: Any] = [:]
 var batchFixture: ((AXUIElement) -> Void)?
+var scalarReadFixture: ((AXUIElement, String) -> Void)?
 var performedActions = 0
 
 func AXUIElementPerformAction(_ element: AXUIElement, _ action: CFString) -> AXError {
@@ -35,6 +36,7 @@ func encodedError(_ error: AXError) -> AXValue {
 func AXUIElementCopyAttributeValue(_ element: AXUIElement, _ name: CFString,
                                   _ value: UnsafeMutablePointer<CFTypeRef?>) -> AXError {
     scalarReads += 1
+    scalarReadFixture?(element, name as String)
     guard let observed = scalarFixture[name as String] ?? fixture[name as String] else { return .noValue }
     if CFGetTypeID(observed as CFTypeRef) == CFNullGetTypeID() { return .noValue }
     if CFGetTypeID(observed as CFTypeRef) == AXValueGetTypeID(),
@@ -193,15 +195,45 @@ do {
             "snapshot retry was unbounded or retried a communication/argument error")
     }
     batchFixture = nil
+    scalarFixture.removeAll()
+    fixture = [kAXRoleAttribute: "AXWindow", kAXTitleAttribute: "ready root",
+               kAXChildrenAttribute: [] as [AXUIElement]]
+    batchStatus = .success
+    var rootReads = 0
+    scalarReadFixture = { _, name in
+        if name == kAXWindowsAttribute {
+            rootReads += 1
+            scalarFixture[name] = rootReads == 1 ? encodedError(.cannotComplete) : [oldRoot] as [AXUIElement]
+        }
+    }
+    let available = try tree(element, sheetsOnly: false)
+    try require(rootReads == 2 && available.count == 1 && available[0]["title"] as? String == "ready root",
+        "temporarily unavailable root did not produce a complete fresh snapshot")
+    rootReads = 0
+    batchFixture = { _ in batchStatus = .invalidUIElement }
+    do { _ = try tree(element, sheetsOnly: false)
+        throw TestFailure.mismatch("mixed root/stale errors exceeded the shared retry budget") }
+    catch Failure.staleSnapshot(_) { }
+    try require(rootReads == 2, "mixed errors acquired more than two root sets")
+    batchFixture = nil
+    batchStatus = .success
+    scalarReadFixture = nil
     for error in [AXError.invalidUIElement, .cannotComplete, .attributeUnsupported] {
         scalarFixture[kAXWindowsAttribute] = encodedError(error)
         let beforeRoots = scalarReads
         do { _ = try tree(element, sheetsOnly: false)
             throw TestFailure.mismatch("failed window enumeration became an empty snapshot") }
         catch is Failure { }
-        try require(scalarReads == beforeRoots + (error == .invalidUIElement ? 2 : 1),
+        try require(scalarReads == beforeRoots + (error == .invalidUIElement || error == .cannotComplete ? 2 : 1),
             "root enumeration retry was unbounded or retried a communication error")
     }
+    scalarFixture[kAXWindowsAttribute] = encodedError(.cannotComplete)
+    let beforeFilteredRoot = scalarReads
+    do { _ = try tree(element, onlyWindow: 0, sheetsOnly: false)
+        throw TestFailure.mismatch("filtered root unavailability was retried") }
+    catch is Failure { }
+    try require(scalarReads == beforeFilteredRoot + 1,
+        "filtered root query was repeated with a previously selected index")
     scalarFixture[kAXWindowsAttribute] = [oldRoot] as [AXUIElement]
     scalarFixture[kAXChildrenAttribute] = encodedError(.failure)
     do { _ = try tree(element, sheetsOnly: false)

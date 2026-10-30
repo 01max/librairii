@@ -463,3 +463,17 @@ roots/child indices, discarded partial nodes, refused filtered-window reordering
 bounded recurrence, failed root
 enumeration and zero performed actions. Native effectiveness remains subject to
 a further exact-byte replay; the failed11-check run retains its verdict.
+
+A subsequent Intel replay exercised the stale-root rebuild successfully, then
+failed while waiting for the first picker because AXWindows returned
+cannotComplete. Its immediate failure capture returned229 nodes and the native
+sheet for the same foreground product. The previous scalar observer returned an
+empty root list on that error, allowing its caller to poll; strict root
+enumeration exposed it as an immediate failure. Only this AXWindows error now
+shares the same single reacquisition budget with invalid-element handling.
+Neither a mixed error sequence nor repeated root unavailability receives a third
+attempt. Filtered Finder snapshots and all non-root communication errors still
+fail, and failed enumeration never becomes an empty success. The existing
+12-second helper deadline and all action checks remain unchanged. Inert fixtures
+reproduce the root error and verify recovery, recurrence, mixed errors and
+filtered-window refusal. This replay remains failed pending fresh native evidence.
