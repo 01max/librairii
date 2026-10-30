@@ -25,7 +25,14 @@ class Driver:
         return snapshot
 
     def wait(self, predicate, timeout=15):
-        return self.observer.wait(predicate, timeout)
+        def observed():
+            try:
+                return predicate()
+            except FileNotFoundError:
+                # The native worker publishes the owned profile asynchronously.
+                # Absence can be polled; invalid data and other errors still fail.
+                return None
+        return self.observer.wait(observed, timeout)
 
     def find(self, name, *, prefix=False, enabled=True, roles=None, actionable=False):
         matches = [node for node in self.snapshot()['nodes']

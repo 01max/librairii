@@ -21,6 +21,23 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors(self):
+        from packaged_acceptance.macos import Driver
+        driver = Driver.__new__(Driver)
+        def native_wait(predicate,timeout):
+            for _ in range(2):
+                if value:=predicate():
+                    return value
+            raise TimeoutError('unpublished fixture')
+        driver.observer = SimpleNamespace(wait=native_wait)
+        published = Mock(side_effect=[FileNotFoundError('worker has not published profile'),'owned-profile'])
+        self.assertEqual(driver.wait(published),'owned-profile')
+        self.assertEqual(published.call_count,2)
+        with self.assertRaisesRegex(ValueError,'invalid profile'):
+            driver.wait(Mock(side_effect=ValueError('invalid profile')))
+        with self.assertRaises(TimeoutError):
+            driver.wait(Mock(side_effect=FileNotFoundError('unpublished')))
+
     def test_linux_press_keeps_observed_identity_when_action_replaces_native_node(self):
         from packaged_acceptance.linux import Driver
         driver = Driver.__new__(Driver)
