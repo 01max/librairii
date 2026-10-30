@@ -144,7 +144,7 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Seventeen additional Python checks cover compiler aliases
+startup configuration. Eighteen additional Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

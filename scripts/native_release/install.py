@@ -74,20 +74,58 @@ def extract(artifact, destination, release):
 def mounted(artifact, destination):
     mount = destination / 'mount'
     mount.mkdir()
-    attached = False
     try:
-        result = subprocess.run(['/usr/bin/hdiutil', 'attach', str(artifact), '-readonly', '-nobrowse',
-                                 '-mountpoint', str(mount), '-plist'], capture_output=True, check=True, timeout=60)
+        def retain_attach(stdout, stderr, returncode, timed_out):
+            stdout, stderr = stdout or b'', stderr or b''
+            (destination / 'attach.stdout').write_bytes(stdout[:1048576])
+            (destination / 'attach.stderr').write_bytes(stderr[:1048576])
+            truncated = max(len(stdout), len(stderr)) > 1048576
+            write_json(destination / 'attach.json', {'returncode': returncode, 'timed_out': timed_out,
+                       'stdout_bytes': len(stdout), 'stderr_bytes': len(stderr), 'truncated': truncated})
+            if truncated:
+                raise ValueError('disk image attachment diagnostics exceed the retained bound')
+        try:
+            result = subprocess.run(['/usr/bin/hdiutil', 'attach', str(artifact), '-readonly', '-nobrowse',
+                                     '-mountpoint', str(mount), '-plist'], capture_output=True, check=True, timeout=60)
+        except subprocess.TimeoutExpired as error:
+            retain_attach(error.stdout, error.stderr, None, True)
+            raise
+        except subprocess.CalledProcessError as error:
+            retain_attach(error.stdout, error.stderr, error.returncode, False)
+            raise
+        retain_attach(result.stdout, result.stderr, result.returncode, False)
         evidence = plistlib.loads(result.stdout)
         volumes = [entity for entity in evidence.get('system-entities', []) if entity.get('mount-point')]
         if len(volumes) != 1 or Path(volumes[0]['mount-point']).resolve() != mount.resolve():
             raise ValueError('disk image did not mount at the owned mountpoint')
-        attached = True
         write_json(destination / 'mount.json', evidence)
         yield mount
     finally:
-        if attached:
-            subprocess.run(['/usr/bin/hdiutil', 'detach', str(mount)], check=True, timeout=60)
+        # A failed/timed-out attach can already have mounted a device. Query
+        # current OS custody independently of the success-path receipt before
+        # retiring anything; never detach an unrelated image at this path.
+        cleanup = {'mountpoint': str(mount), 'state': 'uncertain'}
+        try:
+            observed = subprocess.run(['/usr/bin/hdiutil', 'info', '-plist'],
+                                      capture_output=True, check=True, timeout=15)
+            images = plistlib.loads(observed.stdout).get('images', [])
+            owners = [image for image in images
+                      if any(entity.get('mount-point') == str(mount)
+                             for entity in image.get('system-entities', []))]
+            if not owners:
+                if mount.is_mount():
+                    raise ValueError('mount exists without an image ownership receipt')
+                cleanup['state'] = 'not mounted'
+            elif len(owners) == 1 and Path(owners[0].get('image-path', '')).resolve() == artifact.resolve():
+                subprocess.run(['/usr/bin/hdiutil', 'detach', str(mount)], check=True, timeout=60)
+                cleanup['state'] = 'detached owned image'
+            else:
+                raise ValueError('mounted image ownership differs or is ambiguous')
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            cleanup['error'] = str(error)
+            raise ValueError('disk image cleanup remains uncertain; preserve mount and receipt') from error
+        finally:
+            write_json(destination / 'mount-cleanup.json', cleanup)
 
 
 def inspect(root, directory, source, target, requested_output):

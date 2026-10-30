@@ -18,6 +18,35 @@ from native_release import install, macos, package
 
 
 class PlatformPackages(unittest.TestCase):
+    def test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount(self):
+        import subprocess
+        with tempfile.TemporaryDirectory(prefix='librairii-mount-test-') as temporary:
+            root = Path(temporary).resolve()
+            artifact = root / 'owned.dmg'
+            artifact.write_bytes(b'synthetic image')
+            for index, failure in enumerate([subprocess.CompletedProcess([], 0, b'invalid plist', b''),
+                                              subprocess.TimeoutExpired('hdiutil', 60)]):
+                destination = root / str(index)
+                destination.mkdir()
+                image = {'image-path': str(artifact), 'system-entities': [{'mount-point': str(destination/'mount')}]}
+                info = subprocess.CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b'')
+                with patch('native_release.install.subprocess.run', side_effect=[failure, info, subprocess.CompletedProcess([], 0)]) as run:
+                    with self.assertRaises((ValueError, subprocess.TimeoutExpired, plistlib.InvalidFileException)):
+                        with install.mounted(artifact, destination):
+                            self.fail('invalid receipt cannot grant installation')
+                self.assertEqual(run.call_args_list[-1].args[0], ['/usr/bin/hdiutil', 'detach', str(destination/'mount')])
+                self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'detached owned image')
+            destination = root / 'foreign'
+            destination.mkdir()
+            image = {'image-path': str(root/'unrelated.dmg'), 'system-entities': [{'mount-point': str(destination/'mount')}]}
+            with patch('native_release.install.subprocess.run', side_effect=[subprocess.CompletedProcess([], 0, b'invalid', b''),
+                       subprocess.CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b'')]) as run:
+                with self.assertRaisesRegex(ValueError, 'cleanup remains uncertain'):
+                    with install.mounted(artifact, destination):
+                        self.fail('invalid receipt cannot grant installation')
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'uncertain')
+
     def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
         from subprocess import CompletedProcess
         with patch('native_release.identity.platform.system', return_value='Darwin'), \

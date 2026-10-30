@@ -5905,6 +5905,11 @@
         "position": 74,
         "identity": "test_packages.PlatformPackages.test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 75,
+        "identity": "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
