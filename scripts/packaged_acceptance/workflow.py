@@ -139,7 +139,7 @@ def perform(driver, fixture, result, french):
     driver.picker(fixture.review_inputs, files=True)
     terminal('import', previous)
     closed()
-    driver.press('Packaged approved')
+    driver.press('Packaged approved', prefix=True)
     driver.choose(words('Shelf action', 'Action sur l’Étagère'), 7)
     driver.press(words('Run', 'Exécuter'))
     before = fixture.rows("SELECT story_uuid FROM shelf_stories WHERE shelf_id=(SELECT id FROM shelves WHERE name='Packaged approved')")
