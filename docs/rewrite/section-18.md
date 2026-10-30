@@ -56,6 +56,23 @@ retains its license text and actual top-level AboutSlint attribution. The
 product's own license is not reassigned; SPDX records `NOASSERTION` where the
 repository makes no declaration.
 
+## Linux archive
+
+On the native Ubuntu24.04/glibc2.39 builder, `cargo xtask release package-linux
+--stage <current-stage> --output target/native-release/<new-package>` assembles
+a versioned tar.gz. It refuses stale source/graph stages, requires the actual
+glibc/distro baseline, checks ELF dependencies/interpreter/version requirements,
+validates the desktop entry and seals the final archive bytes. The archive
+contains `bin/`, `share/applications`, hicolor icons, notices/SBOM, installation
+instructions and a concrete native runtime prerequisite record. The portable
+layout supports an explicit application prefix; its `bin` and `share` must be
+available to the desktop through PATH and XDG_DATA_DIRS for integration.
+
+The system library allowlist excludes browser runtimes and build-directory
+dependencies. Font, graphics and portal libraries loaded at runtime have
+separately declared Ubuntu packages. Installed X11/Wayland and rendering tests
+must establish those prerequisites in use; inspection alone cannot pass them.
+
 Portable archive assembly sorts paths, rejects links/special files, normalizes
 UID/GID/names/modes and uses the source commit epoch with a fixed gzip header.
 Repeated assembly of identical payload bytes is deterministic. This is distinct
@@ -90,7 +107,7 @@ not become complete through packaging alone.
 
 The two required Rust integration tests execute the actual product's identity
 commands with no display or normal profile environment and deliberately invalid
-startup configuration. Twelve additional Python checks cover compiler aliases
+startup configuration. Fourteen additional Python checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in

@@ -5880,6 +5880,16 @@
         "position": 69,
         "identity": "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution",
         "reason": "Task 18.1 refuses effective Cargo compiler aliases and inherited configuration before build or output creation."
+      },
+      {
+        "position": 70,
+        "identity": "test_packages.PlatformPackages.test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 71,
+        "identity": "test_packages.PlatformPackages.test_linux_archive_contains_desktop_icons_notices_and_exact_final_checksums",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
