@@ -261,14 +261,17 @@ class Observer:
         if not common.wayland.passed(result):
             message = action + ' failed: ' + json.dumps({key: result[key]
                 for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000]
-            expected = None
+            expected = []
             if action in ('snapshot', 'snapshot-window') and 'document' not in request:
-                expected = {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
-                    'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204}
+                expected = [
+                    {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+                     'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204},
+                    {'format': 'librairii.native-tree-snapshot-unavailable', 'schema': 1,
+                     'pid': self.pid, 'scope': 'unfiltered', 'status': -25202}]
             elif action == 'snapshot' and isinstance(request.get('document'), str) and request['document']:
-                expected = {'format': 'librairii.native-document-snapshot-unavailable', 'schema': 1,
-                    'pid': self.pid, 'document': request['document'], 'status': -25202}
-            if (expected is not None
+                expected = [{'format': 'librairii.native-document-snapshot-unavailable', 'schema': 1,
+                    'pid': self.pid, 'document': request['document'], 'status': -25202}]
+            if (expected
                     and type(self.pid) is int and self.pid > 0
                     and type(result['returncode']) is int and result['returncode'] == 75
                     and result['errors'] == []):
@@ -276,7 +279,8 @@ class Observer:
                     reply = json.loads(result['output'].splitlines()[-1])
                 except (ValueError, IndexError):
                     reply = None
-                if (reply == expected and all(type(reply[key]) is int for key in ('schema', 'pid', 'status'))):
+                if (any(reply == candidate for candidate in expected)
+                        and all(type(reply[key]) is int for key in ('schema', 'pid', 'status'))):
                     raise SnapshotUnavailable(message)
             raise RuntimeError(message)
         # The helper retains stage diagnostics before its final JSON reply, so

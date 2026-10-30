@@ -288,7 +288,44 @@ do {
             operation: operation, pid: pid, filtered: filtered) == nil,
             "pending root protocol admitted an action, filtered read or invalid identity")
     }
-    for error in [Failure.invalid("AXChildren: -25204"), .staleSnapshot("AXWindows: -25202")] {
+    scalarFixture.removeAll()
+    scalarFixture[kAXWindowsAttribute] = [oldRoot] as [AXUIElement]
+    fixture = [kAXRoleAttribute: "AXWindow", kAXChildrenAttribute: [] as [AXUIElement]]
+    batchFixture = { _ in batchStatus = .invalidUIElement }
+    let beforePendingTree = batchReads
+    let pendingTree = try snapshotReadReply(operation: "snapshot", pid: 8519, document: nil) {
+        ["nodes": try tree(element, sheetsOnly: false)]
+    }
+    try require(pendingTree.exitCode == 75 && batchReads == beforePendingTree + 2,
+        "exhausted stale tree did not retain the two-attempt helper bound")
+    guard let staleWire = try JSONSerialization.jsonObject(
+        with: JSONSerialization.data(withJSONObject: pendingTree.value)) as? [String: Any] else {
+        throw TestFailure.mismatch("missing unavailable tree wire receipt")
+    }
+    try require(staleWire["format"] as? String == "librairii.native-tree-snapshot-unavailable"
+        && staleWire["schema"] as? Int == 1 && staleWire["pid"] as? Int == 8519
+        && staleWire["status"] as? Int == -25202 && staleWire["scope"] as? String == "unfiltered"
+        && staleWire.count == 5 && staleWire["nodes"] == nil && staleWire["windows"] == nil,
+        "exhausted tree retained partial data or lost its exact identity")
+    batchFixture = nil
+    batchStatus = .success
+    let freshTree = try snapshotReadReply(operation: "snapshot", pid: 8519, document: nil) {
+        ["nodes": try tree(element, sheetsOnly: false)]
+    }
+    try require(freshTree.exitCode == 0 && (freshTree.value["nodes"] as? [[String: Any]])?.count == 1
+        && performedActions == 0, "fresh tree failed or pending observation performed an action")
+    for operation in ["snapshot", "snapshot-window"] {
+        try require(unavailableSnapshotReply(Failure.staleSnapshot("batch: -25202"),
+            operation: operation, pid: 8519, filtered: false) != nil,
+            "unfiltered snapshot operation lost its typed stale receipt")
+    }
+    for (operation, filtered, pid) in [("press", false, 8519), ("status", false, 8519),
+        ("snapshot", true, 8519), ("snapshot-window", true, 8519), ("snapshot", false, 0)] {
+        try require(unavailableSnapshotReply(Failure.staleSnapshot("batch: -25202"),
+            operation: operation, pid: pid, filtered: filtered) == nil,
+            "pending stale tree admitted an action, selected index or invalid identity")
+    }
+    for error in [Failure.invalid("AXChildren: -25204")] {
         try require(unavailableSnapshotReply(error, operation: "snapshot", pid: 123, filtered: false) == nil,
             "pending root protocol admitted a different failure")
     }

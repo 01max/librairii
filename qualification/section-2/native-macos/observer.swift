@@ -255,9 +255,16 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
 func unavailableSnapshotReply(_ error: Error, operation: String, pid: Int,
                               filtered: Bool) -> [String: Any]? {
     guard ["snapshot", "snapshot-window"].contains(operation), !filtered, pid > 0,
-          let failure = error as? Failure, case .unavailableRoot = failure else { return nil }
-    return ["format": "librairii.native-snapshot-unavailable", "schema": 1,
-            "pid": pid, "attribute": kAXWindowsAttribute, "status": AXError.cannotComplete.rawValue]
+          let failure = error as? Failure else { return nil }
+    switch failure {
+    case .unavailableRoot:
+        return ["format": "librairii.native-snapshot-unavailable", "schema": 1,
+                "pid": pid, "attribute": kAXWindowsAttribute, "status": AXError.cannotComplete.rawValue]
+    case .staleSnapshot:
+        return ["format": "librairii.native-tree-snapshot-unavailable", "schema": 1,
+                "pid": pid, "scope": "unfiltered", "status": AXError.invalidUIElement.rawValue]
+    default: return nil
+    }
 }
 
 func unavailableDocumentSnapshotReply(_ error: Error, operation: String, pid: Int,

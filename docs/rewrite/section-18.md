@@ -522,3 +522,17 @@ shrinking budgets, expiry and rejection of changed identities or preceding actio
 Inert Swift fixtures validate the five-field wire receipt, reproduce stale
 candidate traversal/description through the production wrapper and retain the
 window-reordering refusal. Full native acceptance still requires a fresh run.
+
+The current90 Intel report completes all22 fresh checks, then fails after three
+upgraded checks while waiting for an imported story. Both unfiltered tree attempts
+encounter an invalid element; the immediate failure capture reads67 nodes for the
+same foreground process. This distinct exhausted-tree case remains a failed lane.
+It can now emit a separate five-field incomplete receipt bound to the PID,
+unfiltered scope and invalid-element status. Only the existing read-only wait may
+continue with an entirely fresh helper read. The helper still makes at most two
+attempts, and the caller retains its original deadline, shrinking command budgets
+and shared action guard. No partial nodes or selector can escape the failed read.
+Direct calls, filtered requests, other errors and timeouts remain fatal.
+Headless regressions reproduce the prior failure, check both snapshot operations,
+deadline expiry and action/identity refusal. Inert fixtures verify the actual
+two-attempt production path, incomplete receipt and subsequent complete read.
