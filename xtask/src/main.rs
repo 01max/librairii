@@ -5,6 +5,7 @@ mod discovery;
 mod import_sources;
 mod policy;
 mod preservation;
+mod release;
 mod sources;
 mod supply_chain;
 use std::{
@@ -186,6 +187,10 @@ fn run() -> Result {
         [action] if action == "bench" => deep::bench(false),
         [action, option] if action == "bench" && option == "--smoke" => deep::bench(true),
         [action] if action == "fuzz" => deep::fuzz(),
-        _ => Err("usage: cargo xtask {check|tools|inventory|coverage|bench [--smoke]|fuzz}".into()),
+        [action, arguments @ ..] if action == "release" => release::run(arguments),
+        _ => Err(
+            "usage: cargo xtask {check|tools|inventory|coverage|bench [--smoke]|fuzz|release}"
+                .into(),
+        ),
     }
 }

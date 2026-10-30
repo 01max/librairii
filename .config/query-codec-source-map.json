@@ -5702,6 +5702,22 @@
           ]
         },
         "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 636,
+        "identity": {
+          "suite": "librairii-desktop::release_identity",
+          "name": "product_version_is_available_without_profile_or_display"
+        },
+        "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
+      },
+      {
+        "position": 637,
+        "identity": {
+          "suite": "librairii-desktop::release_identity",
+          "name": "package_build_identity_is_available_without_profile_or_display"
+        },
+        "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
       }
     ],
     "python": [
@@ -5804,6 +5820,56 @@
         "position": 57,
         "identity": "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
         "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
+      },
+      {
+        "position": 58,
+        "identity": "test_release.ReleaseFiles.test_actual_cargo_executable_requires_unique_production_profile",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 59,
+        "identity": "test_release.ReleaseFiles.test_architecture_rejects_wrong_target_fat_and_foreign_executables",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 60,
+        "identity": "test_release.ReleaseFiles.test_archive_is_deterministic_and_normalizes_all_metadata",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 61,
+        "identity": "test_release.ReleaseFiles.test_copy_preserves_bytes_but_never_follows_or_replaces_links",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 62,
+        "identity": "test_release.ReleaseFiles.test_embedded_identity_refuses_missing_or_foreign_source_graph_and_target",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 63,
+        "identity": "test_release.ReleaseFiles.test_final_artifact_checksum_binds_actual_bytes_and_never_claims_qualification",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 64,
+        "identity": "test_release.ReleaseFiles.test_json_records_are_no_clobber_and_payload_tampering_is_visible",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 65,
+        "identity": "test_release.ReleaseFiles.test_output_refuses_existing_external_parent_and_boundary_links",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 66,
+        "identity": "test_sbom.CompiledGraph.test_sbom_describes_actual_compiler_graph_and_excludes_unused_dev_metadata",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 67,
+        "identity": "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       }
     ]
   },

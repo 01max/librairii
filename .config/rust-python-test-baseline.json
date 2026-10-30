@@ -57,6 +57,16 @@
     "test_handover_runner.HandoverRunnerTests.test_cargo_hardlink_executes_exact_owned_single_link_copy",
     "test_handover_runner.HandoverRunnerTests.test_compiler_symlink_and_fifo_refuse_without_execution",
     "test_handover_runner.HandoverRunnerTests.test_compiler_output_change_during_execution_refuses_receipt",
-    "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt"
+    "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
+    "test_release.ReleaseFiles.test_actual_cargo_executable_requires_unique_production_profile",
+    "test_release.ReleaseFiles.test_architecture_rejects_wrong_target_fat_and_foreign_executables",
+    "test_release.ReleaseFiles.test_archive_is_deterministic_and_normalizes_all_metadata",
+    "test_release.ReleaseFiles.test_copy_preserves_bytes_but_never_follows_or_replaces_links",
+    "test_release.ReleaseFiles.test_embedded_identity_refuses_missing_or_foreign_source_graph_and_target",
+    "test_release.ReleaseFiles.test_final_artifact_checksum_binds_actual_bytes_and_never_claims_qualification",
+    "test_release.ReleaseFiles.test_json_records_are_no_clobber_and_payload_tampering_is_visible",
+    "test_release.ReleaseFiles.test_output_refuses_existing_external_parent_and_boundary_links",
+    "test_sbom.CompiledGraph.test_sbom_describes_actual_compiler_graph_and_excludes_unused_dev_metadata",
+    "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices"
   ]
 }
