@@ -15,6 +15,20 @@ use std::{
 };
 mod view;
 
+fn observe_acceptance_display(window: &slint::Window, size: slint::PhysicalSize) {
+    let scale = window.scale_factor();
+    let logical = size.to_logical(scale);
+    eprintln!(
+        "native_acceptance; stage=display; pid={}; scale_factor={:.3}; physical={}x{}; logical={:.3}x{:.3}",
+        std::process::id(),
+        scale,
+        size.width,
+        size.height,
+        logical.width,
+        logical.height
+    );
+}
+
 fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Error>> {
     let launched = Instant::now();
     let acceptance = environment.acceptance_scope().is_some();
@@ -44,6 +58,28 @@ fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Err
         launched.elapsed().as_secs_f64() * 1000.
     );
     let (ui, menus) = menus::create_window()?;
+    #[cfg(target_os = "macos")]
+    if acceptance {
+        use i_slint_backend_winit::{EventResult, WinitWindowAccessor, winit::event::WindowEvent};
+        let mut observed = false;
+        // AppKit timers can precede Winit's lazy window and scale setup.
+        // Observe the first native redraw without changing event delivery.
+        ui.window().on_winit_window_event(move |window, event| {
+            if !observed && matches!(event, WindowEvent::RedrawRequested) {
+                let size = window.with_winit_window(|native| {
+                    (native.is_visible() == Some(true)).then(|| native.inner_size())
+                });
+                if let Some(Some(size)) = size {
+                    observe_acceptance_display(
+                        window,
+                        slint::PhysicalSize::new(size.width, size.height),
+                    );
+                    observed = true;
+                }
+            }
+            EventResult::Propagate
+        });
+    }
     eprintln!(
         "native_startup; stage=window_constructed; elapsed_ms={:.3}",
         launched.elapsed().as_secs_f64() * 1000.
@@ -107,14 +143,9 @@ fn launch(environment: ProcessEnvironment) -> Result<(), Box<dyn std::error::Err
                         size.height,
                         launched.elapsed().as_secs_f64() * 1000.
                     );
+                    #[cfg(not(target_os = "macos"))]
                     if acceptance {
-                        let scale = ui.window().scale_factor();
-                        let logical = size.to_logical(scale);
-                        eprintln!(
-                            "native_acceptance; stage=display; pid={}; scale_factor={:.3}; physical={}x{}; logical={:.3}x{:.3}",
-                            std::process::id(), scale, size.width, size.height,
-                            logical.width, logical.height
-                        );
+                        observe_acceptance_display(ui.window(), size);
                     }
                     first_tick = false;
                 }
