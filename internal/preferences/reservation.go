@@ -53,8 +53,7 @@ func ReleaseReservation(root, id string) error {
 	if err := os.Remove(filepath.Join(root, reservationFile)); err != nil {
 		return err
 	}
-	// Remove only an empty directory. Never remove concurrent destination files.
-	return os.Remove(root)
+	return removeEmptyLibraryDirectory(root)
 }
 func Publish(workspace, target, id string) error {
 	data, err := os.ReadFile(filepath.Join(target, reservationFile))

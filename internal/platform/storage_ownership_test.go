@@ -197,3 +197,78 @@ func TestNativeOwnedLibraryRefusesGoReopenAndRecoveryWithoutChangingItsRecords(t
 		t.Fatal("native control changed", err)
 	}
 }
+
+func TestRestartBeforeRootCommitClearsJournalAndRetainsCopyLease(t *testing.T) {
+	for _, published := range []bool{false, true} {
+		t.Run(map[bool]string{false: "copied", true: "published"}[published], func(t *testing.T) {
+			ctx := context.Background()
+			config, root := t.TempDir(), filepath.Join(t.TempDir(), "source")
+			owner := NewConfiguredStorageReadiness(config, root, "en")
+			defer owner.Close()
+			if err := owner.InitializeLibrary(ctx, root); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := owner.Check(ctx); err != nil {
+				t.Fatal(err)
+			}
+			profile := owner.Profile()
+			if err := owner.Close(); err != nil {
+				t.Fatal(err)
+			}
+			entries, err := preferences.Manifest(ctx, root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			j := preferences.Journal{ID: "d0000000-0000-4000-8000-000000000001", LibraryID: profile.LibraryID, Source: root, Destination: filepath.Join(t.TempDir(), "destination"), Phase: "reserved", Entries: entries}
+			if err := preferences.Reserve(j.Destination, j.ID, 0); err != nil {
+				t.Fatal(err)
+			}
+			if err := preferences.CopyLibrary(ctx, j, nil); err != nil {
+				t.Fatal(err)
+			}
+			copyRoot := j.Workspace()
+			if published {
+				if err := preferences.Publish(copyRoot, j.Destination, j.ID); err != nil {
+					t.Fatal(err)
+				}
+				copyRoot = j.Destination
+				j.Phase = "published"
+			}
+			if err := preferences.WriteJournal(config, j); err != nil {
+				t.Fatal(err)
+			}
+			restarted := NewConfiguredStorageReadiness(config, root, "en")
+			defer restarted.Close()
+			if report, err := restarted.Check(ctx); err != nil || !report.MutationsAllowed {
+				t.Fatal(report, err)
+			}
+			if restarted.Profile().Root != root {
+				t.Fatal("uncommitted copy became authoritative")
+			}
+			if _, err := preferences.ReadJournal(config); !errors.Is(err, os.ErrNotExist) {
+				t.Fatal("precommit recovery left a blocking journal", err)
+			}
+			remaining, err := os.ReadDir(copyRoot)
+			if err != nil || len(remaining) != 1 || remaining[0].Name() != storage.LibraryLockFile {
+				t.Fatal("copy payload remains", remaining, err)
+			}
+			if lease, err := storage.AcquireLibrary(copyRoot); !errors.Is(err, storage.ErrLibraryInUse) {
+				if lease != nil {
+					lease.Close()
+				}
+				t.Fatal("recovery released copy ownership", err)
+			}
+			if err := restarted.Close(); err != nil {
+				t.Fatal(err)
+			}
+			lease, err := storage.AcquireLibrary(copyRoot)
+			if err != nil {
+				t.Fatal("final close did not release copy ownership", err)
+			}
+			defer lease.Close()
+			if report, err := restarted.Check(ctx); err != nil || !report.MutationsAllowed {
+				t.Fatal("later startup did not reopen the source", report, err)
+			}
+		})
+	}
+}

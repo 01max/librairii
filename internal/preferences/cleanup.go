@@ -82,14 +82,25 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 	if err := os.Remove(filepath.Join(j.Source, IdentityFile)); err != nil {
 		return err
 	}
-	// The old lease pins this exact directory/inode until durable shutdown.
-	// Keep its control shell; deleting the filename would permit split ownership.
-	if _, err := os.Lstat(filepath.Join(j.Source, storage.LibraryLockFile)); err == nil {
+	return removeEmptyLibraryDirectory(j.Source)
+}
+
+// A retained lease pins its directory and lock inode until durable shutdown.
+// Remove payload-free directories only when they contain no shared control.
+func removeEmptyLibraryDirectory(root string) error {
+	entries, err := storage.LibraryEntries(root)
+	if err != nil {
+		return err
+	}
+	if len(entries) != 0 {
+		return ErrCleanupPending
+	}
+	if _, err := os.Lstat(filepath.Join(root, storage.LibraryLockFile)); err == nil {
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	return os.Remove(j.Source)
+	return os.Remove(root)
 }
 func RemoveMoveMarker(root, id string) error {
 	data, err := os.ReadFile(filepath.Join(root, moveMarker))
