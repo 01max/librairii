@@ -58,6 +58,9 @@ class PackagedAdmission(unittest.TestCase):
         table.addRowSelection.side_effect = lambda row:False
         with self.assertRaisesRegex(ValueError,'selection refused'):
             select_picker_rows(driver,object(),wanted)
+        node.queryComponent.return_value.grabFocus.return_value = False
+        with self.assertRaisesRegex(ValueError,'focus refused'):
+            select_picker_rows(driver,object(),wanted)
 
     def test_managed_imports_must_match_independent_original_identity_name_and_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:

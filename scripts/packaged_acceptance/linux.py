@@ -132,21 +132,39 @@ class Driver:
         (self.output/(prefix+'-opened.json')).write_text(json.dumps(
             {'owner': owner, 'portal_pid': self.portal_pid, 'nodes': before}, ensure_ascii=False, indent=2)+'\n')
         self.key('ctrl+l')
-        self.desktop.text(str(directory if files else directory.parent)+'/')
-        self.key('Return')
-        # Location-entry focus survives navigation. Select actual native table
-        # rows rather than sending Select All to that entry. For a folder,
-        # navigate its parent and explicitly select the named child.
-        wanted = {path.name for path in directory.iterdir()} if files else {directory.name}
-        selected = select_picker_rows(self, application, wanted)
-        (self.output/(prefix+'-selected.json')).write_text(json.dumps(
-            {'directory': str(directory), 'files': files, **selected}, ensure_ascii=False, indent=2)+'\n')
-        self.desktop.screenshot(self.output/(prefix+'-selected.png'))
+        self.desktop.text(str(directory))
+        def location():
+            for node in self.nodes(application):
+                try:
+                    if (node.getState().contains(self.desktop.a.STATE_FOCUSED)
+                            and node.queryText().getText(0, -1) == str(directory)):
+                        return {'name': node.name, 'role': node.getRoleName(), 'value': str(directory), 'focused': True}
+                except (NotImplementedError, RuntimeError, self.desktop.dbus.DBusException):
+                    continue
+            return None
+        entered = self.wait(location)
+        (self.output/(prefix+'-location.json')).write_text(json.dumps(entered, ensure_ascii=False, indent=2)+'\n')
+        self.desktop.screenshot(self.output/(prefix+'-location.png'))
         candidates = ('Open', 'Select', 'Choose', 'Ouvrir', 'Sélectionner', 'Choisir')
-        button = self.wait(lambda: next((node for name in candidates
-                                        if (node := self.find(name, root=application, roles=('push button',),
-                                                              actionable=True)) is not None), None))
-        self.action(button)
+        def confirm():
+            button = self.wait(lambda: next((node for name in candidates
+                                            if (node := self.find(name, root=application, roles=('push button',),
+                                                                  actionable=True)) is not None), None))
+            self.action(button)
+        # GTK's default response handles the location entry: SELECT_FOLDER
+        # accepts that folder, while OPEN navigates into it without responding.
+        # A direct native button action also works without a default Return binding.
+        confirm()
+        selected = {'observed_location_entry': entered}
+        if files:
+            selected.update(select_picker_rows(self, application, {path.name for path in directory.iterdir()}))
+            (self.output/(prefix+'-selected.json')).write_text(json.dumps(
+                {'directory': str(directory), 'files': True, **selected}, ensure_ascii=False, indent=2)+'\n')
+            self.desktop.screenshot(self.output/(prefix+'-selected.png'))
+            confirm()
+        else:
+            (self.output/(prefix+'-selected.json')).write_text(json.dumps(
+                {'directory': str(directory), 'files': False, **selected}, ensure_ascii=False, indent=2)+'\n')
         self.wait(lambda: self.desktop.active_pid() == self.pid)
 
     def settings(self, french=False):
@@ -218,6 +236,8 @@ def select_picker_rows(driver, application, wanted):
         return True
     node = driver.wait(lambda: driver.desktop.find(matches, application))
     table = node.queryTable()
+    if not node.queryComponent().grabFocus():
+        raise ValueError('native picker table focus refused')
     for row in range(table.nRows):
         if row in observed['chosen'] and not table.isRowSelected(row):
             if not table.addRowSelection(row):
