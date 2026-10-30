@@ -95,6 +95,7 @@
     "test_packaged_acceptance.PackagedAdmission.test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup",
     "test_packaged_acceptance.PackagedAdmission.test_managed_imports_must_match_independent_original_identity_name_and_bytes",
     "test_packages.PlatformPackages.test_independent_candidate_checksum_refuses_before_host_install_or_execution",
-    "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection"
+    "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
+    "test_packaged_acceptance.PackagedAdmission.test_linux_press_keeps_observed_identity_when_action_replaces_native_node"
   ]
 }

@@ -21,6 +21,33 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_linux_press_keeps_observed_identity_when_action_replaces_native_node(self):
+        from packaged_acceptance.linux import Driver
+        driver = Driver.__new__(Driver)
+        state = {'replaced':False}
+        class Node:
+            @property
+            def name(self):
+                if state['replaced']:
+                    raise RuntimeError('native node was replaced')
+                return 'Sync official metadata'
+            def getRoleName(self):
+                if state['replaced']:
+                    raise RuntimeError('native node was replaced')
+                return 'push button'
+        node = Node()
+        driver.application = object()
+        driver.desktop = SimpleNamespace(nodes=lambda root:iter([None,node]))
+        driver.wait = lambda predicate:predicate()
+        driver.find = lambda *args,**kwargs:node
+        driver.action = lambda selected:state.update(replaced=True)
+        self.assertEqual(driver.press('Sync official metadata'),{'name':'Sync official metadata','role':'push button'})
+        self.assertEqual(list(driver.nodes()),[node])
+        driver.action = Mock(side_effect=ValueError('native action refused'))
+        state['replaced'] = False
+        with self.assertRaisesRegex(ValueError,'native action refused'):
+            driver.press('Sync official metadata')
+
     def test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection(self):
         from packaged_acceptance.linux import select_picker_rows
         driver = Mock()

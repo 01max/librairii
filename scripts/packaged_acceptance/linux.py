@@ -6,7 +6,9 @@ import time
 
 class Driver:
     def __init__(self, source, output, pid, desktop):
+        from gi.repository import GLib
         self.desktop, self.output, self.pid = desktop, output, pid
+        self.read_errors = (RuntimeError, desktop.dbus.DBusException, GLib.Error)
         self.portal_pid = None
         self.picker_index = 0
         self.application = self.wait(lambda: desktop.find(
@@ -26,7 +28,7 @@ class Driver:
         raise TimeoutError('installed GUI observation deadline')
 
     def nodes(self, root=None):
-        return self.desktop.nodes(self.application if root is None else root)
+        return (node for node in self.desktop.nodes(self.application if root is None else root) if node is not None)
 
     def snapshot(self, name=None):
         nodes = []
@@ -43,7 +45,7 @@ class Driver:
                 except NotImplementedError:
                     pass
                 nodes.append(value)
-            except (RuntimeError, self.desktop.dbus.DBusException):
+            except self.read_errors:
                 continue
         report = {'pid': self.pid, 'frontmost_pid': self.desktop.active_pid(), 'nodes': nodes}
         if name:
@@ -67,7 +69,7 @@ class Driver:
                         except NotImplementedError:
                             continue
                     return node
-            except (RuntimeError, self.desktop.dbus.DBusException):
+            except self.read_errors:
                 continue
         return None
 
@@ -83,8 +85,9 @@ class Driver:
 
     def press(self, name, *, prefix=False):
         node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
+        observed = {'name': node.name, 'role': node.getRoleName()}
         self.action(node)
-        return {'name': node.name, 'role': node.getRoleName()}
+        return observed
 
     def focus(self, name, *, prefix=False, roles=None):
         node = self.wait(lambda: self.find(name, prefix=prefix, roles=roles))
@@ -143,7 +146,7 @@ class Driver:
                         value = node.queryText().getText(0, -1)
                         if value in (str(directory), str(directory)+'/'):
                             return {'name': node.name, 'role': node.getRoleName(), 'value': value, 'focused': True}
-                except (NotImplementedError, RuntimeError, self.desktop.dbus.DBusException):
+                except (NotImplementedError, *self.read_errors):
                     continue
             return None
         entered = self.wait(location)
@@ -190,7 +193,7 @@ class Driver:
                     value = node.queryText().getText(0, -1)
                     if value == str(destination) or value == destination.as_uri():
                         return {'role': node.getRoleName(), 'name': node.name, 'value': value}
-                except (NotImplementedError, RuntimeError, desktop.dbus.DBusException):
+                except (NotImplementedError, *self.read_errors):
                     continue
             return None
         observed = self.wait(location)

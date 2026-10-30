@@ -6042,6 +6042,11 @@
         "position": 95,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 96,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_linux_press_keeps_observed_identity_when_action_replaces_native_node",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       }
     ]
   },
