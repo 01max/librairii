@@ -1,18 +1,38 @@
 # Librairii user and recovery guide
 
 Librairii keeps a private, local library of story archives. Importing creates a
-managed copy; it never edits, renames, moves, or deletes the source file you
-selected. This guide describes the current `main` implementation, whose version
-is recorded in [`VERSION`](../VERSION) (currently `0.5.0`).
+managed copy; it never edits, renames, moves or deletes your selected source.
+This guide describes the Rust native candidate on
+`rewrite-in-rust-native-desktop`. See the [platform matrix](release-platforms.md)
+for installation requirements and remaining public Mac signing gates. For an
+existing Go library, follow the [transition guide](native-transition.md) first.
 
-![Library with Collections, Shelves, filters, and selected-story details](assets/library.png)
+![Native Library in List view with one selected synthetic story](assets/native/library.png)
 
-Screenshots use synthetic frontend fixtures and generated placeholder artwork.
-See [how to refresh them](assets/README.md).
+These are actual native macOS windows captured in isolated packaged CI with
+synthetic archives and a loopback metadata fixture. They contain no personal
+library or live Lunii data. [Capture provenance](assets/README.md) records source,
+package and image checksums. Linux uses the same application controls with its
+own system menus, pickers and file manager.
+
+## Getting around
+
+The top bar provides **Library**, **Tags**, **Import…** and **Export…**. The left
+navigation holds Collections, Shelves, **History**, optional metadata sync and
+**Settings…**; scroll it to reach lower controls. In a narrow window, choose
+**Navigation**, then **Close navigation** or Escape to return to stories.
+Story lists and dialog contents scroll independently. Use Tab/Shift-Tab to move
+between controls, Enter/Space to activate them, and Escape or **Close** to leave
+an application dialog. System file pickers follow the operating system.
+
+Select a story for inspection; its checkbox adds it to the explicit bulk
+selection. **Clear selection** clears those checkboxes. **Details…** opens the
+selected story, including when the side inspector is hidden.
 
 ## Supported imports
 
-The native import picker accepts these filename extensions:
+Choose **Import…**, then **Choose archives…** for up to 1,000 files per batch.
+You can keep browsing while operations run. The native picker accepts:
 
 - `.plain.pk`
 - `.v1.pk`
@@ -39,23 +59,28 @@ Librairii does not decrypt, repair, or convert story packs.
 
 ## Story details
 
-Select a story and choose **Open details** to see its cover and description.
+Select a story and choose **Details…** to see its cover and description.
 Descriptions display readable text and paragraph breaks, including when the
 archive or catalog contains HTML. If artwork is unavailable, a colorful title
 cover appears instead.
 
 Assigned tags appear in the selected-story panel at every window size and in
 the story details. Details open at the beginning of the description, including
-when you reopen a long story. Click outside an application popup
-to close it, or use its Close button or Escape key.
+when you reopen a long story. Use **Close** or Escape to close an application dialog.
 
-Choose **Edit tags** inside the story details popup to change assignments.
+Choose **Edit tags** inside story details to change assignments.
 Closing the tag editor returns to the details with the current tags. The index
-shows assigned tags without an edit action.
+shows assigned tags without an edit action. Bulk assignment uses frozen targets;
+**Mixed · leave unchanged** means only part of the selection has that tag.
+Choice values are added independently.
+
+![Native tag assignment with an assigned user tag and read-only age values](assets/native/tags-search.png)
 
 Choose **Show technical details** to inspect the story UUID, archive filename,
 verification status, and full checksum. **Hide technical details** folds them
 away again.
+
+![Native Details with catalog provenance and technical disclosure](assets/native/story-details.png)
 
 To remove a story, choose **Remove from library…**, then confirm with **Move to
 trash**. **Keep story** returns to the story without removing it. The managed
@@ -63,42 +88,30 @@ copy moves to application trash; your original source file stays in place.
 
 ## Lunii covers and story details
 
-**Sync with Lunii** contacts the official Lunii API to fetch contextual details
+**Sync official metadata** contacts the official Lunii API to fetch contextual details
 and cover images for matching stories. Before the first successful sync, a
-prominent prompt appears above the shelves. The sync panel always shows the
+optional prompt also offers **Later**. The sync panel always shows the
 last successful sync in your local date and time, including while an import or
 another operation is running. A failed sync keeps the previous successful time
 and the saved catalog available.
 
-Close the Lunii panel with its × button to make more room for stories.
-**Show Lunii sync** above the shelves reopens the panel without starting a sync.
+Choose **Hide this panel** in navigation to make more room.
+**Show metadata sync** reopens it without starting a sync. **Refresh local
+status** reads saved state without a network refresh.
 Your choice is remembered when you close and reopen Librairii.
 
-Shelf covers keep their image proportions, with the story title below the
-image. Author and publisher information is available in the selected story's
-details. The left rail provides labeled **Library**, **Tags**, **Import**, and
-**Export** shortcuts: Library returns to all stories, Tags opens the tag
-manager, Import opens the archive picker, and Export prepares the stories in
-the current view.
-
-Use **List**, **Small covers**, or **Large covers** above the shelves to choose
-how stories appear. List shows titles and authors without cover images; the two
-grids show covers at different sizes. Librairii remembers your choice. Switching
-views keeps the current search, filters, sort order, and selected stories.
-
-The application fits the window height. The navigation stays in place while
-the story collection scrolls; long shelf and filter lists scroll independently
-in their sidebar.
-In a narrow window, choose **Library & filters** above the stories to open Collections,
-Shelves, their management actions, and **Refine this view**. The panel scrolls
-independently; choose **Done**, press Escape, or click outside to close it.
+Covers keep their image proportions. Author and publisher information appears
+in details. Use **List**, **Small covers** or **Large covers** in the presentation
+selector. The choice is remembered without changing query, filters, sort or
+selection. Collections, Shelves and their management controls stay in navigation;
+filters open separately through **Filters…**.
 
 Broken stories remain visible and counted in the Library, Collections, Shelves,
 and review proposals. A warning icon, **Broken** badge, and muted artwork identify
 them. There is no built-in Broken visibility filter. Every export skips flagged
 stories, including explicitly selected ones, and explains the skipped items.
 
-Use the **Broken** switch in the selected story panel or in **Open details**.
+Use the **Broken** switch in the selected story panel or in **Details…**.
 For a bulk selection, the switch applies to all selected stories. In a Shelf,
 select members to use its bulk switch, or open an available member's details.
 Story cards retain their warning badge without extra action buttons. The change
@@ -116,7 +129,7 @@ built-in flag restrictions, including nested ones, while keeping other criteria.
 This can broaden old queries. Ordinary user tags named broken keep their normal
 tag behavior, including reused tag IDs. Unsupported queries remain repairable.
 
-Age tags start green. **Manage tags** lets you change the color of any tag,
+Age tags start green. **Tags** opens the manager to change the color of any tag,
 including protected derived tags. Their names and system-managed
 values stay protected, and chosen colors survive later metadata syncs.
 
@@ -129,11 +142,17 @@ An export can snapshot any of these scopes:
 - one dynamic Collection or approved Shelf; or
 - a deduplicated union of several Collections or several Shelves.
 
-The story drawer shows **Export selected stories** only when multiple stories
-are selected. For a single Library story, export the current result or its
-Collection. A Shelf offers **Export whole Shelf**, **Export current result**
-(with view-only refinements), and **Export selection** separately. Checkboxes in
-the Shelves section offer a deduplicated export of the selected Shelves.
+Choose **Export…**, then its **Export scope** selector:
+
+- **Current results · all pages** includes a query or refined Shelf view beyond
+  the visible page;
+- **Selected stories** snapshots the explicit checkbox selection;
+- **One or more Collections** reevaluates and deduplicates their union;
+- **One or more approved Shelves** includes approved members independently of
+  temporary filters or pending suggestions.
+
+Choose groups where applicable and **Choose destination…**. Review the preview,
+then **Export eligible archives**. A single checked story is a valid selection.
 
 The preflight includes every intended UUID. Broken stories and unavailable Shelf
 members appear as skipped, with their title/UUID and reason. Skips reserve no
@@ -150,13 +169,17 @@ otherwise mutate a pack. Destination-local temporary files are published
 atomically and existing files are never overwritten. Cancellation removes
 unfinished temporary files but retains exports that were already completed.
 
-Finished import, sync, and export notices have a × button. Closing a notice
+Finished import, sync and export notices offer **View report** and **Dismiss
+notice**. Dismissing a notice
 keeps it hidden after restarting the app without cancelling an operation or
 deleting exported files. New operations still show their own progress and results.
 
 If all destination filenames already exist, preflight explains the filename
-conflicts. Use **Choose another folder** to retry the same export scope in a
+conflicts. Use **Choose another destination…** to retry the same export scope in a
 different destination. Cancelling the picker keeps the current preflight open.
+**Refresh preview** reevaluates it.
+
+![Native completed export report with original filename and Reveal destination](assets/native/export.png)
 
 The resulting files are intended to remain selectable or draggable into
 Lunii.QT's supported import flow. This is archive passthrough interoperability,
@@ -167,12 +190,14 @@ device.
 
 ## Activity history
 
-Choose **History** above the shelves to revisit imports, Lunii syncs, and exports,
-including reports you closed and activity from previous app sessions. Expand an
+Choose **History** in navigation to revisit imports, Lunii syncs, and exports,
+including reports you closed and activity from previous app sessions. Select an
 entry to inspect item outcomes; completed exports retain **Reveal destination**.
-Dates use your local time. **Load older activity** shows earlier records, and
+Dates use your local time. Each page contains at most 20 operations. **Load older activity** shows earlier records, and
 **Refresh history** reloads the latest activity. Closing History leaves dismissed
-notices hidden. Use Close, Escape, or click outside to return to the collection.
+notices hidden. Use **Close** or Escape to return to the collection.
+
+![Native persistent History with import, metadata and export records](assets/native/history.png)
 
 ## Search, Collections, and Shelves
 
@@ -190,17 +215,16 @@ derived metadata filters combine as follows:
 - separate filter groups use AND;
 - a boolean filter requires assigned, requires unassigned, or is ignored.
 
-Choose **Filter by tags** beside search to find tags and combine them with the
+Choose **Filters…** beside search to find tags and combine them with the
 text query. Boolean tags offer **Tagged**, **Not tagged**, or **Any**; choice tags
 allow multiple values. **Clear tag filters** keeps your search text. This picker
 also refines Shelf views without changing approved membership. Spaces and letter
 case stay intact while you type; matching still uses the normalized query.
 
-The query hash and typed navigation history restore the active Library,
-Collection, or Shelf when reloading or moving back and forward. Collection and
-Shelf identities stay separate even when their numeric IDs are the same.
-**All stories** clears the active name and tag refinements. Collapsing a filter
-heading keeps its criteria selected.
+**Back** and **Forward** navigate semantic Library, Collection and Shelf views.
+Saved native navigation restores the view on reopening. Collection and Shelf
+identities stay separate even when numeric IDs coincide. **Clear all** in Filters
+clears active refinements. Collapsing a heading keeps its criteria selected.
 
 Collections are dynamic saved searches. Existing saved Shelves become Collections
 with their names, order, IDs, and supported non-Broken criteria preserved.
@@ -208,28 +232,34 @@ They reevaluate after library or metadata changes. An empty query means all
 active stories. Broken flags affect neither matching nor counts. Missing tag
 criteria require repair; they never become an unfiltered query silently.
 
-Select Collections and choose **Save current query** to save a copied OR query:
-a story matching any selected Collection appears once. Later edits or deletion
-of the original Collections do not modify that copied query. Collection exports
-use current matches and deduplicate overlaps.
+Open **Manage Collections…** to create, rename, reorder, duplicate, repair or
+delete a saved search. **Save current filters as Collection** snapshots criteria;
+**Replace saved query with these filters…** requires confirmation. Its **Combine
+Collections** controls open a deduplicated union or save a copied OR query as
+a new Collection. Later source edits/deletion do not alter the copy.
 
-Shelves retain approved story UUIDs. **Create Shelf** opens an explicit initial
-preview; choose the stories and confirm **Create with N stories**. A new empty
-Shelf is valid. **Add to Shelf…** in the selected-story panel adds chosen stories
-to an existing Shelf or previews a new Shelf from the selection. Manual additions
-stay on the Shelf until you explicitly remove them and clear any prior exclusion
-for that UUID. There is no protection setting: every approved story remains in
-place until you approve its removal.
+![Native Collection manager with saved criteria and union controls](assets/native/collections.png)
 
-![Curated Shelf in List view with approved, Broken, and unavailable members](assets/curated-shelf.png)
+Shelves retain approved UUIDs. In **Manage Shelves…**, select a new Shelf, name
+it, choose initial candidates from the story selection and/or linked Collections,
+then **Preview initial members…** and confirm the explicit membership. An empty
+Shelf is valid. For an existing Shelf, **Add these stories manually to the Shelf**
+adds selected stories and clears their prior exclusions. Manual additions stay
+until explicitly removed. Every approved member is retained until removal is
+approved; there is no protection setting.
+
+![Native Shelf after explicit review with approved members and source attribution](assets/native/shelf-review.png)
 
 Shelf search, sidebar refinements, and sorting change the view only. They never
-replace approved membership or create source rules. Manual-order arrow buttons
-explicitly reorder members; Rename, Duplicate, and Delete operate on that Shelf.
+replace approved membership or create source rules. The **Shelf action** selector plus **Run** provides **Move member up/down**,
+**Remove members…**, **Remove and exclude…**, **Manage exclusions…**,
+**Restore approved view and order** and **Review updates…**. These member-order
+commands change stored order. Rename, duplicate and delete are in the manager.
 A duplicate retains approved membership, manual keep decisions, exclusions, and
 source attribution independently; it accepts no fresh source matches.
 
-**Manage sources** links Collections with the meaning “matches any of these
+The Sources controls in **Manage Shelves…**, followed by **Review source
+changes…**, link Collections with the meaning “matches any of these
 Collections.” Linking never adds stories automatically. **Review updates** shows
 current additions and source-derived removals; every decision initially says
 **Not now**. **Add** approves membership, **Exclude from suggestions** records a
@@ -238,8 +268,6 @@ persistent exclusion, **Keep** retains a story as a manual choice, and
 Bulk actions are explicit too. Review the final action totals before applying.
 Deferring or cancelling changes nothing. Expired or stale reviews require a
 fresh preview and renewed decisions.
-
-![Shelf source-mismatch review with its decision deferred and no approved changes](assets/shelf-review.png)
 
 Current matching sources explain additions; **Added from** records historical
 acceptance, including detached sources. Manually added or explicitly kept stories
@@ -253,18 +281,18 @@ exclude**, or **Not now**, then apply the decisions you approved. Closing the
 review changes nothing; **Review updates** lets you return to deferred decisions.
 **Keep** makes retention a manual choice, so the same mismatch does not keep
 prompting. Manual-only Shelves do not receive source-removal prompts.
-**Shelf actions → Manage exclusions** can allow suggestions again without adding
-the story. **Remove selected** only removes approved membership; the story can
+**Manage exclusions…** can allow suggestions again without adding
+the story. **Remove members…** only removes approved membership; the story can
 appear in a later Collection diff and be added again. **Exclude from suggestions**
 and **Remove and exclude** are the separate choices that suppress suggestions.
 Library archives remain unchanged.
 
 Earlier removals may already have created exclusions. **Review updates** shows
 an excluded-story count with a direct **Manage exclusions** action. Choose
-**Allow suggestions for…** to make that story eligible for the next diff again.
+**Allow suggestions** to make that story eligible for the next diff again.
 
-Detaching sources previews affected members. Explicitly **Keep all and apply
-sources**, or decide Keep/Remove for every affected story before applying. Removal
+Detaching sources previews affected members. Explicitly keep all and apply the
+source changes, or decide Keep/Remove for every affected story before applying. Removal
 is disabled when source coverage is uncertain or a story is unavailable. Removing
 the last source retains every kept member as a manual choice. Deleting a linked
 Collection reviews all affected Shelves and commits their approved decisions together with
@@ -277,24 +305,26 @@ Shelves are local curation, without filesystem synchronization or manifests.
 
 ## Application data, trash, and recovery
 
-The proposed default library root is:
+The proposed fresh native library root is separate from Go's:
 
 | Platform | Location |
 | --- | --- |
-| macOS | `~/Library/Application Support/Librairii` |
-| Linux | `$XDG_DATA_HOME/librairii`, or `~/.local/share/librairii` when `XDG_DATA_HOME` is unset |
+| macOS | `~/Library/Application Support/LibrairiiNative` |
+| Linux | `$XDG_DATA_HOME/librairii-native`, or `~/.local/share/librairii-native` when `XDG_DATA_HOME` is unset |
 
-A chosen library location is remembered in Settings. Development and test commands may select a different absolute root with
-`LIBRAIRII_DATA_ROOT`. A production library contains:
+The confirmed/chosen root is authoritative and can be elsewhere. Settings remembers
+it. Developer overrides have separate restrictions in [development](development.md).
+A production library contains:
 
 | Path | Purpose |
 | --- | --- |
 | `db/librairii.sqlite3` | stories, archive custody, tags, Collections, Shelves, metadata state, and operation history |
 | `archives/` | content-addressed managed archive copies |
 | `catalog/` | validated official-metadata snapshots and cached artwork |
-| `staging/` | incomplete local operations; abandoned entries are cleaned during startup recovery |
+| `staging/` | incomplete work, recovered only within verified ownership |
 | `trash/` | managed archives removed from the active library |
 | `logs/` | bounded local diagnostic logs |
+| Hidden markers and recovery records | library identity, native ownership and interrupted operations |
 
 Removing a story first moves its managed archive to
 `trash/removals/<operation-id>/`, then removes the active database record.
@@ -303,10 +333,14 @@ in-app restore or empty-trash command. To recover an archive, quit Librairii,
 copy the archive from `trash/` to a normal folder outside the application data
 root, restart Librairii, and import that copy. Reimporting recreates the story
 from archive/official metadata; manual tag assignments that were deleted with
-the old story record are not restored.
+the old story record are not restored. Existing Shelf UUID associations can
+reconnect, but this does not restore the complete removed story record.
 
-For a complete backup, quit Librairii and copy the entire application data root.
-Keep the database, `archives/`, and `catalog/` together. Do not edit the SQLite
+For a complete backup, quit Librairii and copy the **entire library root and
+separate native profile/recovery directory** together, including hidden files,
+journals and any SQLite sidecars. Keep original paths with the backup. A live
+database-only copy is insufficient. Keep uncertain copies until recovery is
+resolved. Do not edit the SQLite
 database or move files directly into `archives/`.
 
 Before applying a pending database migration, Librairii creates a protected
@@ -320,13 +354,14 @@ moves the database and any WAL/SHM sidecars into a unique
 overwritten. If preservation cannot be completed, Librairii keeps mutations
 disabled and does not silently initialize over the conflicting files.
 
-A downgrade after a successful Collections/Shelves upgrade requires quitting the
-app and restoring the matching pre-upgrade backup (preferably the complete
-library root) with the older application version. Preserve a copy of the current
-root first. An older binary cannot interpret the new curated decisions, and
-there is no reverse migration that merges them into dynamic saved queries.
+For Go rollback, cross-OS copying, filename conflicts and post-backup edits,
+follow the [transition instructions](native-transition.md). Never route an old
+Go executable to the native candidate or overwrite the only native copy.
+Pre-migration database snapshots are recovery aids, not full-library backups
+or reverse migrations.
 
-Uninstalling the application bundle does not delete the application data root.
+Uninstalling/replacing the application retains the library and separate native
+profile/recovery directory.
 Delete that root separately only when you intend to permanently erase the
 library, managed archives, catalog cache, trash, logs, and recovery files.
 
@@ -366,8 +401,9 @@ when the UI needs it, then validated and cached. Requests have time and byte
 limits and do not follow redirects. There is no scheduled background catalog
 refresh and no archive upload.
 
-Diagnostic exports exclude archive bytes, guest tokens, absolute private paths,
-catalog artwork, and other sensitive local data.
+**Settings… → Save diagnostic ZIP…** contains only bounded local event logs and
+aggregate counts. It excludes the database, archive bytes, guest tokens, absolute
+private paths and catalog artwork. Nothing is uploaded automatically.
 
 ## Attribution and independence
 
@@ -386,26 +422,28 @@ catalog dataset. The detailed technical boundary is recorded in
 ## Settings, interface language, and library location
 
 Open **Librairii → Settings…** (or **⌘,**) on macOS. On Linux use the
-application menu or the gear button in the app. The settings panel is also
+application menu or **Settings…** in navigation. The settings panel is also
 available when the library needs recovery.
 
-![Settings with interface language and library location controls](assets/settings.png)
+![Native Settings with language, library, diagnostics and preference transfer](assets/native/settings.png)
 
 Choose **Français** or **English** for the interface. Your explicit choice is
 remembered and applies immediately. On first launch, French is selected for a
 French system language; other system languages default to English. This setting
 changes interface text and formatting. Story titles, descriptions, custom tag
 labels, and Collection/Shelf names keep their existing text. Lunii metadata fetching and
-its existing locale policy remain unchanged.
+its locale policy remain unchanged. System menus and pickers follow OS language.
 
 A new installation asks you to confirm where the library will live before
 creating it. You can accept the proposed platform default or choose a different
 empty folder using the native picker. The selected folder itself becomes the
-library root. Upgrading an existing installation keeps its current library in
-place automatically.
+library root. For an existing Go installation, native startup instead requires a verified
+**independent copy** into a different empty folder. It does not silently adopt
+the Go source; follow the [transition guide](native-transition.md). Subsequent
+native launches reopen their saved native library.
 
-To move the library, choose **Change location…**, select an empty folder, review
-the destination and total size, and choose **Move library**. Wait for imports,
+To move the library, choose **Change library folder…**, select an empty folder, review
+the destination and total size, and choose **Move the complete library**. Wait for imports,
 exports, and syncs to finish before starting a move. The move includes the
 database, story archives, tags, Collections, Shelves, history, covers, catalog snapshots,
 staging, trash, diagnostic logs, and database recovery files. Original source
@@ -423,7 +461,7 @@ inspect that old location before removing retained files manually.
 
 If a drive is disconnected or the saved folder is missing, Librairii does not
 create an empty replacement. Open Settings, reconnect the drive and choose
-**Try again**, or choose **Locate library…** to identify the same library at a
+**Retry recovery**, or choose **Locate the same library…** to identify the same library at a
 new path. A different library is rejected. A normal backup still requires
 quitting the application and copying the complete library root.
 
@@ -432,16 +470,19 @@ movable library:
 
 | Platform | Configuration directory |
 | --- | --- |
-| macOS | `~/Library/Preferences/io.github.librairii.app/` |
-| Linux | `$XDG_CONFIG_HOME/librairii/`, or `~/.config/librairii/` |
+| macOS | `~/Library/Preferences/io.github.librairii.native/` |
+| Linux | `$XDG_CONFIG_HOME/librairii-native/`, or `~/.config/librairii-native/` |
 
-Include that configuration directory in a full application backup. A corrupt or
-unsupported settings file enters recovery instead of silently resetting the
-library. The `LIBRAIRII_DATA_ROOT` developer/test override bypasses onboarding,
-uses isolated settings, and disables relocation; it never reads or updates the
-normal production profile.
+Include the entire native configuration directory in a backup, with language,
+binding, navigation/presentation, handover receipt and relocation recovery.
+A corrupt or unsupported profile requires recovery instead of silently resetting.
+Recovery may offer **Retry the verified move** or **Keep the source and unfinished
+copy**; read which location remains authoritative. Imported Go journals do not
+authorize native cleanup. Keep source, unfinished destination, profile and
+journals; never delete locks, SQLite sidecars or control records to force opening.
+Changed, unrelated and uncertain files are retained. Language stays changeable.
 
-Older application versions do not read the new library-location setting.
-Before downgrading, quit Librairii and restore the complete current library to
-the previous version's default location from a verified backup. Never launch
-an older version while relocation is incomplete.
+The [transition guide](native-transition.md) explains backups, preference import
+and rollback to an original Go source or a separate pre-native backup. Do not
+manually repoint legacy settings at native files. The developer/test override is
+not a production adoption or recovery route.

@@ -33,9 +33,9 @@ open gates; see the [platform matrix](docs/release-platforms.md). Published-rele
 links do not imply that the Rust candidate has been promoted.
 
 <p align="center">
-  <a href="docs/assets/library.png"><img src="docs/assets/library.png" width="1000" alt="Librairii library with colorful story covers, separate Collections and Shelves sections, age filters, and selected-story details"></a>
+  <a href="docs/assets/native/library.png"><img src="docs/assets/native/library.png" width="1000" alt="Native Librairii Library in List view with one synthetic story and separate Collections and Shelves navigation"></a>
   <br>
-  <sub>Earlier Go/Wails interface with demo stories and generated placeholder covers. Click to enlarge.</sub>
+  <sub>Actual native macOS CI capture with synthetic archives and metadata. Click to enlarge.</sub>
 </p>
 
 > [!IMPORTANT]
@@ -51,7 +51,7 @@ links do not imply that the Rust candidate has been promoted.
 | **Make it your own** | Create boolean or choice tags, assign them to stories, and choose their colors. |
 | **Save a Collection** | Keep a search and its filters as a dynamic Collection. Matches update as your library changes. |
 | **Curate a Shelf** | Choose which stories belong. Link Collections for suggestions, then explicitly approve additions and removals in **Review updates**. |
-| **Bring stories to life** | Choose **Sync with Lunii** to fetch official descriptions and cover images for matching stories. |
+| **Bring stories to life** | Choose **Sync official metadata** to fetch official descriptions and cover images for matching stories. |
 | **Export what you need** | Copy the current view, Collections, approved Shelf members, or selected stories. Unions deduplicate stories; Broken and unavailable stories are skipped with a reason. |
 | **Choose your setup** | Switch the interface between English and French, choose your library folder, and move the complete library from Settings. |
 
@@ -65,11 +65,7 @@ Review linked Collection suggestions when you choose. Every decision starts at
 **Not now**, and pending suggestions stay out of exports.
 
 <p align="center">
-  <img src="docs/assets/curated-shelf.png" width="1000" alt="A curated Shelf in List view showing approved, Broken, and unavailable members with separate export actions">
-</p>
-
-<p align="center">
-  <img src="docs/assets/shelf-review.png" width="520" alt="Shelf source-mismatch review with Not now selected and zero approved changes">
+  <img src="docs/assets/native/shelf-review.png" width="1000" alt="Native Shelf after explicit review showing approved members and acceptance sources">
 </p>
 
 ### Everything about a story, in one place
@@ -78,7 +74,7 @@ See its cover, description, and assigned tags. Open technical details when you
 need the UUID, archive filename, verification status, or checksum.
 
 <p align="center">
-  <img src="docs/assets/story-details.png" width="720" alt="Story details dialog showing a demo cover, assigned tags, and the option to reveal technical details">
+  <img src="docs/assets/native/story-details.png" width="720" alt="Native Details scrolled to catalog provenance with technical disclosure open">
 </p>
 
 ### A library organized your way
@@ -89,7 +85,7 @@ selected-story panel or details to flag troublesome stories, with bulk actions
 and Undo. Flagged stories stay visible and are skipped by every export.
 
 <p align="center">
-  <img src="docs/assets/tag-manager.png" width="850" alt="Tag manager with controls for creating a tag and changing the derived Age tag's color">
+  <img src="docs/assets/native/tags-search.png" width="850" alt="Native tag assignment with an assigned user tag and protected derived age values">
 </p>
 
 ### A local library that moves with you
@@ -98,13 +94,12 @@ Choose English or French and manage the complete library location in Settings.
 Moving copies and verifies the library before switching to the new folder.
 
 <p align="center">
-  <img src="docs/assets/settings.png" width="720" alt="Settings showing interface language and the stories library location with a Change location action">
+  <img src="docs/assets/native/settings.png" width="720" alt="Native Settings showing language, complete library movement, diagnostics and preference import">
 </p>
 
-These retained screenshots show the earlier Go/Wails interface using deterministic
-frontend demo data and generated covers. They are visual references rather than
-captures of the Rust native candidate. The [capture notes](docs/assets/README.md)
-describe that earlier UI workflow.
+These native screenshots use synthetic, isolated CI data. The
+[capture notes and checksums](docs/assets/README.md) identify the exact package
+and source; earlier Go/Wails images remain as historical references.
 
 </details>
 
@@ -135,8 +130,8 @@ library, use the [transition and recovery guide](docs/native-transition.md).
 3. **Explore and organize.** Search, filter, and tag your stories. Optionally
    sync with Lunii for official covers and descriptions.
 4. **Save a Collection or create a Shelf.** Collections keep a useful query;
-   Shelves keep approved stories. Use **Add to Shelf…** for selected stories,
-   or **Create Shelf** to preview initial membership.
+   Shelves keep approved stories. In **Manage Shelves…**, add selected stories
+   manually or preview a new Shelf's initial membership before confirming.
 5. **Export when ready.** Choose the current view, a Collection, or a Shelf,
    then a destination folder. Review any skipped stories and import the exported
    archives through Lunii.QT's supported workflow.
