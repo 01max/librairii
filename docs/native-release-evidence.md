@@ -82,9 +82,12 @@ python3 -I -B scripts/assemble-native-evidence.py \
 ```
 
 The helper streams checksums without unpacking or launching a package. It
-refuses missing targets/reports, changed input files, duplicate JSON/ZIP
-identities, mixed sources/graphs, incomplete selected reports and mismatched
-distribution or retained installed bytes. Existing output files are refused;
+refuses missing target/archive selections, changed input files, duplicate
+JSON/ZIP identities, mixed sources/graphs, incomplete GUI/scale status records
+and mismatched distribution or retained installed bytes. Quality checking is
+limited to the source record and native UI manifest's source/target binding;
+full quality completion and raw assertions require independent review.
+Existing output files are refused;
 choose a new manifest name for another selection. Validation errors create no
 manifest. An I/O failure while writing can leave a partial new output, which
 should be retained as a failed attempt and never used for acceptance.
