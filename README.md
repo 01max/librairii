@@ -11,12 +11,12 @@
 
 <p align="center">
   <a href="https://github.com/01max/librairii/releases/latest"><img src="https://img.shields.io/github/v/release/01max/librairii?style=flat-square&amp;color=405cf5" alt="Latest release"></a>
-  <a href="https://github.com/01max/librairii/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/01max/librairii/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI status on main"></a>
+  <a href="https://github.com/01max/librairii/actions/workflows/rust-quality.yml"><img src="https://img.shields.io/github/actions/workflow/status/01max/librairii/rust-quality.yml?branch=rewrite-in-rust-native-desktop&amp;style=flat-square&amp;label=Native%20CI" alt="Native CI status on the Rust rewrite branch"></a>
   <a href="docs/release-platforms.md"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-15213c?style=flat-square" alt="Platforms: macOS and Linux"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/01max/librairii/releases/latest"><strong>Download for macOS</strong></a> ·
+  <a href="https://github.com/01max/librairii/releases/latest"><strong>Published releases</strong></a> ·
   <a href="#features">Explore features</a> ·
   <a href="docs/user-guide.md">User guide</a> ·
   <a href="#development">Build from source</a>
@@ -26,10 +26,16 @@ Bring your story collection together in one place. Inspect archives, find the
 right story, save dynamic Collections, and curate Shelves whose contents you
 approve. When you're ready, export your stories for use with Lunii.QT.
 
+On `rewrite-in-rust-native-desktop`, the candidate uses Rust, a directly rendered
+Slint/Winit/Skia interface and bundled SQLite. All three native targets have
+installed-package CI coverage. Public Mac signing and release promotion remain
+open gates; see the [platform matrix](docs/release-platforms.md). Published-release
+links do not imply that the Rust candidate has been promoted.
+
 <p align="center">
-  <a href="docs/assets/library.png"><img src="docs/assets/library.png" width="1000" alt="Librairii library with colorful story covers, separate Collections and Shelves sections, age filters, and selected-story details"></a>
+  <a href="docs/assets/native/library.png"><img src="docs/assets/native/library.png" width="1000" alt="Native Librairii Library in List view with one synthetic story and separate Collections and Shelves navigation"></a>
   <br>
-  <sub>The Librairii interface with demo stories and generated placeholder covers. Click to enlarge.</sub>
+  <sub>Actual native macOS CI capture with synthetic archives and metadata. Click to enlarge.</sub>
 </p>
 
 > [!IMPORTANT]
@@ -45,7 +51,7 @@ approve. When you're ready, export your stories for use with Lunii.QT.
 | **Make it your own** | Create boolean or choice tags, assign them to stories, and choose their colors. |
 | **Save a Collection** | Keep a search and its filters as a dynamic Collection. Matches update as your library changes. |
 | **Curate a Shelf** | Choose which stories belong. Link Collections for suggestions, then explicitly approve additions and removals in **Review updates**. |
-| **Bring stories to life** | Choose **Sync with Lunii** to fetch official descriptions and cover images for matching stories. |
+| **Bring stories to life** | Choose **Sync official metadata** to fetch official descriptions and cover images for matching stories. |
 | **Export what you need** | Copy the current view, Collections, approved Shelf members, or selected stories. Unions deduplicate stories; Broken and unavailable stories are skipped with a reason. |
 | **Choose your setup** | Switch the interface between English and French, choose your library folder, and move the complete library from Settings. |
 
@@ -59,11 +65,7 @@ Review linked Collection suggestions when you choose. Every decision starts at
 **Not now**, and pending suggestions stay out of exports.
 
 <p align="center">
-  <img src="docs/assets/curated-shelf.png" width="1000" alt="A curated Shelf in List view showing approved, Broken, and unavailable members with separate export actions">
-</p>
-
-<p align="center">
-  <img src="docs/assets/shelf-review.png" width="520" alt="Shelf source-mismatch review with Not now selected and zero approved changes">
+  <img src="docs/assets/native/shelf-review.png" width="1000" alt="Native Shelf after explicit review showing approved members and acceptance sources">
 </p>
 
 ### Everything about a story, in one place
@@ -72,7 +74,7 @@ See its cover, description, and assigned tags. Open technical details when you
 need the UUID, archive filename, verification status, or checksum.
 
 <p align="center">
-  <img src="docs/assets/story-details.png" width="720" alt="Story details dialog showing a demo cover, assigned tags, and the option to reveal technical details">
+  <img src="docs/assets/native/story-details.png" width="720" alt="Native Details scrolled to catalog provenance with technical disclosure open">
 </p>
 
 ### A library organized your way
@@ -83,7 +85,7 @@ selected-story panel or details to flag troublesome stories, with bulk actions
 and Undo. Flagged stories stay visible and are skipped by every export.
 
 <p align="center">
-  <img src="docs/assets/tag-manager.png" width="850" alt="Tag manager with controls for creating a tag and changing the derived Age tag's color">
+  <img src="docs/assets/native/tags-search.png" width="850" alt="Native tag assignment with an assigned user tag and protected derived age values">
 </p>
 
 ### A local library that moves with you
@@ -92,24 +94,32 @@ Choose English or French and manage the complete library location in Settings.
 Moving copies and verifies the library before switching to the new folder.
 
 <p align="center">
-  <img src="docs/assets/settings.png" width="720" alt="Settings showing interface language and the stories library location with a Change location action">
+  <img src="docs/assets/native/settings.png" width="720" alt="Native Settings showing language, complete library movement, diagnostics and preference import">
 </p>
 
-These screenshots use deterministic frontend demo data, including generated
-placeholder covers. See the [screenshot capture instructions](docs/assets/README.md)
-to refresh them from the current application.
+These native screenshots use synthetic, isolated CI data. The
+[capture notes and checksums](docs/assets/README.md) identify the exact package
+and source; earlier Go/Wails images remain as historical references.
 
 </details>
 
 ## Get started
 
-| Platform | How to get Librairii |
-| :--- | :--- |
-| **macOS · Apple silicon** | Download the `.dmg` from the [latest release](https://github.com/01max/librairii/releases/latest), open it, and drag Librairii into Applications. |
-| **Linux · x64** | Run `make linux` with Docker to generate the executable and a versioned `tar.gz`, including from macOS. The desktop runtime requires GTK 3 and WebKitGTK 4.1. |
+The native candidate targets macOS 15+ on Apple silicon and Intel, and Ubuntu
+24.04 x86-64. Choose the package matching your actual architecture. Native
+build/install instructions and the distinction between internal candidates and
+signed public distributions are in the [platform matrix](docs/release-platforms.md).
 
-See the [release platform matrix](docs/release-platforms.md) for host requirements,
-artifact details, and platform verification.
+| Platform | Native candidate |
+| :--- | :--- |
+| **macOS · Apple silicon** | Separate ARM application/DMG; matching-host builds and installed GUI pass in CI. Public signing/notarization/stapling remains gated. |
+| **macOS · Intel** | Separate Intel application/DMG, exercised on native Intel hardware. Public signed-byte verification remains gated. |
+| **Linux · x64** | Ubuntu 24.04/glibc 2.39 portable archive with executable, desktop entry and icons; X11/Wayland and GPU/software routes are exercised in CI. |
+
+Installed native packages need no Rust, Go, Node or browser runtime. Linux still
+needs its declared graphics/font/portal/file-manager services. To build the
+candidate, follow [native development](docs/development.md). For an existing Go
+library, use the [transition and recovery guide](docs/native-transition.md).
 
 ### Your first shelf
 
@@ -120,8 +130,8 @@ artifact details, and platform verification.
 3. **Explore and organize.** Search, filter, and tag your stories. Optionally
    sync with Lunii for official covers and descriptions.
 4. **Save a Collection or create a Shelf.** Collections keep a useful query;
-   Shelves keep approved stories. Use **Add to Shelf…** for selected stories,
-   or **Create Shelf** to preview initial membership.
+   Shelves keep approved stories. In **Manage Shelves…**, add selected stories
+   manually or preview a new Shelf's initial membership before confirming.
 5. **Export when ready.** Choose the current view, a Collection, or a Shelf,
    then a destination folder. Review any skipped stories and import the exported
    archives through Lunii.QT's supported workflow.
@@ -154,111 +164,53 @@ For backups, data locations, and recovering removed stories, read the
 
 ## Development
 
-Librairii runs as a single-process **Wails + Go + React + SQLite** desktop
-application. There is no sidecar service, loopback web server, or external
-database to configure.
+The Rust workspace separates pure domain/application policies, SQLite and
+filesystem custody, external/native adapters, Slint presentation and desktop
+composition. See the [architecture](docs/architecture/0005-rust-native-desktop.md)
+and [development guide](docs/development.md) for the actual boundaries, native
+compiler/runtime prerequisites and Rust Analyzer setup.
 
-### Prerequisites
-
-| Tool | Version / setup |
-| :--- | :--- |
-| Go | **1.26 or newer** |
-| Node.js | Use the version in [`.nvmrc`](.nvmrc), matching CI. The frontend requires `^24.15.0 \|\| >=26.0.0`. |
-| Wails CLI | Installed by `make setup`, pinned in [`.wails-version`](.wails-version). |
-| Native platform dependencies | Follow the [Wails platform setup](https://wails.io/docs/gettingstarted/installation/#platform-specific-dependencies). Linux uses GTK 3 and WebKitGTK 4.1. |
-| Browser checks | Google Chrome or Chromium for `make check`. Set `LIBRAIRII_CHROME_PATH` if installed at a nonstandard location. |
-| Linux packaging from any host | Docker with Buildx (included in Docker Desktop), running with Linux containers. `make linux` installs its build tools inside the container. |
-
-If you use nvm, run `nvm install` and `nvm use` in the repository before setup.
-
-On macOS:
+Install rustup and the declared native prerequisites first. The checked-in
+toolchain selects Rust **1.99.1** with rustfmt, Clippy and llvm-tools-preview.
+Python 3 with `tomllib`/`sqlite3` is needed for checks and packaging.
+On macOS, set `MACOSX_DEPLOYMENT_TARGET=15.0` as described in the guide.
 
 ```sh
 git clone https://github.com/01max/librairii.git
 cd librairii
-make setup
-make check
-make build
+git switch rewrite-in-rust-native-desktop
+cargo xtask tools
+cargo build --locked --package librairii-desktop
+cargo xtask check
 ```
 
-The built application is placed in `build/bin/`. If the Wails pin changes,
-run `make setup-wails` to update your local CLI.
+`cargo xtask tools` installs the pinned nextest/deny/audit helpers.
+`cargo xtask check` checks the host's locked graph, boundaries, preservation
+corpus, source/dependency policy, formatting, Clippy, nextest and separate
+doctests. Use the three declared native default configurations rather than
+`--all-features`.
 
-### Generate a Linux package
-
-With Docker running, use this from the repository root on macOS or Linux:
-
-```sh
-make linux
-```
-
-This builds the current checkout for Linux x64 in Ubuntu 24.04 and writes the
-following files to `build/bin/` (using the version in `VERSION`):
-
-- `Librairii` — the Linux executable;
-- `Librairii-0.5.0-linux-amd64.tar.gz` — the distributable archive;
-- `Librairii-0.5.0-linux-amd64.tar.gz.sha256` — its verified checksum.
-
-The first run downloads the container images and build dependencies. Later runs
-reuse Docker's build cache. Host Go, Node, Wails, and frontend dependencies are
-not required for this command. The container checks the executable architecture,
-linked libraries, and archive checksum. Full desktop acceptance runs separately
-on Linux with `make verify-platform-linux`.
-
-<details>
-<summary><strong>Build on Linux with WebKitGTK 4.1</strong></summary>
-
-Clone the repository and run `make setup` as above. Use the WebKitGTK 4.1 tag
-for Go checks and the Wails build:
-
-```sh
-GOFLAGS="-tags=webkit2_41" make check
-"$(go env GOPATH)/bin/wails" build -m -nocolour -tags webkit2_41
-```
-
-For a verified portable archive, follow the host setup in
-[the Linux release job](.github/workflows/ci.yml) and run
-`make verify-platform-linux`.
-
-</details>
-
-### Useful commands
-
-| Command | Purpose |
+| Command / guide | Purpose |
 | :--- | :--- |
-| `make check` | Check Go formatting, vet and test Go, type-check and lint TypeScript, run frontend tests and browser acceptance checks, and build the production frontend. |
-| `make build` | Build the desktop application with the pinned Wails CLI. |
-| `make dmg` | Build and verify the macOS installer on macOS. |
-| `make linux` | Build the Linux x64 executable, versioned archive, and checksum using Docker, including from macOS. |
-| `make smoke-first-story` | Exercise import, inspection, and removal with a synthetic, copyright-free archive. |
-| `make smoke-foundation` | Check a clean-environment macOS launch, SQLite reopen, and shutdown. |
-| `npm --prefix frontend run docs:screenshots` | Refresh documentation images from isolated frontend fixtures using Chrome or Chromium. |
+| `cargo nextest run --workspace --locked --profile ci` | Run workspace behavior tests with the pinned runner. |
+| `cargo test --workspace --doc --locked` | Run doctests separately. |
+| [Disposable development library](docs/development.md#run-a-disposable-development-library) | Launch the GUI using a fresh explicit root, without normal profile discovery. |
+| [Distribution commands](docs/development.md#build-distribution-candidates) | Plan/build a sealed native payload and assemble the matching DMG or Linux archive. |
+| [Platform verification](docs/release-platforms.md#evidence-for-each-candidate) | Inspect exact package bytes and run actual installed workflows in disposable CI. |
 
-The [first-story walkthrough](docs/demos/first-story-vertical-slice.md) also
-shows how to try the synthetic archive in the packaged app with an isolated
-data root.
+Full native CI also rehearses the Go/native handover with Go **1.26.5**. Native
+packages do not require Go at runtime. Optional coverage/fuzz/benchmark commands
+and their extra pinned tools are listed in the development guide.
 
 <details>
-<summary><strong>Release verification</strong></summary>
+<summary><strong>Retained Go/Wails compatibility workflow</strong></summary>
 
-On the current macOS host, build and independently verify the installer with:
-
-```sh
-make dmg
-make smoke-release
-make verify-packaged-acceptance
-```
-
-`make dmg` runs `build-current-installer` followed by `verify-current-installer`.
-Both targets can also be run individually.
-
-The packaged acceptance gate launches the installed application twice against
-an isolated data root. It covers the release UI, SQLite persistence, native
-adapters, the complete local story workflow, and clean shutdown.
-
-On a Linux verification host, run `make verify-platform-linux`. See the
-[release platform matrix](docs/release-platforms.md) for the complete platform
-requirements and evidence contract.
+The Go/Wails/React implementation, oracle fixtures and release commands remain
+available until the separate release/cutover review. `make check`, `make build`,
+`make dmg` and `make linux` still operate on that implementation; they do not
+build the native Rust application. Node/Wails/browser prerequisites and the
+applicable legacy checks are documented in
+[the development guide](docs/development.md#retained-go-compatibility-checks).
 
 </details>
 
@@ -269,10 +221,11 @@ requirements and evidence contract.
 | Supported formats, workflows, privacy, or recovery | [User and recovery guide](docs/user-guide.md) |
 | A safe demo without a device or Lunii account | [First-story walkthrough](docs/demos/first-story-vertical-slice.md) |
 | Packaging and platform qualification | [Release platform matrix](docs/release-platforms.md) |
-| The application architecture | [Wails rebuild baseline](docs/architecture/0001-wails-rebuild-baseline.md) |
+| The current application architecture | [Rust native desktop](docs/architecture/0005-rust-native-desktop.md) |
 | Collections, curated membership, and reviewed updates | [Collections and Shelves](docs/architecture/0004-collections-and-shelves.md) · [Verification](docs/verification/collections-and-shelves.md) |
 | Language settings and moving a library | [Settings and library location](docs/user-guide.md#settings-interface-language-and-library-location) · [Architecture](docs/architecture/0003-settings-and-library-location.md) |
-| Refreshing documentation screenshots | [Capture instructions](docs/assets/README.md) |
+| Native build, checks and editor setup | [Development guide](docs/development.md) |
+| Earlier UI screenshot references | [Capture notes](docs/assets/README.md) |
 | Large-library performance and budgets | [Performance guide](docs/performance/large-library.md) |
 | The Lunii catalog integration boundary | [Interoperability decision](docs/architecture/0002-lunii-catalog-interoperability.md) |
 
@@ -281,8 +234,9 @@ requirements and evidence contract.
 Found a bug or have an idea? [Open an issue](https://github.com/01max/librairii/issues)
 with the behavior you expected, what happened, and your platform. Documentation
 improvements and focused pull requests are welcome; start with the
-[development setup](#development) and run `make check` before submitting code
-changes.
+[development setup](#development) and run `cargo xtask check` plus applicable
+[retained Go checks](docs/development.md#retained-go-compatibility-checks) before
+submitting code changes.
 
 ---
 
