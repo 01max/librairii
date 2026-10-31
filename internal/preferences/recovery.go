@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"github.com/01max/librairii/internal/storage"
 )
 
 // Reconcile never selects a root: the durable profile is the sole authority.
@@ -67,7 +69,7 @@ func DiscardOwned(ctx context.Context, root string, j Journal) error {
 	}
 	var failures []error
 	for _, entry := range j.Entries {
-		if entry.Directory {
+		if entry.Directory || entry.Path == storage.LibraryLockFile {
 			continue
 		}
 		path := filepath.Join(root, entry.Path)
@@ -109,7 +111,7 @@ func DiscardOwned(ctx context.Context, root string, j Journal) error {
 	if len(failures) > 0 {
 		return errors.Join(append(failures, ErrCleanupPending)...)
 	}
-	entries, err := os.ReadDir(root)
+	entries, err := storage.LibraryEntries(root)
 	if err != nil {
 		return err
 	}
@@ -119,5 +121,5 @@ func DiscardOwned(ctx context.Context, root string, j Journal) error {
 	if err := os.Remove(filepath.Join(root, moveMarker)); err != nil {
 		return err
 	}
-	return os.Remove(root)
+	return removeEmptyLibraryDirectory(root)
 }

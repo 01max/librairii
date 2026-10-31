@@ -1,0 +1,34 @@
+{
+  "go_version": "go1.26.5 darwin/arm64",
+  "command": "go run ./target/task5-go-probe crates/librairii-adapters/testdata/import-hardening/dimension.zip crates/librairii-adapters/testdata/import-hardening/pixels.zip",
+  "observed": [
+    {
+      "file": "dimension.zip",
+      "format": "studio_zip",
+      "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+    },
+    {
+      "file": "pixels.zip",
+      "format": "studio_zip",
+      "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+    }
+  ],
+  "sources": [
+    {
+      "path": "target/task5-go-probe/main.go",
+      "sha256": "a8fca3c3016cbe51ea4ab9560950715c2ab9ddc4558aa5194f4e19e934838356"
+    },
+    {
+      "path": "internal/inspection/studio_zip.go",
+      "sha256": "14349c0b72c0bdadb2d43ae5e9ca24c34dc8d7453dda870e88d808888ea705fa"
+    },
+    {
+      "path": "internal/inspection/zip_inspector.go",
+      "sha256": "0a3031a22814d959dff0c1f99bfe96d50ca08df36b0434c6dbaa23747d97b1ba"
+    },
+    {
+      "path": "internal/inspection/zip_reader.go",
+      "sha256": "d0f4b17c1799a704642652e23e39372d3c72994b9b72f12a8d6f406860fcfb42"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# Official crates.io versions verified against section 2 ADR on 2026-10-20.
+[tools]
+cargo-nextest = "0.9.148"
+cargo-deny = "0.20.2"
+cargo-audit = "0.22.2"
+cargo-llvm-cov = "0.9.1"
+cargo-fuzz = "0.13.2"

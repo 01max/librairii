@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/01max/librairii/internal/storage"
 )
 
 var ErrDestination = errors.New("settings.destination_invalid")
@@ -59,7 +61,7 @@ func EmptyTarget(root, config, source string) error {
 			return ErrDestination
 		}
 	}
-	entries, err := os.ReadDir(target)
+	entries, err := storage.LibraryEntries(target)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ErrDestination
 	}

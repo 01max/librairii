@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/01max/librairii/internal/storage"
 )
 
 type contextReader struct {
@@ -45,6 +47,9 @@ func fileHash(ctx context.Context, path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 func Manifest(ctx context.Context, root string) ([]Entry, error) {
+	if _, err := storage.LibraryEntries(root); err != nil {
+		return nil, err
+	}
 	var entries []Entry
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -59,6 +64,9 @@ func Manifest(ctx context.Context, root string) ([]Entry, error) {
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
+		}
+		if rel == storage.LibraryLockFile {
+			return nil
 		}
 		info, err := entry.Info()
 		if err != nil {

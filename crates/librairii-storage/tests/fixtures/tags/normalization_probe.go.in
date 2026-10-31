@@ -1,0 +1,9 @@
+package tagging
+import("crypto/sha256";"encoding/binary";"encoding/hex";"encoding/json";"os";"testing";"strings";"unicode/utf8")
+func TestTask8FrozenNormalization(t *testing.T){
+ h:=sha256.New();var frame [9]byte
+ for r:=rune(0);r<=utf8.MaxRune;r++{if r>=0xd800&&r<=0xdfff{continue};v,e:=normalizeDefinitionKey(string(r));binary.LittleEndian.PutUint32(frame[:4],uint32(r));binary.LittleEndian.PutUint32(frame[4:8],uint32(len(v)));frame[8]=0;if e==nil{frame[8]=1};h.Write(frame[:]);h.Write([]byte(v))}
+ inputs:=[]string{" ÉTÉ favorites ","Straße","𝑨","İIıi","a\u2003b","三٣","a\u0301b","one___two","a"+string(make([]rune,0)),"!!!"}
+ cases:=[]map[string]any{};for _,s:=range inputs{v,e:=normalizeDefinitionKey(s);cases=append(cases,map[string]any{"input":s,"key":v,"valid":e==nil})}
+ longKey,longErr:=normalizeDefinitionKey("a"+strings.Repeat("\u0301",524288));v:=map[string]any{"longMarks":map[string]any{"key":longKey,"valid":longErr==nil},"go":"go1.26.5","unicode":"15.0.0","scalarDigest":hex.EncodeToString(h.Sum(nil)),"cases":cases};b,e:=json.MarshalIndent(v,"","  ");if e!=nil{t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK8_NORMALIZATION"),append(b,'\n'),0600);e!=nil{t.Fatal(e)}
+}

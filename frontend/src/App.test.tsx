@@ -918,6 +918,16 @@ test('renders saved collection preview rows and opens them from view all', async
 
 test('keeps stories outside saved collection searches available in All stories', async () => {
     const user = userEvent.setup();
+    // Saved previews can arrive before the independent All stories request.
+    const loadPage = queryStories.getMockImplementation()!;
+    let releasePage!: () => void;
+    const pageReady = new Promise<void>((resolve) => {
+        releasePage = resolve;
+    });
+    queryStories.mockImplementation(async (...args) => {
+        await pageReady;
+        return loadPage(...args);
+    });
     listCollections.mockResolvedValue(new app.CollectionListResponse({
         collections: [new collections.Summary({
             id: 7,
@@ -959,7 +969,8 @@ test('keeps stories outside saved collection searches available in All stories',
         name: /^Moonlit Workshop$/,
     });
     expect(visibleStory).toBeInTheDocument();
-    const allStoriesRow = screen.getByRole('heading', {name: 'Recently added'}).closest('section')!;
+    releasePage();
+    const allStoriesRow = (await screen.findByRole('heading', {name: 'Recently added'})).closest('section')!;
     expect(within(allStoriesRow).getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(within(allStoriesRow).getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Bedtime, 1 story'}));
@@ -3247,8 +3258,10 @@ test('restores, displays, and polls every concurrent active import', async () =>
 
     expect(await screen.findAllByRole('heading', {name: 'Importing 1 story'}))
         .toHaveLength(2);
-    expect(operationSnapshot).toHaveBeenCalledWith(first.id);
-    expect(operationSnapshot).toHaveBeenCalledWith(second.id);
+    await waitFor(() => {
+        expect(operationSnapshot).toHaveBeenCalledWith(first.id);
+        expect(operationSnapshot).toHaveBeenCalledWith(second.id);
+    });
     expect(screen.getAllByRole('button', {name: 'Cancel import'})).toHaveLength(2);
 });
 

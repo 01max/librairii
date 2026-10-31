@@ -1,0 +1,144 @@
+name: Sign reviewed native Mac candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Exact reviewed package source commit (40 hexadecimal characters)
+        required: true
+        type: string
+      candidate_run:
+        description: Unsigned native-package workflow run containing the reviewed artifact
+        required: true
+        type: string
+      target:
+        description: Independently qualified native architecture
+        required: true
+        type: choice
+        options: [aarch64-apple-darwin, x86_64-apple-darwin]
+      unsigned_sha256:
+        description: Independently reviewed DMG SHA-256 (not the provider ZIP digest)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: native-mac-signing-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/rewrite-in-rust-native-desktop'
+    environment: native-macos-signing
+    runs-on: ${{ inputs.target == 'aarch64-apple-darwin' && 'macos-15' || 'macos-15-intel' }}
+    timeout-minutes: 60
+    env:
+      SELECTED_SOURCE: ${{ inputs.source }}
+      SELECTED_TARGET: ${{ inputs.target }}
+      SELECTED_SHA256: ${{ inputs.unsigned_sha256 }}
+      SELECTED_TEAM: ${{ vars.NATIVE_MACOS_TEAM_ID }}
+      SELECTED_CERTIFICATE: ${{ vars.NATIVE_MACOS_CERT_SHA1 }}
+    steps:
+      # Signing code comes from the trusted workflow revision, separately from
+      # the reviewed candidate source. Candidate code never receives secrets.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trusted
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source }}
+          path: candidate-source
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.candidate_run }}
+          name: native-candidate-${{ inputs.target }}-${{ inputs.source }}
+          path: candidate-source/target/native-release/provider
+      - name: Bind native source and independently selected unsigned bytes before credentials
+        run: >-
+          python3 -I -B trusted/scripts/sign-native-macos.py
+          --source-root candidate-source
+          --directory candidate-source/target/native-release/provider/package
+          --expected-source "$SELECTED_SOURCE" --expected-sha256 "$SELECTED_SHA256"
+          --target "$SELECTED_TARGET" --team "$SELECTED_TEAM" --certificate "$SELECTED_CERTIFICATE"
+          --output target/native-release/signed --preflight
+      - name: Sign, notarize and staple using a dedicated temporary keychain
+        env:
+          NATIVE_SIGNING_KEYCHAIN_BASE64: ${{ secrets.NATIVE_SIGNING_KEYCHAIN_BASE64 }}
+          NATIVE_SIGNING_KEYCHAIN_PASSWORD: ${{ secrets.NATIVE_SIGNING_KEYCHAIN_PASSWORD }}
+        run: >-
+          python3 -I -B trusted/scripts/sign-native-macos.py
+          --source-root candidate-source
+          --directory candidate-source/target/native-release/provider/package
+          --expected-source "$SELECTED_SOURCE" --expected-sha256 "$SELECTED_SHA256"
+          --target "$SELECTED_TARGET" --team "$SELECTED_TEAM" --certificate "$SELECTED_CERTIFICATE"
+          --output target/native-release/signed
+      - name: Retain final signed bytes and public verification receipts only
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-signed-${{ inputs.target }}-${{ inputs.source }}
+          path: |
+            candidate-source/target/native-release/signed/*-signed.dmg
+            candidate-source/target/native-release/signed/*.sha256
+            candidate-source/target/native-release/signed/artifact.json
+            candidate-source/target/native-release/signed/credential-retirement.json
+            candidate-source/target/native-release/signed/signing/
+            candidate-source/target/native-release/signed/signature-verification/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+  verify:
+    needs: [sign]
+    runs-on: ${{ inputs.target == 'aarch64-apple-darwin' && 'macos-15' || 'macos-15-intel' }}
+    timeout-minutes: 75
+    # A fresh native job receives no signing environment or credentials.
+    env:
+      RUST_TARGET: ${{ inputs.target }}
+      SELECTED_SOURCE: ${{ inputs.source }}
+      SELECTED_TEAM: ${{ vars.NATIVE_MACOS_TEAM_ID }}
+      SELECTED_CERTIFICATE: ${{ vars.NATIVE_MACOS_CERT_SHA1 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trusted
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source }}
+          path: candidate-source
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: native-signed-${{ inputs.target }}-${{ inputs.source }}
+          path: candidate-source/target/native-release/provider
+      - name: Inspect final installed bytes, selected certificate, tickets and Gatekeeper
+        run: >-
+          python3 -I -B trusted/scripts/native-release.py inspect-package --source-root candidate-source
+          --directory candidate-source/target/native-release/provider --expected-source "$SELECTED_SOURCE"
+          --target "$RUST_TARGET" --expected-team "$SELECTED_TEAM" --expected-certificate "$SELECTED_CERTIFICATE"
+          --output target/native-release/inspection
+      - name: Qualify those final signed bytes through the production GUI
+        run: >-
+          python3 -I -B trusted/scripts/verify-native-packages.py --source-root candidate-source
+          --expected-source "$SELECTED_SOURCE"
+          --inspection candidate-source/target/native-release/inspection/inspection.json
+          --output target/native-release/gui
+      - name: Retain final-byte installation and GUI receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-signed-installation-${{ inputs.target }}-${{ inputs.source }}
+          path: |
+            candidate-source/target/native-release/inspection/
+            candidate-source/target/native-release/gui/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

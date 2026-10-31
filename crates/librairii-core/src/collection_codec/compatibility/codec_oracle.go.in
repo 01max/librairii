@@ -1,0 +1,44 @@
+// Authored qualification-only glue. The imported private package is an EXACT
+// byte copy of frozen collections/query.go in a disposable independent archive.
+// No SQL driver, production Go runtime, fixture generator or original writes.
+package main
+
+import (
+    "encoding/hex"
+    "encoding/json"
+    "errors"
+    "os"
+    "runtime"
+    collections "github.com/01max/librairii/internal/nativecodecproof"
+)
+
+type input struct {
+    Name string `json:"name"`
+    Version int `json:"version"`
+    LegacyID int64 `json:"legacyId"`
+    Bytes string `json:"bytes"`
+}
+func code(err error) string {
+    if err == nil { return "" }
+    if errors.Is(err,collections.ErrUnsupportedSavedQueryVersion) { return "unsupported" }
+    if errors.Is(err,collections.ErrInvalidSavedLibraryQuery) { return "invalid" }
+    panic(err)
+}
+func main() {
+    raw,err:=os.ReadFile(os.Args[1]);if err!=nil{panic(err)}
+    var inputs []input
+    if err=json.Unmarshal(raw,&inputs);err!=nil{panic(err)}
+    results:=make([]map[string]any,0,len(inputs))
+    for _,in:=range inputs {
+        b,err:=hex.DecodeString(in.Bytes);if err!=nil{panic(err)}
+        decoded,de:=collections.DecodeSavedLibraryQuery(in.Version,string(b),in.LegacyID)
+        dp:=""
+        if de==nil { marshalled,e:=json.Marshal(decoded);if e!=nil{panic(e)};dp=string(marshalled) }
+        migrated,me:=collections.MigrateSavedLibraryQuery(in.Version,string(b),in.LegacyID)
+        results=append(results,map[string]any{"name":in.Name,"version":in.Version,"legacyId":in.LegacyID,
+            "bytes":in.Bytes,"decodedPayload":dp,"decodeError":code(de),
+            "migratedPayload":migrated.Payload,"migrateError":code(me)})
+    }
+    if err=json.NewEncoder(os.Stdout).Encode(map[string]any{"go":runtime.Version(),"cases":results,
+        "scope":"actual frozen collections/query.go Decode and Migrate; exact standalone package copy, original library/collectionquery/searchtext and authenticated xtext; no SQL/domain projection or arbitrary-input proof"});err!=nil{panic(err)}
+}

@@ -1,0 +1,54 @@
+import {Button,VerticalBox,HorizontalBox,Palette} from "std-widgets.slint";
+export struct SettingsData {
+    mode:int,current:string,source:string,proposed:string,summary:string,
+    explanation:string,notice:string,error:string,retained:string,
+    can-choose:bool,can-confirm:bool,can-retry:bool,can-locate:bool,can-export:bool,can-import:bool,interrupted:bool,
+    busy:bool,cancellable:bool,recovering:bool,progress:string,
+    can-preserve:bool,schema-action:string,schema-explanation:string,
+}
+component Label inherits Text {wrap:word-wrap;color:Palette.foreground;vertical-stretch:0;}
+component Command inherits Button {callback reveal(length,length);changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+export component SettingsPanel inherits VerticalBox {
+    in property <bool> french;in property <bool> active;in property <bool> picking;
+    in property <SettingsData> data;
+    callback language(string);callback choose();callback confirm();callback retry();callback locate();callback diagnostics();callback preferences();callback cancel();callback retry-move();callback keep-source();callback preserve-schema();callback reveal(length,length);
+    public function activate(){english.focus();}
+    public function focus-choose(){if choose.enabled && choose.visible {choose.focus();}else{english.focus();}}
+    public function focus-confirm(){if confirm.enabled && confirm.visible {confirm.focus();}else{english.focus();}}
+    public function focus-retry(){if retry.enabled && retry.visible {retry.focus();}else{english.focus();}}
+    public function focus-schema(){if schema.enabled && schema.visible {schema.focus();}else{english.focus();}}
+    public function focus-diagnostics(){if diagnostics.enabled && diagnostics.visible {diagnostics.focus();}else{english.focus();}}
+    public function focus-transfer(){if transfer.enabled && transfer.visible {transfer.focus();}else{english.focus();}}
+    out property <bool> first-focused:english.has-focus;
+    out property <bool> cancel-focused:cancel.has-focus;
+    out property <bool> confirm-focused:confirm.has-focus;
+    out property <bool> retry-focused:retry.has-focus;
+    out property <bool> transfer-focused:transfer.has-focus;
+    padding:0px;spacing:10px;
+    Label {text:root.french ? "Langue de l’interface" : "Interface language";}
+    HorizontalBox {padding:0px;spacing:8px;vertical-stretch:0;
+        english:=Command {text:"English";enabled:root.active && !root.picking;clicked=>{root.language("en");}reveal(y,h)=>{root.reveal(y,h);}}
+        Command {text:"Français";enabled:root.active && !root.picking;clicked=>{root.language("fr");}reveal(y,h)=>{root.reveal(y,h);}}
+    }
+    Label {text:root.data.explanation;}
+    if root.data.current!="":Label {text:(root.french ? "Bibliothèque actuelle\n" : "Current library\n")+root.data.current;}
+    if root.data.source!="":Label {text:(root.french ? "Source conservée\n" : "Preserved source\n")+root.data.source;}
+    if root.data.proposed!="":Label {text:(root.french ? "Dossier choisi\n" : "Selected folder\n")+root.data.proposed;}
+    if root.data.summary!="":Label {text:root.data.summary;}
+    schema:=Command {visible:root.data.can-preserve;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.schema-action;clicked=>{root.preserve-schema();}reveal(y,h)=>{root.reveal(y,h);}}
+    choose:=Command {visible:root.data.can-choose;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.mode==2 ? (root.french ? "Changer le dossier de la bibliothèque…" : "Change library folder…") : (root.french ? "Choisir un dossier…" : "Choose library folder…");clicked=>{root.choose();}reveal(y,h)=>{root.reveal(y,h);}}
+    confirm:=Command {visible:root.data.can-confirm;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.mode==0 ? (root.french ? "Créer la bibliothèque dans ce dossier" : "Create library in this folder") : root.data.mode==1 ? (root.french ? "Créer une copie indépendante" : "Create an independent copy") : (root.french ? "Déplacer toute la bibliothèque" : "Move the complete library");clicked=>{root.confirm();}reveal(y,h)=>{root.reveal(y,h);}}
+    retry:=Command {visible:root.data.can-retry;height:self.visible ? self.preferred-height : 0px;enabled:root.active && (!root.data.busy || root.data.recovering) && !root.picking;text:root.french ? "Réessayer la récupération" : "Retry recovery";clicked=>{root.retry();}reveal(y,h)=>{root.reveal(y,h);}}
+    Command {visible:root.data.can-locate;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.french ? "Retrouver la même bibliothèque…" : "Locate the same library…";clicked=>{root.locate();}reveal(y,h)=>{root.reveal(y,h);}}
+    Command {visible:root.data.interrupted;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.french ? "Reprendre le déplacement vérifié" : "Retry the verified move";clicked=>{root.retry-move();}reveal(y,h)=>{root.reveal(y,h);}}
+    Command {visible:root.data.interrupted;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.french ? "Conserver la source et la copie inachevée" : "Keep the source and unfinished copy";clicked=>{root.keep-source();}reveal(y,h)=>{root.reveal(y,h);}}
+    diagnostics:=Command {visible:root.data.can-export;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.french ? "Enregistrer le ZIP de diagnostic…" : "Save diagnostic ZIP…";clicked=>{root.diagnostics();}reveal(y,h)=>{root.reveal(y,h);}}
+    if root.data.can-export:Label {text:root.french ? "Le ZIP contient uniquement des journaux locaux limités et des nombres agrégés. Il ne contient ni archives, ni base de données, ni chemins privés. Aucun envoi automatique." : "The ZIP contains only bounded local event logs and aggregate counts. It contains no archives, database or private paths. Nothing is uploaded automatically.";}
+    transfer:=Command {visible:root.data.can-import;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.french ? "Importer les préférences…" : "Import preferences…";clicked=>{root.preferences();}reveal(y,h)=>{root.reveal(y,h);}}
+    if root.data.can-import:Label {text:root.french ? "Pour conserver votre présentation, vos notifications et votre navigation, exportez les préférences depuis l’ancienne application puis importez le fichier ici. Sans transfert, les données de la bibliothèque sont conservées et les choix natifs par défaut s’appliquent. Les choix natifs déjà enregistrés sont conservés." : "To keep your view, notices and navigation, export preferences from the previous application and import the file here. Without a transfer, library data is preserved and native defaults apply. Already saved native choices are kept.";}
+    if root.data.progress!="":Label {text:root.data.progress;accessible-live-region:polite;}
+    cancel:=Command {visible:root.data.busy && root.data.cancellable;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.picking;text:root.french ? "Demander l’annulation" : "Request cancellation";clicked=>{root.cancel();}reveal(y,h)=>{root.reveal(y,h);}}
+    if root.data.notice!="":Label {text:root.data.notice;accessible-live-region:polite;}
+    if root.data.error!="":Label {text:root.data.error;accessible-live-region:polite;}
+    if root.data.retained!="":Label {text:(root.french ? "Emplacements conservés\n" : "Retained locations\n")+root.data.retained;}
+}

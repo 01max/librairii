@@ -1,0 +1,902 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-24",
+  "scope": "Automated native macOS sheets, menus, clipboard, Search and exact Finder reveal/owned-window closure. Synthetic OS events and public native control actions.",
+  "required_targets": [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin"
+  ],
+  "all_native_macos_targets_reviewed": true,
+  "physical_input_ime_qualified": false,
+  "screen_reader_speech_qualified": false,
+  "clean_host_qualified": false,
+  "toolkit_selected": false,
+  "targets": {
+    "x86_64-apple-darwin": {
+      "implementation_commit": "30614b82884e5f91d9d9b9238f9da6a5f17e248c",
+      "workflow_run": 40095296249,
+      "job_id": 120876133943,
+      "workflow_url": "https://github.com/01max/librairii/actions/runs/40095296249",
+      "artifact_id": 12561335245,
+      "artifact_zip_sha256": "f63f613947d5a3a7e9b86e739945aab9f658830831baae8a243abf111062d08f",
+      "raw_report_sha256": "02957f51333267fa629033c32424ac7e2cdf9c46585e7896c3ff2525930e5d8d",
+      "manifest_sha256": "48cbf6d886702de0875d228d47adc8beed5e86c7603ff5124302420214cf3aa6",
+      "source_dirty": false,
+      "manifest_payload_files_verified": 1117,
+      "archive_regular_files_verified": 1118,
+      "native_evidence_files_verified": 265,
+      "native_host": "macOS15.7.9, x86_64, no Rosetta",
+      "independent_review": {
+        "status": "approved",
+        "cases_verified": 8,
+        "scope": "Package/archive bytes and provenance; raw attached-sheet parents, exact callbacks/selections, unforced focus, live clipboard/menu assertions, Finder canonical file URLs and exact CG198 retirement, normal shutdown and fixtures; representative screenshots.",
+        "limitations": [
+          "Intermediate dialog/clipboard waits are live harness assertions, not a full per-transition or physical-input replay.",
+          "Picker images are separate observations; raw selected rows and exact callbacks establish selection.",
+          "Ad-hoc integrity seal verified; Gatekeeper rejects this unsigned distribution route as documented.",
+          "No physical input, dead-key/IME, VoiceOver, mixed-display, clean-host or overall toolkit qualification."
+        ]
+      },
+      "report": {
+        "schema": 1,
+        "source": "b5c07576cc5883b66fdf2bca25877dc94c4fef8b",
+        "target": "x86_64-apple-darwin",
+        "binary_sha256": "8c8f81ab3dc475bffa258cdcbb573af590f206dd49264df875321ce856c77362",
+        "archive": {
+          "file": "task2-x86_64-apple-darwin.tar.gz",
+          "bytes": 11229178,
+          "sha256": "211d8caf7897ce812d4342a3352853b8aa3cda227121a54e406df9fd5786bee3"
+        },
+        "cases": {
+          "files-multiple": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 5343,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Deuxième archive 02.pk",
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Été 日本語 故事.zip"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Deuxième archive 02.pk",
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Été 日本語 故事.zip"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Été 日本語 故事.zip",
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-6UPtmM/Deuxième archive 02.pk"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "files-single": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 5519,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-TD1tOt",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-TD1tOt/Été 日本語 故事.zip"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-TD1tOt/Été 日本語 故事.zip"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-TD1tOt/Été 日本語 故事.zip"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "files-cancel": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 5719,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-E0IYOE",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [],
+            "callback_outcome": "cancelled",
+            "canonical_selected_paths": [],
+            "canonical_expected_paths": [],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "folder-accept": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 5853,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-4L1BF7",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-4L1BF7"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-4L1BF7"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-4L1BF7"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "folder-cancel": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 6057,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-oSGkei",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [],
+            "callback_outcome": "cancelled",
+            "canonical_selected_paths": [],
+            "canonical_expected_paths": [],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "folder-reject": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 6119,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-viZJUZ",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "outside_folder": "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder",
+            "selected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "callback_outcome": "rejected",
+            "canonical_selected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "canonical_expected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "early-settings": {
+            "kind": "early-settings",
+            "checks": {
+              "early_settings_delivered": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_unicode_clipboard_and_edit_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 6308,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-2ahOFY",
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          },
+          "reveal": {
+            "kind": "reveal",
+            "checks": {
+              "actual_finder_path": true,
+              "verified_finder_window_closed": true,
+              "explicit_return_from_finder": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 6466,
+            "returncode": 0,
+            "fixture": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-LgbZM4",
+            "observed_finder_window": {
+              "description": "",
+              "document": "",
+              "focused": false,
+              "identifier": "FinderWindow",
+              "modal": false,
+              "role": "AXWindow",
+              "selector": {
+                "path": [],
+                "window": 0
+              },
+              "subrole": "AXStandardWindow",
+              "title": "librairii-qualification-LgbZM4",
+              "url": "",
+              "value": ""
+            },
+            "observed_finder_location": {
+              "method": "exact-native-icon-view-file-urls",
+              "directory": "/private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-LgbZM4",
+              "content_view": {
+                "description": "icon view",
+                "document": "",
+                "enabled": true,
+                "focused": true,
+                "identifier": "IconView",
+                "role": "AXList",
+                "selector": {
+                  "path": [
+                    0,
+                    2,
+                    0,
+                    0
+                  ],
+                  "window": 0
+                },
+                "subrole": "AXCollectionList",
+                "title": "",
+                "url": "",
+                "value": "",
+                "value_settable": false
+              },
+              "observed_files": [
+                {
+                  "description": "Deuxième archive 02.pk",
+                  "document": "",
+                  "enabled": true,
+                  "focused": false,
+                  "identifier": "Deuxième archive 02.pk",
+                  "role": "AXImage",
+                  "selected": false,
+                  "selector": {
+                    "path": [
+                      0,
+                      2,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0
+                    ],
+                    "window": 0
+                  },
+                  "subrole": "",
+                  "title": "Deuxième archive 02.pk",
+                  "url": "file:///private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-LgbZM4/Deuxi%C3%A8me%20archive%2002.pk",
+                  "value": "",
+                  "value_settable": false
+                },
+                {
+                  "description": "Été 日本語 故事.zip",
+                  "document": "",
+                  "enabled": true,
+                  "focused": false,
+                  "identifier": "Été 日本語 故事.zip",
+                  "role": "AXImage",
+                  "selected": false,
+                  "selector": {
+                    "path": [
+                      0,
+                      2,
+                      0,
+                      0,
+                      0,
+                      2,
+                      0
+                    ],
+                    "window": 0
+                  },
+                  "subrole": "",
+                  "title": "Été 日本語 故事.zip",
+                  "url": "file:///private/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/librairii-qualification-LgbZM4/%C3%89t%C3%A9%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%E6%95%85%E4%BA%8B.zip",
+                  "value": "",
+                  "value_settable": false
+                }
+              ]
+            },
+            "observed_finder_retirement": {
+              "window_status": {
+                "observed": true,
+                "pid": 358,
+                "present": false,
+                "window_id": 198
+              },
+              "document_window_list_observed": true,
+              "owned_document_window_present": false,
+              "unresolved_title_window_count": 1
+            },
+            "keyboard_input_source": "com.apple.keylayout.ABC"
+          }
+        },
+        "errors": [],
+        "automated_native_macos": "pass",
+        "physical_input_ime_qualified": false,
+        "screen_reader_speech_qualified": false,
+        "clean_host_qualified": false,
+        "toolkit_selected": false
+      }
+    },
+    "aarch64-apple-darwin": {
+      "implementation_commit": "8a9d571f82951bc62ae8782dbd9c98f2a3fcb99f",
+      "workflow_run": 40096186659,
+      "job_id": 120878834926,
+      "workflow_url": "https://github.com/01max/librairii/actions/runs/40096186659",
+      "artifact_id": 12561107702,
+      "artifact_zip_sha256": "18fd5e39f8570575457e85db9f9c9d12401e5a47fbe8498cbcb69b5b1973ef3b",
+      "raw_report_sha256": "5832553e9c74ca4990df0cb938d2733faa83e4d422f23a80e8c28862baa5a359",
+      "manifest_sha256": "83682143bc85b016eb3d103161462aa0a7e2640ac7b347975148176af74206ff",
+      "source_dirty": false,
+      "independent_review": {
+        "status": "approved",
+        "cases_verified": 8,
+        "scope": "Package/archive bytes and provenance; raw attached-sheet parents, exact callbacks/selections, unforced focus, live clipboard/menu assertions, explicit reveal-start after OS focus, Finder canonical file URLs and exact CG191 retirement, normal shutdown and fixtures; representative screenshots.",
+        "limitations": [
+          "Intermediate dialog/clipboard waits are live harness assertions, not a full per-transition or physical-input replay.",
+          "Picker images are separate observations; raw selected rows and exact callbacks establish selection.",
+          "Ad-hoc integrity seal verified; Gatekeeper rejects this unsigned distribution route as documented.",
+          "No physical input, dead-key/IME, VoiceOver, mixed-display, clean-host or overall toolkit qualification."
+        ]
+      },
+      "report": {
+        "schema": 1,
+        "source": "54b3a432bd821778e501fdec40e67ee6f97137d6",
+        "target": "aarch64-apple-darwin",
+        "binary_sha256": "f917a1ef75ee8f84a748338dd3dc51a9b53e1de135863db0b98681b3a9288923",
+        "archive": {
+          "file": "task2-aarch64-apple-darwin.tar.gz",
+          "bytes": 10683918,
+          "sha256": "a23a13cda99097d68c9e293125bacf89a0a929e6efcd12cb98f6a314f31faad9"
+        },
+        "cases": {
+          "files-multiple": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4020,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Deuxième archive 02.pk",
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Été 日本語 故事.zip"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Deuxième archive 02.pk",
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Été 日本語 故事.zip"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Été 日本語 故事.zip",
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-svkyhq/Deuxième archive 02.pk"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "files-single": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4069,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-qQKVQa",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-qQKVQa/Été 日本語 故事.zip"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-qQKVQa/Été 日本語 故事.zip"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-qQKVQa/Été 日本語 故事.zip"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "files-cancel": {
+            "kind": "files",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4328,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-Nzb7wP",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [],
+            "callback_outcome": "cancelled",
+            "canonical_selected_paths": [],
+            "canonical_expected_paths": [],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "folder-accept": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4488,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-TGZDRz",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [
+              "/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-TGZDRz"
+            ],
+            "callback_outcome": "selected",
+            "canonical_selected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-TGZDRz"
+            ],
+            "canonical_expected_paths": [
+              "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-TGZDRz"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "folder-cancel": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4518,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-X1bCpF",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "selected_paths": [],
+            "callback_outcome": "cancelled",
+            "canonical_selected_paths": [],
+            "canonical_expected_paths": [],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "folder-reject": {
+            "kind": "folder",
+            "checks": {
+              "real_parented_modal_sheet": true,
+              "exact_native_callback": true,
+              "unforced_parent_focus_restored": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4697,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-OmXpuy",
+            "parent_sheet": {
+              "description": "open",
+              "document": "",
+              "focused": false,
+              "identifier": "open-panel",
+              "role": "AXSheet",
+              "selector": {
+                "path": [],
+                "sheet": 0,
+                "window": 0
+              },
+              "subrole": "",
+              "title": "",
+              "url": "",
+              "value": ""
+            },
+            "outside_folder": "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder",
+            "selected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "callback_outcome": "rejected",
+            "canonical_selected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "canonical_expected_paths": [
+              "/Users/runner/work/librairii/librairii/target/task2-evidence/native-macos/folder-reject/outside-folder"
+            ],
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "early-settings": {
+            "kind": "early-settings",
+            "checks": {
+              "early_settings_delivered": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_unicode_clipboard_and_edit_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4745,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-TOFS5a",
+            "keyboard_input_source": "com.apple.keylayout.US"
+          },
+          "reveal": {
+            "kind": "reveal",
+            "checks": {
+              "actual_finder_path": true,
+              "verified_finder_window_closed": true,
+              "explicit_return_from_finder": true,
+              "native_settings_accelerator": true,
+              "native_settings_menu": true,
+              "native_search_input": true,
+              "owned_shutdown": true,
+              "fixture_removed": true
+            },
+            "errors": [],
+            "app_pid": 4915,
+            "returncode": 0,
+            "fixture": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-nzbmGR",
+            "observed_finder_window": {
+              "description": "",
+              "document": "",
+              "focused": false,
+              "identifier": "FinderWindow",
+              "modal": false,
+              "role": "AXWindow",
+              "selector": {
+                "path": [],
+                "window": 0
+              },
+              "subrole": "AXStandardWindow",
+              "title": "librairii-qualification-nzbmGR",
+              "url": "",
+              "value": ""
+            },
+            "observed_finder_location": {
+              "method": "exact-native-icon-view-file-urls",
+              "directory": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-nzbmGR",
+              "content_view": {
+                "description": "icon view",
+                "document": "",
+                "enabled": true,
+                "focused": true,
+                "identifier": "IconView",
+                "role": "AXList",
+                "selector": {
+                  "path": [
+                    0,
+                    2,
+                    0,
+                    0
+                  ],
+                  "window": 0
+                },
+                "subrole": "AXCollectionList",
+                "title": "",
+                "url": "",
+                "value": "",
+                "value_settable": false
+              },
+              "observed_files": [
+                {
+                  "description": "Deuxième archive 02.pk",
+                  "document": "",
+                  "enabled": true,
+                  "focused": false,
+                  "identifier": "Deuxième archive 02.pk",
+                  "role": "AXImage",
+                  "selected": false,
+                  "selector": {
+                    "path": [
+                      0,
+                      2,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0
+                    ],
+                    "window": 0
+                  },
+                  "subrole": "",
+                  "title": "Deuxième archive 02.pk",
+                  "url": "file:///private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-nzbmGR/Deuxi%C3%A8me%20archive%2002.pk",
+                  "value": "",
+                  "value_settable": false
+                },
+                {
+                  "description": "Été 日本語 故事.zip",
+                  "document": "",
+                  "enabled": true,
+                  "focused": false,
+                  "identifier": "Été 日本語 故事.zip",
+                  "role": "AXImage",
+                  "selected": false,
+                  "selector": {
+                    "path": [
+                      0,
+                      2,
+                      0,
+                      0,
+                      0,
+                      2,
+                      0
+                    ],
+                    "window": 0
+                  },
+                  "subrole": "",
+                  "title": "Été 日本語 故事.zip",
+                  "url": "file:///private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/librairii-qualification-nzbmGR/%C3%89t%C3%A9%20%E6%97%A5%E6%9C%AC%E8%AA%9E%20%E6%95%85%E4%BA%8B.zip",
+                  "value": "",
+                  "value_settable": false
+                }
+              ]
+            },
+            "observed_finder_retirement": {
+              "window_status": {
+                "observed": true,
+                "pid": 359,
+                "present": false,
+                "window_id": 191
+              },
+              "document_window_list_observed": true,
+              "owned_document_window_present": false,
+              "unresolved_title_window_count": 1
+            },
+            "keyboard_input_source": "com.apple.keylayout.US"
+          }
+        },
+        "errors": [],
+        "automated_native_macos": "pass",
+        "physical_input_ime_qualified": false,
+        "screen_reader_speech_qualified": false,
+        "clean_host_qualified": false,
+        "toolkit_selected": false
+      },
+      "manifest_payload_files_verified": 1117,
+      "archive_regular_files_verified": 1118,
+      "native_evidence_files_verified": 264,
+      "native_host": "macOS15.7.9, arm64, no Rosetta"
+    }
+  }
+}

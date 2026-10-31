@@ -1,0 +1,110 @@
+import {ShelfReviewPane,ShelfReviewData} from "shelf-reviews.slint";
+import { Button, ComboBox, VerticalBox, HorizontalBox, ScrollView, ListView, Palette } from "std-widgets.slint";
+import { StoryBrowser, StoryGroup } from "browsing.slint";
+import { MixedChoice, TagChip } from "states.slint";
+export struct ProposalRow { title:string, warning:string, decision:int }
+component ReviewChoice inherits ComboBox {
+    in property <int> proposal-index;
+    in property <int> focus-epoch;
+    callback focus-row(length,length);
+    changed focus-epoch => { if root.proposal-index == 0 { self.focus(); } }
+    changed has-focus => { if self.has-focus { root.focus-row(self.absolute-position.y,self.height); } }
+}
+component ReviewPane inherits FocusScope {
+    in property <bool> french;
+    in property <bool> interactive: true;
+    in property <[string]> sources;
+    in-out property <[ProposalRow]> proposals;
+    in property <bool> pending;
+    in property <int> decisions;
+    callback decide(int,int);
+    callback apply();
+    accessible-role: groupbox;
+    accessible-label: root.french ? "Révision en attente" : "Pending review";
+    private property <int> focus-epoch;
+    public function focus-first() { root.focus-epoch += 1; }
+    function reveal(top: length, height: length) {
+        let offset = top < scroll.absolute-position.y ? scroll.absolute-position.y - top : top + height > scroll.absolute-position.y + scroll.visible-height ? scroll.absolute-position.y + scroll.visible-height - top - height : 0px;
+        scroll.content-y = max(min(0px,scroll.visible-height - scroll.content-height),min(0px,scroll.content-y + offset));
+    }
+    function scroll-end() { scroll.content-y = min(0px,scroll.visible-height - scroll.content-height); }
+    key-pressed(event) => {
+        if event.text == Key.PageDown { scroll.content-y = max(scroll.visible-height - scroll.content-height,scroll.content-y - scroll.visible-height / 2); return accept; }
+        if event.text == Key.PageUp { scroll.content-y = min(0px,scroll.content-y + scroll.visible-height / 2); return accept; }
+        return reject;
+    }
+    scroll := ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width; content-height: layout.preferred-height;
+        layout := VerticalBox { height: self.preferred-height; padding: 12px; spacing: 10px;
+            Text { text: root.french ? "Sources — Collections" : "Sources — Collections"; color: Palette.foreground; font-weight: 600; wrap: word-wrap; }
+            for source in root.sources: TagChip { label: source; }
+            Rectangle { height: 1px; background: Palette.border; }
+            Text { text: root.french ? "Révision en attente" : "Pending review"; color: Palette.foreground; font-weight: 600; }
+            Text { text: root.french ? "Rien n’est approuvé automatiquement." : "Nothing is approved automatically."; color: Palette.foreground; wrap: word-wrap; }
+            for proposal[index] in root.proposals: VerticalBox {
+                padding: 0px; spacing: 4px;
+                Text { text: proposal.title; color: Palette.foreground; wrap: word-wrap; }
+                Text { text: proposal.warning; color: Palette.foreground; wrap: word-wrap; }
+                ReviewChoice { enabled: root.interactive && !root.pending; proposal-index: index; focus-epoch: root.focus-epoch; focus-row(top,height) => { root.reveal(top,height); } accessible-label: proposal.title; model: root.french ? ["Pas maintenant", "Ajouter", "Exclure", "Conserver"] : ["Not now", "Add", "Exclude", "Keep"]; current-index: proposal.decision; selected(_) => { root.decide(index,self.current-index); } }
+            }
+            MixedChoice { enabled: root.interactive; french: root.french; label: root.french ? "Étiquette de la sélection" : "Selection tag"; changed has-focus => { if self.has-focus { root.scroll-end(); } } }
+            Button { enabled: root.interactive && root.decisions > 0 && !root.pending; text: root.french ? "Appliquer les décisions" : "Apply decisions"; changed has-focus => { if self.has-focus { root.scroll-end(); } } clicked => { root.apply(); } }
+        }
+    }
+}
+// Approved membership and pending decisions use separate native panels. The
+// section-15 controller supplies/revalidates domain authority at commitment.
+export component Workspace inherits Rectangle {
+    callback toggle(int);
+    callback approved-focused();
+    out property <bool> approved-has-focus: approved-list.has-focus;
+    min-width: 0px; min-height: 0px;
+    in property <bool> french;
+    in property <bool> interactive: true;
+    in property <bool> wide;
+    in property <bool> membership;
+    in property <bool> review-visible: true;
+    in property <[StoryGroup]> members;
+    in property <int> count;
+    in property <[string]> sources;
+    in-out property <[ProposalRow]> proposals;
+    in property <bool> pending;
+    in property <int> decisions;
+    in-out property <int> selected-index;
+    callback select(int);
+    callback decide(int,int);
+    callback apply();
+    out property <length> approved-height: approved-list.height;
+    out property <length> review-height: review.height;
+    in property <ShelfReviewData> review-data;
+    in property <bool> native-review;
+    in property <bool> review-focus-active;
+    callback review-exclusions();callback review-refresh();callback review-close();callback review-apply();callback review-keep-all();callback review-acknowledge();callback review-section(int);callback review-page(int);callback review-shelf(int);callback review-choose(string,int);callback review-bulk(int);callback review-inspect(string);callback review-focused();
+    out property <string> review-focused-uuid: native-review-pane.focused-uuid;
+    out property <length> review-focused-y: native-review-pane.focused-y;
+    out property <length> review-focused-height: native-review-pane.focused-height;
+    out property <length> review-viewport-y: native-review-pane.viewport-y;
+    out property <length> review-viewport-height: native-review-pane.viewport-height;
+    out property <bool> review-refresh-focused: native-review-pane.refresh-focused;
+    public function activate-review() {native-review-pane.activate();}
+    public function focus-review() { if root.native-review {native-review-pane.focus-current();}else{review.focus-first();} }
+
+    public function focus-approved() { approved-list.focus(); }
+    public function focus-bulk(index:int) { approved-list.focus-bulk(index); }
+    approved := Rectangle {
+        x: 0px; y: 0px; width: root.wide && root.review-visible ? parent.width * 0.54 : parent.width; height: root.wide || !root.review-visible ? parent.height : min(parent.height - 88px,max(118px,parent.height * 0.54));
+        VerticalBox { padding: 0px;spacing: 4px;
+            Text { height: 18px;text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
+            approved-list := StoryBrowser { focus-entered=>{root.approved-focused();} membership: root.membership; french: root.french; enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } toggle(index) => { root.toggle(index); } }
+        }
+    }
+    Rectangle {
+        visible: root.review-visible;
+        x: root.wide ? approved.width + 12px : 0px; y: root.wide ? 0px : approved.height + 8px;
+        width: parent.width - self.x; height: parent.height - self.y;
+        background: Palette.alternate-background;
+        review := ReviewPane {visible: !root.native-review; interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        native-review-pane := ShelfReviewPane {visible: root.native-review;x:0px;y:0px;width:parent.width;height:parent.height;interactive: root.interactive;focus-active: root.review-focus-active;data:root.review-data;french:root.french;
+            exclusions=>{root.review-exclusions();}refresh=>{root.review-refresh();}close=>{root.review-close();}apply=>{root.review-apply();}keep-all=>{root.review-keep-all();}acknowledge=>{root.review-acknowledge();}section(i)=>{root.review-section(i);}page(i)=>{root.review-page(i);}shelf(i)=>{root.review-shelf(i);}choose(i,c)=>{root.review-choose(i,c);}bulk(i)=>{root.review-bulk(i);}inspect(i)=>{root.review-inspect(i);}focused=>{root.review-focused();}
+        }
+    }
+}

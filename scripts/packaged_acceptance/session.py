@@ -1,0 +1,239 @@
+"""Own the actual installed process, bounded raw logs and native shutdown."""
+from datetime import datetime, timedelta, timezone
+import os
+from pathlib import Path
+import platform
+import re
+import signal
+import subprocess
+import threading
+
+from native_release.files import digest, write_json
+from .workflow import reveal
+
+
+class Session:
+    def __init__(self, binary, fixture, backend, output):
+        if os.environ.get('GITHUB_ACTIONS') != 'true':
+            raise ValueError('installed GUI execution requires a disposable CI host')
+        self.output, self.binary = output, binary
+        output.mkdir()
+        self.errors = []
+        environment = fixture.environment(backend)
+        working = fixture.root/'working-directory'
+        working.mkdir(exist_ok=True)
+        command = [str(binary)]
+        if platform.system() == 'Darwin':
+            # The application may execute only its installed binary and Apple's
+            # reveal launcher. Its qualification observers run outside this
+            # sandbox; Go/Rust/Node/archive tools cannot service product work.
+            quote = lambda value: '"'+str(value).replace('\\','\\\\').replace('"','\\"')+'"'
+            policy = ('(version 1)(allow default)(deny network-outbound)'
+                      '(allow network-outbound (remote ip "localhost:*"))'
+                      # Rust opens /dev/null before spawning the native launcher.
+                      '(deny file-write*)(allow file-write* (literal "/dev/null") (subpath '+quote(fixture.root)+')'
+                      '(subpath '+quote(Path(os.environ.get('TMPDIR','/private/tmp')).resolve())+'))'
+                      '(deny process-exec)(allow process-exec (literal '+quote(binary)+')'
+                      '(literal "/usr/bin/open"))')
+            checkout = os.environ.get('GITHUB_WORKSPACE')
+            if checkout:
+                policy += '(deny file-read* (subpath '+quote(Path(checkout).resolve())+'))'
+            (output/'product.sb').write_text(policy+'\n')
+            command = ['/usr/bin/sandbox-exec', '-p', policy, str(binary)]
+        self.command, self.environment, self.working = command, environment, working
+        self.process, self.reader = None, None
+        self.launch_receipt = {'binary': str(binary), 'binary_sha256': digest(binary),
+                   'cwd': str(working), 'backend': backend, 'path': environment['PATH'],
+                   'qualification_root': str(fixture.root),
+                   'profile': str(fixture.profile), 'library': str(fixture.library),
+                   'requested_scale': environment['SLINT_SCALE_FACTOR'], 'catalog_online': fixture.online}
+
+    def start(self):
+        # The caller already holds this Session before a child can exist.
+        log = (self.output/'product.log').open('xb')
+        try:
+            self.started_utc = datetime.now(timezone.utc)
+            self.process = subprocess.Popen(self.command, cwd=self.working, env=self.environment,
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
+        except Exception:
+            log.close()
+            raise
+        self.pid = self.process.pid
+        def capture():
+            total = 0
+            try:
+                with self.process.stdout as source, log:
+                    while data := source.read1(65536):
+                        total += len(data)
+                        log.write(data[:max(0, 4194304-(total-len(data)))])
+                        log.flush()
+                        if total > 4194304:
+                            self.errors.append('product output exceeded4MiB')
+                            self.process.kill()
+                            return
+            except Exception as error:
+                self.errors.append('product capture failed: '+str(error))
+        self.reader = threading.Thread(target=capture, daemon=True)
+        try:
+            self.reader.start()
+        except Exception:
+            log.close()
+            self.process.stdout.close()
+            raise
+        write_json(self.output/'launch.json', dict(self.launch_receipt, pid=self.pid,
+                                                  started_utc=self.started_utc.isoformat()))
+
+    def display(self):
+        text = (self.output/'product.log').read_text(errors='strict')
+        pattern = (r'native_acceptance; stage=display; pid=(\d+); scale_factor=([0-9.]+); '
+                   r'physical=(\d+)x(\d+); logical=([0-9.]+)x([0-9.]+)')
+        matches = re.findall(pattern, text)
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise ValueError('ambiguous installed display witness')
+        pid, scale, width, height, logical_width, logical_height = matches[0]
+        scale = float(scale)
+        if (int(pid) != self.pid or scale != float(self.launch_receipt['requested_scale'])
+                or min(float(width),float(height),float(logical_width),float(logical_height)) <= 0
+                or abs(float(width)-float(logical_width)*scale) > 1
+                or abs(float(height)-float(logical_height)*scale) > 1):
+            raise ValueError('observed native display scale/geometry differs from request')
+        return {'pid':self.pid, 'observed_scale':scale, 'physical':[int(width),int(height)],
+                'logical':[float(logical_width),float(logical_height)],
+                'raw_log':self.output.name+'/product.log', 'observed_fields':matches[0]}
+
+    def runtime(self):
+        surfaces = set(re.findall(r'Skia renderer \(skia backend ([^;]+);',
+                                 (self.output/'product.log').read_text()))
+        requested = self.launch_receipt['backend']
+        if len(surfaces) != 1 or ('software' in surfaces) != (requested == 'winit-skia-software'):
+            raise ValueError('actual installed renderer differs from the requested native route')
+        if platform.system() == 'Linux':
+            mappings = Path('/proc')/str(self.pid)/'maps'
+            observed = mappings.read_text()
+        else:
+            observed = subprocess.check_output(['/usr/sbin/lsof', '-p', str(self.pid), '-Fn'], text=True, timeout=15)
+        if len(observed.encode()) > 4194304:
+            raise ValueError('runtime mapping inventory exceeds bound')
+        (self.output/'runtime-mappings.txt').write_text(observed)
+        if re.search(r'(?i)(webkit|javascriptcore|webview2|libcef|chromium|/node(?:$|[./]))', observed):
+            raise ValueError('installed product loaded an undeclared browser/Node runtime')
+        return {'pid': self.pid, 'mappings_sha256': digest(self.output/'runtime-mappings.txt'),
+                'method': 'proc-maps' if platform.system() == 'Linux' else 'lsof',
+                'requested_backend': requested, 'active_surface': sorted(surfaces),
+                'forbidden_runtime_found': False}
+
+    def close(self, driver, french):
+        driver.quit(french)
+        code = self.process.wait(timeout=20)
+        self.reader.join(timeout=5)
+        text = (self.output/'product.log').read_text(errors='replace')
+        if code != 0 or self.reader.is_alive() or self.errors or 'native_shutdown; stage=controller_joined; ok=true' not in text:
+            raise ValueError('installed product did not complete native worker shutdown')
+        return {'returncode': code, 'actual_worker_joined': True}
+
+    def interrupt_catalog(self, driver, fixture, french):
+        fixture.catalog_waiting.clear()
+        fixture.catalog_release.clear()
+        fixture.pause_catalog = True
+        # The completed first sync retires its opt-in banner. Reopen uses the
+        # ordinary sidebar command, including the compact Navigation disclosure.
+        label = 'Synchroniser les métadonnées' if french else 'Sync official metadata'
+        if driver.find('Navigation', roles=('push button','AXButton'), actionable=True):
+            driver.press('Navigation')
+            driver.key('shift+Tab')  # Close-navigation wraps backwards to Settings.
+        else:
+            driver.focus('Historique' if french else 'History', roles=('push button','AXButton'))
+        reveal(driver, lambda: driver.find(label, actionable=True))
+        driver.press(label)
+        if not fixture.catalog_waiting.wait(10):
+            raise ValueError('no actual in-flight local catalog request before interruption')
+        running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")
+        if not running:
+            raise ValueError('metadata job was not durably running before interruption')
+        receipt = {'actual_local_request_in_flight': True, 'running': running, 'retired': False}
+        try:
+            if self.process.poll() is not None:
+                raise ValueError('product exited before the requested interruption')
+            self.process.kill()
+            receipt['returncode'] = self.process.wait(timeout=10)
+            self.reader.join(timeout=5)
+            receipt['reader_retired'] = not self.reader.is_alive()
+            receipt['capture_errors'] = list(self.errors)
+            if receipt['returncode'] != -signal.SIGKILL or not receipt['reader_retired'] or self.errors:
+                raise ValueError('interruption lacks an exact SIGKILL and retired error-free capture')
+            receipt.update(signal='SIGKILL', retired=True)
+            return receipt
+        except Exception as error:
+            receipt['error'] = str(error)
+            raise
+        finally:
+            fixture.catalog_release.set()
+            fixture.pause_catalog = False
+            write_json(self.output/'interruption.json', receipt)
+
+    def retire_failure(self):
+        # Popen owns this unreaped child; no name/PID search authorizes killing.
+        receipt = {'spawned': self.process is not None, 'retired': False, 'errors': []}
+        try:
+            if self.process is not None:
+                if self.process.poll() is None:
+                    if platform.system() == 'Darwin' and os.environ.get('GITHUB_ACTIONS') == 'true':
+                        # The Popen child remains unreaped while sampling, so its
+                        # PID cannot identify a replacement process. Diagnostics
+                        # never replace the original failure or prevent cleanup.
+                        diagnostic_cutoff_utc = datetime.now(timezone.utc)
+                        receipt['failure_sample'] = {'pid': self.process.pid, 'collection_seconds': 1,
+                                                     'watchdog_seconds': 30,
+                                                     'started_utc': diagnostic_cutoff_utc.isoformat()}
+                        try:
+                            command = ['/usr/bin/sample', str(self.process.pid), '1', '1',
+                                       '-file', str(self.output/'failure.sample.txt')]
+                            receipt['failure_sample']['command'] = command
+                            with (self.output/'failure-sample.log').open('xb') as log:
+                                result = subprocess.run(command, stdout=log,
+                                    stderr=subprocess.STDOUT, timeout=30, check=False)
+                            receipt['failure_sample']['returncode'] = result.returncode
+                        except Exception as error:
+                            receipt['failure_sample']['error'] = str(error)
+                        receipt['failure_sample']['ended_utc'] = datetime.now(timezone.utc).isoformat()
+                        # Query only this launch's final two minutes, ending at
+                        # failure-retirement entry, after snapshots and before either probe.
+                        # The still-owned child pins the PID until both probes end.
+                        receipt['failure_system_log'] = {'pid': self.process.pid, 'watchdog_seconds': 5}
+                        try:
+                            start = max(self.started_utc, diagnostic_cutoff_utc-timedelta(minutes=2))
+                            predicate = (f'(processIdentifier == {self.process.pid}) OR '
+                                         '((process == "kernel" OR process == "sandboxd") AND '
+                                         f'eventMessage CONTAINS "({self.process.pid})")')
+                            command = ['/usr/bin/log', 'show', '--style', 'json', '--info', '--debug',
+                                       '--start', start.strftime('%Y-%m-%d %H:%M:%S%z'),
+                                       '--end', diagnostic_cutoff_utc.strftime('%Y-%m-%d %H:%M:%S%z'),
+                                       '--predicate', predicate]
+                            receipt['failure_system_log'].update(command=command,
+                                start_utc=start.isoformat(), end_utc=diagnostic_cutoff_utc.isoformat())
+                            with (self.output/'failure-system.log').open('xb') as log:
+                                result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
+                                                        timeout=5, check=False)
+                            receipt['failure_system_log']['returncode'] = result.returncode
+                        except Exception as error:
+                            receipt['failure_system_log']['error'] = str(error)
+                        receipt['failure_system_log']['ended_utc'] = datetime.now(timezone.utc).isoformat()
+                    self.process.kill()
+                receipt['returncode'] = self.process.wait(timeout=10)
+        except Exception as error:
+            receipt['errors'].append('process retirement: '+str(error))
+        try:
+            if self.reader is not None and self.reader.ident is not None:
+                self.reader.join(timeout=5)
+        except Exception as error:
+            receipt['errors'].append('reader retirement: '+str(error))
+        receipt['reader_retired'] = self.reader is None or not self.reader.is_alive()
+        receipt['retired'] = (not receipt['errors'] and receipt['reader_retired']
+                              and (self.process is None or self.process.poll() is not None))
+        receipt['capture_errors'] = list(self.errors)
+        write_json(self.output/'retirement.json', receipt)
+        if not receipt['retired']:
+            raise ValueError('owned product process/capture retirement remains uncertain')
+        return receipt

@@ -17,6 +17,14 @@ beforeEach(() => {
  vi.mocked(EventsOn).mockReturnValue(() => {});
 });
 afterEach(() => {setLanguage('en');Reflect.deleteProperty(window,'go');});
+test('exports preferences only after explicit settings action and reports success', async () => {
+ const exportPreferences=vi.fn().mockResolvedValue(true);
+ render(<SettingsPanel onReady={() => {}} onExportPreferences={exportPreferences}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Settings'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Export preferences…'}));
+ expect(await screen.findByRole('status')).toHaveTextContent('Preferences exported.');
+ expect(exportPreferences).toHaveBeenCalledOnce();
+});
 test('native command opens settings and a persisted language updates the UI immediately',async () => {
  render(<SettingsPanel onReady={() => {}}/>);
  await waitFor(() => expect(EventsOn).toHaveBeenCalled());

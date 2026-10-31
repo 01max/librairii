@@ -1,0 +1,101 @@
+{
+  "archivePayloads": "record-only synthetic performance data, not usable export archives",
+  "artworkHeight": 400,
+  "artworkVariants": 24,
+  "artworkWidth": 320,
+  "collectionIds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "languageDistribution": [
+    {
+      "count": 2500,
+      "language": "en-GB"
+    },
+    {
+      "count": 2500,
+      "language": "fr-FR"
+    }
+  ],
+  "queryPlans": {
+    "artworkLoad": [
+      "SEARCH stories USING INTEGER PRIMARY KEY (rowid=?)"
+    ],
+    "collectionCounts": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "BLOOM FILTER ON choice_assignment (definition_id=? AND value_id=? AND story_id=?)",
+      "SEARCH choice_assignment EXISTS USING INDEX idx_story_tag_assignments_filter (definition_id=? AND value_id=? AND story_id=?)"
+    ],
+    "collectionQuery": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "combinedFilters": [
+      "SCAN s",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SCAN language_snapshot USING COVERING INDEX idx_catalog_snapshots_active_locale",
+      "SEARCH official_language USING COVERING INDEX idx_official_metadata_language_story (language=? AND story_uuid=? AND snapshot_id=?)",
+      "BLOOM FILTER ON choice_assignment (definition_id=? AND value_id=? AND story_id=?)",
+      "SEARCH choice_assignment EXISTS USING INDEX idx_story_tag_assignments_filter (definition_id=? AND value_id=? AND story_id=?)",
+      "SEARCH a USING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 4",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "deepPagination": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "substringSearch": [
+      "SCAN s USING INDEX idx_stories_display_name_normalized",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  "storyCount": 5000,
+  "tagDistribution": [
+    {
+      "count": 1666,
+      "definition_id": 2,
+      "value_id": 1
+    }
+  ],
+  "titleCycle": 64,
+  "validationDistribution": [
+    {
+      "count": 500,
+      "validation_state": "invalid"
+    },
+    {
+      "count": 500,
+      "validation_state": "missing"
+    },
+    {
+      "count": 4000,
+      "validation_state": "valid"
+    }
+  ]
+}

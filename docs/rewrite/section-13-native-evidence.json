@@ -1,0 +1,533 @@
+{
+  "schema": 1,
+  "recordedAt": "2026-10-26",
+  "pullRequest": "https://github.com/01max/librairii/pull/64",
+  "base": "44ea386f7b84ae2861aa77aaea9956dddeb7c6fa",
+  "qualificationCheckpoint": "691f08dacc61cfd874d3da1a5180a200f9c35ef7",
+  "providerMergeSource": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+  "workflow": "https://github.com/01max/librairii/actions/runs/40316377158",
+  "requiredTargetsConclusion": "success",
+  "legacyWorkflow": {
+    "runId": 40316377156,
+    "head": "691f08dacc61cfd874d3da1a5180a200f9c35ef7",
+    "conclusion": "success"
+  },
+  "scope": "Immutable full three-platform relocation qualification checkpoint. The subsequent 7ae6897 mutation-admission correction has its own real-domain failing-before/passing-after regression and local complete 581-test gate. Final admission additionally requires the final pushed revision to pass all three native jobs and legacy CI; its immutable run, source and artifact receipts are recorded on PR64 and in the local canonical handover. These checkpoint receipts are not relabelled as later-head execution.",
+  "reviewedRuntimeHead": "7ae68973a34a5bbfe7f180eb7cbf55efb1e7201d",
+  "verification": "All three artifact ZIP SHA256 values match provider metadata; source/toolchain/host, cumulative required/discovered and executed JUnit identities with zero skips/failures/errors, frozen-Go isolation assertions/unchanged archive hashes, actual SIGKILL boundaries, EACCES/ENOSPC, separate filesystem, exact selected mount root, reopened payload/language and positive owned-volume disposal verified.",
+  "targets": [
+    {
+      "target": "aarch64-apple-darwin",
+      "runId": 40316377158,
+      "jobId": 121550080768,
+      "artifactId": 12647810218,
+      "artifactSha256": "1c18e2a7a4afa8dc05afa9b1db6bf271672e162adfb16cd7eb484923ffc45e65",
+      "head": "691f08dacc61cfd874d3da1a5180a200f9c35ef7",
+      "testedSource": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+      "host": "macOS ARM64 aarch64-apple-darwin features=empty/default",
+      "junit": {
+        "name": "nextest-run",
+        "tests": "580",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "d868ee23-070f-4322-be44-de0f5090a149",
+        "timestamp": "2026-10-26T11:39:50.214+00:00",
+        "time": "76.947"
+      },
+      "junitSha256": "ec6b46e49d4aebf93c3c0e9d26fc4bb422f2d6c348c42d75c8fb08a585510ea4",
+      "discoverySha256": "1c4b8e59cc573c0bf0b6a0e22e40ec96795bcd2d11faea1862411c092f52f84d",
+      "requiredIdentities": 579,
+      "currentPackageWorkingDirectories": [
+        "/Users/runner/work/librairii/librairii/crates/librairii-adapters",
+        "/Users/runner/work/librairii/librairii/crates/librairii-app",
+        "/Users/runner/work/librairii/librairii/crates/librairii-core",
+        "/Users/runner/work/librairii/librairii/crates/librairii-desktop",
+        "/Users/runner/work/librairii/librairii/crates/librairii-storage",
+        "/Users/runner/work/librairii/librairii/crates/librairii-testkit",
+        "/Users/runner/work/librairii/librairii/crates/librairii-ui",
+        "/Users/runner/work/librairii/librairii/xtask"
+      ],
+      "handover": {
+        "archiveHashes": 5,
+        "candidateAndProfilesUnchangedByLegacy": true,
+        "goCrashReleasesLock": true,
+        "goSeesRustLock": true,
+        "inPlaceRefused": true,
+        "legacySourceOnlyAfterNativeReopen": true,
+        "legacySourceOnlyDuringActiveRemovalIntent": true,
+        "rustSeesGoLock": true,
+        "schema": 18,
+        "source": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "go": "go version go1.26.5 darwin/arm64",
+        "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: aarch64-apple-darwin\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+        "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "oracleSourceManifestSha256": "e547c7f66f0d7fc32b4ee41eeecf063c0047be6deaf73c51c7610908f65b5e6e",
+        "driverSha256": "8360c7244694701f25f92bbc92bf0b2a8dcb56e1af6a3905b996959bef4a6aaf",
+        "helperSha256": "abd07095170f6c4b6e6012a59cfddf2ec862e9556f9fe2fc6f079e1207be1b75"
+      },
+      "handoverSha256": "7bb4efaa3bb5e9e36290f65d7653d99949c48debc4b9ce2bc89ca48e8213404b",
+      "relocation": {
+        "arch": "aarch64",
+        "destination_device": 16777239,
+        "filesystem_failures": [
+          {
+            "before_commit": true,
+            "failure": "permissions",
+            "filler_errno": null,
+            "observed_errno": 13,
+            "source_reopened": true,
+            "source_unchanged": true
+          },
+          {
+            "before_commit": true,
+            "failure": "disk-full",
+            "filler_errno": 28,
+            "observed_errno": 28,
+            "source_reopened": true,
+            "source_unchanged": true
+          }
+        ],
+        "forced_termination": [
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Workspace"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Journal"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "File"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Published"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "BeforeCommit"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Committed"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Retired"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "SourceRetired"
+          }
+        ],
+        "format": "librairii.native-relocation-rehearsal",
+        "os": "macos",
+        "separate_filesystem": true,
+        "source_device": 16777228,
+        "version": 1,
+        "volume_root": {
+          "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+          "volume_root": "exact_root_verified"
+        },
+        "cargo_artifact_executable": "/Users/runner/work/librairii/librairii/target/debug/examples/relocation_handover",
+        "executable_sha256": "384062ec3f41352cc0d530cb096a3ccf90233f75ace242ce92833f6118a34758",
+        "driver_sha256": "4725573aa0e04f4b12c5244f2f75b0e55a25b5a1ca71c2046d523e3da81f8834",
+        "example_sha256": "9eeaabc1f017f3f0e6ee4fd81b2ada8c23a4d39cec9b45c381c51d593d006bc0",
+        "checkout_sha": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "working_tree_dirty": false,
+        "host_system": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
+        "host_machine": "arm64",
+        "filesystem": "APFS disk image",
+        "image_bytes": 134217728,
+        "volume_owned_by_rehearsal": true,
+        "owned_volume_detached": true,
+        "owned_volume_detach_forced": false
+      },
+      "relocationSha256": "76d6935efce2688ac2afa7346921c9a99eb2b920321f451550c95f0cf55ac8ba"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "runId": 40316377158,
+      "jobId": 121550080507,
+      "artifactId": 12648165436,
+      "artifactSha256": "93e1f932a8e1c40e2b48b33b865a3700304d343b442f5028a78e5861b52fb157",
+      "head": "691f08dacc61cfd874d3da1a5180a200f9c35ef7",
+      "testedSource": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+      "host": "macOS X64 x86_64-apple-darwin features=empty/default",
+      "junit": {
+        "name": "nextest-run",
+        "tests": "580",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "045efbc1-0d90-4333-b9d4-53ca27a4714a",
+        "timestamp": "2026-10-26T11:42:21.882+00:00",
+        "time": "191.049"
+      },
+      "junitSha256": "5b55b8756b2bb2f4d0d80c50ccc43e92be0d82359f8bfe7cd68dff594d568af1",
+      "discoverySha256": "7108e110b77c0a11436736d2d75aaf3b3dac07744ef7626a8ffa590b0b57f34d",
+      "requiredIdentities": 579,
+      "currentPackageWorkingDirectories": [
+        "/Users/runner/work/librairii/librairii/crates/librairii-adapters",
+        "/Users/runner/work/librairii/librairii/crates/librairii-app",
+        "/Users/runner/work/librairii/librairii/crates/librairii-core",
+        "/Users/runner/work/librairii/librairii/crates/librairii-desktop",
+        "/Users/runner/work/librairii/librairii/crates/librairii-storage",
+        "/Users/runner/work/librairii/librairii/crates/librairii-testkit",
+        "/Users/runner/work/librairii/librairii/crates/librairii-ui",
+        "/Users/runner/work/librairii/librairii/xtask"
+      ],
+      "handover": {
+        "archiveHashes": 5,
+        "candidateAndProfilesUnchangedByLegacy": true,
+        "goCrashReleasesLock": true,
+        "goSeesRustLock": true,
+        "inPlaceRefused": true,
+        "legacySourceOnlyAfterNativeReopen": true,
+        "legacySourceOnlyDuringActiveRemovalIntent": true,
+        "rustSeesGoLock": true,
+        "schema": 18,
+        "source": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "go": "go version go1.26.5 darwin/amd64",
+        "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-apple-darwin\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+        "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "oracleSourceManifestSha256": "e547c7f66f0d7fc32b4ee41eeecf063c0047be6deaf73c51c7610908f65b5e6e",
+        "driverSha256": "8360c7244694701f25f92bbc92bf0b2a8dcb56e1af6a3905b996959bef4a6aaf",
+        "helperSha256": "c1eb747572df0d4a38449d26f22cee17c3b77e899a04860c9315827481015430"
+      },
+      "handoverSha256": "90771f795c2130019cd66afede04ba439b377ffd2f6dd41000e25754ac18f074",
+      "relocation": {
+        "arch": "x86_64",
+        "destination_device": 16777230,
+        "filesystem_failures": [
+          {
+            "before_commit": true,
+            "failure": "permissions",
+            "filler_errno": null,
+            "observed_errno": 13,
+            "source_reopened": true,
+            "source_unchanged": true
+          },
+          {
+            "before_commit": true,
+            "failure": "disk-full",
+            "filler_errno": 28,
+            "observed_errno": 28,
+            "source_reopened": true,
+            "source_unchanged": true
+          }
+        ],
+        "forced_termination": [
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Workspace"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Journal"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "File"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Published"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "BeforeCommit"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Committed"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Retired"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "SourceRetired"
+          }
+        ],
+        "format": "librairii.native-relocation-rehearsal",
+        "os": "macos",
+        "separate_filesystem": true,
+        "source_device": 16777220,
+        "version": 1,
+        "volume_root": {
+          "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+          "volume_root": "exact_root_verified"
+        },
+        "cargo_artifact_executable": "/Users/runner/work/librairii/librairii/target/debug/examples/relocation_handover",
+        "executable_sha256": "18873f11f4c1768246354ea44494e7f878642fdbfc9de1b6dca449e90a2a32e3",
+        "driver_sha256": "4725573aa0e04f4b12c5244f2f75b0e55a25b5a1ca71c2046d523e3da81f8834",
+        "example_sha256": "9eeaabc1f017f3f0e6ee4fd81b2ada8c23a4d39cec9b45c381c51d593d006bc0",
+        "checkout_sha": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "working_tree_dirty": false,
+        "host_system": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+        "host_machine": "x86_64",
+        "filesystem": "APFS disk image",
+        "image_bytes": 134217728,
+        "volume_owned_by_rehearsal": true,
+        "owned_volume_detached": true,
+        "owned_volume_detach_forced": false
+      },
+      "relocationSha256": "7fed41d19fddde3649759fd0f77d1987bbafa808b88c70bb8f56dd75eb69ecb5"
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "runId": 40316377158,
+      "jobId": 121550081101,
+      "artifactId": 12646334378,
+      "artifactSha256": "aa55bda78948ae04a638ee479b8f6128cc73bfb504a8313ec83addc2e9e8b251",
+      "head": "691f08dacc61cfd874d3da1a5180a200f9c35ef7",
+      "testedSource": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+      "host": "Linux X64 x86_64-unknown-linux-gnu features=empty/default",
+      "junit": {
+        "name": "nextest-run",
+        "tests": "582",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "4f8d251f-8227-46e6-971d-80b7eb4ffb68",
+        "timestamp": "2026-10-26T11:40:00.414+00:00",
+        "time": "79.081"
+      },
+      "junitSha256": "7c7f0c21983d6d9e4838c7af8e2b08f6500a839d55491dd39aee4a11bac1a174",
+      "discoverySha256": "6e2e0c7ef1afe7703179f61787e31589062e57ce31e319d7fc8e3a8b7b5d3ed1",
+      "requiredIdentities": 581,
+      "currentPackageWorkingDirectories": [
+        "/home/runner/work/librairii/librairii/crates/librairii-adapters",
+        "/home/runner/work/librairii/librairii/crates/librairii-app",
+        "/home/runner/work/librairii/librairii/crates/librairii-core",
+        "/home/runner/work/librairii/librairii/crates/librairii-desktop",
+        "/home/runner/work/librairii/librairii/crates/librairii-storage",
+        "/home/runner/work/librairii/librairii/crates/librairii-testkit",
+        "/home/runner/work/librairii/librairii/crates/librairii-ui",
+        "/home/runner/work/librairii/librairii/xtask"
+      ],
+      "handover": {
+        "archiveHashes": 5,
+        "candidateAndProfilesUnchangedByLegacy": true,
+        "goCrashReleasesLock": true,
+        "goSeesRustLock": true,
+        "inPlaceRefused": true,
+        "legacySourceOnlyAfterNativeReopen": true,
+        "legacySourceOnlyDuringActiveRemovalIntent": true,
+        "rustSeesGoLock": true,
+        "schema": 18,
+        "source": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "go": "go version go1.26.5 linux/amd64",
+        "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+        "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "oracleSourceManifestSha256": "e547c7f66f0d7fc32b4ee41eeecf063c0047be6deaf73c51c7610908f65b5e6e",
+        "driverSha256": "8360c7244694701f25f92bbc92bf0b2a8dcb56e1af6a3905b996959bef4a6aaf",
+        "helperSha256": "8cd48444ceb0f9324b25bf84ad2c825550cb5ea3bb87b0f7e04aad2d0c56bc14"
+      },
+      "handoverSha256": "aa7a2245285714e080add166fd4b3f86e58d1dc7a4ddca4174b548c31c20caa8",
+      "relocation": {
+        "arch": "x86_64",
+        "destination_device": 1792,
+        "filesystem_failures": [
+          {
+            "before_commit": true,
+            "failure": "permissions",
+            "filler_errno": null,
+            "observed_errno": 13,
+            "source_reopened": true,
+            "source_unchanged": true
+          },
+          {
+            "before_commit": true,
+            "failure": "disk-full",
+            "filler_errno": 28,
+            "observed_errno": 28,
+            "source_reopened": true,
+            "source_unchanged": true
+          }
+        ],
+        "forced_termination": [
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Workspace"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Journal"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "File"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "Published"
+          },
+          {
+            "authority": "source",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": true,
+            "signal": 9,
+            "stage": "BeforeCommit"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Committed"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "Retired"
+          },
+          {
+            "authority": "destination",
+            "database_reopened": true,
+            "language": "fr",
+            "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+            "retry_verified": false,
+            "signal": 9,
+            "stage": "SourceRetired"
+          }
+        ],
+        "format": "librairii.native-relocation-rehearsal",
+        "os": "linux",
+        "separate_filesystem": true,
+        "source_device": 2049,
+        "version": 1,
+        "volume_root": {
+          "payload_sha256": "a00d1a356de13b72a2b0ac1338e5cd6f2fd0c02dcb37bcfd06160c85a69c33bb",
+          "volume_root": "exact_root_verified"
+        },
+        "cargo_artifact_executable": "/home/runner/work/librairii/librairii/target/debug/examples/relocation_handover",
+        "executable_sha256": "65260614cbf98c0232804f47810d3867df0330a268b00056025551cd66d68479",
+        "driver_sha256": "4725573aa0e04f4b12c5244f2f75b0e55a25b5a1ca71c2046d523e3da81f8834",
+        "example_sha256": "9eeaabc1f017f3f0e6ee4fd81b2ada8c23a4d39cec9b45c381c51d593d006bc0",
+        "checkout_sha": "7a45f5330c217a5648e3cfe70d002241ba49694c",
+        "working_tree_dirty": false,
+        "host_system": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "host_machine": "x86_64",
+        "filesystem": "ext4 loop image",
+        "image_bytes": 134217728,
+        "volume_owned_by_rehearsal": true,
+        "owned_volume_detached": true,
+        "owned_volume_detach_forced": false
+      },
+      "relocationSha256": "ef939dfd477e0a6187533b42d785709454dfc39c21b85f2e7fc9715c16acb7af"
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+{
+  "afterGoOpen": {
+    "foreignKeyViolations": [],
+    "integrity": "ok",
+    "schema": [
+      {
+        "name": "idx_catalog_artworks_cached",
+        "sql": "CREATE INDEX idx_catalog_artworks_cached\n    ON catalog_artworks (cached_at, id)",
+        "tbl_name": "catalog_artworks",
+        "type": "index"
+      },
+      {
+        "name": "idx_catalog_snapshots_active_locale",
+        "sql": "CREATE UNIQUE INDEX idx_catalog_snapshots_active_locale\n    ON catalog_snapshots (locale)\n    WHERE status = 'active'",
+        "tbl_name": "catalog_snapshots",
+        "type": "index"
+      },
+      {
+        "name": "idx_catalog_snapshots_locale_status",
+        "sql": "CREATE INDEX idx_catalog_snapshots_locale_status\n    ON catalog_snapshots (locale, status, fetched_at DESC, id DESC)",
+        "tbl_name": "catalog_snapshots",
+        "type": "index"
+      },
+      {
+        "name": "idx_catalog_syncs_status_started",
+        "sql": "CREATE INDEX idx_catalog_syncs_status_started\n    ON catalog_syncs (status, started_at DESC)",
+        "tbl_name": "catalog_syncs",
+        "type": "index"
+      },
+      {
+        "name": "idx_collection_source_shelves",
+        "sql": "CREATE INDEX idx_collection_source_shelves ON shelf_sources(collection_id, active, shelf_id)",
+        "tbl_name": "shelf_sources",
+        "type": "index"
+      },
+      {
+        "name": "idx_collections_normalized_name",
+        "sql": "CREATE UNIQUE INDEX idx_collections_normalized_name ON collections(normalized_name)",
+        "tbl_name": "collections",
+        "type": "index"
+      },
+      {
+        "name": "idx_collections_position",
+        "sql": "CREATE UNIQUE INDEX idx_collections_position ON collections(position)",
+        "tbl_name": "collections",
+        "type": "index"
+      },
+      {
+        "name": "idx_collections_validity_position",
+        "sql": "CREATE INDEX idx_collections_validity_position ON collections(validity_state, position, id)",
+        "tbl_name": "collections",
+        "type": "index"
+      },
+      {
+        "name": "idx_file_operation_items_operation",
+        "sql": "CREATE INDEX idx_file_operation_items_operation ON file_operation_items(operation_id, id)",
+        "tbl_name": "file_operation_items",
+        "type": "index"
+      },
+      {
+        "name": "idx_file_operation_items_story",
+        "sql": "CREATE INDEX idx_file_operation_items_story ON file_operation_items(story_id)",
+        "tbl_name": "file_operation_items",
+        "type": "index"
+      },
+      {
+        "name": "idx_file_operations_one_active_metadata_sync",
+        "sql": "CREATE UNIQUE INDEX idx_file_operations_one_active_metadata_sync\n    ON file_operations (kind)\n    WHERE (\n        kind = 'metadata_sync'\n        AND status IN ('queued', 'running')\n    )",
+        "tbl_name": "file_operations",
+        "type": "index"
+      },
+      {
+        "name": "idx_file_operations_status",
+        "sql": "CREATE INDEX idx_file_operations_status ON file_operations(status, created_at)",
+        "tbl_name": "file_operations",
+        "type": "index"
+      },
+      {
+        "name": "idx_official_metadata_language_story",
+        "sql": "CREATE INDEX idx_official_metadata_language_story\n    ON official_story_metadata (language, story_uuid, snapshot_id)",
+        "tbl_name": "official_story_metadata",
+        "type": "index"
+      },
+      {
+        "name": "idx_official_metadata_snapshot_uuid",
+        "sql": "CREATE INDEX idx_official_metadata_snapshot_uuid\n    ON official_story_metadata (snapshot_id, story_uuid)",
+        "tbl_name": "official_story_metadata",
+        "type": "index"
+      },
+      {
+        "name": "idx_official_metadata_uuid_locale",
+        "sql": "CREATE INDEX idx_official_metadata_uuid_locale\n    ON official_story_metadata (story_uuid, locale, snapshot_id)",
+        "tbl_name": "official_story_metadata",
+        "type": "index"
+      },
+      {
+        "name": "idx_removal_intents_story",
+        "sql": "CREATE INDEX idx_removal_intents_story ON removal_intents(story_id)",
+        "tbl_name": "removal_intents",
+        "type": "index"
+      },
+      {
+        "name": "idx_shelf_active_sources",
+        "sql": "CREATE UNIQUE INDEX idx_shelf_active_sources\n    ON shelf_sources(shelf_id, collection_id) WHERE active = 1",
+        "tbl_name": "shelf_sources",
+        "type": "index"
+      },
+      {
+        "name": "idx_stories_display_name_normalized",
+        "sql": "CREATE INDEX idx_stories_display_name_normalized\n    ON stories (display_name_normalized, id)",
+        "tbl_name": "stories",
+        "type": "index"
+      },
+      {
+        "name": "idx_stories_uuid",
+        "sql": "CREATE INDEX idx_stories_uuid ON stories(uuid)",
+        "tbl_name": "stories",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_archives_sha256",
+        "sql": "CREATE INDEX idx_story_archives_sha256 ON story_archives(sha256)",
+        "tbl_name": "story_archives",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_archives_validation_story",
+        "sql": "CREATE INDEX idx_story_archives_validation_story\n    ON story_archives (validation_state, story_id)",
+        "tbl_name": "story_archives",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_tag_assignments_filter",
+        "sql": "CREATE INDEX idx_story_tag_assignments_filter\n    ON story_tag_assignments (definition_id, value_id, story_id)",
+        "tbl_name": "story_tag_assignments",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_tag_assignments_source",
+        "sql": "CREATE INDEX idx_story_tag_assignments_source\n    ON story_tag_assignments (source, definition_id)",
+        "tbl_name": "story_tag_assignments",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_tag_assignments_story",
+        "sql": "CREATE INDEX idx_story_tag_assignments_story\n    ON story_tag_assignments (story_id, definition_id, value_id)",
+        "tbl_name": "story_tag_assignments",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_tag_boolean_assignment",
+        "sql": "CREATE UNIQUE INDEX idx_story_tag_boolean_assignment\n    ON story_tag_assignments (story_id, definition_id)\n    WHERE value_id IS NULL",
+        "tbl_name": "story_tag_assignments",
+        "type": "index"
+      },
+      {
+        "name": "idx_story_tag_choice_assignment",
+        "sql": "CREATE UNIQUE INDEX idx_story_tag_choice_assignment\n    ON story_tag_assignments (story_id, definition_id, value_id)\n    WHERE value_id IS NOT NULL",
+        "tbl_name": "story_tag_assignments",
+        "type": "index"
+      },
+      {
+        "name": "idx_tag_definitions_source_position",
+        "sql": "CREATE INDEX idx_tag_definitions_source_position\n    ON tag_definitions (source, position, id)",
+        "tbl_name": "tag_definitions",
+        "type": "index"
+      },
+      {
+        "name": "idx_tag_values_definition_position",
+        "sql": "CREATE INDEX idx_tag_values_definition_position\n    ON tag_values (definition_id, position, id)",
+        "tbl_name": "tag_values",
+        "type": "index"
+      },
+      {
+        "name": "catalog_artworks",
+        "sql": "CREATE TABLE catalog_artworks (\n    id TEXT PRIMARY KEY\n        CHECK (\n            length(id) = 64\n            AND id = lower(id)\n            AND id NOT GLOB '*[^0-9a-f]*'\n        ),\n    source_url TEXT NOT NULL UNIQUE\n        CHECK (\n            length(trim(source_url)) \u003e 0\n            AND source_url = trim(source_url)\n        ),\n    managed_path TEXT UNIQUE\n        CHECK (\n            managed_path IS NULL\n            OR (\n                length(managed_path) \u003e 0\n                AND managed_path NOT LIKE '/%'\n                AND managed_path NOT LIKE '../%'\n                AND managed_path NOT LIKE '%/../%'\n            )\n        ),\n    content_type TEXT\n        CHECK (\n            content_type IS NULL\n            OR content_type IN ('image/png', 'image/jpeg', 'image/webp')\n        ),\n    sha256 TEXT\n        CHECK (\n            sha256 IS NULL\n            OR (\n                length(sha256) = 64\n                AND sha256 = lower(sha256)\n                AND sha256 NOT GLOB '*[^0-9a-f]*'\n            )\n        ),\n    byte_size INTEGER\n        CHECK (byte_size IS NULL OR byte_size \u003e 0),\n    etag TEXT,\n    last_modified TEXT,\n    cached_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CHECK (\n        (\n            managed_path IS NULL\n            AND content_type IS NULL\n            AND sha256 IS NULL\n            AND byte_size IS NULL\n            AND cached_at IS NULL\n        )\n        OR (\n            managed_path IS NOT NULL\n            AND content_type IS NOT NULL\n            AND sha256 IS NOT NULL\n            AND byte_size IS NOT NULL\n            AND cached_at IS NOT NULL\n        )\n    )\n)",
+        "tbl_name": "catalog_artworks",
+        "type": "table"
+      },
+      {
+        "name": "catalog_snapshots",
+        "sql": "CREATE TABLE catalog_snapshots (\n    id INTEGER PRIMARY KEY,\n    sync_id TEXT NOT NULL,\n    locale TEXT NOT NULL,\n    raw_path TEXT NOT NULL\n        CHECK (\n            length(raw_path) \u003e 0\n            AND raw_path NOT LIKE '/%'\n            AND raw_path NOT LIKE '../%'\n            AND raw_path NOT LIKE '%/../%'\n        ),\n    raw_sha256 TEXT NOT NULL\n        CHECK (\n            length(raw_sha256) = 64\n            AND raw_sha256 = lower(raw_sha256)\n            AND raw_sha256 NOT GLOB '*[^0-9a-f]*'\n        ),\n    byte_size INTEGER NOT NULL\n        CHECK (byte_size \u003e= 0),\n    record_count INTEGER NOT NULL\n        CHECK (record_count \u003e= 0),\n    status TEXT NOT NULL DEFAULT 'staged'\n        CHECK (status IN ('staged', 'active', 'superseded', 'rejected')),\n    fetched_at TEXT NOT NULL,\n    activated_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (sync_id, locale)\n        REFERENCES catalog_syncs(id, locale) ON DELETE CASCADE,\n    UNIQUE (sync_id),\n    UNIQUE (id, locale),\n    CHECK (\n        (status IN ('staged', 'rejected') AND activated_at IS NULL)\n        OR (status IN ('active', 'superseded') AND activated_at IS NOT NULL)\n    )\n)",
+        "tbl_name": "catalog_snapshots",
+        "type": "table"
+      },
+      {
+        "name": "catalog_syncs",
+        "sql": "CREATE TABLE catalog_syncs (\n    id TEXT PRIMARY KEY\n        CHECK (\n            length(id) = 36\n            AND id = lower(id)\n            AND id NOT GLOB '*[^0-9a-f-]*'\n            AND substr(id, 9, 1) = '-'\n            AND substr(id, 14, 1) = '-'\n            AND substr(id, 19, 1) = '-'\n            AND substr(id, 24, 1) = '-'\n        ),\n    locale TEXT NOT NULL\n        CHECK (\n            length(trim(locale)) \u003e 0\n            AND locale = trim(locale)\n        ),\n    status TEXT NOT NULL DEFAULT 'running'\n        CHECK (status IN ('running', 'succeeded', 'failed', 'cancelled')),\n    matched_story_count INTEGER NOT NULL DEFAULT 0\n        CHECK (matched_story_count \u003e= 0),\n    error_code TEXT,\n    error_message TEXT,\n    started_at TEXT NOT NULL,\n    finished_at TEXT,\n    UNIQUE (id, locale),\n    CHECK (\n        (status = 'running' AND finished_at IS NULL)\n        OR (status != 'running' AND finished_at IS NOT NULL)\n    ),\n    CHECK (\n        status != 'failed'\n        OR (\n            length(trim(error_code)) \u003e 0\n            AND length(trim(error_message)) \u003e 0\n        )\n    ),\n    CHECK (\n        status != 'succeeded'\n        OR (error_code IS NULL AND error_message IS NULL)\n    )\n)",
+        "tbl_name": "catalog_syncs",
+        "type": "table"
+      },
+      {
+        "name": "collections",
+        "sql": "CREATE TABLE \"collections\" (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL\n        CHECK (\n            length(name) BETWEEN 1 AND 80\n            AND name = trim(name)\n        ),\n    normalized_name TEXT NOT NULL COLLATE NOCASE\n        CHECK (\n            length(normalized_name) BETWEEN 1 AND 80\n            AND normalized_name = trim(normalized_name)\n        ),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    query_version INTEGER NOT NULL\n        CHECK (query_version \u003e 0),\n    query_payload TEXT NOT NULL\n        CHECK (\n            length(query_payload) BETWEEN 2 AND 262144\n            AND json_valid(query_payload)\n            AND json_type(query_payload) = 'object'\n        ),\n    validity_state TEXT NOT NULL DEFAULT 'valid'\n        CHECK (validity_state IN ('valid', 'needs_attention')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n, revision INTEGER NOT NULL DEFAULT 1 CHECK(revision \u003e 0))",
+        "tbl_name": "collections",
+        "type": "table"
+      },
+      {
+        "name": "file_operation_items",
+        "sql": "CREATE TABLE file_operation_items (\n    id INTEGER PRIMARY KEY,\n    operation_id TEXT NOT NULL REFERENCES file_operations(id) ON DELETE CASCADE,\n    story_id INTEGER REFERENCES stories(id) ON DELETE SET NULL,\n    source_name TEXT NOT NULL,\n    status TEXT NOT NULL\n        CHECK (status IN (\n            'pending',\n            'running',\n            'succeeded',\n            'skipped',\n            'conflicted',\n            'failed',\n            'cancelled'\n        )),\n    outcome_code TEXT,\n    outcome_message TEXT,\n    completed_bytes INTEGER NOT NULL DEFAULT 0 CHECK (completed_bytes \u003e= 0),\n    total_bytes INTEGER NOT NULL DEFAULT 0 CHECK (total_bytes \u003e= 0), story_uuid TEXT, resolved_story_id INTEGER\n        CHECK (resolved_story_id IS NULL OR resolved_story_id \u003e 0), story_title TEXT, output_name TEXT, archive_relative_path TEXT, archive_sha256 TEXT\n        CHECK (archive_sha256 IS NULL OR length(archive_sha256) = 64), export_skip_code TEXT\n    CHECK(export_skip_code IS NULL OR export_skip_code IN ('story_marked_broken', 'story_unavailable')),\n    CHECK (completed_bytes \u003c= total_bytes)\n)",
+        "tbl_name": "file_operation_items",
+        "type": "table"
+      },
+      {
+        "name": "file_operations",
+        "sql": "CREATE TABLE file_operations (\n    id TEXT PRIMARY KEY CHECK (length(id) = 36),\n    kind TEXT NOT NULL CHECK (kind IN ('import', 'metadata_sync', 'export')),\n    status TEXT NOT NULL\n        CHECK (status IN (\n            'queued',\n            'running',\n            'succeeded',\n            'partially_succeeded',\n            'failed',\n            'cancelled',\n            'interrupted'\n        )),\n    completed_items INTEGER NOT NULL DEFAULT 0 CHECK (completed_items \u003e= 0),\n    total_items INTEGER NOT NULL DEFAULT 0 CHECK (total_items \u003e= 0),\n    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),\n    error_code TEXT,\n    error_message TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    started_at TEXT,\n    finished_at TEXT, legacy_export_source_type TEXT\n        CHECK (\n            legacy_export_source_type IS NULL\n            OR legacy_export_source_type IN (\n                'selection',\n                'current_query',\n                'shelf',\n                'shelves'\n            )\n        ), export_source_shelf_ids TEXT\n        CHECK (\n            export_source_shelf_ids IS NULL\n            OR json_valid(export_source_shelf_ids)\n        ), export_source_shelf_names TEXT\n        CHECK (\n            export_source_shelf_names IS NULL\n            OR json_valid(export_source_shelf_names)\n        ), export_destination TEXT, total_bytes INTEGER NOT NULL DEFAULT 0\n        CHECK (total_bytes \u003e= 0), export_source_type TEXT CHECK(\n    export_source_type IS NULL OR export_source_type IN\n    ('selection', 'current_query', 'shelf', 'shelves', 'collection', 'collections', 'curated_shelf', 'curated_shelves')\n),\n    CHECK (completed_items \u003c= total_items)\n)",
+        "tbl_name": "file_operations",
+        "type": "table"
+      },
+      {
+        "name": "legacy_broken_tag",
+        "sql": "CREATE TABLE legacy_broken_tag (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    definition_id INTEGER NOT NULL CHECK (definition_id \u003e 0)\n)",
+        "tbl_name": "legacy_broken_tag",
+        "type": "table"
+      },
+      {
+        "name": "librairii_schema_identity",
+        "sql": "CREATE TABLE librairii_schema_identity (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    product TEXT NOT NULL CHECK (product = 'librairii'),\n    schema_family TEXT NOT NULL CHECK (schema_family = 'wails-go-sqlite'),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+        "tbl_name": "librairii_schema_identity",
+        "type": "table"
+      },
+      {
+        "name": "official_story_metadata",
+        "sql": "CREATE TABLE official_story_metadata (\n    id INTEGER PRIMARY KEY,\n    snapshot_id INTEGER NOT NULL,\n    story_uuid TEXT NOT NULL\n        CHECK (\n            length(story_uuid) = 36\n            AND story_uuid = lower(story_uuid)\n            AND story_uuid NOT GLOB '*[^0-9a-f-]*'\n            AND substr(story_uuid, 9, 1) = '-'\n            AND substr(story_uuid, 14, 1) = '-'\n            AND substr(story_uuid, 19, 1) = '-'\n            AND substr(story_uuid, 24, 1) = '-'\n        ),\n    locale TEXT NOT NULL\n        CHECK (\n            length(trim(locale)) \u003e 0\n            AND locale = trim(locale)\n        ),\n    title TEXT\n        CHECK (title IS NULL OR length(trim(title)) \u003e 0),\n    description TEXT\n        CHECK (description IS NULL OR length(trim(description)) \u003e 0),\n    author TEXT\n        CHECK (author IS NULL OR length(trim(author)) \u003e 0),\n    publisher TEXT\n        CHECK (publisher IS NULL OR length(trim(publisher)) \u003e 0),\n    language TEXT\n        CHECK (language IS NULL OR length(trim(language)) \u003e 0),\n    duration_seconds INTEGER\n        CHECK (duration_seconds IS NULL OR duration_seconds \u003e= 0),\n    minimum_age INTEGER\n        CHECK (minimum_age IS NULL OR minimum_age \u003e= 0),\n    maximum_age INTEGER\n        CHECK (maximum_age IS NULL OR maximum_age \u003e= 0),\n    artwork_id TEXT\n        CHECK (artwork_id IS NULL OR length(trim(artwork_id)) \u003e 0),\n    provenance TEXT NOT NULL\n        CHECK (provenance = 'lunii_catalog'),\n    source_record_id TEXT\n        CHECK (source_record_id IS NULL OR length(trim(source_record_id)) \u003e 0),\n    source_updated_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, title_normalized TEXT NOT NULL DEFAULT '',\n    FOREIGN KEY (snapshot_id, locale)\n        REFERENCES catalog_snapshots(id, locale) ON DELETE CASCADE,\n    UNIQUE (snapshot_id, story_uuid)\n)",
+        "tbl_name": "official_story_metadata",
+        "type": "table"
+      },
+      {
+        "name": "removal_intents",
+        "sql": "CREATE TABLE removal_intents (\n    id TEXT PRIMARY KEY CHECK (length(id) = 36),\n    story_id INTEGER NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,\n    managed_path TEXT NOT NULL\n        CHECK (\n            length(managed_path) \u003e 0\n            AND managed_path NOT LIKE '/%'\n            AND managed_path NOT LIKE '../%'\n            AND managed_path NOT LIKE '%/../%'\n        ),\n    trash_path TEXT NOT NULL UNIQUE\n        CHECK (\n            length(trash_path) \u003e 0\n            AND trash_path NOT LIKE '/%'\n            AND trash_path NOT LIKE '../%'\n            AND trash_path NOT LIKE '%/../%'\n        ),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+        "tbl_name": "removal_intents",
+        "type": "table"
+      },
+      {
+        "name": "schema_migrations",
+        "sql": "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+        "tbl_name": "schema_migrations",
+        "type": "table"
+      },
+      {
+        "name": "shelf_exclusions",
+        "sql": "CREATE TABLE shelf_exclusions (\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    story_uuid TEXT NOT NULL CHECK(length(story_uuid) = 36),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid)\n)",
+        "tbl_name": "shelf_exclusions",
+        "type": "table"
+      },
+      {
+        "name": "shelf_sources",
+        "sql": "CREATE TABLE shelf_sources (\n    id INTEGER PRIMARY KEY,\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    collection_id INTEGER REFERENCES collections(id),\n    collection_name TEXT NOT NULL,\n    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE(id, shelf_id),\n    CHECK(active = 0 OR collection_id IS NOT NULL)\n)",
+        "tbl_name": "shelf_sources",
+        "type": "table"
+      },
+      {
+        "name": "shelf_stories",
+        "sql": "CREATE TABLE shelf_stories (\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    story_uuid TEXT NOT NULL CHECK(length(story_uuid) = 36),\n    position INTEGER NOT NULL CHECK(position \u003e= 0),\n    protected INTEGER NOT NULL DEFAULT 1 CHECK(protected IN (0, 1)),\n    cached_title TEXT NOT NULL DEFAULT '',\n    added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid),\n    UNIQUE(shelf_id, position)\n)",
+        "tbl_name": "shelf_stories",
+        "type": "table"
+      },
+      {
+        "name": "shelf_story_origins",
+        "sql": "CREATE TABLE shelf_story_origins (\n    shelf_id INTEGER NOT NULL,\n    story_uuid TEXT NOT NULL,\n    source_id INTEGER NOT NULL,\n    accepted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid, source_id),\n    FOREIGN KEY(shelf_id, story_uuid) REFERENCES shelf_stories(shelf_id, story_uuid) ON DELETE CASCADE,\n    FOREIGN KEY(source_id, shelf_id) REFERENCES shelf_sources(id, shelf_id)\n)",
+        "tbl_name": "shelf_story_origins",
+        "type": "table"
+      },
+      {
+        "name": "shelves",
+        "sql": "CREATE TABLE shelves (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL CHECK(length(name) BETWEEN 1 AND 80 AND name = trim(name)),\n    normalized_name TEXT NOT NULL COLLATE NOCASE UNIQUE\n        CHECK(length(normalized_name) BETWEEN 1 AND 80 AND normalized_name = trim(normalized_name)),\n    position INTEGER NOT NULL UNIQUE CHECK(position \u003e= 0),\n    revision INTEGER NOT NULL DEFAULT 1 CHECK(revision \u003e 0),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+        "tbl_name": "shelves",
+        "type": "table"
+      },
+      {
+        "name": "stories",
+        "sql": "CREATE TABLE stories (\n    id INTEGER PRIMARY KEY,\n    uuid TEXT NOT NULL UNIQUE\n        CHECK (\n            length(uuid) = 36\n            AND substr(uuid, 9, 1) = '-'\n            AND substr(uuid, 14, 1) = '-'\n            AND substr(uuid, 19, 1) = '-'\n            AND substr(uuid, 24, 1) = '-'\n        ),\n    embedded_title TEXT,\n    embedded_description TEXT,\n    embedded_artwork_path TEXT\n        CHECK (\n            embedded_artwork_path IS NULL\n            OR (\n                embedded_artwork_path NOT LIKE '/%'\n                AND embedded_artwork_path NOT LIKE '../%'\n                AND embedded_artwork_path NOT LIKE '%/../%'\n            )\n        ),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n, display_name_normalized TEXT NOT NULL DEFAULT '', is_broken INTEGER NOT NULL DEFAULT 0\n    CHECK (is_broken IN (0, 1)))",
+        "tbl_name": "stories",
+        "type": "table"
+      },
+      {
+        "name": "story_archives",
+        "sql": "CREATE TABLE story_archives (\n    id INTEGER PRIMARY KEY,\n    story_id INTEGER NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,\n    original_filename TEXT NOT NULL CHECK (length(trim(original_filename)) \u003e 0),\n    detected_format TEXT NOT NULL\n        CHECK (detected_format IN (\n            'plain_pk',\n            'v1_pk',\n            'v2_pk',\n            'generic_pk',\n            'zip',\n            'seven_zip',\n            'studio_zip'\n        )),\n    sha256 TEXT NOT NULL UNIQUE\n        CHECK (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'),\n    byte_size INTEGER NOT NULL CHECK (byte_size \u003e= 0),\n    managed_path TEXT NOT NULL UNIQUE\n        CHECK (\n            length(managed_path) \u003e 0\n            AND managed_path NOT LIKE '/%'\n            AND managed_path NOT LIKE '../%'\n            AND managed_path NOT LIKE '%/../%'\n        ),\n    validation_state TEXT NOT NULL DEFAULT 'valid'\n        CHECK (validation_state IN ('valid', 'missing', 'invalid')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+        "tbl_name": "story_archives",
+        "type": "table"
+      },
+      {
+        "name": "story_tag_assignments",
+        "sql": "CREATE TABLE story_tag_assignments (\n    id INTEGER PRIMARY KEY,\n    story_id INTEGER NOT NULL\n        REFERENCES stories(id) ON DELETE CASCADE,\n    definition_id INTEGER NOT NULL\n        REFERENCES tag_definitions(id) ON DELETE CASCADE,\n    value_id INTEGER,\n    source TEXT NOT NULL\n        CHECK (source IN ('manual', 'derived')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (value_id, definition_id)\n        REFERENCES tag_values(id, definition_id) ON DELETE CASCADE\n)",
+        "tbl_name": "story_tag_assignments",
+        "type": "table"
+      },
+      {
+        "name": "tag_definitions",
+        "sql": "CREATE TABLE tag_definitions (\n    id INTEGER PRIMARY KEY,\n    key TEXT NOT NULL\n        CHECK (length(trim(key)) \u003e 0),\n    normalized_key TEXT NOT NULL UNIQUE COLLATE NOCASE\n        CHECK (\n            length(normalized_key) \u003e 0\n            AND normalized_key = trim(normalized_key)\n        ),\n    label TEXT NOT NULL\n        CHECK (length(trim(label)) \u003e 0),\n    color TEXT NOT NULL\n        CHECK (\n            length(color) = 7\n            AND substr(color, 1, 1) = '#'\n            AND substr(color, 2) NOT GLOB '*[^0-9A-Fa-f]*'\n        ),\n    kind TEXT NOT NULL\n        CHECK (kind IN ('boolean', 'choice')),\n    source TEXT NOT NULL\n        CHECK (source IN ('user', 'builtin', 'derived')),\n    presentation TEXT NOT NULL DEFAULT 'default'\n        CHECK (presentation IN ('default', 'warning', 'system')),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    is_protected INTEGER NOT NULL DEFAULT 0\n        CHECK (is_protected IN (0, 1)),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE (source, position),\n    CHECK (\n        (source = 'user' AND is_protected = 0)\n        OR (source IN ('builtin', 'derived') AND is_protected = 1)\n    )\n)",
+        "tbl_name": "tag_definitions",
+        "type": "table"
+      },
+      {
+        "name": "tag_values",
+        "sql": "CREATE TABLE tag_values (\n    id INTEGER PRIMARY KEY,\n    definition_id INTEGER NOT NULL\n        REFERENCES tag_definitions(id) ON DELETE CASCADE,\n    key TEXT NOT NULL\n        CHECK (length(trim(key)) \u003e 0),\n    normalized_key TEXT NOT NULL COLLATE NOCASE\n        CHECK (\n            length(normalized_key) \u003e 0\n            AND normalized_key = trim(normalized_key)\n        ),\n    label TEXT NOT NULL\n        CHECK (length(trim(label)) \u003e 0),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE (definition_id, normalized_key),\n    UNIQUE (definition_id, position),\n    UNIQUE (id, definition_id)\n)",
+        "tbl_name": "tag_values",
+        "type": "table"
+      },
+      {
+        "name": "catalog_artworks_preserve_identity",
+        "sql": "CREATE TRIGGER catalog_artworks_preserve_identity\nBEFORE UPDATE OF id, source_url ON catalog_artworks\nFOR EACH ROW\nBEGIN\n    SELECT RAISE(ABORT, 'catalog artwork identity is immutable');\nEND",
+        "tbl_name": "catalog_artworks",
+        "type": "trigger"
+      },
+      {
+        "name": "catalog_snapshots_preserve_content",
+        "sql": "CREATE TRIGGER catalog_snapshots_preserve_content\nBEFORE UPDATE OF sync_id, locale, raw_path, raw_sha256, byte_size, record_count, fetched_at\nON catalog_snapshots\nFOR EACH ROW\nBEGIN\n    SELECT RAISE(ABORT, 'catalog snapshot content is immutable');\nEND",
+        "tbl_name": "catalog_snapshots",
+        "type": "trigger"
+      },
+      {
+        "name": "catalog_snapshots_validate_insert",
+        "sql": "CREATE TRIGGER catalog_snapshots_validate_insert\nBEFORE INSERT ON catalog_snapshots\nFOR EACH ROW\nWHEN (\n    SELECT status\n    FROM catalog_syncs\n    WHERE id = NEW.sync_id\n) != 'running'\nBEGIN\n    SELECT RAISE(ABORT, 'catalog snapshots require a running sync');\nEND",
+        "tbl_name": "catalog_snapshots",
+        "type": "trigger"
+      },
+      {
+        "name": "catalog_snapshots_validate_transition",
+        "sql": "CREATE TRIGGER catalog_snapshots_validate_transition\nBEFORE UPDATE OF status ON catalog_snapshots\nFOR EACH ROW\nWHEN (\n    NEW.status != OLD.status\n    AND NOT (\n        (OLD.status = 'staged' AND NEW.status IN ('active', 'rejected'))\n        OR (OLD.status = 'active' AND NEW.status = 'superseded')\n    )\n)\nBEGIN\n    SELECT RAISE(ABORT, 'invalid catalog snapshot status transition');\nEND",
+        "tbl_name": "catalog_snapshots",
+        "type": "trigger"
+      },
+      {
+        "name": "catalog_syncs_validate_transition",
+        "sql": "CREATE TRIGGER catalog_syncs_validate_transition\nBEFORE UPDATE OF status ON catalog_syncs\nFOR EACH ROW\nWHEN (\n    NEW.status != OLD.status\n    AND NOT (\n        OLD.status = 'running'\n        AND NEW.status IN ('succeeded', 'failed', 'cancelled')\n    )\n)\nBEGIN\n    SELECT RAISE(ABORT, 'invalid catalog sync status transition');\nEND",
+        "tbl_name": "catalog_syncs",
+        "type": "trigger"
+      },
+      {
+        "name": "collections_definition_revision",
+        "sql": "CREATE TRIGGER collections_definition_revision\nAFTER UPDATE OF name, query_version, query_payload, validity_state ON collections\nWHEN OLD.name IS NOT NEW.name OR OLD.query_version IS NOT NEW.query_version\n  OR OLD.query_payload IS NOT NEW.query_payload OR OLD.validity_state IS NOT NEW.validity_state\nBEGIN\n    UPDATE collections SET revision = OLD.revision + 1 WHERE id = NEW.id;\nEND",
+        "tbl_name": "collections",
+        "type": "trigger"
+      },
+      {
+        "name": "file_operation_items_export_scope_immutable",
+        "sql": "CREATE TRIGGER file_operation_items_export_scope_immutable\nBEFORE UPDATE OF\n    export_skip_code,\n    resolved_story_id,\n    source_name,\n    total_bytes,\n    story_uuid,\n    story_title,\n    output_name,\n    archive_relative_path,\n    archive_sha256\nON file_operation_items\nFOR EACH ROW\nWHEN (\n    SELECT kind\n    FROM file_operations\n    WHERE id = OLD.operation_id\n) = 'export' AND (\n    OLD.export_skip_code IS NOT NEW.export_skip_code\n    OR OLD.resolved_story_id IS NOT NEW.resolved_story_id\n    OR OLD.source_name IS NOT NEW.source_name\n    OR OLD.total_bytes IS NOT NEW.total_bytes\n    OR OLD.story_uuid IS NOT NEW.story_uuid\n    OR OLD.story_title IS NOT NEW.story_title\n    OR OLD.output_name IS NOT NEW.output_name\n    OR OLD.archive_relative_path IS NOT NEW.archive_relative_path\n    OR OLD.archive_sha256 IS NOT NEW.archive_sha256\n)\nBEGIN\n    SELECT RAISE(ABORT, 'export operation item scope is immutable');\nEND",
+        "tbl_name": "file_operation_items",
+        "type": "trigger"
+      },
+      {
+        "name": "file_operation_items_require_export_scope",
+        "sql": "CREATE TRIGGER file_operation_items_require_export_scope\nBEFORE INSERT ON file_operation_items\nFOR EACH ROW\nWHEN (\n    SELECT kind\n    FROM file_operations\n    WHERE id = NEW.operation_id\n) = 'export' AND (\n    NEW.story_uuid IS NULL\n    OR length(trim(NEW.story_uuid)) = 0\n    OR NEW.story_title IS NULL\n    OR length(trim(NEW.story_title)) = 0\n    OR (NEW.export_skip_code IS NOT NULL AND NEW.total_bytes != 0)\n    OR (NEW.export_skip_code IS NULL AND (\n    NEW.story_id IS NULL\n    OR NEW.resolved_story_id IS NULL\n    OR NEW.story_uuid IS NULL\n    OR length(trim(NEW.story_uuid)) = 0\n    OR NEW.story_title IS NULL\n    OR length(trim(NEW.story_title)) = 0\n    OR NEW.output_name IS NULL\n    OR length(trim(NEW.output_name)) = 0\n    OR NEW.archive_relative_path IS NULL\n    OR length(trim(NEW.archive_relative_path)) = 0\n    OR NEW.archive_sha256 IS NULL\n    ))\n)\nBEGIN\n    SELECT RAISE(ABORT, 'export operation item scope is incomplete');\nEND",
+        "tbl_name": "file_operation_items",
+        "type": "trigger"
+      },
+      {
+        "name": "file_operations_export_scope_immutable",
+        "sql": "CREATE TRIGGER file_operations_export_scope_immutable\nBEFORE UPDATE OF\n    kind,\n    legacy_export_source_type,\n    export_source_type,\n    export_source_shelf_ids,\n    export_source_shelf_names,\n    export_destination,\n    total_items,\n    total_bytes\nON file_operations\nFOR EACH ROW\nWHEN OLD.kind = 'export' AND (\n    OLD.kind IS NOT NEW.kind\n    OR OLD.legacy_export_source_type IS NOT NEW.legacy_export_source_type\n    OR OLD.export_source_type IS NOT NEW.export_source_type\n    OR OLD.export_source_shelf_ids IS NOT NEW.export_source_shelf_ids\n    OR OLD.export_source_shelf_names IS NOT NEW.export_source_shelf_names\n    OR OLD.export_destination IS NOT NEW.export_destination\n    OR OLD.total_items IS NOT NEW.total_items\n    OR OLD.total_bytes IS NOT NEW.total_bytes\n)\nBEGIN\n    SELECT RAISE(ABORT, 'export operation scope is immutable');\nEND",
+        "tbl_name": "file_operations",
+        "type": "trigger"
+      },
+      {
+        "name": "file_operations_require_export_scope",
+        "sql": "CREATE TRIGGER file_operations_require_export_scope\nBEFORE INSERT ON file_operations\nFOR EACH ROW\nWHEN NEW.kind = 'export' AND (\n    NEW.export_source_type IS NULL\n    OR NEW.export_source_shelf_ids IS NULL\n    OR json_type(NEW.export_source_shelf_ids) != 'array'\n    OR NEW.export_source_shelf_names IS NULL\n    OR json_type(NEW.export_source_shelf_names) != 'array'\n    OR json_array_length(NEW.export_source_shelf_ids)\n        != json_array_length(NEW.export_source_shelf_names)\n    OR (\n        NEW.export_source_type IN ('selection', 'current_query')\n        AND json_array_length(NEW.export_source_shelf_ids) != 0\n    )\n    OR (\n        NEW.export_source_type IN ('shelf', 'collection', 'curated_shelf')\n        AND json_array_length(NEW.export_source_shelf_ids) != 1\n    )\n    OR (\n        NEW.export_source_type IN ('shelves', 'collections', 'curated_shelves')\n        AND json_array_length(NEW.export_source_shelf_ids) \u003c 2\n    )\n    OR NEW.export_destination IS NULL\n    OR length(trim(NEW.export_destination)) = 0\n)\nBEGIN\n    SELECT RAISE(ABORT, 'export operation scope is incomplete');\nEND",
+        "tbl_name": "file_operations",
+        "type": "trigger"
+      },
+      {
+        "name": "official_metadata_require_registered_artwork",
+        "sql": "CREATE TRIGGER official_metadata_require_registered_artwork\nBEFORE INSERT ON official_story_metadata\nFOR EACH ROW\nWHEN (\n    NEW.artwork_id IS NOT NULL\n    AND NOT EXISTS (\n        SELECT 1\n        FROM catalog_artworks\n        WHERE id = NEW.artwork_id\n    )\n)\nBEGIN\n    SELECT RAISE(ABORT, 'official metadata artwork is not registered');\nEND",
+        "tbl_name": "official_story_metadata",
+        "type": "trigger"
+      },
+      {
+        "name": "official_metadata_require_staged_insert",
+        "sql": "CREATE TRIGGER official_metadata_require_staged_insert\nBEFORE INSERT ON official_story_metadata\nFOR EACH ROW\nWHEN (\n    SELECT status\n    FROM catalog_snapshots\n    WHERE id = NEW.snapshot_id\n) != 'staged'\nBEGIN\n    SELECT RAISE(ABORT, 'official metadata requires a staged snapshot');\nEND",
+        "tbl_name": "official_story_metadata",
+        "type": "trigger"
+      },
+      {
+        "name": "official_metadata_require_staged_update",
+        "sql": "CREATE TRIGGER official_metadata_require_staged_update\nBEFORE UPDATE OF\n    snapshot_id,\n    story_uuid,\n    locale,\n    title,\n    description,\n    author,\n    publisher,\n    language,\n    duration_seconds,\n    minimum_age,\n    maximum_age,\n    artwork_id,\n    provenance,\n    source_record_id,\n    source_updated_at,\n    created_at\nON official_story_metadata\nFOR EACH ROW\nWHEN (\n    SELECT status\n    FROM catalog_snapshots\n    WHERE id = OLD.snapshot_id\n) != 'staged'\nBEGIN\n    SELECT RAISE(ABORT, 'active official metadata is immutable');\nEND",
+        "tbl_name": "official_story_metadata",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_assignments_validate_insert",
+        "sql": "CREATE TRIGGER tag_assignments_validate_insert\nBEFORE INSERT ON story_tag_assignments\nFOR EACH ROW\nBEGIN\n    SELECT CASE\n        WHEN (\n            SELECT kind\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'boolean' AND NEW.value_id IS NOT NULL\n        THEN RAISE(ABORT, 'boolean tag assignments cannot have a value')\n        WHEN (\n            SELECT kind\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'choice' AND NEW.value_id IS NULL\n        THEN RAISE(ABORT, 'choice tag assignments require a value')\n        WHEN NEW.source = 'manual' AND (\n            SELECT source\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'derived'\n        THEN RAISE(ABORT, 'derived tags cannot be assigned manually')\n        WHEN NEW.source = 'derived' AND (\n            SELECT source\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) != 'derived'\n        THEN RAISE(ABORT, 'derived assignments require a derived tag')\n    END;\nEND",
+        "tbl_name": "story_tag_assignments",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_assignments_validate_update",
+        "sql": "CREATE TRIGGER tag_assignments_validate_update\nBEFORE UPDATE OF definition_id, value_id, source ON story_tag_assignments\nFOR EACH ROW\nBEGIN\n    SELECT CASE\n        WHEN (\n            SELECT kind\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'boolean' AND NEW.value_id IS NOT NULL\n        THEN RAISE(ABORT, 'boolean tag assignments cannot have a value')\n        WHEN (\n            SELECT kind\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'choice' AND NEW.value_id IS NULL\n        THEN RAISE(ABORT, 'choice tag assignments require a value')\n        WHEN NEW.source = 'manual' AND (\n            SELECT source\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) = 'derived'\n        THEN RAISE(ABORT, 'derived tags cannot be assigned manually')\n        WHEN NEW.source = 'derived' AND (\n            SELECT source\n            FROM tag_definitions\n            WHERE id = NEW.definition_id\n        ) != 'derived'\n        THEN RAISE(ABORT, 'derived assignments require a derived tag')\n    END;\nEND",
+        "tbl_name": "story_tag_assignments",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_definitions_preserve_kind_integrity",
+        "sql": "CREATE TRIGGER tag_definitions_preserve_kind_integrity\nBEFORE UPDATE OF kind ON tag_definitions\nFOR EACH ROW\nWHEN (\n    NEW.kind != OLD.kind\n    AND (\n        EXISTS (\n            SELECT 1\n            FROM tag_values\n            WHERE definition_id = OLD.id\n        )\n        OR EXISTS (\n            SELECT 1\n            FROM story_tag_assignments\n            WHERE definition_id = OLD.id\n        )\n    )\n)\nBEGIN\n    SELECT RAISE(ABORT, 'assigned tag definition kind cannot change');\nEND",
+        "tbl_name": "tag_definitions",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_definitions_preserve_source_integrity",
+        "sql": "CREATE TRIGGER tag_definitions_preserve_source_integrity\nBEFORE UPDATE OF source ON tag_definitions\nFOR EACH ROW\nWHEN (\n    NEW.source != OLD.source\n    AND EXISTS (\n        SELECT 1\n        FROM story_tag_assignments\n        WHERE definition_id = OLD.id\n    )\n)\nBEGIN\n    SELECT RAISE(ABORT, 'assigned tag definition source cannot change');\nEND",
+        "tbl_name": "tag_definitions",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_values_require_choice_insert",
+        "sql": "CREATE TRIGGER tag_values_require_choice_insert\nBEFORE INSERT ON tag_values\nFOR EACH ROW\nWHEN (\n    SELECT kind\n    FROM tag_definitions\n    WHERE id = NEW.definition_id\n) != 'choice'\nBEGIN\n    SELECT RAISE(ABORT, 'tag values require a choice definition');\nEND",
+        "tbl_name": "tag_values",
+        "type": "trigger"
+      },
+      {
+        "name": "tag_values_require_choice_update",
+        "sql": "CREATE TRIGGER tag_values_require_choice_update\nBEFORE UPDATE OF definition_id ON tag_values\nFOR EACH ROW\nWHEN (\n    SELECT kind\n    FROM tag_definitions\n    WHERE id = NEW.definition_id\n) != 'choice'\nBEGIN\n    SELECT RAISE(ABORT, 'tag values require a choice definition');\nEND",
+        "tbl_name": "tag_values",
+        "type": "trigger"
+      }
+    ],
+    "tables": {
+      "catalog_artworks": [],
+      "catalog_snapshots": [],
+      "catalog_syncs": [],
+      "collections": [],
+      "file_operation_items": [],
+      "file_operations": [],
+      "legacy_broken_tag": [],
+      "librairii_schema_identity": [
+        {
+          "created_at": "2000-01-01 00:00:00",
+          "product": "librairii",
+          "schema_family": "wails-go-sqlite",
+          "singleton": 1
+        }
+      ],
+      "official_story_metadata": [],
+      "removal_intents": [],
+      "schema_migrations": [
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 1
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 2
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 3
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 4
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 5
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 6
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 7
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 8
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 9
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 10
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 11
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 12
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 13
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 14
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 15
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 16
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 17
+        },
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 18
+        }
+      ],
+      "shelf_exclusions": [],
+      "shelf_sources": [],
+      "shelf_stories": [],
+      "shelf_story_origins": [],
+      "shelves": [],
+      "stories": [],
+      "story_archives": [],
+      "story_tag_assignments": [],
+      "tag_definitions": [],
+      "tag_values": []
+    }
+  },
+  "before": {
+    "foreignKeyViolations": [],
+    "integrity": "ok",
+    "schema": [
+      {
+        "name": "librairii_schema_identity",
+        "sql": "CREATE TABLE librairii_schema_identity (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    product TEXT NOT NULL CHECK (product = 'librairii'),\n    schema_family TEXT NOT NULL CHECK (schema_family = 'wails-go-sqlite'),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+        "tbl_name": "librairii_schema_identity",
+        "type": "table"
+      },
+      {
+        "name": "schema_migrations",
+        "sql": "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+        "tbl_name": "schema_migrations",
+        "type": "table"
+      }
+    ],
+    "tables": {
+      "librairii_schema_identity": [
+        {
+          "created_at": "2000-01-01 00:00:00",
+          "product": "librairii",
+          "schema_family": "wails-go-sqlite",
+          "singleton": 1
+        }
+      ],
+      "schema_migrations": [
+        {
+          "applied_at": "2000-01-01 00:00:00",
+          "version": 1
+        }
+      ]
+    }
+  },
+  "openedCollections": [],
+  "prefix": 1
+}

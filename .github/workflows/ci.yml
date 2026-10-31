@@ -5,33 +5,73 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      native_candidate_run:
+        description: Optional native package run to qualify again without rebuilding
+        type: string
+      native_source:
+        description: Exact source commit embedded in that native candidate
+        type: string
+      native_target:
+        description: Native candidate target for the optional GUI rerun
+        type: choice
+        options: [x86_64-unknown-linux-gnu, aarch64-apple-darwin, x86_64-apple-darwin]
+      native_sha256:
+        description: Independently selected package SHA-256, excluding the provider ZIP
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ inputs.native_candidate_run && format('native-{0}-{1}', inputs.native_target, github.ref) || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    name: Select Go/Wails checks
+    if: github.event_name != 'workflow_dispatch' || inputs.native_candidate_run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      legacy: ${{ steps.paths.outputs.legacy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify the changed-path decision
+        run: python3 -I -B -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Select legacy suites from the complete local diff
+        id: paths
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 -I -B .github/scripts/legacy-ci-changes.py
+
   verify:
+    needs: changes
+    if: needs.changes.outputs.legacy == 'true'
     runs-on: macos-15
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: "1.26.5"
           cache: true
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "24.15.0"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Install pinned Wails CLI
-        run: |
-          wails_version="$(cat .wails-version)"
-          go install "github.com/wailsapp/wails/v2/cmd/wails@$wails_version"
 
       - name: Install dependencies
         run: make setup
@@ -41,3 +81,115 @@ jobs:
 
       - name: Build Wails application
         run: make build
+
+  linux-amd64:
+    needs: changes
+    if: needs.changes.outputs.legacy == 'true'
+    name: Linux amd64 release evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26.5"
+          cache: true
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24.15.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails and virtual desktop dependencies
+        run: |
+          .github/scripts/ubuntu-apt \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            xauth \
+            dbus-x11 \
+            desktop-file-utils \
+            pcmanfm \
+            procps \
+            xdg-utils \
+            xvfb
+          wails_version="$(cat .wails-version)"
+          go install "github.com/wailsapp/wails/v2/cmd/wails@$wails_version"
+
+      - name: Install dependencies
+        run: |
+          go mod download
+          npm --prefix frontend ci
+
+      - name: Verify Linux release
+        run: scripts/verify-platform-linux
+
+      - name: Upload qualified Linux archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Librairii-linux-amd64
+          path: |
+            build/bin/Librairii-*-linux-amd64.tar.gz
+            build/bin/Librairii-*-linux-amd64.tar.gz.sha256
+          if-no-files-found: error
+
+  native-gui-rerun:
+    name: Qualify selected installed native candidate
+    if: github.event_name == 'workflow_dispatch' && inputs.native_candidate_run != ''
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ${{ inputs.native_target == 'aarch64-apple-darwin' && 'macos-15' || inputs.native_target == 'x86_64-apple-darwin' && 'macos-15-intel' || 'ubuntu-24.04' }}
+    timeout-minutes: 75
+    env:
+      RUST_TARGET: ${{ inputs.native_target }}
+      SELECTED_SOURCE: ${{ inputs.native_source }}
+      SELECTED_SHA256: ${{ inputs.native_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: observer-source
+          persist-credentials: false
+      - name: Refuse incomplete source and package selection before checkout or execution
+        run: |
+          python3 -I -B - <<'PY'
+          import os,re
+          if not re.fullmatch('[0-9a-f]{40}',os.environ['SELECTED_SOURCE']) or not re.fullmatch('[0-9a-f]{64}',os.environ['SELECTED_SHA256']):
+              raise ValueError('exact native package source and independent SHA-256 are required')
+          PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.native_source }}
+          path: candidate-source
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.native_candidate_run }}
+          name: native-candidate-${{ inputs.native_target }}-${{ inputs.native_source }}
+          path: candidate-source/target/native-release/provider
+      - name: Inspect only the independently selected installed bytes
+        run: >-
+          python3 -I -B observer-source/scripts/native-release.py inspect-package --source-root candidate-source
+          --directory candidate-source/target/native-release/provider/package --expected-source "$SELECTED_SOURCE"
+          --target "$RUST_TARGET" --expected-sha256 "$SELECTED_SHA256" --output target/native-release/inspection
+      - name: Qualify the selected package with separately recorded current observers
+        run: >-
+          python3 -I -B observer-source/scripts/verify-native-packages.py --source-root candidate-source
+          --expected-source "$SELECTED_SOURCE" --inspection candidate-source/target/native-release/inspection/inspection.json
+          --output target/native-release/gui
+      - name: Retain package and observer source identities with all raw GUI receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-gui-rerun-${{ inputs.native_target }}-${{ github.sha }}
+          path: |
+            candidate-source/target/native-release/inspection/
+            candidate-source/target/native-release/gui/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

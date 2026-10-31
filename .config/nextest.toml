@@ -1,0 +1,16 @@
+nextest-version = { required = "0.9.148" }
+[profile.default]
+fail-fast = false
+retries = 0
+slow-timeout = { period = "60s", terminate-after = 2 }
+[profile.ci]
+fail-fast = false
+retries = 0
+# Reserve the runner while measuring this wall-clock gate. Other workspace
+# fixtures run many storage/hash/crash workers; their contention is not part of
+# the identified 5,000-story workload. The five-second assertions stay intact.
+[[profile.ci.overrides]]
+filter = "test(=five_thousand_story_union_preview_apply_and_every_model_page_meet_budget)"
+threads-required = "num-test-threads"
+[profile.ci.junit]
+path = "junit.xml"

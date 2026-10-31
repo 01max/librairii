@@ -1,0 +1,89 @@
+{
+  "source": "41ff363659b1c4901139cc5de54cb3c4f719ac25",
+  "source_dirty": false,
+  "binary_sha256": "668b5233941cc3827a6314a403d82c09c92673556899fb603ef9b7047a11f290",
+  "host": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+  "scope": "Public Window API, actual native Retina geometry and full scene frames. No AX, keys, clipboard, display preference mutation, mixed-monitor or first-physical-pixel claim.",
+  "runs": [
+    {
+      "width": 1120,
+      "height": 800,
+      "logical_width": 560,
+      "logical_height": 400,
+      "scale": 2,
+      "compact": true,
+      "wide": false,
+      "focus_key": 30,
+      "selected_id": 0,
+      "selected_row": 0,
+      "rows": 1000,
+      "working": false,
+      "review_visible": false,
+      "contrast_ratios": [
+        17.04206683163051,
+        14.479410359771489,
+        4.637281563140419
+      ]
+    },
+    {
+      "width": 1800,
+      "height": 1520,
+      "logical_width": 900,
+      "logical_height": 760,
+      "scale": 2,
+      "compact": false,
+      "wide": false,
+      "focus_key": 30,
+      "selected_id": 0,
+      "selected_row": 0,
+      "rows": 1000,
+      "working": false,
+      "review_visible": false,
+      "contrast_ratios": [
+        17.04206683163051,
+        14.479410359771489,
+        4.637281563140419
+      ]
+    },
+    {
+      "width": 2560,
+      "height": 1800,
+      "logical_width": 1280,
+      "logical_height": 900,
+      "scale": 2,
+      "compact": false,
+      "wide": true,
+      "focus_key": 30,
+      "selected_id": 0,
+      "selected_row": 0,
+      "rows": 1000,
+      "working": false,
+      "review_visible": false,
+      "contrast_ratios": [
+        17.04206683163051,
+        14.479410359771489,
+        4.637281563140419
+      ]
+    }
+  ],
+  "returncode": 0,
+  "fixture_retired": true,
+  "normal_retirement": "workers_joined=true; fixture_retired=true",
+  "file_hashes": {
+    "app.log": "be1b301964457513a14a29d26b35050e0ccbf4e099df2f4ba2ab5a9a001a4078",
+    "app/geometry.json": "72cc968ae5d3d815d2e6be594b5a2b4d7c699057b7c398ee2b951f7ea026413b",
+    "app/capture-request": "d06b25f7934e3c789fd88ee8f76063e42369e7c394a17138869d9ddb9cc8111e",
+    "app/retina-900.png": "d8e14cb1c5f2f9c85de55cd895ac3f8cdc1e122854cf0a675671320eed5035cf",
+    "app/ready.txt": "9d4f6f3122ed691391038dec682ab83949eb737772400479a2c404f97bb8eb25",
+    "app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+    "app/callback-complete.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/retina-1280.png": "012056471ab4b86d765ea5b81d3bdc2b6075b9d8ec18fef3434737829e9d839b",
+    "app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/size-request": "4387f3d3a3de83d81faee65a42dc9479f71d5064458f05dec9520c008a201431",
+    "app/parent-handle.txt": "ea9c886c9fad6bfa4da5ff385ba198be2391b1bc99f02ac53bcf58ad985d8192",
+    "app/state.txt": "d68d98c3d9eec1074eb2f63680f07661c9b55cbabfd5431f922c220a61a7b88d",
+    "app/ime-events.txt": "88252611ea1918a42dcaa4c940846796897023d2b484808ee6518d0768f3bbf7",
+    "app/retina-560.png": "0a0aac92c85f46b4edb72ce883628b7f1541fd2215630947a7366b37b635186e",
+    "app/fixture.txt": "a8c079b2904f376ac6476d40f7775242e002549f18b89a6d2536482836926ce7"
+  }
+}
