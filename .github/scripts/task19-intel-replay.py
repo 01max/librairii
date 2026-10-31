@@ -60,6 +60,9 @@ def main():
         (binaries/name).chmod(0o755)
     native = module('retained_native_input', root/'qualification/section-16/native.py')
     resources = module('retained_native_resources', root/'qualification/section-16/resources.py')
+    mode = os.environ.get('DIAGNOSTIC_MODE', 'control')
+    require(mode in ['control', 'profile'], 'explicit diagnostic mode required')
+    probe_type = module('pointer_profile', Path(__file__).with_name('task19-pointer-profile.py')).PointerProfile
     output = root/'target/task19-intel-replay'
     output.mkdir()
     receipt = {
@@ -71,6 +74,7 @@ def main():
         'original_manifest_sha256': MANIFESTS,
         'frozen_workload_changed': False, 'original_gate_functions_changed': False,
         'cohort_order': 'software-only narrowed diagnostic; full suite qualification remains separate',
+        'diagnostic_mode': mode, 'trials_planned': 1,
         'trials': [], 'diagnostic_complete': False,
     }
     ledger = output/'diagnostic.json'
@@ -78,17 +82,30 @@ def main():
         ledger.write_text(json.dumps(receipt, indent=2)+'\n')
     save()
     failed = False
-    for trial in range(4):
+    for trial in range(1):
         entry = {'trial': trial, 'original_warmup_position': trial == 0, 'passed': False}
         started = []
+        probe = None
         try:
             started.append('product')
             quiet = resources.product_run(binaries/'librairii-desktop', binaries/'scale-native',
                     output/f'software-{trial}-product', 'winit-skia-software', binaries/'resource-macos', native)
             require(quiet['complete'], 'original product observation incomplete')
             started.append('loaded')
-            loaded = native.inspect(binaries/'scale-native', output/f'software-{trial}-loaded',
-                    'winit-skia-software', binaries/'input-macos')
+            if mode == 'profile':
+                probe = probe_type(output/f'software-{trial}-loaded', binaries/'scale-native')
+                probe.start()
+            try:
+                loaded = native.inspect(binaries/'scale-native', output/f'software-{trial}-loaded',
+                        'winit-skia-software', binaries/'input-macos')
+            finally:
+                if probe is not None:
+                    try:
+                        entry['profile_complete'] = probe.finish()
+                    except Exception as error:
+                        entry.update(profile_complete=False, profile_error=str(error))
+                    if not entry['profile_complete']:
+                        failed = True
             load_time = resources.clocks.time_metrics(
                 (output/f'software-{trial}-loaded/native-time.log').read_text(), platform.system())
             peaks = [quiet['native_time']['peak_rss_bytes'], load_time['peak_rss_bytes']]
@@ -121,7 +138,7 @@ def main():
     receipt['diagnostic_complete'] = True
     save()
     if failed:
-        raise SystemExit('Original native gate failed in at least one diagnostic trial; every verdict retained')
+        raise SystemExit('An original native gate or required diagnostic probe failed; every verdict retained')
 
 if __name__ == '__main__':
     main()

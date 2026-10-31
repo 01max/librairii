@@ -14,13 +14,18 @@ concurrency:
 
 jobs:
   replay:
-    name: Retained Intel software cohort diagnostic
+    name: Retained Intel software cohort (${{ matrix.mode }})
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [control, profile]
     runs-on: macos-15-intel
     timeout-minutes: 30
     env:
       RUST_TARGET: x86_64-apple-darwin
       MACOSX_DEPLOYMENT_TARGET: '15.0'
       DIAGNOSTIC_DRIVER_SOURCE: ${{ github.sha }}
+      DIAGNOSTIC_MODE: ${{ matrix.mode }}
     steps:
       - name: Check out the exact retained workload source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -47,7 +52,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: task19-intel-diagnostic-${{ github.sha }}
+          name: task19-intel-diagnostic-${{ matrix.mode }}-${{ github.sha }}
           path: target/task19-intel-replay/
           include-hidden-files: true
           if-no-files-found: error
