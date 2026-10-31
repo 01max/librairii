@@ -110,6 +110,8 @@
     "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner",
     "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty",
     "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
-    "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation"
+    "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
+    "test_packaged_acceptance.PackagedAdmission.test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window",
+    "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids"
   ]
 }

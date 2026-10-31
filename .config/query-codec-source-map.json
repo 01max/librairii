@@ -6117,6 +6117,16 @@
         "position": 110,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 111,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window",
+        "reason": "Task 18 review regression: bind the owned X11 WM_CLASS to the installed desktop entry and reject missing, foreign or ambiguous window identities."
+      },
+      {
+        "position": 112,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids",
+        "reason": "Task 18 review regression: bind the owned Wayland app_id to the installed desktop entry and reject missing, foreign or ambiguous surface identities."
       }
     ]
   },

@@ -1,6 +1,7 @@
 """Actual AT-SPI/keyboard operations on the private installed-product desktop."""
 import json
 from pathlib import Path
+import re
 import time
 
 
@@ -14,6 +15,36 @@ class Driver:
         self.application = self.wait(lambda: desktop.find(
             lambda node: node.getRole() == desktop.a.ROLE_APPLICATION and node.get_process_id() == pid))
         self.wait(lambda: desktop.active_pid() == pid)
+
+    def desktop_identity(self, installation):
+        entries = list((installation/'share/applications').glob('*.desktop'))
+        if len(entries) != 1:
+            raise ValueError('installed product must have one desktop entry')
+        expected = entries[0].stem
+        if self.desktop.session == 'x11':
+            windows = self.desktop.run(['xdotool', 'search', '--onlyvisible', '--pid', str(self.pid)]).split()
+            if len(windows) != 1 or not windows[0].isdigit():
+                raise ValueError('owned product window not unique for desktop identity')
+            raw = self.desktop.run(['xprop', '-id', windows[0], '_NET_WM_PID', 'WM_CLASS'])
+            pid = re.search(r'^_NET_WM_PID\(CARDINAL\) = (\d+)\s*$', raw, re.M)
+            names = re.search(r'^WM_CLASS\(STRING\) = "([^"]*)", "([^"]*)"\s*$', raw, re.M)
+            if pid is None or int(pid[1]) != self.pid or names is None or names[2] != expected:
+                raise ValueError('native X11 window identity differs from installed desktop entry: '+raw)
+            observed = {'window_id': int(windows[0]), 'wm_class': list(names.groups())}
+        else:
+            raw = self.desktop.run(['swaymsg', '-s', self.desktop.ipc, '-t', 'get_tree'])
+            queue, windows = [json.loads(raw)], []
+            for node in queue:
+                if node.get('pid') == self.pid:
+                    windows.append(node)
+                queue.extend(node.get('nodes', []) + node.get('floating_nodes', []))
+                if len(queue) > 4000:
+                    raise ValueError('native Wayland window inventory exceeds bound')
+            if len(windows) != 1 or windows[0].get('app_id') != expected:
+                raise ValueError('native Wayland window identity differs from installed desktop entry: '+raw)
+            observed = {'window_id': windows[0]['id'], 'app_id': windows[0]['app_id']}
+        return {'pid': self.pid, 'session': self.desktop.session, 'desktop_entry': str(entries[0]),
+                'desktop_id': expected, 'raw': raw, **observed}
 
     def wait(self, predicate, timeout=15):
         deadline = time.monotonic()+timeout

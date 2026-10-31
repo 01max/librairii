@@ -104,6 +104,8 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
         if desktop:
             from .linux import Driver
             driver = Driver(observer_source or root, output/name, application.pid, desktop)
+            process['desktop_identity'] = driver.desktop_identity(installation)
+            write_json(output/name/'desktop-identity.json', process['desktop_identity'])
         else:
             from .macos import Driver
             driver = Driver(observer_source or root, output/name, application.pid, helper)

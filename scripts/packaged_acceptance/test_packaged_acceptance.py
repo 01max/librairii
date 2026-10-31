@@ -24,6 +24,80 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window(self):
+        from packaged_acceptance.linux import Driver
+        with tempfile.TemporaryDirectory() as temporary:
+            installation = Path(temporary)
+            applications = installation/'share/applications'
+            applications.mkdir(parents=True)
+            entry = applications/'org.example.Installed.desktop'
+            entry.write_text('[Desktop Entry]\n')
+            driver = Driver.__new__(Driver)
+            driver.pid = 123
+            valid = '_NET_WM_PID(CARDINAL) = 123\nWM_CLASS(STRING) = "", "org.example.Installed"\n'
+            for windows, raw in [('27\n', valid), ('', valid), ('27\n28\n', valid),
+                                 ('27\n', valid.replace('123', '456')),
+                                 ('27\n', valid.replace('org.example.Installed', 'librairii-desktop')),
+                                 ('27\n', '_NET_WM_PID(CARDINAL) = 123\nWM_CLASS: not found.\n')]:
+                with self.subTest(windows=windows, raw=raw):
+                    driver.desktop = SimpleNamespace(session='x11', run=Mock(side_effect=[windows, raw]))
+                    if windows == '27\n' and raw == valid:
+                        observed = driver.desktop_identity(installation)
+                        self.assertEqual(observed['desktop_id'], entry.stem)
+                        self.assertEqual(observed['wm_class'], ['', entry.stem])
+                        self.assertEqual(observed['window_id'], 27)
+                        self.assertEqual(observed['pid'], 123)
+                        self.assertEqual(observed['raw'], raw)
+                        self.assertEqual(driver.desktop.run.call_args.args[0],
+                                         ['xprop', '-id', '27', '_NET_WM_PID', 'WM_CLASS'])
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'window'):
+                            driver.desktop_identity(installation)
+            for missing in (False, True):
+                if missing:
+                    entry.unlink()
+                    (applications/'extra.desktop').unlink()
+                else:
+                    (applications/'extra.desktop').write_text('[Desktop Entry]\n')
+                driver.desktop.run.reset_mock()
+                with self.assertRaisesRegex(ValueError, 'one desktop entry'):
+                    driver.desktop_identity(installation)
+                driver.desktop.run.assert_not_called()
+
+    def test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids(self):
+        from packaged_acceptance.linux import Driver
+        with tempfile.TemporaryDirectory() as temporary:
+            installation = Path(temporary)
+            applications = installation/'share/applications'
+            applications.mkdir(parents=True)
+            entry = applications/'org.example.Installed.desktop'
+            entry.write_text('[Desktop Entry]\n')
+            driver = Driver.__new__(Driver)
+            driver.pid = 123
+            valid = {'id': 27, 'pid': 123, 'app_id': entry.stem}
+            foreign = {'id': 28, 'pid': 456, 'app_id': entry.stem}
+            for windows in ([valid], [{**valid, 'app_id': None}], [{**valid, 'app_id': 'librairii-desktop'}],
+                            [foreign], [valid, valid], [], [{**valid, 'app_id': None}, foreign]):
+                for floating in (False, True):
+                    tree = {'nodes': [{'nodes': [] if floating else windows,
+                                       'floating_nodes': windows if floating else []}]}
+                    raw = json.dumps(tree)
+                    driver.desktop = SimpleNamespace(session='wayland', ipc='/owned/sway.sock',
+                                                     run=Mock(return_value=raw))
+                    with self.subTest(windows=windows, floating=floating):
+                        if windows == [valid]:
+                            observed = driver.desktop_identity(installation)
+                            self.assertEqual(observed['app_id'], entry.stem)
+                            self.assertEqual(observed['desktop_id'], entry.stem)
+                            self.assertEqual(observed['window_id'], 27)
+                            self.assertEqual(observed['pid'], 123)
+                            self.assertEqual(observed['raw'], raw)
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'Wayland window identity'):
+                                driver.desktop_identity(installation)
+                        driver.desktop.run.assert_called_once_with(
+                            ['swaymsg', '-s', '/owned/sway.sock', '-t', 'get_tree'])
+
     def test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation(self):
         import hashlib
         import runpy

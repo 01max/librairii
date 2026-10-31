@@ -38,6 +38,10 @@ pub fn create_window() -> Result<(DesktopWindow, Menus)> {
         ))?;
     }
     let ui = DesktopWindow::new()?;
+    #[cfg(target_os = "linux")]
+    // Slint initializes its context above; Winit reads this ID when showing
+    // the window. Match the installed desktop entry for both X11 and Wayland.
+    slint::set_xdg_app_id("io.github.librairii.native")?;
     ui.set_platform_menu(cfg!(target_os = "macos"));
     let menus = Menus::install(ui.as_weak())?;
     Ok((ui, menus))
