@@ -140,7 +140,7 @@ The Linux Go gate uses D-Bus/Xvfb, GTK 3/WebKitGTK 4.1 and an observed PCManFM
 handler. Those services qualify the retained Go product; the native Linux
 runtime prerequisites and portal/Thunar qualification are listed separately
 above. Both Go gates also run `scripts/verify-settings-acceptance` for first-run,
-language/menu, location and recovery coverage; see
+language/menu, location and post-move export coverage; see
 [the retained settings evidence](verification/settings-and-library-location.md).
 Build prerequisites and the optional Docker-based `make linux` path remain in
 [development](development.md#retained-go-compatibility-checks).
