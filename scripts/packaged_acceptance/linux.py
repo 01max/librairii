@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import re
+import subprocess
 import time
 
 
@@ -22,15 +23,27 @@ class Driver:
             raise ValueError('installed product must have one desktop entry')
         expected = entries[0].stem
         if self.desktop.session == 'x11':
-            windows = self.desktop.run(['xdotool', 'search', '--onlyvisible', '--pid', str(self.pid)]).split()
-            if len(windows) != 1 or not windows[0].isdigit():
-                raise ValueError('owned product window not unique for desktop identity')
-            raw = self.desktop.run(['xprop', '-id', windows[0], '_NET_WM_PID', 'WM_CLASS'])
+            def visible_window():
+                try:
+                    windows = self.desktop.run(['xdotool', 'search', '--onlyvisible', '--pid', str(self.pid)]).split()
+                except subprocess.CalledProcessError as error:
+                    # AT-SPI/focus registration can precede X11 viewability.
+                    # Only the exact empty no-match result is a pending read.
+                    if error.returncode == 1 and error.output == '':
+                        return None
+                    raise
+                if not windows:
+                    return None
+                if len(windows) != 1 or not windows[0].isdigit():
+                    raise ValueError('owned product window not unique for desktop identity')
+                return windows[0]
+            window = self.wait(visible_window)
+            raw = self.desktop.run(['xprop', '-id', window, '_NET_WM_PID', 'WM_CLASS'])
             pid = re.search(r'^_NET_WM_PID\(CARDINAL\) = (\d+)\s*$', raw, re.M)
             names = re.search(r'^WM_CLASS\(STRING\) = "([^"]*)", "([^"]*)"\s*$', raw, re.M)
             if pid is None or int(pid[1]) != self.pid or names is None or names[2] != expected:
                 raise ValueError('native X11 window identity differs from installed desktop entry: '+raw)
-            observed = {'window_id': int(windows[0]), 'wm_class': list(names.groups())}
+            observed = {'window_id': int(window), 'wm_class': list(names.groups())}
         else:
             raw = self.desktop.run(['swaymsg', '-s', self.desktop.ipc, '-t', 'get_tree'])
             queue, windows = [json.loads(raw)], []

@@ -26,6 +26,7 @@ from packaged_acceptance.workflow import REQUIRED
 class PackagedAdmission(unittest.TestCase):
     def test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window(self):
         from packaged_acceptance.linux import Driver
+        from subprocess import CalledProcessError, TimeoutExpired
         with tempfile.TemporaryDirectory() as temporary:
             installation = Path(temporary)
             applications = installation/'share/applications'
@@ -35,7 +36,7 @@ class PackagedAdmission(unittest.TestCase):
             driver = Driver.__new__(Driver)
             driver.pid = 123
             valid = '_NET_WM_PID(CARDINAL) = 123\nWM_CLASS(STRING) = "", "org.example.Installed"\n'
-            for windows, raw in [('27\n', valid), ('', valid), ('27\n28\n', valid),
+            for windows, raw in [('27\n', valid), ('27\n28\n', valid),
                                  ('27\n', valid.replace('123', '456')),
                                  ('27\n', valid.replace('org.example.Installed', 'librairii-desktop')),
                                  ('27\n', '_NET_WM_PID(CARDINAL) = 123\nWM_CLASS: not found.\n')]:
@@ -53,6 +54,30 @@ class PackagedAdmission(unittest.TestCase):
                     else:
                         with self.assertRaisesRegex(ValueError, 'window'):
                             driver.desktop_identity(installation)
+            search = ['xdotool', 'search', '--onlyvisible', '--pid', '123']
+            # A restarted app can register with AT-SPI/focus before its X11
+            # window is viewable. Replay the exact no-match exit from CI.
+            driver.desktop = SimpleNamespace(session='x11', run=Mock(side_effect=[
+                CalledProcessError(1, search, output=''), '', '27\n', valid]))
+            with patch('packaged_acceptance.linux.time.sleep'):
+                self.assertEqual(driver.desktop_identity(installation)['wm_class'], ['', entry.stem])
+            self.assertEqual(driver.desktop.run.call_args_list[:3],
+                             [unittest.mock.call(search)] * 3)
+            for failure in (CalledProcessError(1, search, output='Error: unable to open display'),
+                            CalledProcessError(2, search, output=''),
+                            CalledProcessError(-9, search, output=''), TimeoutExpired(search, 10)):
+                driver.desktop.run = Mock(side_effect=failure)
+                with self.subTest(failure=failure), self.assertRaises(type(failure)):
+                    driver.desktop_identity(installation)
+                driver.desktop.run.assert_called_once_with(search)
+            driver.desktop.run = Mock(side_effect=CalledProcessError(1, search, output=''))
+            now = [0.0]
+            with patch('packaged_acceptance.linux.time.monotonic', side_effect=lambda: now[0]), \
+                 patch('packaged_acceptance.linux.time.sleep', side_effect=lambda duration: now.__setitem__(0, now[0]+duration)), \
+                 self.assertRaises(TimeoutError):
+                driver.desktop_identity(installation)
+            self.assertLessEqual(now[0], 15.05)
+            self.assertTrue(all(call.args[0] == search for call in driver.desktop.run.call_args_list))
             for missing in (False, True):
                 if missing:
                     entry.unlink()
