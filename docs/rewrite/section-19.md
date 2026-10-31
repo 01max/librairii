@@ -67,6 +67,59 @@ not established; independent library/profile/recovery adoption is required.
 
 ## Required final review — 19.2, 19.6 and 19.7
 
+### Dependency and attribution review — 19.2
+
+The reviewed graph inputs are `Cargo.lock`, `fuzz/Cargo.lock`, `deny.toml`,
+`.config/dependency-exceptions.toml`, `.config/native-toolkit.json` and the
+source/notice inventories. Task 19 does not change those inputs. The selected
+toolkit remains Slint 1.18.1, Winit 0.30.13 and Skia 0.153.3, including the
+reviewed local derivative provenance. The exact build selects the configured
+default product features; a hypothetical all-features graph is not its SBOM.
+
+The exception inventory contains **30 exact-version duplicate exceptions,
+11 exact-version license exceptions and 5 advisory exceptions**. Every record
+has owner `01max`, a reason, tracking link and future expiry at this review;
+the first expiry is 2027-01-21. Records and `deny.toml` suppressions match one
+for one; broad subtree skips remain empty. These are retained, expiring
+exceptions, not new waivers introduced by Task 19.
+
+| Registered advisory exception | Recorded package | Scope of retained rationale |
+| --- | --- | --- |
+| `RUSTSEC-2026-0192` | `ttf-parser 0.25.1` | Informational unmaintained notice in the qualified toolkit graph |
+| `RUSTSEC-2026-0371` | `zbus_names 4.3.5` | Informational unmaintained notice in the qualified toolkit graph |
+| `RUSTSEC-2026-0370` | `zvariant 5.15.1` | Informational unmaintained notice in the qualified toolkit graph |
+| `RUSTSEC-2026-0372` | `zvariant_derive 5.15.1` | Informational unmaintained notice in the qualified toolkit graph |
+| `RUSTSEC-2025-0141` | `bincode 2.0.1` | Optional support remains in the lockfile; absent from all three candidate compiler graphs |
+
+This table describes the committed exception rationale. Fresh `cargo-deny` and
+`cargo-audit` results against the current advisory database remain required for
+the final source, including the separately locked fuzz graph. `cargo xtask check`
+validates expiry, exact suppression equality, both policy graphs and inventory;
+new advisories do not inherit an exception from this table.
+
+The Slint royalty-free route retains original terms plus the actual **About
+Slint…** component and website action. Original Rust licenses, supplemental
+derivative notices and the pinned native Skia notice union ship with packages.
+Product licensing remains undecided (`NOASSERTION`); this review does not invent
+a product license. SPDX distinguishes actual Cargo compiler inputs, including
+build-time dependencies, from the conservative native-source notice union;
+that union is not a claim that every component is linked on every target.
+
+An offline audit of the three source-bound candidate archives verified their
+provider and inner package hashes, clean source/tree, lock/toolkit fingerprints,
+empty product feature selection and actual compiler records. Each Mac candidate
+has 400 distinct compiled package IDs and 893 inventory files; Linux has 478
+compiled IDs and 1,009 inventory files. Mac disk-image contents still require
+their matching-host installation inspection; this offline metadata audit does
+not mount or launch them.
+
+For Linux, the audit additionally reads the actual tar contents: all 1,009 files
+match recorded bytes/modes/hashes, 478 dependency rows match the compiler graph,
+the SPDX document contains 490 packages (product plus Cargo inputs and native
+source union), and all 13 pinned native notice files plus Slint terms match their
+original bytes. Final signature, linkage and running-process claims still come
+from the separately keyed platform evidence.
+
 The final release checklist is deliberately incomplete:
 
 - [ ] Finish protected Developer ID signing, notarization and stapling for both
