@@ -116,6 +116,35 @@ removing an app directory is not permission to remove user data. Existing Go
 libraries require the [verified transition procedure](native-transition.md)
 rather than manually directing an older executable at the native candidate.
 
+## Retained Go/Wails verification
+
+The Go application remains available for compatibility and rollback while the
+native release gates are open. Its platform verification is separate from the
+Rust matrix above. The retained historical verification families are:
+
+| Go/Wails distribution | Host and command | Evidence scope |
+| --- | --- | --- |
+| macOS 15, arm64 | Matching ARM Mac; `make verify-packaged-acceptance` | Historical local package acceptance; rerun for each Go release |
+| Linux x64 with WebKitGTK 4.1 | Ubuntu 24.04 x64; `make verify-platform-linux` | Retained Go Linux release CI gate |
+
+These commands independently build and launch the actual packaged Go/Wails
+executable, require a committed React render, create and reopen SQLite state,
+exercise host-native dialog and file-manager reveal services, and run the
+complete headless story-library smoke. They retain isolated fixture paths,
+shutdown/data-retention checks and distribution checksums. Failed or cancelled
+jobs publish no qualified artifact.
+
+The implementations are `scripts/verify-packaged-acceptance` and
+`scripts/verify-platform-linux`, orchestrated by `.github/workflows/ci.yml`.
+The Linux Go gate uses D-Bus/Xvfb, GTK 3/WebKitGTK 4.1 and an observed PCManFM
+handler. Those services qualify the retained Go product; the native Linux
+runtime prerequisites and portal/Thunar qualification are listed separately
+above. Both Go gates also run `scripts/verify-settings-acceptance` for first-run,
+language/menu, location and recovery coverage; see
+[the retained settings evidence](verification/settings-and-library-location.md).
+Build prerequisites and the optional Docker-based `make linux` path remain in
+[development](development.md#retained-go-compatibility-checks).
+
 ## Evidence for each candidate
 
 The [release builder](rewrite/section-18.md) records source commit/tree,

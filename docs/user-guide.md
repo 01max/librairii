@@ -291,8 +291,10 @@ Earlier removals may already have created exclusions. **Review updates** shows
 an excluded-story count with a direct **Manage exclusions** action. Choose
 **Allow suggestions** to make that story eligible for the next diff again.
 
-Detaching sources previews affected members. Explicitly keep all and apply the
-source changes, or decide Keep/Remove for every affected story before applying. Removal
+Detaching sources previews affected members. Keep all and apply the source
+changes, or decide Keep/Remove for every affected story before applying. The
+native **Keep all affected stories** action still requires explicit application
+of the reviewed changes. Removal
 is disabled when source coverage is uncertain or a story is unavailable. Removing
 the last source retains every kept member as a manual choice. Deleting a linked
 Collection reviews all affected Shelves and commits their approved decisions together with
