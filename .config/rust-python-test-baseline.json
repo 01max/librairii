@@ -112,6 +112,12 @@
     "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
     "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
     "test_packaged_acceptance.PackagedAdmission.test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window",
-    "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids"
+    "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids",
+    "test_manual_tools.ManualTools.test_package_preview_has_no_output_or_build_side_effect",
+    "test_manual_tools.ManualTools.test_package_execution_keeps_verified_order_for_each_target",
+    "test_manual_tools.ManualTools.test_existing_outputs_and_traversal_never_start_build",
+    "test_manual_tools.ManualTools.test_failure_stops_later_steps_and_retains_output",
+    "test_manual_tools.ManualTools.test_signing_preview_preserves_selection_without_dispatch",
+    "test_manual_tools.ManualTools.test_signing_refuses_invalid_selection_before_handoff"
   ]
 }

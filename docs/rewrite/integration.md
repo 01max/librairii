@@ -1,5 +1,14 @@
 # Rust native desktop integration evidence
 
+Historical bootstrap snapshot from 2026-10-20. The intake counts and pending
+statuses below describe that revision, not current implementation progress.
+For the implemented runtime and contributor commands, use the
+[native architecture](../architecture/0005-rust-native-desktop.md) and
+[development guide](../development.md). The current
+[platform matrix](../release-platforms.md) separates tested native candidates
+from the still-open signed-release and runtime-cutover gates. This original
+bootstrap record and its frozen identities remain preserved.
+
 **INCOMPLETE — global integration PR must remain draft and must never be merged automatically.**
 This index bootstraps `rewrite-in-rust-native-desktop`. No task section is qualified,
 no Rust behavior is established, and no task or global merge is recorded here.

@@ -1,0 +1,1519 @@
+{
+  "format": "librairii.parity-evidence-index",
+  "schema": 1,
+  "audited_integration_base": "4b7cd37cc6cbafdcdd4d86f35661018c9c7dd027",
+  "base_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+  "scope": "Traceability audit, not a final parity-pass certificate. Observation topics are concepts, not literal artifact paths. Read executable cases and raw reports.",
+  "owner_assignment": "01max is accountable repository/release owner; workstreams retain implementation responsibility.",
+  "required_targets": {
+    "A": "aarch64-apple-darwin",
+    "I": "x86_64-apple-darwin",
+    "L": "x86_64-unknown-linux-gnu"
+  },
+  "candidate_evidence": {
+    "pr_head": "21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+    "build_source": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+    "quality_run": 41185064457,
+    "scale_run": 41185064367,
+    "package_run": 41185064509,
+    "state": "Required CI reported passing for the merged base. Each artifact keeps its own source/target/hash/scope. Task19 final-head CI and final release closure are separate."
+  },
+  "scope_decisions": [
+    "Owner excluded VoiceOver execution; no macOS spoken-screen-reader qualification claim.",
+    "Japanese/Chinese/Arabic-specific input, IME and shaping qualification deferred; valid UTF-8 data/filenames remain lossless and unrestricted.",
+    "Windows deferred. No in-place Go adoption without proven lifetime exclusion; isolated native library/profile/recovery route used."
+  ],
+  "rows": [
+    {
+      "id": "P01",
+      "implementation": "crates/librairii-storage/src/layout.rs",
+      "delivery_evidence": "docs/rewrite/section-4.md",
+      "observation_topics": [
+        "setup",
+        "reopen",
+        "uninstall-reinstall"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "Preserve `db/librairii.sqlite3`, `archives/`, `catalog/`, `staging/`, `trash/`, `logs/`, `.librairii-library`, existing root/profile identity and contained path semantics. Absolute developer roots stay isolated. Uninstall never erases library data.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/layout_identity.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/layout.rs": "98941da20d4bb05b9fe61f48079d0eb0c3e5cd4eb585013620f591a58f277aaa",
+        "crates/librairii-storage/tests/layout_identity.rs": "dafb115c6b154bc18648ed2a37d799df9b23964562a387a3a6c66a6345364287"
+      }
+    },
+    {
+      "id": "P02",
+      "implementation": "crates/librairii-storage/src/database.rs",
+      "delivery_evidence": "docs/rewrite/section-4.md",
+      "observation_topics": [
+        "upgraded",
+        "reopen"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "Open existing SQLite without a format reset. Retain `product=librairii`, schema family `wails-go-sqlite`, contiguous migration-prefix validation, foreign keys, constraints, WAL, 5-second busy timeout, serialized writer and a read pool capped at four connections. Reject unknown/gapped/newer/foreign history before mutation.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/migrations.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/database.rs": "8c41b680cfaf8bf456dbae6f7e6197ca50d3f61bda8a4af364c5e1212e0966c9",
+        "crates/librairii-storage/tests/migrations.rs": "32c43b2d66eee5148c1f4f76d8a73849425ee58acf03ad1583dd8779857ead38"
+      }
+    },
+    {
+      "id": "P03",
+      "implementation": "crates/librairii-storage/src/native/owned/schema.rs",
+      "delivery_evidence": "docs/rewrite/section-4.md",
+      "observation_topics": [
+        "schema-recovery"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "Consistent pre-migration backup; failed migration restores prior database without deleting archive bytes. Foreign schema remains mutation-blocked until explicit preserve-and-create action safely retains DB/WAL/SHM in a unique recovery directory; failure never silently replaces files.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/backup.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/native/owned/schema.rs": "b38bac727013a409576a25cda0d2d4f609901d49bd17689227af82d1c79b01ca",
+        "crates/librairii-storage/tests/backup.rs": "b28385b2c8e4ba6b0e4aecf996fb13e31e72854e98b38140ef1b4ce3a0bdc360"
+      }
+    },
+    {
+      "id": "P04",
+      "implementation": "crates/librairii-storage/src/platform/unix.rs",
+      "delivery_evidence": "docs/rewrite/section-5.md",
+      "observation_topics": [
+        "import",
+        "trash-removal"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Stream selected source into isolated staging, compute SHA-256, publish content-addressed managed bytes without editing/moving/deleting source. Reuse only identical managed bytes; reject changed staging, symlink ancestors and escapes; cleanup touches only owned staging/artifacts.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/streaming_hash.rs",
+        "crates/librairii-storage/src/platform/unix.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/platform/unix.rs": "bccc9b33bfbbf63b1cb8482c60753244f95066663e26724e73d5a6bf19fd125b",
+        "crates/librairii-storage/tests/streaming_hash.rs": "e1faa88e5155ec3ac6d06b7899de56dbf53c7378b1811aded056890940d9f955"
+      }
+    },
+    {
+      "id": "P05",
+      "implementation": "crates/librairii-adapters/src/archives/mod.rs",
+      "delivery_evidence": "docs/rewrite/section-5.md",
+      "observation_topics": [
+        "import",
+        "native-picker"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Native picker accepts `.plain.pk`, `.v1.pk`, `.v2.pk`, `.pk`, `.zip`, `.7z`. Supported suffix and validated content jointly determine accepted combinations; preserve STUdio disguised as `.pk` rejection. Preserve generic and STUdio ZIP/7z, precedence and classification; 7z STUdio remains `seven_zip`. No decrypt/repair/convert behavior.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-adapters/src/archives/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-adapters/src/archives/mod.rs": "44ac9e2ee202c814ea3dc71f8d729d3a10762c29999560c4de47513d12b6d4db",
+        "crates/librairii-adapters/src/archives/tests.rs": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+      }
+    },
+    {
+      "id": "P06",
+      "implementation": "crates/librairii-core/src/import/mod.rs",
+      "delivery_evidence": "docs/rewrite/section-5.md",
+      "observation_topics": [
+        "import",
+        "inspection"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Preserve required entries, UUID validation/ambiguity rejection, permitted embedded metadata/artwork precedence, CRC/corruption behavior and missing-asset errors. ZIP fully reads payload for CRC validation; 7z preserves bounded selected-entry inspection, with no bulk extraction.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-core/src/import/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-core/src/import/mod.rs": "6e2456ca086d73f1836cbfc8a27bd9e6f601f269b44e4c84d260f746ea0bac1a",
+        "crates/librairii-core/src/import/tests.rs": "ad446d8e58d824fe04a23aba654d44b3de3382466e801213378c779836657be3"
+      }
+    },
+    {
+      "id": "P07",
+      "implementation": "crates/librairii-core/src/import/limits.rs",
+      "delivery_evidence": "docs/rewrite/section-5.md",
+      "observation_topics": [
+        "archive-corpus"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Retain limits: path 512 bytes/depth 16, 10,000 entries, 2 GiB expanded bytes, aggregate ratio 200, metadata 1 MiB, artwork 10 MiB. Preserve current header/read accounting and overflow rejection; reject traversal, links, unsafe/duplicate paths, nested and unsupported archives. Stronger actual-read bounds and decoded-image limits are explicit hardening, subject to the compatibility exception process below. New Windows-specific qualification is deferred; existing archive-name refusals remain preserved.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-adapters/src/archives/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-core/src/import/limits.rs": "8529eac297959ae29d9db37e0377ad9d2dcfe7d7d20334a7ea1a96dd2b1deed7",
+        "crates/librairii-adapters/src/archives/tests.rs": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+      }
+    },
+    {
+      "id": "P08",
+      "implementation": "crates/librairii-app/src/importing.rs",
+      "delivery_evidence": "docs/rewrite/section-5.md",
+      "observation_topics": [
+        "import",
+        "duplicates-conflicts"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Exact checksum reimport is idempotent; differing bytes claiming active UUID preserve the existing archive/story. Partial publication is retryable; DB failure/cancel compensates owned published files safely. Imported metadata/artwork become usable only with consistent custody.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/imports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-app/src/importing.rs": "d368b162e863dfde47a8c68bbcdca099459a5a40ec3ba3663412434c644dde6e",
+        "crates/librairii-desktop/tests/imports.rs": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+      }
+    },
+    {
+      "id": "P09",
+      "implementation": "crates/librairii-app/src/native_jobs/scheduler.rs",
+      "delivery_evidence": "docs/rewrite/section-6.md",
+      "observation_topics": [
+        "imports"
+      ],
+      "workstream": "Runtime",
+      "accountable_owner": "01max",
+      "retained_contract": "Preserve production two-worker behavior, configurable bound 1–8 and queue capacity `2 × workers`; import selection limit 1,000 is not an export-result cap. Browse remains responsive during import/sync/export. One active metadata sync; no duplicate start while pending.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-app/src/jobs/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-app/src/native_jobs/scheduler.rs": "3d3b5f3f53ee6c0e080a4ceb91db69abbfff8785c07e4b1ce6a19f6f2f503f3f",
+        "crates/librairii-app/src/jobs/tests.rs": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+      }
+    },
+    {
+      "id": "P10",
+      "implementation": "crates/librairii-storage/src/operations_repository/mod.rs",
+      "delivery_evidence": "docs/rewrite/section-6.md",
+      "observation_topics": [
+        "history",
+        "interrupted-reopen"
+      ],
+      "workstream": "Runtime",
+      "accountable_owner": "01max",
+      "retained_contract": "Persist queued/running/terminal and per-item outcomes/progress; restore every active operation and reconcile missed events. Stable errors survive restart. Ignore superseded query, generation and view-all responses; durable terminal results cannot regress to stale running snapshots.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/operations_repository.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/operations_repository/mod.rs": "d46bbd3de4a8b9559433371490ef0336f6a2704278a805abadc201a37e5ec66e",
+        "crates/librairii-storage/tests/operations_repository.rs": "613d45eae811d7bc61257e83867b7e11e5bb3f6d2fc7916102ab9203e8053f1a"
+      }
+    },
+    {
+      "id": "P11",
+      "implementation": "crates/librairii-app/src/native_jobs/shutdown.rs",
+      "delivery_evidence": "docs/rewrite/section-6.md",
+      "observation_topics": [
+        "reopen",
+        "interrupted-reopen"
+      ],
+      "workstream": "Runtime",
+      "accountable_owner": "01max",
+      "retained_contract": "Graceful close stops intake, owns/cancels/joins work, and finishes durable commit/report/compensation before closing resources. Go currently waits without timeout; a new wait/escalation deadline cannot authorize abandoning durable work. Forced termination reconciles nonresumable jobs, abandoned staging/export temp and removal intents; cleanup failures are reported without disabling unrelated recovery.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/operation_lifecycle.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-app/src/native_jobs/shutdown.rs": "f1fc7b188dc8fafcc743b65b5dcaaa23173d17069c6b305229d463cd6f00a2db",
+        "crates/librairii-storage/tests/operation_lifecycle.rs": "aa86fd00696c615ae29e4f342229fe4338f140d6e8e9bc46678db0807e24ba83"
+      }
+    },
+    {
+      "id": "P12",
+      "implementation": "crates/librairii-storage/src/diagnostics.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "settings-diagnostics"
+      ],
+      "workstream": "Runtime",
+      "accountable_owner": "01max",
+      "retained_contract": "Bounded JSONL `events.jsonl`, default at most five files ×256 KiB. Explicit local diagnostic ZIP includes only validated logs/aggregate facts, excluding DB/archive bytes, tokens, absolute private paths and artwork. Native destination/cancel/failure remains actionable.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/src/diagnostics/zip.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/diagnostics.rs": "d7ea78e7c3e270683f5ef3cb922fd8326a92320863c1b1c30262210d0e4a1d83",
+        "crates/librairii-storage/src/diagnostics/zip.rs": "3d5cedd1360a5bf9ed963a85f8dab3984970a610bbcae87ff87c6bee7d99d534"
+      }
+    },
+    {
+      "id": "P13",
+      "implementation": "crates/librairii-ui/ui/desktop.slint",
+      "delivery_evidence": "docs/rewrite/section-14.md",
+      "observation_topics": [
+        "presentation"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Labeled Library/Tags/Import/Export; understandable opening/empty/error/recovery states; All stories plus group previews; persistent list/small/large views with query/selection/sort retained. Artwork preserves aspect ratio with title below; text list needs no image. Selected panel retains readable tags at all widths.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-ui/ui/desktop.slint": "c464ef59b2a318b1a279436c4b0049095c768917021f22ac5a58c3fee0159be3",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P14",
+      "implementation": "crates/librairii-core/src/query/mod.rs",
+      "delivery_evidence": "docs/rewrite/section-7.md",
+      "observation_topics": [
+        "query"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Literal Unicode casefold/accent-insensitive infix match of resolved displayed title; `%`, `_` and escapes stay literal. Same normalization fixtures in every layer, 200-rune input limit, deterministic sorting/ties. Typed text preserves spaces/case rather than replacing it with normalized text.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-core/tests/query_normalization.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-core/src/query/mod.rs": "67b5aa753cbe39091f42affa80910bdf315db5acf295209370738eaa1ee1a558",
+        "crates/librairii-core/tests/query_normalization.rs": "65b6f00e1e3e11172cf3ef67c46e9e91ad86e7b0dd46b9fb9d232fb6eb96fb87"
+      }
+    },
+    {
+      "id": "P15",
+      "implementation": "crates/librairii-storage/src/query.rs",
+      "delivery_evidence": "docs/rewrite/section-7.md",
+      "observation_topics": [
+        "filters"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Name/language/compatibility/derived/manual-tag criteria combine; OR within choice values, AND across groups, tri-state booleans. Current default page 24/max 100; supported limits, deduplication and canonical ordering retained. Collapse does not clear; clear one/all preserves explicit sort and predictable focus.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/queries.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/query.rs": "b8d39b5864e19a3c0635278b5840b55f75d6a294f3168a3646ca1e018bf764b7",
+        "crates/librairii-storage/tests/queries.rs": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+      }
+    },
+    {
+      "id": "P16",
+      "implementation": "crates/librairii-core/src/navigation.rs",
+      "delivery_evidence": "docs/rewrite/section-7.md",
+      "observation_topics": [
+        "navigation"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Typed Library/Collection/Shelf/custom navigation, current criteria/page/sort and manual-versus-view Shelf ordering survive back/forward/reopen. All stories clears refinements. Legacy dynamic-Shelf IDs resolve to Collections, never a same-ID curated Shelf. Native shell needs no URL bar but retains supported legacy decoder.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-core/tests/navigation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-core/src/navigation.rs": "bb3f5e223cf038ba8315b0e323ed910a3816b24cc9db460ec76471d0ec363ce6",
+        "crates/librairii-core/tests/navigation.rs": "5f401678701f055228a62fe59562c546e18fe51c5f614ec92032cec64ef41eb0"
+      }
+    },
+    {
+      "id": "P17",
+      "implementation": "crates/librairii-core/src/collection_codec/mod.rs",
+      "delivery_evidence": "docs/rewrite/section-7.md",
+      "observation_topics": [
+        "codec-differential"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Saved query v5 and URL v3 preserve all supported predecessors, bounded 262,144-byte saved payload and query-complexity constraints. Recursively remove retired built-in Broken restrictions without dropping other AND/OR structure, including empty alternatives. Unknown/corrupt definitions stay repairable; ordinary reused-ID/broken-named tags retain semantics.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-core/tests/query_urls.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-core/src/collection_codec/mod.rs": "2507156310ab7e055a3ea30282432bd0d63ae93d692dbc2cd2ea270df2b04d4b",
+        "crates/librairii-core/tests/query_urls.rs": "4c49e5f49c98b78fccabc51d7821e84c90f1aa8eb41ba16db0d08bece518bd91"
+      }
+    },
+    {
+      "id": "P18",
+      "implementation": "crates/librairii-desktop/src/browsing.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "selection"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Single inspection and bulk selection remain distinct, with correct summary/actions. Presentation switches, flags and refreshes preserve applicable selection and focus. Assignment targets freeze across filtering changes; detail refresh tracks the inspected story. Paginated and View all results cannot overwrite a newer query.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/src/browsing/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/browsing.rs": "4bc94ec224f8ecfd794c1c990f67a00ebc840ca887f301279a1ec21f13f10a1a",
+        "crates/librairii-desktop/src/browsing/tests.rs": "f2630563054de968c5421c9163535f63af84d0d4820ec543d69bd0c7acc2b028"
+      }
+    },
+    {
+      "id": "P19",
+      "implementation": "crates/librairii-desktop/src/view/details.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "inspection",
+        "details"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Details show readable description, art, tags, provenance and relevant actions without losing collection context. HTML becomes inert native text with entities/paragraphs/lists, never active links/scripts. Reopening starts description at top; technical UUID/archive/validation/full checksum is disclosed separately; nested tag editor returns to refreshed details.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/view/details.rs": "fefac07a38ec45697621f4bc74f3427e9fdba5ed0f0e2a4d94953e1e9a51846d",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P20",
+      "implementation": "crates/librairii-storage/src/tagging.rs",
+      "delivery_evidence": "docs/rewrite/section-8.md",
+      "observation_topics": [
+        "tags-search"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Boolean/choice definitions and choice values support create/rename/color/reorder/delete with validation and immutable keys. Destructive changes show assignment/query impact and require explicit confirmation. Missing referenced criteria invalidate affected Collection queries for repair; no silent criterion deletion.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/tags.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/tagging.rs": "956fc4e7bf0f4d9a7aac5bb4d88d0b1a198f3208b1631370f288275a01c14c80",
+        "crates/librairii-storage/tests/tags.rs": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+      }
+    },
+    {
+      "id": "P21",
+      "implementation": "crates/librairii-storage/src/tagging/assignments.rs",
+      "delivery_evidence": "docs/rewrite/section-8.md",
+      "observation_topics": [
+        "tags-search"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Atomic single/bulk boolean and additive choice assignment, mixed states, idempotent/no-op feedback, entire batch validated before mutation; derived assignments remain read-only. Existing choice values are not replaced when one additive value is toggled. Retired Broken definition never reappears.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/tags.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/tagging/assignments.rs": "acd20bbfbc39d3787d49011fb07e20cafd65ac3af307917244258c2c6eed213b",
+        "crates/librairii-storage/tests/tags.rs": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+      }
+    },
+    {
+      "id": "P22",
+      "implementation": "crates/librairii-storage/src/tagging/age.rs",
+      "delivery_evidence": "docs/rewrite/section-8.md",
+      "observation_topics": [
+        "tags-search",
+        "metadata-artwork"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Protected derived identity, label/value and assignment rules remain intact while colors are user-editable. Age defaults green; chosen colors survive startup seeding and official metadata projection. User-authored labels and ordinary broken tags are preserved and non-color-identifiable.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/tags.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/tagging/age.rs": "0586c6bd9e34169e49fc10421037ffea4cf5978bc8cb458ef33e34861a990cd7",
+        "crates/librairii-storage/tests/tags.rs": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+      }
+    },
+    {
+      "id": "P23",
+      "implementation": "crates/librairii-storage/src/broken.rs",
+      "delivery_evidence": "docs/rewrite/section-8.md",
+      "observation_topics": [
+        "broken-undo"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Independent manual Broken flag defaults false and survives sync/verification/rediscovery; legacy built-in assignments migrate losslessly. Single/mixed bulk set/clear is atomic/idempotent. Exact Undo restores changed targets only and rejects whole restore if expected current flags/availability differ. No-op/failed writes offer no false Undo.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/tags.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/broken.rs": "f9ac8617f5adac17c4b593680435ddf65c6d5cb8609f04c5b615f270596e4beb",
+        "crates/librairii-storage/tests/tags.rs": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+      }
+    },
+    {
+      "id": "P24",
+      "implementation": "crates/librairii-desktop/src/view/flags.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "broken-undo",
+        "flags"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Broken never alters view/source membership, result counts, page, selection or focus by itself. Warning badge/muted artwork update across duplicate previews and all groups. Separate panel/details/bulk switches; cards carry warnings without extra action buttons. Feedback appears only after a toggle and clears when details close.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/view/flags.rs": "04902966fc26f28ae58ec54207b35c93535d57bbf4ebb8bd1dea18c2156fc4b3",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P25",
+      "implementation": "crates/librairii-storage/src/collections.rs",
+      "delivery_evidence": "docs/rewrite/section-9.md",
+      "observation_topics": [
+        "collections"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Legacy dynamic Shelves retain IDs/name/order/non-Broken criteria as Collections. Save/update/rename/reorder/duplicate/delete remain independent of archives; live membership/counts reevaluate after import/removal/tags/catalog. Valid empty query means all active stories; empty results remain valid. Unsafe/missing criteria require explicit repair.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/collections.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/collections.rs": "8471c0baf47742e82ccce7f7f6158a8978d1e79f6b8dadfb26a7885c1f02eee7",
+        "crates/librairii-storage/tests/collections.rs": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+      }
+    },
+    {
+      "id": "P26",
+      "implementation": "crates/librairii-storage/src/collections.rs",
+      "delivery_evidence": "docs/rewrite/section-9.md",
+      "observation_topics": [
+        "export-collections",
+        "union"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Multi-Collection selection shows per-Collection/overlap/union counts, deduplicates matches, and Save current query saves a copied OR union rather than only the displayed Collection. Editing/deleting original Collections cannot mutate the copy; exports use current deduplicated matches.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/collections.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/collections.rs": "8471c0baf47742e82ccce7f7f6158a8978d1e79f6b8dadfb26a7885c1f02eee7",
+        "crates/librairii-storage/tests/collections.rs": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+      }
+    },
+    {
+      "id": "P27",
+      "implementation": "crates/librairii-storage/src/shelves.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-create"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Curated Shelf names have an independent namespace from Collections. Empty/manual Shelves are valid. CRUD and ordering affect only that Shelf/its decisions; approved UUID membership never automatically follows import, catalog, tags, flags or reads. Navigation clearly separates Collections and Shelves.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves.rs": "5d0e5ac011aa8806c1f240ffea10b0ca57ef164b239df186cad56bf82a5abc05",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P28",
+      "implementation": "crates/librairii-storage/src/shelves/curation.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-create"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Creation from selected stories, Collection source(s), or both requires deduplicated initial preview and explicit Create with N stories. Nothing is approved by default; unchecked source matches remain later suggestions. Manual/source overlap is retained manually; cancel/stale preview creates nothing. Linking without seed adds no members.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/curation.rs": "527735d1f8fc3355132a15c7d357b1e26ab023d7497f409abf45bbf0ae93d8d0",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P29",
+      "implementation": "crates/librairii-storage/src/shelves/curation.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-members"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Manual single/bulk add clears exclusions and preserves manual retention, including existing source members; new members append once. Ordinary removal changes membership only, allowing later suggestion. View sorting/filtering never rewrites membership/order. Explicit arrow reordering works beyond 100 members and after rank gaps; no protection toggle.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/curation.rs": "527735d1f8fc3355132a15c7d357b1e26ab023d7497f409abf45bbf0ae93d8d0",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P30",
+      "implementation": "crates/librairii-storage/src/shelves/browse.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "trash-removal",
+        "unavailable"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Removed library records retain Shelf UUID membership/order, manual decisions, exclusions and historical origins. Unavailable placeholders show cached title/UUID and count toward approved membership; never inferred source-removal candidates. Same UUID reimport reconnects under a different numeric story ID.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/browse.rs": "6dfe3af508c2a0b9697de6a571c9829181dc5e5dd67301c626194d56907ae911",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P31",
+      "implementation": "crates/librairii-storage/src/shelves/sources.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-review"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Collection-only sources mean any match and never insert automatically. Deduplicate overlap by UUID; show current source matches separately from historical Added from acceptance origins, including detached sources. Manual/explicit Keep retain membership independently of current matches.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/sources.rs": "5c606cc7a7e46f48afc959f790f111c01531d3e088fcf30ce8b6022503a4ed12",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P32",
+      "implementation": "crates/librairii-storage/src/shelves/review.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-review"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Review reads do not mutate. Addition/removal decisions default Not now. Explicit Add/Exclude/Keep/Remove and exclude, bulk controls and final action totals precede atomic apply. Deferred-only or cancel does nothing. Applied Keep becomes manual retention; source-derived removals require actual approved decision.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/review.rs": "7459b6a267cda424c945835f65ed3c56472f135cd2f82bc8ee74e1c2ff9169d4",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P33",
+      "implementation": "crates/librairii-storage/src/shelves/review.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "shelf-incomplete"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "If any source is invalid or cannot evaluate, healthy sources may propose additions, but all inferred removals pause. Show Review incomplete rather than Up to date; unavailable/manual/kept members remain protected from inference without exposing protection controls. Repairing source resumes fresh evaluation.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/review.rs": "7459b6a267cda424c945835f65ed3c56472f135cd2f82bc8ee74e1c2ff9169d4",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P34",
+      "implementation": "crates/librairii-storage/src/shelves/tickets.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "stale-review"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Review/creation/source-impact snapshots bind target/source definitions/results/availability/decisions, expire after 15 minutes and cache at most 64 tickets. Apply revalidates transactionally, rejects stale/replayed/conflicting/out-of-preview actions without partial write; flag-only changes do not invalidate curation.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/tickets.rs": "eb6b8341d6ae0eaaf92376ad52e90ee1dc767f7cf1d49ffceed0635eed870dce",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P35",
+      "implementation": "crates/librairii-desktop/src/workflows/shelf_reviews.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "mismatch"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Opening a sourced Shelf prompts for newly affected source-mismatch removals with nothing approved. Dismiss leaves deferred and does not reopen identical mismatches repeatedly; new affected UUID can prompt. Manual-only Shelf has no prompt. Full Review updates remains available. Large review/warning sets stay bounded and grouped with context.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/workflows/shelf_reviews.rs": "3778871087fd9bbe9c295e3f3d6ee997a56be9b6882ce77c2c325f86a08ab679",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P36",
+      "implementation": "crates/librairii-storage/src/shelves/curation.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "exclusions"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Explicit exclusions persist by UUID across every source/restart until reversed. Manage exclusions is reachable directly from review and Shelf actions, with excluded count. Allow suggestions clears exclusion only; it never adds membership. Previous historical exclusions remain, ordinary removal creates none.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/curation.rs": "527735d1f8fc3355132a15c7d357b1e26ab023d7497f409abf45bbf0ae93d8d0",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P37",
+      "implementation": "crates/librairii-storage/src/shelves/source_change.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "source-deletion"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Detach previews affected members and requires Keep all or explicit Keep/Remove decisions. Unknown coverage/unavailable member disables inference; last-source Keep becomes manual. Linked Collection deletion reviews all affected Shelves and commits deletion/decisions atomically; cancel leaves everything unchanged.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves/source_change.rs": "b8179268a9589411d960b67136abec61a00a651d75853a775e8c32fcf4be28c7",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P38",
+      "implementation": "crates/librairii-storage/src/shelves.rs",
+      "delivery_evidence": "docs/rewrite/section-10.md",
+      "observation_topics": [
+        "duplicate-shelf"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Duplication independently copies approved UUID order, sources, historical origins, manual Keep/retention, exclusions and unavailable members; it accepts no fresh source matches and copies no pending review token. Future decisions on original/duplicate do not affect the other.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/shelves.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/shelves.rs": "5d0e5ac011aa8806c1f240ffea10b0ca57ef164b239df186cad56bf82a5abc05",
+        "crates/librairii-storage/tests/shelves.rs": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+      }
+    },
+    {
+      "id": "P39",
+      "implementation": "crates/librairii-adapters/src/lunii.rs",
+      "delivery_evidence": "docs/rewrite/section-11.md",
+      "observation_topics": [
+        "metadata-artwork",
+        "offline-startup"
+      ],
+      "workstream": "Catalog",
+      "accountable_owner": "01max",
+      "retained_contract": "Only explicit public catalog refresh plus lazy official artwork contacts network. Preserve guest-token/catalog envelope, allowlisted HTTPS/TLS minimum, no redirects, deadlines and byte limits; no personal login, archive upload/download, device keys/firmware/direct transfer or scheduled sync. Offline local work remains complete.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-adapters/src/lunii/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-adapters/src/lunii.rs": "0205d5cd3e381baa2f97bb32ad4e70235441ae63f5ebfe8fe6774de8510c63b2",
+        "crates/librairii-adapters/src/lunii/tests.rs": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+      }
+    },
+    {
+      "id": "P40",
+      "implementation": "crates/librairii-app/src/metadata/refresh.rs",
+      "delivery_evidence": "docs/rewrite/section-11.md",
+      "observation_topics": [
+        "metadata-artwork",
+        "offline-startup"
+      ],
+      "workstream": "Catalog",
+      "accountable_owner": "01max",
+      "retained_contract": "Stage/validate full bounded raw catalog before atomic activation; preserve exact raw bytes and snapshot identities. Corrupt/offline/timeout/cancel/failure retains last-known-good catalog. Cancellation before/after publication boundaries reports truthful committed outcome. Never/fresh/stale cache states remain distinct.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/metadata.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-app/src/metadata/refresh.rs": "ea358b4ada3b652f12e493ace706bc2d42cd6eede725811a539adcd034d7aeb2",
+        "crates/librairii-storage/tests/metadata.rs": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+      }
+    },
+    {
+      "id": "P41",
+      "implementation": "crates/librairii-app/src/metadata.rs",
+      "delivery_evidence": "docs/rewrite/section-11.md",
+      "observation_topics": [
+        "metadata-artwork",
+        "inspection"
+      ],
+      "workstream": "Catalog",
+      "accountable_owner": "01max",
+      "retained_contract": "Match complete UUID only; resolve official preferred locale, same-language translation, other official translation, embedded then deterministic fallback. Unambiguous age derives read-only facets; unknown/ambiguous ages stay unassigned. Sync may change display/search/Collection matches/Shelf suggestions, never manual tags/flags/approved membership/archive bytes. UI language does not change metadata policy.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-app/tests/metadata.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-app/src/metadata.rs": "ba735d95f9c62c4776263e2a88a9f286464710b3feac7784d427fc3c2119cb08",
+        "crates/librairii-app/tests/metadata.rs": "9380bd1efe9222223d76f7dd528eca3cff6ea29833d26880e02baa1ce54d91cb"
+      }
+    },
+    {
+      "id": "P42",
+      "implementation": "crates/librairii-adapters/src/thumbnails.rs",
+      "delivery_evidence": "docs/rewrite/section-11.md",
+      "observation_topics": [
+        "metadata-artwork",
+        "scale-cache"
+      ],
+      "workstream": "Catalog",
+      "accountable_owner": "01max",
+      "retained_contract": "Local embedded art and validated official opaque references are contained; lazy fetch caches and coalesces misses, enforces origin/content limits, rejects arbitrary paths/unregistered URLs and symlink escapes. Cache works offline; decoded thumbnails bounded/evicted, proportions retained, deterministic fallback when unavailable.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-adapters/src/thumbnails/tests.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-adapters/src/thumbnails.rs": "9d834c8114e8967336b0b0bc0e1b9eb91b2f2b4de54c626af011e286abda7a01",
+        "crates/librairii-adapters/src/thumbnails/tests.rs": "110913fdbe6710b4d7662cc703f3a52dd34e8af5447c25aac1d674ddf6937464"
+      }
+    },
+    {
+      "id": "P43",
+      "implementation": "crates/librairii-desktop/src/view/sync.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "metadata-artwork",
+        "sync"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "First sync prominently explains enrichment. Last successful time stays visible in local formatting during other work/failed refresh; previous cache remains usable. Progress/cancel/retry prevent duplicate starts. Panel close persists; Show Lunii sync only reopens and does not start network work.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/view/sync.rs": "0eea2d4090b491a8ac5805be91ba63a27835a524d9518f963a560219448cab18",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P44",
+      "implementation": "crates/librairii-desktop/src/workflows/exports.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "export-results",
+        "export-selection",
+        "export-collections",
+        "export-shelves"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Preserve explicit selection, complete query beyond visible page, Collection/Collection union, approved Shelf/Shelf union, whole Shelf, refined Shelf result and selected unavailable UUID scopes. Deduplicate; pending suggestions never export. Historical `shelf/shelves` history retains dynamic Collection meaning. Drawer selection export is for multiple Library stories.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/exports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/workflows/exports.rs": "9b54740fda9b5b197aa7bcc52733e8055b5a7b447383d1140979ad7c9d51b333",
+        "crates/librairii-storage/tests/exports.rs": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+      }
+    },
+    {
+      "id": "P45",
+      "implementation": "crates/librairii-storage/src/export/preparation.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "export-results",
+        "broken-undo"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Preflight covers every intended UUID; report Broken/unavailable/integrity/validation/extension/conflict reasons. Skips reserve no output name/bytes. All-ineligible cannot start. Existing filename conflicts explain recovery; Choose another folder reuses scope, cancelled picker retains preview. Native chosen paths stay in trusted adapter boundary.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/exports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/export/preparation.rs": "c91936bea9c0243ccc2952856c491973afec532e3c015f996e3351f4cc134182",
+        "crates/librairii-storage/tests/exports.rs": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+      }
+    },
+    {
+      "id": "P46",
+      "implementation": "crates/librairii-storage/src/export/durable.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "export-selection"
+      ],
+      "workstream": "Domain",
+      "accountable_owner": "01max",
+      "retained_contract": "Every export skips Broken, including explicit selection. Changed flags/scope before start invalidate preparation and demand fresh preview. Recheck queued items immediately before copy; flagging in-flight/already published copies does not retract them, unflagging an already skipped item does not silently expand running scope.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/exports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/export/durable.rs": "a3251b5bb51ad8b365a01a832d94e16178b522086fe957f4bfafbdc115e182b7",
+        "crates/librairii-storage/tests/exports.rs": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+      }
+    },
+    {
+      "id": "P47",
+      "implementation": "crates/librairii-storage/src/export/native.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "export-results"
+      ],
+      "workstream": "Archive",
+      "accountable_owner": "01max",
+      "retained_contract": "Export exact original filename/supported extension/archive bytes with no manifest/transcode/decryption/sidecars. Destination-local temp publishes atomically without overwrite even under racing file creation. Revalidate source hash/validation/identity before publication. Passthrough for Lunii.QT is not universal device/playback certification.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/exports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/export/native.rs": "db9f1fc2d754c527a5ce3d8dfad43be378f0fee3bb55c956c2494df39f6f77df",
+        "crates/librairii-storage/tests/exports.rs": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+      }
+    },
+    {
+      "id": "P48",
+      "implementation": "crates/librairii-desktop/src/view/exports.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "actual-reveal",
+        "interrupted-reopen"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Progress shows items/bytes and cancellation boundary. Cancel/failure cleans unfinished owned temps and retains completed exports. Report groups successes/exceptions/skips with item reasons; completed destination remains revealable from notice/history, validates directory, surfaces launch failure.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/exports.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/view/exports.rs": "9794d1efae96f61789143e45fec6c72a9e12b61092acbbc009f734e2416882a6",
+        "crates/librairii-storage/tests/exports.rs": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+      }
+    },
+    {
+      "id": "P49",
+      "implementation": "crates/librairii-storage/src/removal.rs",
+      "delivery_evidence": "docs/rewrite/section-12.md",
+      "observation_topics": [
+        "trash-removal",
+        "interrupted-reopen"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "Explicit removal first moves managed archive to `trash/removals/<operation-id>/`, then deletes active associations; DB failure/interruption restores/reconciles safely. Original source stays untouched; Shelf UUID state persists. There is no in-app trash restore/purge. Manual external copy/reimport recovery does not restore removed manual tag assignments.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/src/removal.rs",
+        "crates/librairii-desktop/tests/presentation.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/removal.rs": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+      }
+    },
+    {
+      "id": "P50",
+      "implementation": "crates/librairii-storage/src/operations_repository/history.rs",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "history",
+        "reopen"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "History includes imports/syncs/exports, dismissed and previous-session records; 20-item creation-time/ID cursor pages without duplicates/missing older records. Expand item outcomes, load older, refresh/retry, local dates, retain terminal saved result over stale progress and reveal destination. Opening history never reopens notices.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/operation_history.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/operations_repository/history.rs": "fe69b4ee4793c926e8f53e7682136b38272fadc0264b7cb37c2bcad139e038fd",
+        "crates/librairii-storage/tests/operation_history.rs": "1371a0ca23a956f6a1dc2026f05e805be602a55f498517bba536211460c1d7c3"
+      }
+    },
+    {
+      "id": "P51",
+      "implementation": "crates/librairii-storage/src/profile/handover.rs",
+      "delivery_evidence": "docs/rewrite/section-17.md",
+      "observation_topics": [
+        "upgrade-handover"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Preserve view mode, per-operation terminal dismissal, sync-panel visibility, current semantic navigation and available back/forward state through supported versioned bridge. Dismissed operation stays hidden after stale events/restart but new IDs appear. Missing/corrupt preference storage retains safe session/default behavior, never library loss.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/handover.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/profile/handover.rs": "c09b0f3c333fd4471d9c46574a123c713e4d12aae621d7dd94eb1aae157774a8",
+        "crates/librairii-storage/tests/handover.rs": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+      }
+    },
+    {
+      "id": "P52",
+      "implementation": "crates/librairii-storage/src/settings/startup.rs",
+      "delivery_evidence": "docs/rewrite/section-13.md",
+      "observation_topics": [
+        "setup",
+        "storage-handover"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "New installation confirms language/exact selected empty root before initialization; picker cancel creates nothing, retry preserves partial confirmed setup. Adopt identifiable prior library in place only with proven lifetime exclusion; otherwise explicitly adopt an independent clone/native profile/recovery workspace while legacy settings/defaults retain the source. Versioned independent profile updates atomically/serially preserve concurrent language/root writes; corruption/unsupported profile enters recovery. Developer override bypasses production profile/onboarding, defaults English, disables relocation.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/native_library.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/settings/startup.rs": "64304c316e591e0a08a4916494e422b2d52302c6eac63b38acb88bad0ba61bfb",
+        "crates/librairii-storage/tests/native_library.rs": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+      }
+    },
+    {
+      "id": "P53",
+      "implementation": "crates/librairii-desktop/src/menus.rs",
+      "delivery_evidence": "docs/rewrite/section-13.md",
+      "observation_topics": [
+        "language"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Native/in-app Settings remain accessible during recovery, early startup command delivered once; macOS standard menu/⌘, plus editing roles; Linux menu and accelerator. Français/English applies immediately after durable write, preserving selection/query/unsaved input/jobs; localize all app text/plurals/dates/numbers/accessibility and historical outcomes, not authored content/metadata policy.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/settings.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/menus.rs": "ad2ef184a12541b29abd833308b38c3e0b15f5dc9166a32ad612c9d3aacd7bdc",
+        "crates/librairii-desktop/tests/settings.rs": "cc74af965260d7819c58a5e739b10eec574d803d51df978790e857c3c6dcd7db"
+      }
+    },
+    {
+      "id": "P54",
+      "implementation": "crates/librairii-storage/src/native/owned/relocation.rs",
+      "delivery_evidence": "docs/rewrite/section-13.md",
+      "observation_topics": [
+        "relocation"
+      ],
+      "workstream": "Storage",
+      "accountable_owner": "01max",
+      "retained_contract": "Idle exclusive whole-library move to acceptable empty folder, exact root, preview/size/progress/cancel before commit; source authoritative until verification/profile commit, destination afterward. Include DB/archives/catalog/tags/groups/history/staging/trash/logs/recovery files. Cross-volume stream/copy/check hashes+integrity; reconstruct services and clear stale preparations. Cleanup preserves changed/unrecorded files and reports retained path.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/settings_target.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/native/owned/relocation.rs": "3cba324972e9ee8063d6573d5772409b443eb9bed77c020beab5814a5c2c1f8a",
+        "crates/librairii-storage/tests/settings_target.rs": "36d7fe0343be720d651f9e5f387bfec8a9db16eb6fddc6a170ee345421070459"
+      }
+    },
+    {
+      "id": "P55",
+      "implementation": "crates/librairii-storage/src/portability.rs",
+      "delivery_evidence": "docs/rewrite/section-4.md",
+      "observation_topics": [
+        "recovery",
+        "portability"
+      ],
+      "workstream": "Platform",
+      "accountable_owner": "01max",
+      "retained_contract": "Missing configured drive/root never becomes empty replacement. Try again/Locate validates same library ID; reject different library. Preserve profiles/journals/history with absolute paths during cross-OS handover using reviewed rebind/recovery rules. Never silently rename archives or rewrite original filenames for the target filesystem; report invalid export targets non-destructively.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review",
+      "executable_check_sources": [
+        "crates/librairii-storage/tests/portability.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-storage/src/portability.rs": "6277f38dabac9288f188990c92bea597541f14efa5dd62d8806e97a79ccbc1e8",
+        "crates/librairii-storage/tests/portability.rs": "557b22805ac81d16e0f4ab0bd35cfdfe1b7a7a916de2a5e323f38561607b56b8"
+      }
+    },
+    {
+      "id": "P56",
+      "implementation": "crates/librairii-ui/ui/desktop.slint",
+      "delivery_evidence": "docs/rewrite/section-15.md",
+      "observation_topics": [
+        "native-ui",
+        "Linux-Orca",
+        "scale-display"
+      ],
+      "workstream": "UI",
+      "accountable_owner": "01max",
+      "retained_contract": "Every action keyboard reachable with visible focus, labeled roles/mixed/switch/progress states, contrast/non-color tags and reduced motion. Escape/backdrop/Close with nested focus trap/return; block unsafe dismissal while required setup/move/commit is pending. Independent content/sidebar scroll, short-window access, narrow disclosure, French text fitting and no horizontal overflow.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/presentation.rs",
+        "scripts/verify-native-foundations.py",
+        "scripts/verify-native-speech.py"
+      ],
+      "source_sha256": {
+        "crates/librairii-ui/ui/desktop.slint": "c464ef59b2a318b1a279436c4b0049095c768917021f22ac5a58c3fee0159be3",
+        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524",
+        "scripts/verify-native-foundations.py": "cbfd56a2db07a5da5d5b4c827fe11f0573b4dd5fe1301cac08dc23a063ebb7f0",
+        "scripts/verify-native-speech.py": "0798aacbabfdd16fe32b6b975cc489babe1e768d89c4b13b5b87ef85efe92fa0"
+      }
+    },
+    {
+      "id": "P57",
+      "implementation": "crates/librairii-desktop/src/main.rs",
+      "delivery_evidence": "docs/rewrite/section-18.md",
+      "observation_topics": [
+        "inspection",
+        "native-adapters",
+        "offline-startup"
+      ],
+      "workstream": "Platform",
+      "accountable_owner": "01max",
+      "retained_contract": "Dedicated Rust-rendered desktop app with no production webview/browser/JavaScript runtime/local HTTP bridge/Go sidecar. Native multiple-file/folder pickers, menu/edit actions and validated reveal. UI thread stays free of blocking work; toolkit qualifies renderer/software path, supported input and accessible controls on each target.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
+      "executable_check_sources": [
+        "crates/librairii-desktop/tests/release_identity.rs",
+        "scripts/native_release/linkage.py",
+        "scripts/native_release/install.py"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/main.rs": "d5b719df45442f4398fb4348abb4ca994673ce4567991bf44dbe12983585cab9",
+        "crates/librairii-desktop/tests/release_identity.rs": "9fb11f0277aa8d10ee89afd6adead5d3ccde2b2747f7ce955b3e1f7a82010000",
+        "scripts/native_release/linkage.py": "6078c353cf1c31f9b1282174c4fa20276624625d248a9fff13913b577ee29206",
+        "scripts/native_release/install.py": "ce4c1de001d71874baa41ef20c8561a31a285a8db87e61784f4fa831f62b1619"
+      }
+    },
+    {
+      "id": "P58",
+      "implementation": "crates/librairii-desktop/src/browsing.rs",
+      "delivery_evidence": "docs/rewrite/section-16.md",
+      "observation_topics": [
+        "scale-backend",
+        "interaction",
+        "resources"
+      ],
+      "workstream": "Release",
+      "accountable_owner": "01max",
+      "retained_contract": "Retain 5,000-story query/count/page/artwork budgets, 1,000-story native expansion≤3 s and input p95≤100 ms; preserve 25-row review/warning/create/exclusion pages and one affected Shelf/page. Bounded worker/image/query models. Host baselines are observations; frame/timer gaps remain diagnostics.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
+      "executable_check_sources": [
+        "crates/librairii-core/tests/scale_properties.rs"
+      ],
+      "source_sha256": {
+        "crates/librairii-desktop/src/browsing.rs": "4bc94ec224f8ecfd794c1c990f67a00ebc840ca887f301279a1ec21f13f10a1a",
+        "crates/librairii-core/tests/scale_properties.rs": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
+      }
+    },
+    {
+      "id": "P59",
+      "implementation": "scripts/native_release/package.py",
+      "delivery_evidence": "docs/rewrite/section-18.md",
+      "observation_topics": [
+        "inspection",
+        "native-adapters",
+        "uninstall-reinstall"
+      ],
+      "workstream": "Release",
+      "accountable_owner": "01max",
+      "retained_contract": "Independently build/package/execute required A/I/L artifacts with correct architecture/version/resources/dependencies/checksums. Matching target host tests installed/extracted production application; build/cross-compile alone is insufficient. Current old release evidence covers A and L only; I requires separate qualification. No artifact published from failed/cancelled gate.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
+      "executable_check_sources": [
+        "scripts/native_release/test_packages.py"
+      ],
+      "source_sha256": {
+        "scripts/native_release/package.py": "cf3125cd78e4841c63b65d3e02dd404162cd29697350aa879e8aac1b54e3b296",
+        "scripts/native_release/test_packages.py": "58295fd10a882fbf0f2aa9c934ae47eed802dd667f027c1edbc52cd70672a75c"
+      }
+    },
+    {
+      "id": "P60",
+      "implementation": "scripts/packaged_acceptance/workflow.py",
+      "delivery_evidence": "docs/rewrite/section-18.md",
+      "observation_topics": [
+        "fresh",
+        "upgraded",
+        "workflow",
+        "reopen",
+        "recovery",
+        "reinstall"
+      ],
+      "workstream": "Release",
+      "accountable_owner": "01max",
+      "retained_contract": "Complete end-to-end synthetic clean and upgraded workflows twice per actual package: import→inspect→catalog→tags→Collection→Shelf/review→Broken/Undo→export→trash→restart; settings/language/move/recovery and diagnostics included. Lifetime writer exclusion or isolated library/profile/recovery adoption, consistent whole-library/profile backup, verified rollback and retained post-backup user changes precede cutover. Retire Go/React only after every mandatory row closes.",
+      "platform_status": {
+        "A": "candidate evidence indexed; final release closure pending",
+        "I": "candidate evidence indexed; final release closure pending",
+        "L": "candidate evidence indexed; final release closure pending"
+      },
+      "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
+      "executable_check_sources": [
+        "scripts/verify-upgrade-handover.py"
+      ],
+      "source_sha256": {
+        "scripts/packaged_acceptance/workflow.py": "b8e72fc0d7acde0336613fce0f8a97af32af8881df708160b5836602c84f0070",
+        "scripts/verify-upgrade-handover.py": "ceaacf7e67c1bbbc9a8ca8687c13192aef7eeb18703e35d599b052d9dc60955a"
+      }
+    }
+  ]
+}

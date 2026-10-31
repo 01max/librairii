@@ -218,6 +218,10 @@ actual signal exit status and positive output-reader retirement.
 
 ## Protected Mac signing
 
+For owner-operated setup and command previews, use the
+[manual build and signing guide](../native-build-and-sign.md). Public signing
+can remain deferred while internal package development continues.
+
 The manually triggered `Sign reviewed native Mac candidate` workflow accepts an
 exact reviewed source commit, unsigned package run, native target and independently
 checked DMG SHA-256. It runs only from `main` or the Rust integration branch.
