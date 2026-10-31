@@ -1,5 +1,12 @@
 # Section 3: workspace and quality tooling
 
+Historical foundation report. Statements below about an unimplemented GUI,
+missing native dependencies and foundation-only features describe the recorded
+section-3 revisions. Current setup and commands are in the
+[native development guide](../development.md); see the
+[runtime architecture](../architecture/0005-rust-native-desktop.md) and
+[platform matrix](../release-platforms.md) for the implemented candidate.
+
 Owner: librairii-5. Scope: infrastructure beside the working Go/React product.
 Parity P57/P59 foundations only; no product workflow or platform qualification.
 The separate OpenSpec repository is read-only here and never nested into this tree.

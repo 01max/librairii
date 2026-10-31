@@ -1,107 +1,151 @@
-# Release platform matrix
+# Native platform matrix
 
-Workflow reviewed: 2026-10-20. Platform evidence below is recorded separately
-from this documentation review; it is not a new qualification run.
+This page describes the Rust candidate on `rewrite-in-rust-native-desktop`.
+The three native targets have installed-package CI evidence. Public Mac signing,
+final signed-byte verification and release promotion remain open gates; an
+unsigned candidate is not a signed public release. The retained Go/Wails
+application and its build commands are described in
+[legacy compatibility checks](development.md#retained-go-compatibility-checks).
 
-Librairii supports macOS and Linux desktop distributions.
+## Tested targets and artifacts
 
-Release qualification runs on the target operating system and invokes its
-host-native platform services. A cross-compiled binary, frontend-only test, or
-successful artifact build does not qualify a target. Every qualified row must
-independently build its distribution artifact, launch the actual packaged
-executable, commit the embedded React render, create and reopen SQLite state,
-pass host-native dialog and reveal acceptance, run the complete headless
-story-library smoke, shut down cleanly, and produce a verified SHA-256
-checksum. The complete headless story-library smoke is identical on both
-targets.
+| Native target | Baseline | Candidate artifact | Qualification |
+| --- | --- | --- | --- |
+| `aarch64-apple-darwin` | macOS 15+, Apple silicon | Thin `Librairii.app` in `Librairii-<VERSION>-aarch64-apple-darwin-unsigned.dmg`, checksum | Matching ARM Mac runner; unsigned installed GUI passes. Developer ID/notarization/stapling and final signed-byte gates remain open. |
+| `x86_64-apple-darwin` | macOS 15+, Intel | Separate thin `Librairii.app` in `Librairii-<VERSION>-x86_64-apple-darwin-unsigned.dmg`, checksum | Native Intel hardware; unsigned installed GUI passes. Rosetta is supplemental evidence only; signed-byte gates remain open. |
+| `x86_64-unknown-linux-gnu` | Ubuntu 24.04 LTS x86-64, glibc 2.39 | `Librairii-<VERSION>-x86_64-unknown-linux-gnu.tar.gz`, executable, desktop entry/icons, checksum | Installed native GUI passes in X11 and Wayland, with GPU-API and software-rendering cases. |
 
-The packaged acceptance driver opens the production platform dialogs, selects
-only prevalidated isolated fixture paths through a host-native automation hook,
-validates the paths returned by Wails, and records separate native import,
-destination, and reveal evidence before domain work may continue.
+The latest integrated implementation was checked as PR 69 head
+`21f32ed968cd4e66bfde6817e0f77b4c93dac810`:
+[native packages/installed GUI](https://github.com/01max/librairii/actions/runs/41185064509),
+[quality/storage/handover](https://github.com/01max/librairii/actions/runs/41185064457),
+[scale/resources](https://github.com/01max/librairii/actions/runs/41185064367)
+and [native foundations](https://github.com/01max/librairii/actions/runs/41185064444)
+pass on all three targets. These links identify their recorded revision; they
+do not qualify a later rebuild or its new bytes.
 
-## Targets and artifacts
+macOS executables declare deployment target 15.0; the evidence records the actual
+OS, SDK, architecture and hardware used. The Linux build and runtime baseline
+is Ubuntu 24.04/glibc 2.39, not every distribution with a Linux kernel. Other
+distributions/OS baselines, Linux ARM64, universal Mac bundles and Windows need
+separate qualification. Existing Windows source/history does not establish
+production support.
 
-| Distribution target | Verification host | Artifact | Command | Status |
-| --- | --- | --- | --- | --- |
-| macOS 15, arm64 | macOS 15.7.7 arm64 | versioned DMG | `make verify-packaged-acceptance` | Previously passed locally; rerun for each release |
-| Linux x64 with WebKitGTK 4.1 | GitHub-hosted Ubuntu 24.04 x64 under Xvfb | versioned portable `tar.gz` | `make verify-platform-linux` | Host-native CI gate |
+## What runs on the user's machine
 
-The macOS artifact is a signed application bundle in a DMG with an
-`Applications` link. Its gate installs into an isolated location, launches the
-installed application, exercises native panels and Finder reveal behavior,
-reopens the same SQLite state, and proves that removing the installed
-application retains user data.
+The application is a Rust executable with compiled Slint/Winit/Skia views,
+embedded English/French catalogs, product icons/artwork fallbacks and bundled
+SQLite. It does not require a source checkout, Cargo/Rust, Go, Node, Wails,
+Chrome or WebKit to run. Native OS graphics, fonts, dialogs, accessibility and
+file-manager services remain system dependencies. See the
+[current architecture](architecture/0005-rust-native-desktop.md).
 
-The Linux archive contains the Wails executable and expects the distribution
-to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a generic package
-for every Linux ABI.
+On macOS, AppKit, Foundation, CoreGraphics, Metal and the system graphics/font
+services come from macOS. Use the bundle for the machine's actual architecture.
+Public distribution must complete the
+[protected signing and verification workflow](rewrite/section-18.md#protected-mac-signing)
+before signed-installation support is claimed.
 
-## Build Linux artifacts from macOS or Linux
+## Linux runtime prerequisites
 
-Run `make linux` with a running Docker engine and the Buildx plugin. Docker
-Desktop includes both. The command builds the current local checkout for
-`linux/amd64` inside Ubuntu 24.04, using Go 1.26.5, the Node version in `.nvmrc`,
-and the Wails version in `.wails-version`. Host toolchains and `make setup` are
-not needed. Apple silicon hosts use Docker's amd64 emulation.
+Run inside an X11 or Wayland desktop with a D-Bus session, a working
+file-chooser portal, installed fonts and an `inode/directory` file-manager
+handler. CI uses the GTK portal and Thunar; its actual file-manager location
+and window retirement are observed. A headless server or container without
+these desktop services is not a qualified interactive host.
 
-The Docker build exports these files into `build/bin/`:
+The package's `share/librairii/runtime-requirements.json` records these declared
+Ubuntu runtime packages:
 
-- `Librairii`;
-- `Librairii-<VERSION>-linux-amd64.tar.gz`; and
-- `Librairii-<VERSION>-linux-amd64.tar.gz.sha256`.
+```sh
+sudo apt-get install -y ca-certificates libgcc-s1 libstdc++6 libfontconfig1 libfreetype6 libx11-6 libx11-xcb1 libxcursor1 libxi6 libxrandr2 libxkbcommon0 libxkbcommon-x11-0 libwayland-client0 libegl1 libgl1 libvulkan1 mesa-vulkan-drivers libdbus-1-3 xdg-desktop-portal xdg-desktop-portal-gtk libglib2.0-bin
+```
 
-Build inputs exclude host dependencies, existing output, Git history, and local
-environment files. Compilation and generated bindings stay inside the container.
-The build verifies the ELF x64 architecture, resolves linked libraries in the
-Ubuntu build environment, and verifies the archive checksum. It does not run the
-native UI acceptance scenarios below; use `make verify-platform-linux` on its
-Linux verification host to qualify the release.
+The qualified image additionally installs `libwayland-cursor0`,
+`libwayland-egl1`, `fonts-dejavu-core`, `fonts-noto-cjk` and `thunar` for its
+concrete desktop/font configuration. Preserve those requirements when
+reproducing that environment. Driver/GPU and font differences require their own
+observations rather than a blanket compatibility claim. The exact image is in
+[qualification/section-18/Dockerfile](../qualification/section-18/Dockerfile).
 
-The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
-session. It registers a verification-only `inode/directory` handler that
-delegates to PCManFM, then requires the live PCManFM process and its command
-line to contain the exact validated export directory before the gate passes.
+`ca-certificates` is required even for the local-fixture qualification route:
+the HTTP client's platform trust store is initialized before requests. Ordinary
+library workflows work offline. Catalog sync and uncached artwork use the
+documented optional Lunii network boundary.
 
-## Evidence contract
+The default Skia backend uses the installed graphics stack. To select the
+qualified CPU rendering route when launching from an extracted package:
 
-Each platform task is one command with no dependency on another platform's
-artifacts:
+```sh
+SLINT_BACKEND=winit-skia-software ./bin/librairii-desktop
+```
 
-1. Assert the host OS/architecture and exact pinned Wails CLI.
-2. Build fresh production frontend assets and a clean, trimmed Wails binary.
-3. Validate the native executable architecture and distribution artifact.
-4. Install installer-based distributions into an isolated user-owned location
-   and validate their installed payload.
-5. Launch the installed or packaged executable and require a committed React
-   render, a clean lifecycle, and no external sidecar.
-6. Reopen the same SQLite database and require the smoke story and saved
-   Collections (`foundation-smoke` retains the legacy `-expect-shelves` option
-   name for this count).
-7. Run native multi-file, directory, and reveal-adapter acceptance.
-8. Run the complete headless composition and root release contracts.
-9. Remove temporary installed application files without deleting user-owned
-   SQLite data.
-10. Verify the distribution artifact's SHA-256 checksum.
+Keep the listed desktop libraries available for that route too. The native
+binary does not use WebKitGTK; GTK libraries used by the portal and browser
+libraries retained for Go development/CI are separate from its runtime.
 
-The qualification implementation is:
+Linux spoken-accessibility qualification uses AT-SPI and Orca. Those services
+and the screen reader must be available for that use. Python AT-SPI bindings,
+Xvfb/Openbox, Sway, input/screenshot observers and the Go compatibility helpers
+in CI are qualification tools, not shipped product runtimes. Mac AX observations
+do not claim VoiceOver execution; VoiceOver and script-specific CJK/Arabic
+input/IME/shaping qualification were excluded/deferred by the owner. Valid
+UTF-8 data and filenames retain their lossless behavior.
 
-- macOS: `scripts/verify-packaged-acceptance`;
-- Linux: `scripts/verify-platform-linux`; and
-- CI orchestration: `.github/workflows/ci.yml`.
+## Install and retain data
 
-CI runs the Go/Wails jobs for relevant application, shared-script, or workflow
-changes. Rust-only changes use the native Rust matrix; manually dispatch the CI
-workflow to force the legacy verification and Linux release jobs. See
-[the rewrite CI policy](rewrite/ci.md) for the active Linux/macOS scope and caches.
+Verify the checksum belonging to the exact package before installation.
+The Mac artifact contains an application bundle in a read-only DMG. Signing
+records distinguish an internal ad-hoc candidate from a Developer ID-signed,
+notarized and stapled distribution; a build or ad-hoc integrity pass cannot
+stand in for those public-release checks.
 
-Failed or cancelled jobs publish no artifact.
+For Linux, extract the versioned archive into a permanent application directory
+and launch `bin/librairii-desktop`. It contains `bin/`,
+`share/applications/io.github.librairii.native.desktop`, hicolor icons,
+notices/SPDX and runtime/linkage records. For desktop integration, install its
+`bin/` and `share/` into the same chosen prefix and make that prefix's `bin`
+available in the desktop session's PATH and its `share` in XDG_DATA_DIRS.
+The desktop entry's command is `librairii-desktop`; it must resolve to this
+installation. See the archive's `INSTALL.txt`.
 
-## Settings and library relocation
+Updates/uninstall replace or remove application files and their explicitly
+installed desktop/icon entries. Keep the independent native profile, library,
+backups and recovery journals. Reinstall can reopen the retained library;
+removing an app directory is not permission to remove user data. Existing Go
+libraries require the [verified transition procedure](native-transition.md)
+rather than manually directing an older executable at the native candidate.
 
-Both packaged verification scripts also run `scripts/verify-settings-acceptance`
-against their platform's application. This covers first-run confirmation,
-English/French Settings menus and accelerators, native folder selection,
-library relocation, and export after a move. macOS evidence and the Linux
-host limitation are recorded in
-[Settings and library location verification](verification/settings-and-library-location.md).
+## Evidence for each candidate
+
+The [release builder](rewrite/section-18.md) records source commit/tree,
+product version, target, features, locked/compiler graph, production profile,
+notices/SPDX and final artifact SHA-256. `cargo xtask release inspect-package`
+installs/extracts the selected bytes into a fresh location, compares payload
+bytes/modes, checks architecture/linkage and runs the installed identity command
+without opening a GUI.
+
+A separate disposable native CI job runs the actual installed production GUI.
+Both Mac targets cover fresh English and upgraded French fixtures; Linux repeats
+them under X11 and Wayland. Each lane requires:
+
+- Native picker, menu/accelerator and file-manager behavior, including exact
+  destination and positive file-manager-window closure.
+- Import/inspection, metadata/artwork, tags/search, Collections, approved
+  Shelves/review, Broken/Undo, all export scopes, trash and durable History.
+- Exact managed/exported bytes, memberships and persisted database state.
+- GPU-API/software routes, scaling, offline reopen, settings/language,
+  relocation, real in-flight SIGKILL/recovery and application-only reinstall.
+- Positive product/reader/container/cache retirement with raw observations,
+  screenshots and source/method bindings retained against the package checksum.
+
+The final signed Mac bytes must repeat applicable inspection and GUI checks in
+a credentialless job after signing/notarization/stapling. Keep failed, skipped
+and unavailable gates visible. Build success, cross-compilation, a source-host
+launch or an earlier unsigned artifact cannot qualify that distribution.
+
+For build-host dependencies and exact commands, see
+[native development](development.md). The CI entry points are
+[Rust packages](../.github/workflows/rust-packages.yml),
+[Rust quality](../.github/workflows/rust-quality.yml) and
+[protected Mac signing](../.github/workflows/rust-sign-macos.yml).
