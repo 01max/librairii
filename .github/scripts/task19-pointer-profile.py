@@ -53,7 +53,7 @@ class PointerProfile:
                                                  'focus_key': state['focus_key']},
                                     start_monotonic=time.monotonic(), duration_seconds=5, interval_ms=5)
                 with (self.directory/'sample-tool.log').open('wb') as log:
-                    task = subprocess.Popen(['/usr/bin/sample', str(pid), '5', '5', '-mayDie',
+                    task = subprocess.Popen(['/usr/bin/sample', str(pid), '5', '5',
                                              '-file', str(self.directory/'pointer-stacks.txt')],
                                             stdout=log, stderr=subprocess.STDOUT)
                     self.receipt['sampler_pid'] = task.pid
