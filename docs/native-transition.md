@@ -52,8 +52,10 @@ untouched and leaves existing choices intact.
 ## Backup locations and checks
 
 Settings shows the actual library root. A custom root takes precedence over the
-defaults below. Linux honors absolute `XDG_CONFIG_HOME`/`XDG_DATA_HOME`, otherwise
-uses the home-directory defaults shown. macOS uses its platform paths.
+defaults below. When Linux `XDG_CONFIG_HOME`/`XDG_DATA_HOME` are unset, the
+home-directory defaults apply. Set values must be absolute: native startup
+refuses relative or explicitly empty values instead of silently choosing a
+different profile. macOS uses its platform paths.
 
 | Application | macOS default library | macOS separate settings/profile |
 | --- | --- | --- |

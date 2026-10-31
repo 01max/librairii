@@ -347,12 +347,17 @@ Before applying a pending database migration, Librairii creates a protected
 SQLite snapshot beside the live database named like
 `librairii.pre-migration-vNNN-….sqlite3`. A failed migration automatically
 restores that snapshot and never deletes managed archive bytes. If the expected
-database path contains an unrelated or legacy schema, mutations remain disabled
-until the recovery screen's **Preserve database and create new library** action
-moves the database and any WAL/SHM sidecars into a unique
-`db/schema-conflict-recovery-*` directory. Nothing in that directory is
-overwritten. If preservation cannot be completed, Librairii keeps mutations
-disabled and does not silently initialize over the conflicting files.
+database has a supported historical schema, it migrates through the retained
+prefixes. An unrelated foreign schema instead keeps mutations disabled. The
+recovery screen offers **Preserve foreign database…**, followed by **Confirm
+recovery** or **Keep files unchanged**. Confirmation preserves the database and
+WAL/SHM sidecars in a unique `db/schema-conflict-recovery-*` directory, then
+creates an empty database in the same library. Organization stored in the old
+database will not appear in the empty database; managed archive files remain
+unchanged. **Finish database recovery…** completes an interrupted verified
+replacement while keeping the current compatible database. Nothing in the
+preservation directory is overwritten. Failed preservation keeps mutations
+disabled and does not silently replace conflicting files.
 
 For Go rollback, cross-OS copying, filename conflicts and post-backup edits,
 follow the [transition instructions](native-transition.md). Never route an old
@@ -432,7 +437,8 @@ remembered and applies immediately. On first launch, French is selected for a
 French system language; other system languages default to English. This setting
 changes interface text and formatting. Story titles, descriptions, custom tag
 labels, and Collection/Shelf names keep their existing text. Lunii metadata fetching and
-its locale policy remain unchanged. System menus and pickers follow OS language.
+its locale policy remain unchanged. Application menus follow the saved interface
+language; OS-controlled file pickers can follow the operating system's language.
 
 A new installation asks you to confirm where the library will live before
 creating it. You can accept the proposed platform default or choose a different
