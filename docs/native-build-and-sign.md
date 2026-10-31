@@ -113,3 +113,8 @@ and retain their reports and final checksums. Signing success alone does not
 complete release acceptance. Publication and runtime cutover are later manual
 decisions; these scripts never perform them. The detailed evidence contract is
 in [the package report](rewrite/section-18.md#protected-mac-signing).
+
+Collect the exact archives, checksums, failed attempts and review records with
+[the offline evidence-manifest helper](native-release-evidence.md). It links
+the selected final distribution to its retained installed bytes for your review;
+signing and release acceptance remain owner-operated.

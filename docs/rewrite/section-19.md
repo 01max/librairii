@@ -175,3 +175,11 @@ The final index belongs with the CI/release evidence for those bytes. Do not
 change a source commit merely to claim that evidence generated after its build
 was already inside it. A documentation-only PR still needs its own required CI;
 its result does not transfer to a later release candidate automatically.
+
+The [offline evidence assembler](../native-release-evidence.md) provides a
+repeatable handoff for 19.6. It binds explicitly selected provider ZIPs, package
+source/graph records and actual retained installed bytes across all three
+targets. It retains failed attempts and review records, supports the protected
+workflow's signed-to-unsigned Mac lineage, and always leaves acceptance and
+public-release qualification false. The resulting manifest supports the final
+human review; it does not close 19.1, 19.6, 19.7 or the signing/cutover gates.
