@@ -14,6 +14,12 @@ use std::{
 };
 pub trait StartupEnvironment {
     fn variable(&self, name: &str) -> Option<OsString>;
+    fn profile_locations(&self) -> Result<Option<ProfileLocations>> {
+        Ok(None)
+    }
+    fn acceptance_scope(&self) -> Option<crate::acceptance::Scope> {
+        None
+    }
     /// Explicitly supplied owned test clients can target only the adapter's
     /// validated numeric-loopback route. Native production uses fixed endpoints.
     fn catalog_client(&self) -> Option<librairii_adapters::lunii::CatalogClient> {
@@ -93,14 +99,18 @@ pub(crate) fn select_startup_with_progress(
                 .map_err(|_| StorageError::InvalidProfile)?,
         }));
     }
-    let home = PathBuf::from(
-        environment
-            .variable("HOME")
-            .ok_or(StorageError::InvalidProfile)?,
-    );
-    let config = environment.variable("XDG_CONFIG_HOME").map(PathBuf::from);
-    let data = environment.variable("XDG_DATA_HOME").map(PathBuf::from);
-    let locations = ProfileLocations::for_host(&home, config.as_deref(), data.as_deref())?;
+    let locations = if let Some(locations) = environment.profile_locations()? {
+        locations
+    } else {
+        let home = PathBuf::from(
+            environment
+                .variable("HOME")
+                .ok_or(StorageError::InvalidProfile)?,
+        );
+        let config = environment.variable("XDG_CONFIG_HOME").map(PathBuf::from);
+        let data = environment.variable("XDG_DATA_HOME").map(PathBuf::from);
+        ProfileLocations::for_host(&home, config.as_deref(), data.as_deref())?
+    };
     opening()?;
     let decision = inspect_startup(&locations, cancel);
     Ok(StartupSelection::Production {

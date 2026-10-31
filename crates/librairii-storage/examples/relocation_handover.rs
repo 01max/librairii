@@ -36,6 +36,8 @@ mod rehearsal {
     const ID: &str = "f1000000-0000-4000-8000-000000000013";
     const MOVE: &str = "f2000000-0000-4000-8000-000000000013";
     const PAYLOAD: &str = "original é archive.pk";
+    const COPY_FAULT_PAYLOAD: &str = "zz-enospc-source.pk";
+    const COPY_FAULT_BYTES: u64 = 16 * 1024 * 1024;
     fn locations(case: &Path) -> Result<ProfileLocations> {
         Ok(ProfileLocations::for_host(
             &case.join("home"),
@@ -219,10 +221,17 @@ mod rehearsal {
         workspace: PathBuf,
         observed: AtomicBool,
         cause: Mutex<Option<i32>>,
+        pending_payload: Option<PathBuf>,
+        copy_pending: AtomicBool,
     }
     impl RelocationObserver for FailureObserver {
         fn observe(&self, stage: RelocationStage) {
-            if stage != RelocationStage::Journal || self.observed.swap(true, Ordering::AcqRel) {
+            let expected = if self.kind == "permissions" {
+                RelocationStage::Journal
+            } else {
+                RelocationStage::File
+            };
+            if stage != expected || self.observed.swap(true, Ordering::AcqRel) {
                 return;
             }
             if self.kind == "permissions" {
@@ -231,6 +240,17 @@ mod rehearsal {
                     std::process::exit(72);
                 }
             } else {
+                // File is after one completed copy. Require the additional
+                // large archive to remain absent before filling this volume;
+                // the next real copy must encounter the fault before SQLite.
+                let pending = self.pending_payload.as_ref().is_some_and(|path| {
+                    matches!(fs::symlink_metadata(path), Err(error)
+                        if error.kind() == std::io::ErrorKind::NotFound)
+                });
+                self.copy_pending.store(pending, Ordering::Release);
+                if !pending {
+                    return;
+                }
                 let result = (|| -> std::io::Result<()> {
                     let mut file = OpenOptions::new()
                         .write(true)
@@ -257,6 +277,28 @@ mod rehearsal {
         let native = NativeLibrary::reopen(&store, &locations, &Default::default())?;
         let source = native.layout().root().to_path_buf();
         let before = checksum(&source.join("archives").join(PAYLOAD))?;
+        let copy_payload = if kind == "disk-full" {
+            let path = source.join("archives").join(COPY_FAULT_PAYLOAD);
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)?;
+            let mut buffer = [0u8; 64 * 1024];
+            let mut state = 0x1813_1618_1316_1813u64;
+            for _ in 0..COPY_FAULT_BYTES / buffer.len() as u64 {
+                for bytes in buffer.as_chunks_mut::<8>().0 {
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    state ^= state << 17;
+                    bytes.copy_from_slice(&state.to_le_bytes());
+                }
+                file.write_all(&buffer)?;
+            }
+            file.sync_all()?;
+            Some((path.clone(), checksum(&path)?))
+        } else {
+            None
+        };
         let mut database = Database::open_native(&native)?;
         database.close()?;
         drop(database);
@@ -269,6 +311,10 @@ mod rehearsal {
             workspace: workspace.clone(),
             observed: AtomicBool::new(false),
             cause: Mutex::new(None),
+            pending_payload: copy_payload
+                .as_ref()
+                .map(|_| workspace.join("archives").join(COPY_FAULT_PAYLOAD)),
+            copy_pending: AtomicBool::new(false),
         };
         let result = closed.relocate_observed(
             TargetPreview::inspect(&target, &[], &Default::default())?,
@@ -289,6 +335,7 @@ mod rehearsal {
         };
         let filler_errno = *observer.cause.lock().map_err(|_| "fault lock")?;
         let injected = observer.observed.load(Ordering::Acquire);
+        let copy_pending = observer.copy_pending.load(Ordering::Acquire);
         let sqlite = match failure.storage_error() {
             librairii_storage::StorageError::Sqlite(rusqlite::Error::SqliteFailure(code, _)) => {
                 Some(json!({"primary":format!("{:?}", code.code),"extended":code.extended_code}))
@@ -300,7 +347,7 @@ mod rehearsal {
             "relocation_filesystem_failure; {}",
             json!({"kind":kind,"injection_observed":injected,"filler_errno":filler_errno,
                 "observed_errno":actual,"sqlite":sqlite,"error":original_failure,
-                "before_commit":true})
+                "before_commit":true,"pending_copy_observed":copy_pending})
         );
         let cleanup = if kind == "permissions" {
             fs::set_permissions(&workspace, fs::Permissions::from_mode(0o700))
@@ -329,20 +376,28 @@ mod rehearsal {
         if Path::new(&store.load()?.ok_or("profile")?.profile().root) != source {
             return Err("fault retargeted settings".into());
         }
+        if let Some((path, before)) = &copy_payload
+            && checksum(path)? != *before
+        {
+            return Err("fault recovery changed the remaining source archive".into());
+        }
         eprintln!(
             "relocation_source_recovered; {}",
             json!({"kind":kind,"source_unchanged":true,"database_reopened":true,"profile_unchanged":true})
         );
         if !injected
             || (kind == "permissions" && actual != Some(13))
-            || (kind == "disk-full" && (filler_errno != Some(28) || actual != Some(28)))
+            || (kind == "disk-full"
+                && (!copy_pending || filler_errno != Some(28) || actual != Some(28)))
         {
             return Err(format!(
                 "unexpected real {kind} failure: {original_failure}; errno={actual:?}; filler_errno={filler_errno:?}; injection_observed={injected}"
             ).into());
         }
         Ok(
-            json!({"failure":kind,"observed_errno":actual,"source_unchanged":true,"source_reopened":true,"before_commit":true,"filler_errno":filler_errno}),
+            json!({"failure":kind,"observed_errno":actual,"source_unchanged":true,"source_reopened":true,"before_commit":true,"filler_errno":filler_errno,
+                "injection_stage":if kind=="permissions" {"Journal"} else {"File"},
+                "copy_fault":copy_payload.map(|(_,sha256)|json!({"bytes":COPY_FAULT_BYTES,"sha256":sha256,"not_copied_at_injection":copy_pending,"source_unchanged":true}))}),
         )
     }
     fn volume_root(case: &Path, volume: &Path) -> Result<Value> {

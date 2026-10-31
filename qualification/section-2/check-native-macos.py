@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Observe the packaged app's actual macOS sheets, menus, clipboard and Finder path."""
 import argparse
+import contextvars
 import hashlib
 import importlib.util
 import itertools
@@ -25,6 +26,20 @@ CASES = [('files-multiple', 'files', 'selected'), ('files-single', 'files', 'sel
     ('folder-cancel', 'folder', 'cancelled'), ('folder-reject', 'folder', 'rejected'),
     ('early-settings', 'early-settings', 'delivered'), ('reveal', 'reveal', 'requested')]
 COMMAND_IDS = itertools.count(1)
+READ_ONLY_OPERATIONS = {'snapshot', 'snapshot-window', 'status', 'window-status',
+    'launch-status', 'input-sources', 'input-method-status', 'clipboard-get', 'finder', 'display-preferences'}
+_ACTIVE_WAIT = contextvars.ContextVar('native_macos_observation_wait', default=None)
+
+
+class ObservationWait:
+    def __init__(self, deadline, parent):
+        self.deadline = min(deadline, parent.deadline) if parent else deadline
+        # Nested waits and other Observer instances share this action counter.
+        self.mutations = parent.mutations if parent else [0]
+
+
+class SnapshotUnavailable(RuntimeError):
+    """An incomplete bound read, never a successful or empty native snapshot."""
 
 
 def session_passed(report, binary_sha):
@@ -100,7 +115,7 @@ def finder_fixture_window(snapshot, fixture):
     return None
 
 
-def verified_finder_snapshot(snapshot, fixture):
+def verified_finder_snapshot(snapshot, fixture, expected_files=None):
     window = finder_fixture_window(snapshot, fixture)
     if window is not None:
         return snapshot, window, {'method': 'root-file-url', 'directory': str(fixture)}
@@ -118,11 +133,14 @@ def verified_finder_snapshot(snapshot, fixture):
     if len(views) != 1:
         return None
     view_path = views[0]['selector']['path']
-    expected = {fixture / name for name in ('Été 日本語 故事.zip', 'Deuxième archive 02.pk')}
+    names = ('Été 日本語 故事.zip', 'Deuxième archive 02.pk') if expected_files is None else expected_files
+    if not names or any(pathlib.Path(name).name != name for name in names):
+        return None
+    expected = {fixture / name for name in names}
     images = [n for n in nodes if same_root(n, window) and n['role'] == 'AXImage'
         and n['selector']['path'][:len(view_path)] == view_path
         and n.get('title') in {p.name for p in expected}]
-    if len(images) != 2:
+    if len(images) != len(expected):
         return None
     observed = []
     for node in images:
@@ -163,8 +181,8 @@ def finder_window_id(snapshot, pid):
     return windows[0]['kCGWindowNumber']
 
 
-def ready_finder_snapshot(snapshot, fixture, pid):
-    result = verified_finder_snapshot(snapshot, fixture)
+def ready_finder_snapshot(snapshot, fixture, pid, expected_files=None):
+    result = verified_finder_snapshot(snapshot, fixture, expected_files)
     if result is None or not result[0].get('windows'):
         return None  # AX content can precede CG window registration.
     return *result, finder_window_id(result[0], pid)
@@ -228,13 +246,43 @@ class Observer:
         self.binary, self.output, self.pid = binary, output, pid
 
     def call(self, action, *, command_timeout=12, **request):
+        context = _ACTIVE_WAIT.get()
+        if context is not None and action not in READ_ONLY_OPERATIONS:
+            context.mutations[0] += 1
+        if action in ('snapshot', 'snapshot-window') and context is not None:
+            remaining = context.deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('native macOS observation deadline')
+            command_timeout = min(command_timeout, remaining)
         sequence = next(COMMAND_IDS)
         result = common.wayland.command([str(self.binary), action,
             json.dumps({'pid': self.pid, **request}, ensure_ascii=False)], os.environ.copy(),
             self.output / f'command-{sequence:04}-{action}.log', timeout=command_timeout)
         if not common.wayland.passed(result):
-            raise RuntimeError(action + ' failed: ' + json.dumps({key: result[key]
-                for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000])
+            message = action + ' failed: ' + json.dumps({key: result[key]
+                for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000]
+            expected = []
+            if action in ('snapshot', 'snapshot-window') and 'document' not in request:
+                expected = [
+                    {'format': 'librairii.native-snapshot-unavailable', 'schema': 1,
+                     'pid': self.pid, 'attribute': 'AXWindows', 'status': -25204},
+                    {'format': 'librairii.native-tree-snapshot-unavailable', 'schema': 1,
+                     'pid': self.pid, 'scope': 'unfiltered', 'status': -25202}]
+            elif action == 'snapshot' and isinstance(request.get('document'), str) and request['document']:
+                expected = [{'format': 'librairii.native-document-snapshot-unavailable', 'schema': 1,
+                    'pid': self.pid, 'document': request['document'], 'status': -25202}]
+            if (expected
+                    and type(self.pid) is int and self.pid > 0
+                    and type(result['returncode']) is int and result['returncode'] == 75
+                    and result['errors'] == []):
+                try:
+                    reply = json.loads(result['output'].splitlines()[-1])
+                except (ValueError, IndexError):
+                    reply = None
+                if (any(reply == candidate for candidate in expected)
+                        and all(type(reply[key]) is int for key in ('schema', 'pid', 'status'))):
+                    raise SnapshotUnavailable(message)
+            raise RuntimeError(message)
         # The helper retains stage diagnostics before its final JSON reply, so
         # a killed AX command still identifies where observation stopped.
         return json.loads(result['output'].splitlines()[-1])
@@ -249,13 +297,28 @@ class Observer:
         return self.call('status')
 
     def wait(self, predicate, timeout=12):
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            value = predicate()
-            if value:
-                return value
-            time.sleep(0.05)
-        raise TimeoutError('native macOS observation deadline')
+        context = ObservationWait(time.monotonic() + timeout, _ACTIVE_WAIT.get())
+        deadline = context.deadline
+        token = _ACTIVE_WAIT.set(context)
+        try:
+            while time.monotonic() < deadline:
+                serial = context.mutations[0]
+                try:
+                    value = predicate()
+                except SnapshotUnavailable:
+                    # Only read-only predicates may continue. A preceding input
+                    # or action in this iteration must never be repeated.
+                    if serial != context.mutations[0]:
+                        raise
+                    value = None
+                remaining = deadline - time.monotonic()
+                if value and remaining > 0:
+                    return value
+                if remaining > 0:
+                    time.sleep(min(0.05, remaining))
+            raise TimeoutError('native macOS observation deadline')
+        finally:
+            _ACTIVE_WAIT.reset(token)
 
     def button(self, snapshot, root, titles):
         def ready(value):
@@ -287,8 +350,11 @@ class Observer:
         self.wait(lambda: not any(same_root(n, root) and n.get('identifier') == 'GoToWindow'
             for n in self.snapshot()['nodes']))
 
-    def rows(self, fixture, root, multiple):
-        wanted = ['Été 日本語 故事.zip'] + (['Deuxième archive 02.pk'] if multiple else [])
+    def rows(self, fixture, root, multiple, expected_files=None):
+        wanted = (list(expected_files) if expected_files is not None else
+                  ['Été 日本語 故事.zip'] + (['Deuxième archive 02.pk'] if multiple else []))
+        if not wanted or len(wanted) != len(set(wanted)) or (not multiple and len(wanted) != 1):
+            raise ValueError('native picker expected files must be explicit and distinct')
         def candidates():
             snapshot = self.snapshot()
             nodes = [n for n in snapshot['nodes'] if same_root(n, root)]
@@ -327,7 +393,7 @@ class Observer:
             raise RuntimeError('actual native window capture failed')
 
 
-def close_finder(finder, fixture, window_id):
+def close_finder(finder, fixture, window_id, expected_files=None):
     def retired(snapshot):
         status = finder.call('window-status', window_id=window_id)
         if finder_window_retired(snapshot, status, finder.pid, window_id):
@@ -336,7 +402,7 @@ def close_finder(finder, fixture, window_id):
                 'unresolved_title_window_count': snapshot.get('unresolved_title_window_count')}
         return None
     observed = finder.snapshot(document=fixture)
-    result = verified_finder_snapshot(observed, fixture)
+    result = verified_finder_snapshot(observed, fixture, expected_files)
     if result is None:
         if proof := retired(observed):
             return proof  # The verified document window has already closed.

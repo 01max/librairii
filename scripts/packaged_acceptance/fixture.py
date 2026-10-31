@@ -1,0 +1,254 @@
+"""Owned temporary profiles/libraries and local catalog for installed GUI runs."""
+from contextlib import closing
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import sqlite3
+import subprocess
+import tempfile
+import threading
+import zipfile
+
+from native_release.archive import tar_gzip
+from native_release.files import copy_tree, digest, inventory, write_json
+
+
+class Fixture:
+    def __init__(self, source, evidence, upgraded):
+        # Explicit custody: unresolved product ownership must never trigger an
+        # automatic TemporaryDirectory finalizer under a still-running child.
+        self.root = Path(tempfile.mkdtemp(prefix='librairii-packaged-')).resolve()
+        self.profile, self.library = self.root/'profile', self.root/'library'
+        self.graphics_cache = None
+        self.graphics_cache_checks = 0
+        self.profile.mkdir()
+        self.library.mkdir()
+        (self.root/'.librairii-packaged-fixture').write_bytes(b'librairii-packaged-acceptance-v1\n')
+        self.inputs, self.exports = self.root/'inputs', self.root/'exports'
+        self.inputs.mkdir()
+        self.exports.mkdir()
+        for old, new in [('clockwork-forest.zip', 'Été 日本語 故事.zip'),
+                         ('clockwork-forest.plain.pk', 'Deuxième archive 02.plain.pk')]:
+            shutil.copyfile(source/'preservation/corpus/archives'/old, self.inputs/new)
+        self.input_bytes = inventory(self.inputs)
+        self.original_uuid = '00112233-4455-4677-8899-aabbccddeeff'
+        self.review_inputs = self.root/'review-inputs'
+        self.review_inputs.mkdir()
+        self.review_uuid = '90000000-0000-4000-8000-000000000018'
+        with zipfile.ZipFile(source/'preservation/corpus/archives/clockwork-forest.zip') as original:
+            for filename in ('Nouvelle histoire 03.zip', 'Nouvelle archive 04.zip'):
+                with zipfile.ZipFile(self.review_inputs/filename, 'x', compression=zipfile.ZIP_DEFLATED) as changed:
+                    for entry in original.infolist():
+                        relative = entry.filename.split('/', 1)[1]
+                        changed.writestr(self.review_uuid+'/'+relative, original.read(entry))
+        self.review_bytes = inventory(self.review_inputs)
+        self.original_archives = {
+            self.original_uuid: {(name,facts['sha256'],facts['bytes']) for name,facts in self.input_bytes.items()},
+            self.review_uuid: {(name,facts['sha256'],facts['bytes']) for name,facts in self.review_bytes.items()},
+        }
+        self.initial_uuids = {self.original_uuid}
+        self.candidate, self.moved = self.library/'candidate', self.library/'moved'
+        self.candidate.mkdir()
+        self.moved.mkdir()
+        if platform.system() == 'Darwin':
+            base = self.profile/'Library/Preferences'
+            self.native_profile = base/'io.github.librairii.native'
+            legacy_profile = base/'io.github.librairii.app'
+        else:
+            base = self.profile/'.config'
+            self.native_profile = base/'librairii-native'
+            legacy_profile = base/'librairii'
+        self.legacy = None
+        if upgraded:
+            self.legacy = self.library/'legacy-source'
+            copy_tree(source/'preservation/corpus/libraries/schema018', self.legacy)
+            self.legacy_before = inventory(self.legacy)
+            with closing(sqlite3.connect((self.legacy/'db/librairii.sqlite3').as_uri()+'?immutable=1',uri=True)) as connection:
+                for uuid,name,sha256,size in connection.execute(
+                        'SELECT s.uuid,a.original_filename,a.sha256,a.byte_size FROM stories s JOIN story_archives a ON a.story_id=s.id'):
+                    self.original_archives[uuid] = {(name,sha256,size)}
+                    self.initial_uuids.add(uuid)
+            legacy_profile.mkdir(parents=True)
+            write_json(legacy_profile/'settings.json', {
+                'version': 1, 'language': 'en', 'root': str(self.legacy),
+                'libraryId': (self.legacy/'.librairii-library').read_text().strip(), 'complete': True})
+        self.requests, self.errors = [], []
+        self.scale = '1'
+        self.pause_catalog = False
+        self.catalog_waiting = threading.Event()
+        self.catalog_release = threading.Event()
+        fixture = self
+        catalog_fixture = json.loads((source/'crates/librairii-app/tests/fixtures/lunii-catalog.json').read_text())
+        catalog_fixture['response']['fixture-pack-001']['uuid'] = '00112233-4455-4677-8899-aabbccddeeff'
+        catalog = json.dumps(catalog_fixture).encode()
+        icon = (source/'build/appicon.png').read_bytes()
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                paused = False
+                if len(fixture.requests) >= 128:
+                    fixture.errors.append('local request bound exceeded')
+                    self.send_error(429)
+                    return
+                fixture.requests.append({'method': 'GET', 'path': self.path, 'client': self.client_address[0]})
+                if self.path == '/guest/create':
+                    body, media = b'{"response":{"token":{"server":"fixture-only-guest"}}}', 'application/json'
+                elif self.path == '/v2/packs':
+                    if fixture.pause_catalog:
+                        paused = True
+                        fixture.catalog_waiting.set()
+                        if not fixture.catalog_release.wait(15):
+                            fixture.errors.append('paused catalog fixture exceeded deadline')
+                    body, media = catalog, 'application/json'
+                elif self.path.startswith('/lunii-data-prod/fixture/'):
+                    body, media = icon, 'image/png'
+                else:
+                    fixture.errors.append('unexpected local request: '+self.path)
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header('Content-Type', media)
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                try:
+                    self.wfile.write(body)
+                except (BrokenPipeError, ConnectionResetError):
+                    if not paused:
+                        fixture.errors.append('unexpected disconnected fixture client')
+            def log_message(self, *_):
+                pass
+        self.server = HTTPServer(('127.0.0.1', 0), Handler)
+        self.handler, self.port, self.online = Handler, self.server.server_port, True
+        self.server.timeout = 1
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.evidence = evidence
+        try:
+            write_json(evidence/'fixture.json', {'owner': str(self.root), 'upgraded': upgraded,
+                       'profile': str(self.profile), 'library': str(self.library),
+                       'expected_archive_inputs': {uuid:sorted(values) for uuid,values in self.original_archives.items()},
+                       'input_files': self.input_bytes, 'legacy_before': self.legacy_before if upgraded else None})
+        except Exception:
+            self.server.server_close()
+            raise
+        self.thread.start()
+
+    def stop_catalog(self):
+        if self.online:
+            self.catalog_release.set()
+            self.server.shutdown()
+            self.server.server_close()
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                raise ValueError('local catalog thread did not stop')
+            self.online = False
+
+    def start_catalog(self):
+        if self.online or self.thread.is_alive():
+            raise ValueError('previous local catalog is still active')
+        self.server = HTTPServer(('127.0.0.1', self.port), self.handler)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        try:
+            self.thread.start()
+            self.online = True
+        except Exception:
+            self.server.server_close()
+            raise
+
+    def environment(self, backend):
+        environment = dict(os.environ)
+        environment.pop('LIBRAIRII_DATA_ROOT', None)
+        environment.update({
+            'PATH': '/usr/bin:/bin:/usr/sbin:/sbin',
+            'LIBRAIRII_PACKAGED_ACCEPTANCE': '1',
+            'LIBRAIRII_ACCEPTANCE_ROOT': str(self.root),
+            'LIBRAIRII_ACCEPTANCE_PROFILE': str(self.profile),
+            'LIBRAIRII_ACCEPTANCE_LIBRARY': str(self.library),
+            'LIBRAIRII_ACCEPTANCE_CATALOG': 'http://127.0.0.1:'+str(self.port)+'/',
+            'SLINT_BACKEND': backend,
+            'SLINT_DEBUG_PERFORMANCE': 'refresh_lazy,console',
+            'SLINT_SCALE_FACTOR': self.scale,
+        })
+        return environment
+
+    def prepare_graphics_cache(self):
+        if platform.system() != 'Darwin' or os.environ.get('GITHUB_ACTIONS') != 'true':
+            raise ValueError('native graphics cache reservation requires disposable macOS CI')
+        if self.graphics_cache_checks >= 5:
+            raise ValueError('native graphics cache exceeds the five owned launches')
+        if self.graphics_cache is None:
+            from .native_cache import NativeGraphicsCache
+            observed = subprocess.check_output(['/usr/bin/getconf', 'DARWIN_USER_CACHE_DIR'],
+                                                text=True, timeout=5).strip()
+            if not Path(observed).is_absolute() or '\n' in observed:
+                raise ValueError('native cache lookup did not return one absolute directory')
+            parent = Path(observed).resolve(strict=True)
+            # Keep the owner reachable before its first filesystem mutation.
+            self.graphics_cache = NativeGraphicsCache(self.root, parent)
+            self.graphics_cache.prepare()
+        else:
+            self.graphics_cache.verify()
+        index = self.graphics_cache_checks+1
+        write_json(self.evidence/('native-graphics-cache-launch-'+str(index)+'.json'),
+                   dict(self.graphics_cache.receipt(), launch_index=index))
+        self.graphics_cache_checks = index
+
+    def current_root(self):
+        profile = json.loads((self.native_profile/'settings.json').read_text())
+        root = Path(profile['root'])
+        if not root.is_relative_to(self.library) or root.resolve() != root:
+            raise ValueError('native profile escaped owned library')
+        return root
+
+    def rows(self, statement):
+        root = self.current_root()
+        uri = (root/'db/librairii.sqlite3').as_uri()+'?mode=ro'
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
+            connection.execute('PRAGMA query_only=ON')
+            connection.row_factory = sqlite3.Row
+            return [{key: ({'blob_hex': value.hex()} if isinstance(value, bytes) else value)
+                     for key,value in dict(row).items()} for row in connection.execute(statement)]
+
+    def archives(self, *, reviewed):
+        rows = self.rows('SELECT s.id,s.uuid,s.is_broken,a.original_filename,a.managed_path,a.sha256,a.byte_size,a.validation_state '
+                         'FROM stories s JOIN story_archives a ON a.story_id=s.id ORDER BY s.id')
+        expected = self.initial_uuids | ({self.review_uuid} if reviewed else set())
+        if len(rows) != len(expected) or {row['uuid'] for row in rows} != expected:
+            raise ValueError('imported UUIDs differ from independent original fixture identities')
+        root = self.current_root()
+        for row in rows:
+            if (row['original_filename'],row['sha256'],row['byte_size']) not in self.original_archives[row['uuid']]:
+                raise ValueError('managed archive identity differs from its independent original input')
+            path = root/row['managed_path']
+            if (not path.resolve().is_relative_to(root) or path.is_symlink() or path.stat().st_nlink != 1
+                    or path.stat().st_size != row['byte_size'] or digest(path) != row['sha256']):
+                raise ValueError('managed archive custody or bytes differ from the original fixture')
+        return rows
+
+    def retain(self, *, process_retired=True):
+        self.stop_catalog()
+        write_json(self.evidence/'local-network.json', {'requests': self.requests, 'errors': self.errors})
+        failures = list(self.errors)
+        if inventory(self.inputs) != self.input_bytes:
+            failures.append('original import fixtures changed')
+        if inventory(self.review_inputs) != self.review_bytes:
+            failures.append('generated review import fixtures changed')
+        if self.legacy and inventory(self.legacy) != self.legacy_before:
+            failures.append('Go-era source changed during independent adoption')
+        if self.graphics_cache is not None:
+            try:
+                self.graphics_cache.retire(process_retired)
+            except Exception as error:
+                failures.append('native graphics cache custody: '+str(error))
+                process_retired = False
+            write_json(self.evidence/'native-graphics-cache-retirement.json', self.graphics_cache.receipt())
+        write_json(self.evidence/'fixture-final.json', inventory(self.root))
+        tar_gzip(self.root, self.evidence/'fixture-final.tar.gz', 'owned-fixture', 0)
+        if process_retired:
+            shutil.rmtree(self.root)
+        else:
+            # Preserve data still potentially held by an unresolved process.
+            failures.append('product or cache retirement uncertain; fixture retained at '+str(self.root))
+        if failures:
+            raise ValueError('fixture custody/network failure: '+str(failures))

@@ -182,6 +182,11 @@ jobs:
             --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --output target/task2-evidence/linux-vm
+      - name: Check headless native AX snapshot attribute fixtures
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          python3 -I -B qualification/section-2/native-macos/check-attributes.py "$RUNNER_TEMP/task2-ax-attributes"
+          cp "$RUNNER_TEMP/task2-ax-attributes/receipt.json" target/task2-evidence/macos-ax-attribute-fixtures.json
       - name: Inventory macOS native observer access without requesting privacy permissions
         if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
         run: |

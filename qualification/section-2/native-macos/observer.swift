@@ -5,7 +5,7 @@ import Carbon
 import CoreGraphics
 import Foundation
 
-enum Failure: Error { case invalid(String) }
+enum Failure: Error { case invalid(String), staleSnapshot(String), unavailableRoot(String) }
 
 func inputSource() -> String {
     let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
@@ -54,8 +54,9 @@ func elements(_ element: AXUIElement, _ name: String) -> [AXUIElement] {
 }
 
 func text(_ element: AXUIElement, _ name: String) -> String {
-    if let value = attribute(element, name) as? String { return value }
-    if let value = attribute(element, name), CFGetTypeID(value) == CFURLGetTypeID() {
+    let value = attribute(element, name)
+    if let value = value as? String { return value }
+    if let value, CFGetTypeID(value) == CFURLGetTypeID() {
         return (value as! URL).absoluteString
     }
     return ""
@@ -83,17 +84,83 @@ func checkedText(_ element: AXUIElement, _ name: String, optional: Bool = false)
     throw Failure.invalid("Finder attribute has unexpected type: " + name)
 }
 
-func describe(_ element: AXUIElement) -> [String: Any] {
-    var result: [String: Any] = [:]
-    for (key, name) in [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
-                        ("title", kAXTitleAttribute), ("description", kAXDescriptionAttribute),
-                        ("identifier", kAXIdentifierAttribute), ("value", kAXValueAttribute),
-                        ("document", kAXDocumentAttribute), ("url", kAXURLAttribute)] {
-        result[key] = text(element, name)
+let snapshotTextAttributes = [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
+    ("title", kAXTitleAttribute), ("description", kAXDescriptionAttribute),
+    ("identifier", kAXIdentifierAttribute), ("value", kAXValueAttribute),
+    ("document", kAXDocumentAttribute), ("url", kAXURLAttribute)]
+let snapshotBoolAttributes = [("enabled", kAXEnabledAttribute), ("selected", kAXSelectedAttribute),
+    ("modal", kAXModalAttribute), ("focused", kAXFocusedAttribute)]
+
+func snapshotAttributes(_ element: AXUIElement, includingChildren: Bool = false) throws -> [String: Any] {
+    let names = snapshotTextAttributes.map(\.1) + snapshotBoolAttributes.map(\.1)
+        + (includingChildren ? [kAXChildrenAttribute] : [])
+    var raw: CFArray?
+    let status = AXUIElementCopyMultipleAttributeValues(element, names as CFArray, [], &raw)
+    if status == .invalidUIElement {
+        throw Failure.staleSnapshot("native snapshot attribute batch failed: " + String(status.rawValue))
     }
-    for (key, name) in [("enabled", kAXEnabledAttribute), ("selected", kAXSelectedAttribute),
-                        ("modal", kAXModalAttribute), ("focused", kAXFocusedAttribute)] {
-        if let value = attribute(element, name) as? Bool { result[key] = value }
+    guard status == .success, let values = raw as? [Any], values.count == names.count else {
+        throw Failure.invalid("native snapshot attribute batch failed: " + String(status.rawValue))
+    }
+    var result: [String: Any] = [:]
+    for (name, value) in zip(names, values) {
+        if CFGetTypeID(value as CFTypeRef) == CFNullGetTypeID() { continue }
+        if CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() {
+            let encoded = value as! AXValue
+            if AXValueGetType(encoded) == .axError {
+                var error = AXError.success
+                guard AXValueGetValue(encoded, .axError, &error) else {
+                    throw Failure.invalid("native snapshot attribute error could not be decoded")
+                }
+                if error == .attributeUnsupported || error == .noValue { continue }
+                if error == .invalidUIElement {
+                    throw Failure.staleSnapshot("native snapshot attribute failed: " + name + ": " + String(error.rawValue))
+                }
+                if error == .failure {
+                    // AppKit sheets can encode a generic failure for an optional
+                    // attribute in a batch. Preserve any directly readable value
+                    // and the prior scalar reader's absent-value semantics.
+                    var direct: CFTypeRef?
+                    let status = AXUIElementCopyAttributeValue(element, name as CFString, &direct)
+                    trace("snapshot generic batch error: " + name + "; direct status: " + String(status.rawValue))
+                    if status == .invalidUIElement {
+                        throw Failure.staleSnapshot("native snapshot direct attribute failed: " + name + ": " + String(status.rawValue))
+                    }
+                    if status == .success {
+                        if let direct { result[name] = direct }
+                        continue
+                    }
+                    if status == .attributeUnsupported || status == .noValue { continue }
+                    if status == .failure && name != kAXChildrenAttribute {
+                        trace("snapshot optional attribute unavailable: " + name)
+                        continue
+                    }
+                    throw Failure.invalid("native snapshot direct attribute failed: " + name + ": " + String(status.rawValue))
+                }
+                throw Failure.invalid("native snapshot attribute failed: " + name + ": " + String(error.rawValue))
+            }
+        }
+        result[name] = value
+    }
+    return result
+}
+
+func describe(_ element: AXUIElement, attributes: [String: Any]? = nil) throws -> [String: Any] {
+    let values: [String: Any]
+    if let attributes { values = attributes } else { values = try snapshotAttributes(element) }
+    var result: [String: Any] = [:]
+    var actions: CFArray?
+    if AXUIElementCopyActionNames(element, &actions) == .success {
+        result["actions"] = actions as? [String] ?? []
+    }
+    for (key, name) in snapshotTextAttributes {
+        if let value = values[name] as? String { result[key] = value }
+        else if let value = values[name], CFGetTypeID(value as CFTypeRef) == CFURLGetTypeID() {
+            result[key] = (value as! URL).absoluteString
+        } else { result[key] = "" }
+    }
+    for (key, name) in snapshotBoolAttributes {
+        if let value = values[name] as? Bool { result[key] = value }
     }
     var editable = DarwinBoolean(false)
     if AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &editable) == .success {
@@ -117,12 +184,42 @@ func sheets(_ window: AXUIElement) -> [AXUIElement] {
     elements(window, kAXChildrenAttribute).filter { text($0, kAXRoleAttribute) == kAXSheetRole }
 }
 
-func roots(_ app: AXUIElement, sheetsOnly: Bool) -> [(AXUIElement, [String: Any])] {
+func rootAttribute(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> CFTypeRef? {
+    var value: CFTypeRef?
+    let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    if status == .invalidUIElement {
+        throw Failure.staleSnapshot("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
+    if name == kAXWindowsAttribute && status == .cannotComplete {
+        throw Failure.unavailableRoot("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
+    if optional && (status == .attributeUnsupported || status == .noValue) { return nil }
+    guard status == .success, let value else {
+        throw Failure.invalid("native snapshot root attribute failed: " + name + ": " + String(status.rawValue))
+    }
+    return value
+}
+
+func rootElements(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> [AXUIElement] {
+    guard let value = try rootAttribute(element, name, optional: optional) else { return [] }
+    guard let values = value as? [AXUIElement] else {
+        throw Failure.invalid("native snapshot root attribute is not an element array: " + name)
+    }
+    return values
+}
+
+func roots(_ app: AXUIElement, sheetsOnly: Bool) throws -> [(AXUIElement, [String: Any])] {
     var result: [(AXUIElement, [String: Any])] = []
     trace("reading AXWindows")
-    for (index, window) in elements(app, kAXWindowsAttribute).enumerated() {
+    for (index, window) in try rootElements(app, kAXWindowsAttribute).enumerated() {
         trace("reading child sheets of window " + String(index))
-        for (sheetIndex, sheet) in sheets(window).enumerated() {
+        let sheets = try rootElements(window, kAXChildrenAttribute, optional: true).filter {
+            guard let role = try rootAttribute($0, kAXRoleAttribute) as? String else {
+                throw Failure.invalid("native snapshot root role is not text")
+            }
+            return role == kAXSheetRole
+        }
+        for (sheetIndex, sheet) in sheets.enumerated() {
             result.append((sheet, ["window": index, "sheet": sheetIndex]))
         }
         if !sheetsOnly { result.append((window, ["window": index])) }
@@ -147,7 +244,7 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
         element = children[index]
     }
     if let fingerprint = selector["match"] as? [String: String] {
-        let observed = describe(element)
+        let observed = try describe(element)
         guard fingerprint.allSatisfy({ observed[$0.key] as? String == $0.value }) else {
             throw Failure.invalid("native selector fingerprint changed")
         }
@@ -155,10 +252,63 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
     return element
 }
 
+func unavailableSnapshotReply(_ error: Error, operation: String, pid: Int,
+                              filtered: Bool) -> [String: Any]? {
+    guard ["snapshot", "snapshot-window"].contains(operation), !filtered, pid > 0,
+          let failure = error as? Failure else { return nil }
+    switch failure {
+    case .unavailableRoot:
+        return ["format": "librairii.native-snapshot-unavailable", "schema": 1,
+                "pid": pid, "attribute": kAXWindowsAttribute, "status": AXError.cannotComplete.rawValue]
+    case .staleSnapshot:
+        return ["format": "librairii.native-tree-snapshot-unavailable", "schema": 1,
+                "pid": pid, "scope": "unfiltered", "status": AXError.invalidUIElement.rawValue]
+    default: return nil
+    }
+}
+
+func unavailableDocumentSnapshotReply(_ error: Error, operation: String, pid: Int,
+                                      document: String?) -> [String: Any]? {
+    guard operation == "snapshot", pid > 0, let document, !document.isEmpty,
+          let failure = error as? Failure, case .staleSnapshot = failure else { return nil }
+    return ["format": "librairii.native-document-snapshot-unavailable", "schema": 1,
+            "pid": pid, "document": document, "status": AXError.invalidUIElement.rawValue]
+}
+
+func snapshotReadReply(operation: String, pid: Int, document: String?,
+                       read: () throws -> [String: Any]) throws -> (value: [String: Any], exitCode: Int32) {
+    do {
+        return (try read(), 0)
+    } catch {
+        guard let reply = unavailableSnapshotReply(error, operation: operation, pid: pid,
+            filtered: document != nil) ?? unavailableDocumentSnapshotReply(error,
+            operation: operation, pid: pid, document: document) else { throw error }
+        // No partial observation or selected index escapes. The caller must
+        // invoke the whole helper and select the requested document afresh.
+        return (reply, 75)
+    }
+}
+
 func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
-          rootsOnly: Bool = false) -> [[String: Any]] {
+          rootsOnly: Bool = false) throws -> [[String: Any]] {
+    do {
+        return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
+    } catch let failure as Failure {
+        let reason: String
+        switch failure {
+        case .staleSnapshot(let value), .unavailableRoot(let value): reason = value
+        default: throw failure
+        }
+        guard onlyWindow == nil else { throw failure }
+        trace(reason + "; discarding partial snapshot and rebuilding roots once")
+        return try treeOnce(app, onlyWindow: onlyWindow, sheetsOnly: sheetsOnly, rootsOnly: rootsOnly)
+    }
+}
+
+func treeOnce(_ app: AXUIElement, onlyWindow: Int?, sheetsOnly: Bool,
+              rootsOnly: Bool) throws -> [[String: Any]] {
     var result: [[String: Any]] = []
-    for (root, location) in roots(app, sheetsOnly: sheetsOnly) {
+    for (root, location) in try roots(app, sheetsOnly: sheetsOnly) {
         if let onlyWindow, location["window"] as? Int != onlyWindow { continue }
         trace("traversing native root " + String(describing: location))
         var queue: [(AXUIElement, [Int])] = [(root, [])]
@@ -166,11 +316,13 @@ func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
         while next < queue.count && result.count < 2500 {
             let (element, path) = queue[next]
             next += 1
-            var node = describe(element)
+            let descend = !rootsOnly && path.count < 25
+            let attributes = try snapshotAttributes(element, includingChildren: descend)
+            var node = try describe(element, attributes: attributes)
             node["selector"] = location.merging(["path": path]) { _, new in new }
             result.append(node)
-            if !rootsOnly && path.count < 25 {
-                for (index, child) in elements(element, kAXChildrenAttribute).prefix(1000).enumerated() {
+            if descend {
+                for (index, child) in (attributes[kAXChildrenAttribute] as? [AXUIElement] ?? []).prefix(1000).enumerated() {
                     if queue.count >= 5000 { break }
                     queue.append((child, path + [index]))
                 }
@@ -193,7 +345,8 @@ func post(_ code: CGKeyCode, down: Bool, flags: CGEventFlags, modifier: Bool = f
 func key(_ name: String) throws {
     let codes: [String: CGKeyCode] = ["a": 0, "g": 5, "c": 8, "v": 9, "x": 7, "z": 6,
         "q": 12, "2": 19, "comma": 43, "escape": 53, "return": 36, "tab": 48,
-        "delete": 51, "space": 49, "left": 123, "right": 124, "home": 115, "end": 119, "f": 3]
+        "delete": 51, "space": 49, "left": 123, "right": 124, "down": 125, "up": 126,
+        "home": 115, "end": 119, "f": 3]
     let parts = name.split(separator: "+").map(String.init)
     guard let last = parts.last, let code = codes[last] else { throw Failure.invalid("unknown key") }
     var flags = CGEventFlags()
@@ -251,14 +404,14 @@ func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [
             throw Failure.invalid("requested native menu item is missing, ambiguous or traversal incomplete")
         }
         if let element = items.first {
-            let before = describe(element)
+            let before = try describe(element)
             if submenu == nil {
                 guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
                     throw Failure.invalid("cannot open native menu")
                 }
                 Thread.sleep(forTimeInterval: 0.1)
             }
-            let after = describe(element)
+            let after = try describe(element)
             guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
                 throw Failure.invalid("cannot activate native menu item")
             }
@@ -269,6 +422,7 @@ func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [
     throw Failure.invalid("native menu item missing: " + title)
 }
 
+// NATIVE_OBSERVER_ENTRY_POINT: headless fixtures compile declarations above only.
 do {
     guard AXIsProcessTrusted(), CGPreflightPostEventAccess() else { throw Failure.invalid("native observer access unavailable") }
     guard CommandLine.arguments.count == 3, let data = CommandLine.arguments[2].data(using: .utf8),
@@ -493,75 +647,93 @@ do {
             "selection_observed": observed, "selection_status": status.rawValue,
             "selection_location": range.location, "selection_length": range.length,
             "selected_text": text(element, kAXSelectedTextAttribute)] as [String: Any])
-    case "snapshot", "status":
-        trace("reading owned CG windows and foreground status")
-        var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
-            as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
-        var onlyWindow: Int?
-        var documentObservation: [String: Any] = [:]
-        if let document = request["document"] as? String {
-            let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
-            guard let nativeWindows = try checkedWindows(app) else {
-                // A busy Finder may temporarily reject the read. Preserve the
-                // exact result for the existing bounded read-only poll, never
-                // as an empty successful inventory or a closed-window witness.
-                try output(["pid": pid, "nodes": [], "windows": [],
-                    "document_window_query_status": AXError.cannotComplete.rawValue,
-                    "document_window_list_observed": false,
-                    "document_windows_observed": false] as [String: Any])
-                exit(0)
-            }
-            // A newly opening Finder window can expose AXTitle=noValue before
-            // its title exists. Keep this as incomplete read-only observation,
-            // never as proof that our previously verified window has closed.
-            let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute, optional: true) }
-            let unresolvedTitles = titles.filter(\.isEmpty).count
-            let matches = try nativeWindows.enumerated().filter { _, window in
-                try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
-                    guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
-                    return url.resolvingSymlinksInPath().standardizedFileURL == target
-                }
-            }
-            guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
-            guard let (index, _) = matches.first else {
-                // Only root metadata with the exact owned fixture title may be
-                // retained when URL matching fails; no other folder is walked.
-                let candidates = nativeWindows.enumerated().filter { index, _ in
-                    titles[index] == target.lastPathComponent
-                }
-                guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
-                let diagnostic = candidates.first.map { index, _ in
-                    tree(app, onlyWindow: index, sheetsOnly: false)
-                } ?? []
-                let candidateWindows = candidates.first.map { _, window in
-                    windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
-                } ?? []
-                guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
-                try output(["pid": pid, "nodes": [], "windows": [],
-                    "document_window_list_observed": true,
-                    "document_windows_observed": unresolvedTitles == 0,
-                    "unresolved_title_window_count": unresolvedTitles,
-                    "owned_document_window_present": !candidates.isEmpty,
-                    "finder_window_count": nativeWindows.count,
-                    "owned_title_candidates": candidates.map { describe($0.element) },
-                    "owned_candidate_cg_windows": candidateWindows,
-                    "owned_candidate_diagnostic_tree": diagnostic] as [String: Any])
-                exit(0)
-            }
-            onlyWindow = index
-            documentObservation = ["document_windows_observed": unresolvedTitles == 0,
-                "document_window_list_observed": true,
-                "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
-            let title = titles[index]
-            windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
-            guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
+    case "snapshot-window":
+        guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("installed GUI observation requires a disposable native CI host")
         }
-        let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
-                    "keyboard_input_source": inputSource(),
-                    "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
-                        sheetsOnly: request["document"] == nil,
-                        rootsOnly: request["summary"] as? Bool ?? false), "windows": windows]
-        try output(response.merging(documentObservation) { _, new in new })
+        do {
+            try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                "nodes": tree(app, sheetsOnly: false), "windows":
+                    (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                     as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }])
+        } catch {
+            guard let reply = unavailableSnapshotReply(error, operation: operation, pid: Int(pid),
+                                                       filtered: request["document"] != nil) else { throw error }
+            try output(reply)
+            exit(75)
+        }
+    case "snapshot", "status":
+        let reply = try snapshotReadReply(operation: operation, pid: Int(pid),
+                                           document: request["document"] as? String) {
+            trace("reading owned CG windows and foreground status")
+            var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
+            var onlyWindow: Int?
+            var documentObservation: [String: Any] = [:]
+            if let document = request["document"] as? String {
+                let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
+                guard let nativeWindows = try checkedWindows(app) else {
+                    // A busy Finder may temporarily reject the read. Preserve the
+                    // exact result for the existing bounded read-only poll, never
+                    // as an empty successful inventory or a closed-window witness.
+                    return ["pid": pid, "nodes": [], "windows": [],
+                        "document_window_query_status": AXError.cannotComplete.rawValue,
+                        "document_window_list_observed": false,
+                        "document_windows_observed": false] as [String: Any]
+                }
+                // A newly opening Finder window can expose AXTitle=noValue before
+                // its title exists. Keep this as incomplete read-only observation,
+                // never as proof that our previously verified window has closed.
+                let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute, optional: true) }
+                let unresolvedTitles = titles.filter(\.isEmpty).count
+                let matches = try nativeWindows.enumerated().filter { _, window in
+                    try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
+                        guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
+                        return url.resolvingSymlinksInPath().standardizedFileURL == target
+                    }
+                }
+                guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
+                guard let (index, _) = matches.first else {
+                    // Only root metadata with the exact owned fixture title may be
+                    // retained when URL matching fails; no other folder is walked.
+                    let candidates = nativeWindows.enumerated().filter { index, _ in
+                        titles[index] == target.lastPathComponent
+                    }
+                    guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
+                    let diagnostic = try candidates.first.map { index, _ in
+                        try tree(app, onlyWindow: index, sheetsOnly: false)
+                    } ?? []
+                    let candidateWindows = candidates.first.map { _, window in
+                        windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
+                    } ?? []
+                    guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
+                    return ["pid": pid, "nodes": [], "windows": [],
+                        "document_window_list_observed": true,
+                        "document_windows_observed": unresolvedTitles == 0,
+                        "unresolved_title_window_count": unresolvedTitles,
+                        "owned_document_window_present": !candidates.isEmpty,
+                        "finder_window_count": nativeWindows.count,
+                        "owned_title_candidates": try candidates.map { try describe($0.element) },
+                        "owned_candidate_cg_windows": candidateWindows,
+                        "owned_candidate_diagnostic_tree": diagnostic] as [String: Any]
+                }
+                onlyWindow = index
+                documentObservation = ["document_windows_observed": unresolvedTitles == 0,
+                    "document_window_list_observed": true,
+                    "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
+                let title = titles[index]
+                windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
+                guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
+            }
+            let nodes = operation == "status" ? [] : try tree(app, onlyWindow: onlyWindow,
+                sheetsOnly: request["document"] == nil, rootsOnly: request["summary"] as? Bool ?? false)
+            let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                        "keyboard_input_source": inputSource(),
+                        "nodes": nodes, "windows": windows]
+            return response.merging(documentObservation) { _, new in new }
+        }
+        try output(reply.value)
+        if reply.exitCode != 0 { exit(reply.exitCode) }
     case "window-status":
         guard let number = request["window_id"] as? Int, number > 0,
               let wanted = CGWindowID(exactly: number),
@@ -572,6 +744,15 @@ do {
         try output(["observed": true, "pid": pid, "window_id": number,
             "present": windows.contains { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid)
                 && ($0[kCGWindowNumber as String] as? Int) == Int(wanted) }] as [String: Any])
+    case "launch-status":
+        guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("installed launch observation requires disposable native CI")
+        }
+        let running = NSRunningApplication(processIdentifier: pid)
+        try output(["pid": pid, "registered": running != nil,
+            "finished_launching": running?.isFinishedLaunching ?? false,
+            "regular_activation": running?.activationPolicy == .regular,
+            "terminated": running?.isTerminated ?? false] as [String: Any])
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")
@@ -614,12 +795,17 @@ do {
             try post(code, down: false, flags: [])
         }
         try output(["posted": true])
-    case "press", "set", "select":
+    case "press", "set", "select", "focus":
         guard let selector = request["selector"] as? [String: Any] else { throw Failure.invalid("control selector required") }
         let element = try resolve(app, selector)
         var status: AXError
         if operation == "press" {
             status = AXUIElementPerformAction(element, kAXPressAction as CFString)
+        } else if operation == "focus" {
+            guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+                throw Failure.invalid("installed GUI focus requires a disposable native CI host")
+            }
+            status = AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         } else if operation == "set" {
             status = AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString,
                 (request["value"] as? String ?? "") as CFString)

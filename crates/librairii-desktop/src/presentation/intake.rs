@@ -35,12 +35,19 @@ struct Pending {
 }
 #[derive(Debug, Default)]
 pub(crate) struct Intake {
+    acceptance: Option<crate::acceptance::Scope>,
     pending: Mutex<Pending>,
     available: Condvar,
     latest: AtomicU64,
     fenced: AtomicBool,
 }
 impl Intake {
+    pub(crate) fn with_scope(acceptance: Option<crate::acceptance::Scope>) -> Self {
+        Self {
+            acceptance,
+            ..Self::default()
+        }
+    }
     pub fn offer(&self, command: Command) -> Result<u64, OfferError> {
         if matches!(&command, Command::Maintenance{action,..} if !action.bounded()) {
             return Err(OfferError::Busy);
@@ -50,6 +57,13 @@ impl Intake {
         }
         if matches!(&command,Command::Exports{action,..} if !action.bounded()) {
             return Err(OfferError::Busy);
+        }
+        if self
+            .acceptance
+            .as_ref()
+            .is_some_and(|scope| !scope.admits(&command))
+        {
+            return Err(OfferError::Closed);
         }
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
         if self.fenced.load(Ordering::Acquire)
@@ -104,7 +118,17 @@ impl Intake {
             .available
             .wait_timeout_while(pending, Duration::from_millis(20), |p| p.queue.is_empty())
             .map_err(|_| OfferError::Closed)?;
-        Ok(pending.queue.pop_front())
+        let envelope = pending.queue.pop_front();
+        drop(pending);
+        if let Some(envelope) = &envelope
+            && self
+                .acceptance
+                .as_ref()
+                .is_some_and(|scope| !scope.recheck(&envelope.command))
+        {
+            return Err(OfferError::Closed);
+        }
+        Ok(envelope)
     }
 }
 #[cfg(test)]

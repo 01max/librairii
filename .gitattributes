@@ -39,6 +39,9 @@ crates/librairii-storage/tests/fixtures/collections/** -text
 
 # Pinned archive decoder source and regression evidence retain exact bytes.
 third_party/sevenz-turbo/** -text
+
+# The native backend derivative is also sealed as exact upstream bytes.
+third_party/slint-backend-winit/** -text
 .config/sevenz-turbo-patch.json -text
 .config/upstream-notices/sevenz-turbo-0.29.2/** -text
 crates/librairii-adapters/testdata/archive-parity/** -text

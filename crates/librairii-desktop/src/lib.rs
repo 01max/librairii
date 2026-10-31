@@ -1,5 +1,6 @@
 //! Native composition without constructing a toolkit/window in headless checks.
 #![forbid(unsafe_code)]
+pub mod acceptance;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod imports;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -23,6 +24,7 @@ pub mod menus;
 pub mod workflows;
 
 mod host;
+pub mod release_info;
 
 mod export_preparation;
 

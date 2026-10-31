@@ -5702,6 +5702,54 @@
           ]
         },
         "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
+      },
+      {
+        "position": 636,
+        "identity": {
+          "suite": "librairii-desktop::release_identity",
+          "name": "product_version_is_available_without_profile_or_display"
+        },
+        "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
+      },
+      {
+        "position": 637,
+        "identity": {
+          "suite": "librairii-desktop::release_identity",
+          "name": "package_build_identity_is_available_without_profile_or_display"
+        },
+        "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
+      },
+      {
+        "position": 638,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "acceptance::tests::packaged_context_requires_owned_roots_and_loopback_before_profile_discovery"
+        },
+        "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
+      },
+      {
+        "position": 639,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "acceptance::tests::foreign_persisted_library_and_fixture_alias_refuse_without_external_access"
+        },
+        "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
+      },
+      {
+        "position": 640,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "acceptance::tests::intake_rejects_external_paths_and_rechecks_owned_picker_paths_off_ui_thread"
+        },
+        "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
+      },
+      {
+        "position": 641,
+        "identity": {
+          "suite": "librairii-desktop::release_identity",
+          "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup"
+        },
+        "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
       }
     ],
     "python": [
@@ -5804,6 +5852,281 @@
         "position": 57,
         "identity": "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
         "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
+      },
+      {
+        "position": 58,
+        "identity": "test_release.ReleaseFiles.test_actual_cargo_executable_requires_unique_production_profile",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 59,
+        "identity": "test_release.ReleaseFiles.test_architecture_rejects_wrong_target_fat_and_foreign_executables",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 60,
+        "identity": "test_release.ReleaseFiles.test_archive_is_deterministic_and_normalizes_all_metadata",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 61,
+        "identity": "test_release.ReleaseFiles.test_copy_preserves_bytes_but_never_follows_or_replaces_links",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 62,
+        "identity": "test_release.ReleaseFiles.test_embedded_identity_refuses_missing_or_foreign_source_graph_and_target",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 63,
+        "identity": "test_release.ReleaseFiles.test_final_artifact_checksum_binds_actual_bytes_and_never_claims_qualification",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 64,
+        "identity": "test_release.ReleaseFiles.test_json_records_are_no_clobber_and_payload_tampering_is_visible",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 65,
+        "identity": "test_release.ReleaseFiles.test_output_refuses_existing_external_parent_and_boundary_links",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 66,
+        "identity": "test_sbom.CompiledGraph.test_sbom_describes_actual_compiler_graph_and_excludes_unused_dev_metadata",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 67,
+        "identity": "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices",
+        "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
+      },
+      {
+        "position": 68,
+        "identity": "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files",
+        "reason": "Task18 actual ARM release build exposed supplemental-only dependency notices; regression preserves the pinned license texts without weakening a missing-notice refusal."
+      },
+      {
+        "position": 69,
+        "identity": "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution",
+        "reason": "Task 18.1 refuses effective Cargo compiler aliases and inherited configuration before build or output creation."
+      },
+      {
+        "position": 70,
+        "identity": "test_packages.PlatformPackages.test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 71,
+        "identity": "test_packages.PlatformPackages.test_linux_archive_contains_desktop_icons_notices_and_exact_final_checksums",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 72,
+        "identity": "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 73,
+        "identity": "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 74,
+        "identity": "test_packages.PlatformPackages.test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 75,
+        "identity": "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 76,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_fixture_preserves_source_inputs_and_uses_only_explicit_roots_and_loopback",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 77,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_admission_refuses_stale_source_or_changed_installed_resources_before_execution",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 78,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_missing_ci_or_incomplete_gui_checkpoint_and_process_inventory_cannot_qualify",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 79,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_container_retirement_requires_exact_creation_image_and_invocation_receipts",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 80,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 81,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_interruption_requires_exact_signal_and_retired_error_free_capture",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 82,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 83,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 84,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 85,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 86,
+        "identity": "test_signing.Signing.test_signing_requires_external_candidate_digest_and_clean_matching_source",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 87,
+        "identity": "test_signing.Signing.test_notarization_staples_actual_app_only_after_accepted_submission_and_retained_log",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 88,
+        "identity": "test_signing.Signing.test_signature_requires_external_team_certificate_timestamp_and_hardened_runtime",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 89,
+        "identity": "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 90,
+        "identity": "test_signing.Signing.test_credentialed_signing_never_executes_the_candidate_identity_or_gui",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 91,
+        "identity": "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 92,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 93,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_managed_imports_must_match_independent_original_identity_name_and_bytes",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 94,
+        "identity": "test_packages.PlatformPackages.test_independent_candidate_checksum_refuses_before_host_install_or_execution",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 95,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 96,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_linux_press_keeps_observed_identity_when_action_replaces_native_node",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 97,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 98,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 99,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 100,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 101,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_location_removes_only_selected_inline_filename_completion",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 102,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 103,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_runtime_requires_one_observed_renderer_matching_the_requested_route",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 104,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_observer_closes_database_readers_before_product_relocation",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 105,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_activation_waits_for_the_exact_owned_visible_window",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 106,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_failed_mac_session_samples_only_its_unreaped_child_before_retirement",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 107,
+        "identity": "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 108,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 109,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 110,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
+        "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
+      },
+      {
+        "position": 111,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window",
+        "reason": "Task 18 review regression: bind the owned X11 WM_CLASS to the installed desktop entry and reject missing, foreign or ambiguous window identities."
+      },
+      {
+        "position": 112,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids",
+        "reason": "Task 18 review regression: bind the owned Wayland app_id to the installed desktop entry and reject missing, foreign or ambiguous surface identities."
       }
     ]
   },
