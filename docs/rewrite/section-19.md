@@ -140,3 +140,38 @@ The final release checklist is deliberately incomplete:
 Public signing credentials, trusted workflow setup and owner approvals remain
 external gates. Unsigned candidate evidence can be completed independently, but
 does not fill those signing/final-byte boxes.
+
+### Candidate manifest and final-byte handoff — 19.6
+
+[`section-19-candidates.json`](section-19-candidates.json) indexes the actual
+merged-base source, ordered source parents, target, inner package byte count and
+SHA-256, provider ZIP checksum, compiler graph, signing state and supporting
+quality/scale/foundation/package artifact metadata. It states exactly which raw
+scopes were audited at this step. It is an unsigned/internal candidate index;
+all three `public_release_qualified` values remain false.
+
+| Target | Merged-base inner package SHA-256 | Public signing state |
+| --- | --- | --- |
+| `aarch64-apple-darwin` | `13994141820cb2fec600837a7a734c2e9280d18239c959407cbcca4b0d850287` | Ad-hoc; Developer ID/notarization/stapling pending |
+| `x86_64-apple-darwin` | `978163d3d684b94afd37d5dc1d6111ba0454acc7582332972efb602a15fc8b9f` | Ad-hoc; Developer ID/notarization/stapling pending |
+| `x86_64-unknown-linux-gnu` | `4ffcfcadffb4747bbebf2ef0d46516ff9faaee3efaa38e203f1df5e5db641595` | Linux portable archive; no Mac-signing requirement |
+
+These are inner distribution hashes, **not provider ZIP digests**. Signing can
+change the distribution bytes, so final signed DMGs need new hashes and fresh
+credentialless matching-host installed evidence. Foundation artifacts keep their
+own source `21f32ed`; package/quality/scale artifacts name merge source `bd7327b`.
+Even equal trees do not authorize relabeling embedded source identities.
+
+For a future final candidate, preserve the existing `artifact.json`,
+`inspection.json`, packaged qualification reports, compiler records, SPDX and
+original notice inventories. Index the exact final source/target/distribution
+hash alongside raw recovery/handover, performance/resources and accessibility
+reports, assertions, limitations and both independent reviews. Provider metadata
+alone cannot replace raw seals, numerical gates or actual native observations.
+Failed and cancelled runs remain failures and are retained beside later passes.
+Archive evidence before finite provider retention expires.
+
+The final index belongs with the CI/release evidence for those bytes. Do not
+change a source commit merely to claim that evidence generated after its build
+was already inside it. A documentation-only PR still needs its own required CI;
+its result does not transfer to a later release candidate automatically.
