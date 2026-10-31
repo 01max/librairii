@@ -89,6 +89,19 @@ def main():
             started.append('loaded')
             loaded = native.inspect(binaries/'scale-native', output/f'software-{trial}-loaded',
                     'winit-skia-software', binaries/'input-macos')
+            load_time = resources.clocks.time_metrics(
+                (output/f'software-{trial}-loaded/native-time.log').read_text(), platform.system())
+            peaks = [quiet['native_time']['peak_rss_bytes'], load_time['peak_rss_bytes']]
+            require(all(type(n) is int and n > 0 for n in peaks),
+                    'original positive native peak RSS receipts required')
+            pair = {'warmup': trial == 0, 'backend': 'winit-skia-software',
+                    'quiet': quiet, 'loaded': loaded, 'loaded_native_time': load_time,
+                    'peak_rss_bytes': max(peaks)}
+            (output/f'software-{trial}-pair.json').write_text(json.dumps(pair, indent=2)+'\n')
+            require(quiet['launch_to_first_ui_timer_ms'] <= 1000 and
+                    quiet['idle_cpu_percent_one_core'] <= 5 and
+                    pair['peak_rss_bytes'] <= 512 * 1024 * 1024,
+                    'original release startup/idle/loaded RSS gate failed; raw pair retained')
             entry.update(passed=True, keyboard_p95_ms=loaded['input']['input_p95_ms'],
                          pointer_p95_ms=loaded['input']['pointer_p95_ms'],
                          completion_p95_ms=loaded['input']['navigation_p95_ms'],
