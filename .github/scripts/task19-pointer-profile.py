@@ -34,6 +34,7 @@ class PointerProfile:
                     continue
                 dispatch = state.get('dispatch', {})
                 if (not (self.directory/'pointer-target.json').is_file() or
+                        (self.directory/'dispatch-clock-request').exists() or
                         dispatch.get('search_sequence') != 64 or
                         dispatch.get('browser_focus_sequence', 0) < 1 or
                         state.get('focus_key') != 31 or not state.get('running_import')):
@@ -57,15 +58,17 @@ class PointerProfile:
                                             stdout=log, stderr=subprocess.STDOUT)
                     self.receipt['sampler_pid'] = task.pid
                     self.receipt['returncode'] = task.wait(timeout=35)
-                self.receipt.update(finished=True, end_monotonic=time.monotonic())
+                self.receipt['end_monotonic'] = time.monotonic()
                 end_state = json.loads((self.directory/'state.json').read_text())
                 self.receipt['end_phase'] = {
                     'pid': end_state['pid'], 'focus_key': end_state['focus_key'],
                     'search_sequence': end_state['dispatch']['search_sequence'],
-                    'pointer_sequence': end_state['dispatch']['browser_focus_sequence']}
-                self.receipt['pointer_phase_at_both_boundaries'] = (
+                    'pointer_sequence': end_state['dispatch']['browser_focus_sequence'],
+                    'calibration_request_present': (self.directory/'dispatch-clock-request').exists()}
+                self.receipt['same_search_focus_at_boundaries'] = (
                     end_state['pid'] == pid and end_state['focus_key'] == 31 and
                     end_state['dispatch']['search_sequence'] == 64)
+                self.receipt['finished'] = True
                 return
         except Exception as error:
             self.receipt['error'] = str(error)
@@ -89,5 +92,6 @@ class PointerProfile:
         self.receipt['stack_file_present'] = stack.is_file() and stack.stat().st_size > 0
         (self.directory/'pointer-profile.json').write_text(json.dumps(self.receipt, indent=2)+'\n')
         return (self.receipt['started'] and self.receipt['finished'] and
+                'error' not in self.receipt and 'end_phase' in self.receipt and
                 self.receipt.get('returncode') == 0 and self.receipt.get('sampler_retired') is True and
                 self.receipt['stack_file_present'])
