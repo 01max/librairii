@@ -111,6 +111,10 @@ See [CI policy](rewrite/ci.md), [scale evidence](rewrite/section-16.md) and
 
 ## Build distribution candidates
 
+The [manual build and signing guide](native-build-and-sign.md) provides a
+single-command package helper and a signing-command preview. You choose when
+to execute a build, provision signing credentials and approve signing.
+
 Use a clean committed checkout on the matching native host. Each output must
 be a new directory below `target/native-release`; choose unused names for repeat
 runs. The release profile and embedded source/graph identity are checked by the
