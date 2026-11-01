@@ -91,13 +91,35 @@ fn healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_af
             .all(|m| !m.manually_retained && m.origins.len() == 2)
     );
     committed(db.transaction(Default::default(), move |tx| {
-        tx.execute("UPDATE stories SET display_name_normalized='old unmatched' WHERE id=1", [])?;
+        tx.execute("UPDATE stories SET display_name_normalized='old unrelated' WHERE id=1", [])?;
         tx.execute("DELETE FROM stories WHERE id=2", [])?;
         tx.execute("UPDATE stories SET display_name_normalized='match healthy' WHERE id=3", [])?;
         tx.execute("UPDATE collections SET query_payload='{\"name\":\"match\"}' WHERE id=?", [healthy.get()])?;
         tx.execute("UPDATE collections SET validity_state='needs_attention',query_payload='{}' WHERE id=?", [invalid.get()])?;
         Ok(())
     })?.wait()?)?;
+    let collections::Observation::Ready(evaluated) = committed(
+        db.evaluate_collection(
+            healthy.get(),
+            Default::default(),
+            "fr-FR".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?
+    else {
+        return Err("healthy source must remain evaluable".into());
+    };
+    assert_eq!(evaluated.page.total_items, 1);
+    assert_eq!(
+        evaluated
+            .page
+            .stories
+            .into_iter()
+            .map(|s| s.uuid)
+            .collect::<Vec<_>>(),
+        vec![uuid(3)]
+    );
     let plan = db.shelf_update_preview(id, "fr-FR".into())?.wait()?;
     assert!(plan.preview().incomplete);
     assert!(!plan.preview().up_to_date);

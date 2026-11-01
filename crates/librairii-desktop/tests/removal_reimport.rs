@@ -6,7 +6,7 @@ use librairii_app::{
 };
 use librairii_core::{
     CollectionId,
-    tagging::{Command, CreateDefinition, Kind, Response},
+    tagging::{CreateDefinition, Kind},
 };
 use librairii_desktop::imports::{ImportExecutor, PrepareError, PreparedImport};
 use librairii_storage::{
@@ -19,6 +19,7 @@ use librairii_storage::{
     removal::Removals,
     settings::TargetPreview,
     shelves::{self, Curation},
+    tagging::{Command, Response},
 };
 use librairii_testkit::TestRoots;
 use std::{

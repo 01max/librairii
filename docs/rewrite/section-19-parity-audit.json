@@ -1199,7 +1199,7 @@
           "suite": "librairii-desktop::removal_reimport",
           "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
           "source": "crates/librairii-desktop/tests/removal_reimport.rs",
-          "source_sha256": "9e7884c12c6faa7574619461b422b15227fd8b64a86daf55e66e68745b1dab93"
+          "source_sha256": "36e71fd2364f905d91f39830ce862c14cc01349f5f80969fa4ea8ab4ab72a6a3"
         }
       ],
       "native_callbacks": [
@@ -1296,7 +1296,7 @@
           "suite": "librairii-storage::shelf_incomplete",
           "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
           "source": "crates/librairii-storage/tests/shelf_incomplete.rs",
-          "source_sha256": "974e18c443da50fe4becd993b0170b717429f6aefd660317cc2a85c81c762683"
+          "source_sha256": "e8089fe37cf3092e01ea43784973cd3ab10d898b104ee94fb7048ff6ee7455a6"
         }
       ],
       "native_callbacks": [
@@ -1892,7 +1892,7 @@
           "suite": "librairii-desktop::removal_reimport",
           "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
           "source": "crates/librairii-desktop/tests/removal_reimport.rs",
-          "source_sha256": "9e7884c12c6faa7574619461b422b15227fd8b64a86daf55e66e68745b1dab93"
+          "source_sha256": "36e71fd2364f905d91f39830ce862c14cc01349f5f80969fa4ea8ab4ab72a6a3"
         }
       ],
       "native_callbacks": [
