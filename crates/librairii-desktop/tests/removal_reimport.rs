@@ -10,7 +10,7 @@ use librairii_core::{
 };
 use librairii_desktop::imports::{ImportExecutor, PrepareError, PreparedImport};
 use librairii_storage::{
-    Result, StorageError, collections,
+    Result, collections,
     database::{Database, TransactionOutcome, WorkCancellation},
     native::NativeLibrary,
     operations_repository::TerminalRepository,

@@ -1199,7 +1199,7 @@
           "suite": "librairii-desktop::removal_reimport",
           "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
           "source": "crates/librairii-desktop/tests/removal_reimport.rs",
-          "source_sha256": "36e71fd2364f905d91f39830ce862c14cc01349f5f80969fa4ea8ab4ab72a6a3"
+          "source_sha256": "57964c76c3d054070382249144c631f40d03890c79c79b0df9e4b98b027e93e1"
         }
       ],
       "native_callbacks": [
@@ -1892,7 +1892,7 @@
           "suite": "librairii-desktop::removal_reimport",
           "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
           "source": "crates/librairii-desktop/tests/removal_reimport.rs",
-          "source_sha256": "36e71fd2364f905d91f39830ce862c14cc01349f5f80969fa4ea8ab4ab72a6a3"
+          "source_sha256": "57964c76c3d054070382249144c631f40d03890c79c79b0df9e4b98b027e93e1"
         }
       ],
       "native_callbacks": [
