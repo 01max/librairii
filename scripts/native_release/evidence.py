@@ -122,6 +122,12 @@ def distribution(z, prefix, source, tree, target):
 def candidate(root, selected, source, tree, target):
     with archive(root, selected) as z:
         package, metadata = distribution(z, 'package/', source, tree, target)
+        expected_signing = ({'state': 'ad-hoc internal candidate', 'developer_id': False,
+                             'notarized': False, 'stapled': False}
+                            if target.endswith('apple-darwin') else
+                            {'state': 'not applicable (Linux portable archive)'})
+        require(package.get('signing') == expected_signing,
+                'base candidate must carry the unsigned packaging signing record')
         stage = member_json(z, 'stage/stage.json')
         bound(stage, source, target)
         require(stage.get('stage_complete') is True and stage.get('working_tree_dirty') is False,

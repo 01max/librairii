@@ -49,7 +49,11 @@ class EvidenceManifest(unittest.TestCase):
                            package_format='dmg' if target.endswith('darwin') else 'tar.gz',
                            payload=payload, artifact=dict(name='fixture.dmg' if target.endswith('darwin')
                                                          else 'fixture.tar.gz', **facts(distribution)),
-                           signing={'developer_id': False}, public_release_qualified=True)
+                           signing=({'state': 'ad-hoc internal candidate', 'developer_id': False,
+                                     'notarized': False, 'stapled': False}
+                                    if target.endswith('darwin') else
+                                    {'state': 'not applicable (Linux portable archive)'}),
+                           public_release_qualified=True)
             self.packages[target] = package
             stage = dict(identity, stage_complete=True, working_tree_dirty=False, host={'target': target})
             events = [{'reason': 'compiler-artifact', 'target': {'name': 'librairii-desktop', 'kind': ['bin']},
@@ -222,6 +226,14 @@ class EvidenceManifest(unittest.TestCase):
 
     def test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes(self):
         row = self.plan['targets'][0]
+        candidate = row['candidate']
+        original = (self.root / candidate['path']).read_bytes()
+        self.mutate(candidate, 'package/artifact.json', lambda data: encoded(dict(
+            json.loads(data), signing={'state': 'Developer ID signed', 'developer_id': True,
+                                       'notarized': True, 'stapled': True})))
+        self.assert_refused()  # Signing claims in the base candidate cannot skip the signed selection.
+        (self.root / candidate['path']).write_bytes(original)
+        candidate.update(facts(original))
         package = copy.deepcopy(self.packages[row['target']])
         final = b'inert signed distribution'
         package['signing'] = {'developer_id': True, 'notarized': True, 'stapled': True,
