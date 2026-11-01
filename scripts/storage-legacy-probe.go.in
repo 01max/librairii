@@ -1,0 +1,73 @@
+// Synthetic process driver for the shared kernel-lock protocol and UNMODIFIED
+// legacy storage services. All locations are explicit private fixture paths.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/preferences"
+	"golang.org/x/sys/unix"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	if len(os.Args) != 4 {
+		panic("explicit mode and fixture paths required")
+	}
+	switch os.Args[1] {
+	case "blocked", "hold":
+		fd, err := unix.Open(filepath.Join(os.Args[2], ".librairii-library.lock"), unix.O_RDWR|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+		must(err)
+		defer unix.Close(fd)
+		err = unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB)
+		if os.Args[1] == "blocked" {
+			if !errors.Is(err, unix.EWOULDBLOCK) {
+				panic(fmt.Sprintf("expected Rust-owned lock: %v", err))
+			}
+			return
+		}
+		must(err)
+		ready, err := os.OpenFile(os.Args[3], os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		must(err)
+		_, err = ready.WriteString("go-flock-owned\n")
+		must(err)
+		must(ready.Close())
+		_, err = io.CopyN(io.Discard, os.Stdin, 1)
+		if err != nil && err != io.EOF {
+			panic(err)
+		}
+	case "legacy":
+		ctx := context.Background()
+		store := preferences.NewStore(os.Args[2])
+		profile, err := preferences.Bootstrap(ctx, store, os.Args[3], "en")
+		must(err)
+		must(preferences.Reconcile(ctx, store.Directory(), profile))
+		must(preferences.ValidateLibrary(ctx, profile.Root, profile.LibraryID))
+		db, err := database.Open(ctx, preferences.DatabasePath(profile.Root))
+		must(err)
+		// An actual later legacy write, not just a process scan or readonly probe.
+		result, err := db.Writer().ExecContext(ctx, "UPDATE stories SET embedded_title=COALESCE(embedded_title,'')||' legacy-write' WHERE id=1")
+		must(err)
+		changed, err := result.RowsAffected()
+		must(err)
+		if changed != 1 {
+			panic("legacy source story missing")
+		}
+		must(db.Close())
+		must(json.NewEncoder(os.Stdout).Encode(map[string]any{"root": profile.Root, "libraryId": profile.LibraryID, "changed": changed}))
+	default:
+		panic("unknown synthetic probe mode")
+	}
+}

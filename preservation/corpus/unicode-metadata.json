@@ -1,0 +1,6 @@
+{
+  "goUnicodeVersion": "15.0.0",
+  "normalizationUnicodeVersion": "15.0.0",
+  "policy": "TrimSpace then cases.Fold then NFKD; strip Mn; collapse Unicode whitespace; no ASCII approximation",
+  "textModule": "golang.org/x/text v0.43.0"
+}

@@ -1,0 +1,170 @@
+{
+  "source": "golang.org/x/text v0.43.0",
+  "commit": "ac40b0f06c159afb5bfca4d1860f8b4b60dbc160",
+  "moduleH1": "h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=",
+  "scope": "conservative compilation dependency/data closure of language package; source only",
+  "packages": [
+    {
+      "package": "golang.org/x/text/internal/tag",
+      "imports": [
+        "sort"
+      ],
+      "files": [
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+          "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+          "bytes": 2415
+        }
+      ]
+    },
+    {
+      "package": "golang.org/x/text/internal/language",
+      "imports": [
+        "bytes",
+        "errors",
+        "fmt",
+        "golang.org/x/text/internal/tag",
+        "sort",
+        "strconv",
+        "strings"
+      ],
+      "files": [
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+          "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+          "bytes": 334
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+          "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+          "bytes": 853
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compose.go",
+          "sha256": "7657b95eac8448d5d2273c048d316dde3ac0e49ac058487a69b2b990ebc7f8ef",
+          "bytes": 3881
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/coverage.go",
+          "sha256": "8c8238012deb1b3c42820c755343db1bc326dc5cbddfcc24f97abbb7e0c6cee1",
+          "bytes": 730
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+          "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+          "bytes": 17174
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+          "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+          "bytes": 12387
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/match.go",
+          "sha256": "711e9c548516929762f0636a69788ba6eed6ed10bfb47634f3b5d5a1f26a1547",
+          "bytes": 5824
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+          "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+          "bytes": 15241
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+          "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+          "bytes": 156627
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/tags.go",
+          "sha256": "21041c1c1982b12db6f523a4feb58746dac3e2c71e8dcf9f76ac5807cd809099",
+          "bytes": 1211
+        }
+      ]
+    },
+    {
+      "package": "golang.org/x/text/internal/language/compact",
+      "imports": [
+        "golang.org/x/text/internal/language",
+        "sort",
+        "strings"
+      ],
+      "files": [
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+          "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+          "bytes": 1707
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+          "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+          "bytes": 7447
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/parents.go",
+          "sha256": "57dc7b46cb5b6df81ed5764b338e1b463c183e3561427307c9d25fa876d9bdc7",
+          "bytes": 6853
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+          "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+          "bytes": 32128
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/tags.go",
+          "sha256": "e6f98b11ee9c2d5d4d51a5d810d4ea2eff0872a8d11b962979744899e020e12c",
+          "bytes": 5651
+        }
+      ]
+    },
+    {
+      "package": "golang.org/x/text/language",
+      "imports": [
+        "errors",
+        "fmt",
+        "golang.org/x/text/internal/language",
+        "golang.org/x/text/internal/language/compact",
+        "sort",
+        "strconv",
+        "strings"
+      ],
+      "files": [
+        {
+          "path": "golang.org/x/text@v0.43.0/language/coverage.go",
+          "sha256": "d12716948854471a3536a04dc48736b0db0318ea6df61db236bc4ee0fe725375",
+          "bytes": 4897
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/doc.go",
+          "sha256": "4b97559b103832f3c5f22e80f2df0dd7394a469d945f79afad1654eb179fa63b",
+          "bytes": 4340
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/language.go",
+          "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+          "bytes": 19340
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/match.go",
+          "sha256": "b8a6b973391cba46899d079173cf0b1d3064f28bb79a11c3fdc65c089cbe23d3",
+          "bytes": 25698
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/parse.go",
+          "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+          "bytes": 7695
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/tables.go",
+          "sha256": "cb3c6aa474902c2728c47bcdebd5fcac0c6aa0f7e29934e984d46434c98ce716",
+          "bytes": 14585
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/tags.go",
+          "sha256": "247c5ce419821c135a2751029c078cc6e1472c9896dd581d67a277449e54d968",
+          "bytes": 5545
+        }
+      ]
+    }
+  ],
+  "languageExecution": false
+}

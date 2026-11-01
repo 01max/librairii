@@ -20,9 +20,13 @@ type StorageReadiness struct {
 	profile      preferences.Profile
 	bootstrapMu  sync.Mutex
 
-	mu     sync.RWMutex
-	layout storage.Layout
-	db     *database.Database
+	mu           sync.RWMutex
+	layout       storage.Layout
+	db           *database.Database
+	leases       map[string]*storage.Lease
+	profileLease *storage.Lease
+	relocating   bool
+	closeFailure error
 }
 
 func NewStorageReadiness(override string) *StorageReadiness {
@@ -33,6 +37,11 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 	r.bootstrapMu.Lock()
 	defer r.bootstrapMu.Unlock()
 	r.mu.RLock()
+	if r.closeFailure != nil {
+		err := r.closeFailure
+		r.mu.RUnlock()
+		return coreapp.ReadinessReport{}, err
+	}
 	if r.db != nil {
 		r.mu.RUnlock()
 		return coreapp.ReadinessReport{MutationsAllowed: true}, nil
@@ -46,6 +55,12 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 		return coreapp.ReadinessReport{}, profileErr
 	}
 	root, err := storage.ResolveRoot(r.override)
+	if err != nil {
+		return coreapp.ReadinessReport{}, err
+	}
+	r.mu.Lock()
+	err = r.acquireLibrary(root, r.profileStore == nil)
+	r.mu.Unlock()
 	if err != nil {
 		return coreapp.ReadinessReport{}, err
 	}
@@ -101,9 +116,15 @@ func (r *StorageReadiness) RecoverSchemaConflict(
 	if r.db != nil {
 		return "", database.ErrNoSchemaConflict
 	}
+	if err := r.acquireProfile(); err != nil {
+		return "", err
+	}
 
 	root, err := storage.ResolveRoot(r.override)
 	if err != nil {
+		return "", err
+	}
+	if err := r.acquireLibrary(root, r.profileStore == nil); err != nil {
 		return "", err
 	}
 	layout, err := storage.Initialize(root)
@@ -124,7 +145,6 @@ func (r *StorageReadiness) RecoverSchemaConflict(
 		}
 		pending, err := r.profileStore.Update(func(p *preferences.Profile) error {
 			p.Root, p.LibraryID = root, id
-			p.Language = r.profile.Language
 			p.Complete, p.Recovering = false, true
 			return nil
 		})
@@ -169,15 +189,32 @@ func (r *StorageReadiness) Writer() *sql.DB {
 }
 
 func (r *StorageReadiness) Close() error {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	r.mu.Lock()
+	if r.closeFailure != nil {
+		err := r.closeFailure
+		r.mu.Unlock()
+		return err
+	}
 	connection := r.db
 	r.db = nil
 	r.mu.Unlock()
-	if connection == nil {
-		return nil
+	var err error
+	if connection != nil {
+		_, checkpointErr := connection.Writer().Exec("PRAGMA wal_checkpoint(TRUNCATE)")
+		err = errors.Join(checkpointErr, connection.Close())
 	}
-	_, checkpointErr := connection.Writer().Exec("PRAGMA wal_checkpoint(TRUNCATE)")
-	return errors.Join(checkpointErr, connection.Close())
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err != nil {
+		r.closeFailure = err
+		return err
+	}
+	if err == nil && !r.relocating {
+		err = r.releaseOwnership()
+	}
+	return err
 }
 
 type sqliteSchemaProbe struct{}

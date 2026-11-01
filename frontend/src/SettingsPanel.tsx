@@ -11,12 +11,13 @@ type Snapshot = main.SettingsSnapshot;
 function nativeSettingsAvailable() {
     return typeof (window as unknown as {go?: {main?: {App?: {Settings?: unknown}}}}).go?.main?.App?.Settings === 'function';
 }
-export default function SettingsPanel({onReady,onLocation}: {onReady: () => void;onLocation?: (root: string) => void}) {
+export default function SettingsPanel({onReady,onLocation,onExportPreferences}: {onReady: () => void;onLocation?: (root: string) => void;onExportPreferences?: () => Promise<boolean>}) {
     useLanguage();
     const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
     const [open, setOpen] = useState(false);
     const [working, setWorking] = useState(false);
     const [error, setError] = useState('');
+    const [transferSaved, setTransferSaved] = useState(false);
  const lastMove = useRef('');
  const moving = !!snapshot?.move && !['succeeded','failed','cancelled','cleanup_pending'].includes(snapshot.move.phase);
     const dialog = useRef<HTMLElement>(null);
@@ -109,6 +110,17 @@ export default function SettingsPanel({onReady,onLocation}: {onReady: () => void
                     {snapshot.move.error && <p>{t(snapshot.move.error)}</p>}
                     {snapshot.move.cancelable && <button type="button" onClick={() => void update(CancelLibraryMove)}>{t('Cancel')}</button>}
                 </div>}
+                {onExportPreferences && !snapshot?.setupRequired && !snapshot?.recovery && <section className="settings-state">
+                    <h3>{t('Move to the native application')}</h3>
+                    <p>{t('Export your view, notice and navigation preferences. Your library files stay in place.')}</p>
+                    <button type="button" disabled={working || moving || !snapshot} onClick={() => {
+                        setWorking(true); setError(''); setTransferSaved(false);
+                        void onExportPreferences().then(setTransferSaved).catch((failure: unknown) => {
+                            setError(failure instanceof Error ? failure.message : 'Preference transfer could not be saved.');
+                        }).finally(() => setWorking(false));
+                    }}>{t('Export preferences…')}</button>
+                    {transferSaved && <p role="status">{t('Preferences exported. Import the file in the native application.')}</p>}
+                </section>}
                 {error && <p className="dialog-error" role="alert">{t(error)}</p>}
                 <div className="dialog-actions">
  {snapshot?.setupRequired && <button type="button" disabled={working} onClick={() => {

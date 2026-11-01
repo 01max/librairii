@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "frozenRevision": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "capturedAtUtc": "2026-10-21T16:00:59.895317+00:00",
+  "toolchain": "go version go1.26.5 darwin/arm64",
+  "sourceFiles": [
+    {
+      "path": "internal/collections/service.go",
+      "bytes": 14651,
+      "sha256": "4572b60c8c99da843dca434d24af3ffa97b9c5ea55f2343f7269e656f7c69434"
+    },
+    {
+      "path": "internal/collections/repository.go",
+      "bytes": 4328,
+      "sha256": "2597d25ed318194527200d8301f0b9051451f2f559053281a31b62be872e2aa7"
+    },
+    {
+      "path": "internal/collections/query.go",
+      "bytes": 8104,
+      "sha256": "569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763"
+    },
+    {
+      "path": "internal/collections/criteria.go",
+      "bytes": 2048,
+      "sha256": "5edab7a58a0e685225c497ff1c56579a4ff002a60b3ee5a6bc40392a4e3910a1"
+    },
+    {
+      "path": "internal/collections/snapshot.go",
+      "bytes": 1100,
+      "sha256": "ef917bf8172c6a52432ffe6b22aa91558326fc1b68537d1c61d0c41dad881724"
+    },
+    {
+      "path": "internal/collections/evaluator.go",
+      "bytes": 6994,
+      "sha256": "a4c1ad8f8bcc9c18dd9b9d693422707b0b1f38a42a7da6474a71c8e7ac8265f0"
+    },
+    {
+      "path": "internal/searchtext/cmd/generate-casefold/main.go",
+      "bytes": 785,
+      "sha256": "aa8ce0db6b1e0546fa3550525bc21965ee87db6d5f4987adc6de7cedef8cff68"
+    },
+    {
+      "path": "internal/searchtext/searchtext.go",
+      "bytes": 656,
+      "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc"
+    },
+    {
+      "path": "internal/searchtext/searchtext_test.go",
+      "bytes": 1635,
+      "sha256": "e0acbd3a0b218470bf8c6cb84e7d43deba11cc661a231f4f1a0caa0638e4a27f"
+    },
+    {
+      "path": "internal/searchtext/testdata/normalization.json",
+      "bytes": 313,
+      "sha256": "f298dd1787bb4c68214786fc7cbfb703404235e6554c770d717ca7c0b9d066f2"
+    }
+  ],
+  "files": [
+    {
+      "path": "reference.json",
+      "bytes": 4063,
+      "sha256": "ed4347458d6e52d114f6421279814bb3d254b6468a9b1ddb8bd3a6991a2d2494"
+    },
+    {
+      "path": "reference_probe.go.in",
+      "bytes": 2779,
+      "sha256": "662926033d6db025875436df061c98986294ca5935976e9985b5815367edf283"
+    }
+  ],
+  "repeatCapture": "byte-identical",
+  "scope": "Synthetic Collection names/CRUD/legacy IDs and validity; no original sources or preservation corpus changed."
+}

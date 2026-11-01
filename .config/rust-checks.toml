@@ -1,0 +1,7 @@
+# Maintained default graph: qualified Slint/Winit/Skia with accessibility.
+# Do not use all-features. Renderer changes reopen toolkit qualification.
+[targets]
+aarch64-apple-darwin = []
+x86_64-apple-darwin = []
+x86_64-unknown-linux-gnu = []
+# Windows is deferred to a separate follow-up; source/test history is retained.

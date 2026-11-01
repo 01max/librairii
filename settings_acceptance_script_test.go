@@ -18,11 +18,13 @@ func TestSettingsAcceptanceCleanup(t *testing.T) {
 		appStatus     int
 		wantSuccess   bool
 		wantAttempts  int
+		retainPayload bool
 	}{
-		{"immediate cleanup", 0, 0, true, 1},
-		{"cache writer races cleanup", 1, 0, true, 2},
-		{"persistent cleanup failure", 10, 0, false, 5},
-		{"acceptance failure survives cleanup retry", 1, 1, false, 2},
+		{"immediate cleanup", 0, 0, true, 1, false},
+		{"cache writer races cleanup", 1, 0, true, 2, false},
+		{"persistent cleanup failure", 10, 0, false, 5, false},
+		{"acceptance failure survives cleanup retry", 1, 1, false, 2, false},
+		{"retained payload is refused", 0, 0, false, 1, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -64,7 +66,10 @@ printf '%s\n' \
     native_reveal_succeeded reveal_succeeded complete > "$LIBRAIRII_ACCEPTANCE_CHECKPOINTS"
 mkdir -p "$LIBRAIRII_ACCEPTANCE_RELOCATION/db"
 touch "$LIBRAIRII_ACCEPTANCE_RELOCATION/db/librairii.sqlite3"
-/bin/rm -rf "$LIBRAIRII_ACCEPTANCE_LIBRARY"
+touch "$LIBRAIRII_ACCEPTANCE_LIBRARY/.librairii-library.lock" "$LIBRAIRII_ACCEPTANCE_RELOCATION/.librairii-library.lock"
+if [ "$ACCEPTANCE_TEST_RETAIN_PAYLOAD" = true ]; then
+    printf 'unfinished copy\n' > "$LIBRAIRII_ACCEPTANCE_LIBRARY/unowned-data"
+fi
 `)
 			countPath := filepath.Join(root, "removes")
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -76,6 +81,7 @@ touch "$LIBRAIRII_ACCEPTANCE_RELOCATION/db/librairii.sqlite3"
 				"ACCEPTANCE_TEST_COUNT="+countPath,
 				fmt.Sprintf("ACCEPTANCE_TEST_FAILED_REMOVES=%d", tc.failedRemoves),
 				fmt.Sprintf("ACCEPTANCE_TEST_APP_STATUS=%d", tc.appStatus),
+				fmt.Sprintf("ACCEPTANCE_TEST_RETAIN_PAYLOAD=%t", tc.retainPayload),
 			)
 			output, err := cmd.CombinedOutput()
 			if (err == nil) != tc.wantSuccess {

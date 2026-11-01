@@ -1,0 +1,431 @@
+{
+  "version": 1,
+  "product_license": null,
+  "bundles": [
+    {
+      "id": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+      "scope": "single-core-query-codec",
+      "source_index": ".config/upstream-sources/go-1.26.5-xtext-0.43.0-unicode15-cldr32/source-index.json",
+      "source_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
+      "source_identities": 63,
+      "package_files": 43,
+      "notices_root": ".config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+      "notices": [
+        {
+          "path": "LICENSE-GO-BSD.txt",
+          "bytes": 1453,
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+          "upstream_path": "go-xtext-LICENSE.txt"
+        },
+        {
+          "path": "PATENTS-GO.txt",
+          "bytes": 1303,
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+          "upstream_path": "go-xtext-PATENTS.txt"
+        },
+        {
+          "path": "LICENSE-CLDR32-UNICODE.txt",
+          "bytes": 2849,
+          "sha256": "6a6976a5da6ac21a6a001c685c057f4a6e619be11f5465371088ecd80c7fbe06",
+          "upstream_path": "cldr32-unicode-license.txt"
+        },
+        {
+          "path": "LICENSE-CLDR32-APACHE.txt",
+          "bytes": 11358,
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "upstream_path": "cldr32-apache-license.txt"
+        },
+        {
+          "path": "LICENSE-UNICODE-V3.txt",
+          "bytes": 1995,
+          "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "upstream_path": "current/unicode-license.txt"
+        },
+        {
+          "path": "LICENSE-CC0.txt",
+          "bytes": 7048,
+          "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+          "upstream_path": "cc0-1.0-legalcode.txt"
+        },
+        {
+          "path": "PROVENANCE.md",
+          "bytes": 7916,
+          "sha256": "90726c9be554f621e2ce32cd3acb09b3ac628ce4fbfa660b988916208a23be55",
+          "upstream_path": null
+        }
+      ],
+      "derivative_root": "crates/librairii-core/src/collection_codec/compatibility",
+      "derivative_manifest": "source-manifest.json",
+      "source_selections": {
+        "golang.org/x/text@v0.43.0/internal/tag/tag.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/common.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compose.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/coverage.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/language.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/lookup.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/match.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/parse.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/tables.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/tags.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact/compact.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact/language.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact/parents.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact/tables.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/language/compact/tags.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/coverage.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/doc.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/language.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/match.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/parse.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/tables.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/language/tags.go": [
+          "language-default-without-dns"
+        ],
+        "golang.org/x/text@v0.43.0/internal/internal.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/internal/match.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/transform/transform.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/composition.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/input.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/iter.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/normalize.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/readwriter.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/transform.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/unicode/norm/trie.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/cases.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/context.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/fold.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/info.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/map.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/tables15.0.0.go": [
+          "normalization"
+        ],
+        "golang.org/x/text@v0.43.0/cases/trieval.go": [
+          "normalization"
+        ],
+        "internal/searchtext/searchtext.go": [
+          "product-boundary"
+        ],
+        "Go1.26.5/src/unicode/tables.go": [
+          "normalization"
+        ],
+        "Go1.26.5/src/unicode/graphic.go": [
+          "normalization"
+        ],
+        "Go1.26.5/src/unicode/letter.go": [
+          "normalization"
+        ],
+        "Go1.26.5/src/strings/strings.go": [
+          "normalization"
+        ],
+        "oracle73a93303/frontend/src/search-casefold.json": [
+          "normalization"
+        ],
+        "oracle73a93303/internal/library/story_query.go": [
+          "product-boundary",
+          "runtime-query-normalization"
+        ],
+        "Go1.26.5/src/encoding/json/scanner.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/decode.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/fold.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/stream.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/unicode/utf8/utf8.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/unicode/utf16/utf16.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/encode.go": [
+          "query-json-output"
+        ],
+        "Go1.26.5/src/encoding/json/tables.go": [
+          "query-json-output"
+        ],
+        "Go1.26.5/src/strconv/number.go": [
+          "query-json-i64"
+        ],
+        "Go1.26.5/src/internal/strconv/atoi.go": [
+          "query-json-i64"
+        ],
+        "oracle73a93303/internal/collections/query.go": [
+          "query-product"
+        ],
+        "oracle73a93303/internal/collectionquery/references.go": [
+          "query-product"
+        ],
+        "oracle73a93303/internal/collectionquery/unique_keys.go": [
+          "query-product"
+        ],
+        "oracle73a93303/internal/library/query.go": [
+          "runtime-query-page"
+        ]
+      },
+      "selection_notices": {
+        "normalization": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ],
+        "language-default-without-dns": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CC0.txt"
+        ],
+        "product-boundary": [],
+        "query-product": [],
+        "query-json-wire": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "query-json-i64": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "query-json-output": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "runtime-query-normalization": [],
+        "runtime-query-page": []
+      },
+      "excluded": [
+        "regionTypes.ccTLD-bit1-value2",
+        "internal/language.Region.TLD",
+        "language.Region.TLD"
+      ],
+      "qualification": "source admission only; private implementation and parity pending",
+      "query_selection_scopes": {
+        "query-product": "ONLY frozen v1-v5 saved-query payload/reference/unique-key validation and canonical membership conversion; no CRUD, SQL, source/revision authority or new query semantics.",
+        "query-json-wire": "ONLY scanner single-complete-document grammar, ordered duplicate/key/null/type handling, unquote and per-byte UTF8/UTF16 replacement plus fixed ASCII schema matching. stream.go is ordering reference, never trailing-document admission; no generic reflection decoder.",
+        "query-json-i64": "ONLY public strconv/number.go ParseInt delegation/error projection and internal/strconv/atoi.go ParseInt plus ParseUint dependency for signed base10 bitSize64 JSON integer lexemes. No generic strconv, float coercion or wider integer grammar.",
+        "query-json-output": "ONLY fixed Query serialization order/omission and string escaping references including HTML <>& and U+2028/U+2029 from encode.go/tables.go; no generic encoder/reflection/API."
+      },
+      "query_codec": {
+        "map_path": ".config/query-codec-source-map.json",
+        "map_sha256": "05f0aec3b232507463b708770ae51d8ac707946e27062732ea751fc02f097a4c",
+        "scope": "single-materialized-core-query-codec",
+        "core_leaf": "crates/librairii-core/src/collection_codec/mod.rs"
+      },
+      "runtime_selection_scopes": {
+        "runtime-query-normalization": "ONLY borrowed runtime StoryLibraryQuery fields and the single normalizeStoryLibraryQuery/normalizeStoryLibraryQueryNode pass, its existing criteria validation and canonicalLanguage boundary. Reuse the SAME frozen normalization pipeline with checked input-derived resource bounds; saved-query fixed budgets/passes remain unchanged. No saved-payload decoding/canonicalization, SQL, projection or live authority.",
+        "runtime-query-page": "ONLY ListRequest page/pageSize/sort fields, DefaultPageSize=24, MaxPageSize=100, SortNameAscending=name_asc, SortImportedNewest=imported_desc and normalizeListRequest defaults/validation (page default1). No SQL, list execution, output materialization, metadata, destination/reveal or other query.go behavior."
+      }
+    },
+    {
+      "id": "go-1.26.5-json-v1-studio",
+      "scope": "private-core-import-studio-json-v1",
+      "source_index": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-index.json",
+      "source_index_sha256": "91ff9950bb9608b66cc1c8ce0cbd19fc11df80492d92fda5819897cf43b264cf",
+      "source_schema": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-manifest.schema.json",
+      "source_schema_sha256": "e7c2cd289d76f65950d4d15edf8a95b1f3089283218c0f0a43ac031272c6745c",
+      "source_identities": 20,
+      "notices_root": ".config/upstream-notices/go-1.26.5-json-v1-studio",
+      "notices": [
+        {
+          "path": "LICENSE-GO-BSD.txt",
+          "bytes": 1453,
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+          "origin": {
+            "kind": "official-go-source-archive",
+            "member": "go/LICENSE",
+            "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+          }
+        },
+        {
+          "path": "PATENTS-GO.txt",
+          "bytes": 1303,
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+          "origin": {
+            "kind": "official-go-source-archive",
+            "member": "go/PATENTS",
+            "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+          }
+        },
+        {
+          "path": "LICENSE-UNICODE-V3.txt",
+          "bytes": 1995,
+          "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "origin": {
+            "kind": "existing-reviewed-current-notice-capture",
+            "url": "https://www.unicode.org/license.txt",
+            "capture_date": "2026-10-20",
+            "upstream_capture_path": "current/unicode-license.txt",
+            "qualification": "current 2026 V3, not claimed recovered original Unicode15 historical notice; no UCD regeneration"
+          }
+        },
+        {
+          "path": "PROVENANCE.md",
+          "bytes": 5493,
+          "sha256": "9103496501396469a04ea4431a76992a1c93a2443b24dcb79bdf418f6caef1a7",
+          "origin": null
+        }
+      ],
+      "derivative_root": "crates/librairii-core/src/import/studio_json",
+      "derivative_manifest": "source-manifest.json",
+      "source_selections": {
+        "Go1.26.5/src/encoding/json/scanner.go": "json-v1-scanner",
+        "Go1.26.5/src/encoding/json/decode.go": "json-v1-fixed-reducer",
+        "Go1.26.5/src/encoding/json/fold.go": "json-v1-field-fold",
+        "Go1.26.5/src/encoding/json/stream.go": "json-v1-decoder-order",
+        "Go1.26.5/src/unicode/letter.go": "unicode15-simple-fold-and-white-space",
+        "Go1.26.5/src/unicode/tables.go": "unicode15-simple-fold-and-white-space",
+        "Go1.26.5/src/unicode/utf8/utf8.go": "go-json-utf8-and-trim-boundary",
+        "Go1.26.5/src/unicode/utf16/utf16.go": "go-json-utf16",
+        "Go1.26.5/src/encoding/json/encode.go": "reference-only",
+        "Go1.26.5/src/reflect/value.go": "reference-only",
+        "Go1.26.5/src/runtime/slice.go": "reference-only",
+        "Go1.26.5/src/encoding/json/decode_test.go": "reference-only",
+        "Go1.26.5/src/encoding/json/stream_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/studio_zip.go": "studio-text-and-optional-metadata-boundary",
+        "oracle73a93303/internal/inspection/zip_inspector.go": "studio-text-and-optional-metadata-boundary",
+        "oracle73a93303/internal/inspection/studio_zip_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/zip_inspector_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/testfixture/archive.go": "reference-only",
+        "Go1.26.5/src/strings/strings.go": "go-trim-space",
+        "Go1.26.5/src/unicode/graphic.go": "unicode15-is-space"
+      },
+      "selection_notices": {
+        "go-json-utf16": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "go-json-utf8-and-trim-boundary": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "go-trim-space": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-decoder-order": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-field-fold": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ],
+        "json-v1-fixed-reducer": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-scanner": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "studio-text-and-optional-metadata-boundary": [],
+        "unicode15-is-space": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ],
+        "unicode15-simple-fold-and-white-space": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ]
+      },
+      "required_derivatives": {
+        "crates/librairii-core/src/import/studio_json/mod.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/scanner.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/strings.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/tests.rs": "authored",
+        "crates/librairii-core/src/import/studio_json/text.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/optional.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/optional/tests.rs": "authored"
+      },
+      "qualification": "source inventory only; no behavior, resource, effect or platform qualification"
+    }
+  ]
+}

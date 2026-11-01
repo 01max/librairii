@@ -1,0 +1,201 @@
+{
+  "scope": "local observed Python identities; root discovery does not include nested workspaces",
+  "normal": {
+    "testsRun": 15,
+    "skipped": 0,
+    "expectedFailures": 0,
+    "unexpectedSuccesses": 0,
+    "identities": [
+      {
+        "source": "qualification/section-2/tests/test_corpus_comparison.py",
+        "identity": "qualification_test_corpus_comparison.SemanticDifferences.test_array_order_and_identity_changes_are_reported"
+      },
+      {
+        "source": "qualification/section-2/tests/test_corpus_comparison.py",
+        "identity": "qualification_test_corpus_comparison.SemanticDifferences.test_missing_field_is_distinct_from_null_and_boolean_from_integer"
+      },
+      {
+        "source": "qualification/section-2/tests/test_corpus_comparison.py",
+        "identity": "qualification_test_corpus_comparison.SemanticDifferences.test_real_pinned_tools_override_the_callers_older_toolchain"
+      },
+      {
+        "source": "qualification/section-2/tests/test_corpus_comparison.py",
+        "identity": "qualification_test_corpus_comparison.SemanticDifferences.test_rejected_suffix_is_never_relabelled_acceptance"
+      },
+      {
+        "source": "qualification/section-2/tests/test_corpus_comparison.py",
+        "identity": "qualification_test_corpus_comparison.SemanticDifferences.test_unicode_filename_forms_are_not_normalized_away"
+      },
+      {
+        "source": "qualification/section-2/tests/test_synthetic_7z.py",
+        "identity": "qualification_test_synthetic_7z.IndependentZstd.test_repeated_production_has_valid_headers_and_ordered_exact_payload"
+      },
+      {
+        "source": "qualification/section-2/tests/test_decoder_supervision.py",
+        "identity": "qualification_test_decoder_supervision.FailClosed.test_actual_control_validation_survives_both_optimization_routes"
+      },
+      {
+        "source": "qualification/section-2/tests/test_decoder_supervision.py",
+        "identity": "qualification_test_decoder_supervision.FailClosed.test_failed_control_records_tooling_error_without_running_experiments"
+      },
+      {
+        "source": "qualification/section-2/tests/test_decoder_supervision.py",
+        "identity": "qualification_test_decoder_supervision.FailClosed.test_optimized_host_configuration_failure_prevents_child_start"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_changed_frozen_file_is_rejected_and_restored_bytes_verify"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_duplicate_or_oversized_synthetic_cases_fail_closed"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_owned_module_excludes_unverified_extra_go_before_build"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_source_path_escape_is_refused_before_reading_outside_the_oracle"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_tooling_failure_cannot_be_reported_as_a_compatibility_result"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_untrusted_or_nonregular_zip_cannot_create_owned_sources"
+      }
+    ]
+  },
+  "rust": [
+    {
+      "sourceListing": "qualification/section-2/unicode-compat/nextest-identities.json",
+      "features": [],
+      "target": "aarch64-apple-darwin",
+      "testsRun": 6,
+      "skipped": 0,
+      "identities": [
+        {
+          "binary": "qualification-unicode-compat",
+          "test": "tests::hex_decoder_refuses_malformed_or_non_utf8_protocol_data"
+        },
+        {
+          "binary": "qualification-unicode-compat",
+          "test": "tests::strips_only_mn_and_keeps_spacing_marks_and_pending_space_across_mn"
+        },
+        {
+          "binary": "qualification-unicode-compat",
+          "test": "tests::whitespace_range_strides_do_not_fill_gaps_or_accept_zero_width_space"
+        },
+        {
+          "binary": "qualification-unicode-compat::bin/qualification-unicode-compat",
+          "test": "tests::comparison_retains_differences_and_recovers_with_complete_correct_stream"
+        },
+        {
+          "binary": "qualification-unicode-compat::bin/qualification-unicode-compat",
+          "test": "tests::measured_surviving_mc_counterexample_is_a_final_pipeline_rejection"
+        },
+        {
+          "binary": "qualification-unicode-compat::bin/qualification-unicode-compat",
+          "test": "tests::missing_reordered_or_incomplete_oracle_output_never_passes"
+        }
+      ]
+    },
+    {
+      "sourceListing": "/private/tmp/librairii-4-spike-default-identities.json",
+      "features": [],
+      "target": "aarch64-apple-darwin",
+      "testsRun": 7,
+      "skipped": 0,
+      "identities": [
+        {
+          "binary": "librairii-qualification",
+          "test": "tests::review_requires_explicit_decisions_and_clears_them_after_apply"
+        },
+        {
+          "binary": "librairii-qualification",
+          "test": "tests::synthetic_fixture_retains_multilingual_titles_and_stable_selection_ids"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "all_empty_sql_prefixes_reopen_and_migrate_with_bundled_sqlite"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "online_backup_includes_committed_wal_and_preserves_independent_snapshot"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "sevenzip_checked_in_synthetic_containers_decode_bounded_without_extraction"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "sevenzip_truncation_and_header_crc_are_rejected"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "zip_store_deflate_crc_and_unsafe_name_are_observable_without_extraction"
+        }
+      ]
+    },
+    {
+      "sourceListing": "/private/tmp/librairii-4-spike-gui-identities.json",
+      "features": [
+        "gui"
+      ],
+      "target": "aarch64-apple-darwin",
+      "testsRun": 7,
+      "skipped": 0,
+      "identities": [
+        {
+          "binary": "librairii-qualification",
+          "test": "tests::review_requires_explicit_decisions_and_clears_them_after_apply"
+        },
+        {
+          "binary": "librairii-qualification",
+          "test": "tests::synthetic_fixture_retains_multilingual_titles_and_stable_selection_ids"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "all_empty_sql_prefixes_reopen_and_migrate_with_bundled_sqlite"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "online_backup_includes_committed_wal_and_preserves_independent_snapshot"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "sevenzip_checked_in_synthetic_containers_decode_bounded_without_extraction"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "sevenzip_truncation_and_header_crc_are_rejected"
+        },
+        {
+          "binary": "librairii-qualification::data_feasibility",
+          "test": "zip_store_deflate_crc_and_unsafe_name_are_observable_without_extraction"
+        }
+      ]
+    },
+    {
+      "sourceListing": "/private/tmp/librairii-4-child-identities.json",
+      "features": [],
+      "target": "aarch64-apple-darwin",
+      "testsRun": 2,
+      "skipped": 0,
+      "identities": [
+        {
+          "binary": "qualification-decoder-budget::bin/qualification-decoder-budget",
+          "test": "tests::frozen_metadata_boundaries_and_overflow_remain_explicit"
+        },
+        {
+          "binary": "qualification-decoder-budget::bin/qualification-decoder-budget",
+          "test": "tests::seeking_back_does_not_reset_the_actual_source_read_budget"
+        }
+      ]
+    }
+  ],
+  "retainedRustListingHead": "fd3a97577bb59523ba6c8e0c1ff3a2610e47039a",
+  "reviewFix": "required P2 authenticated module materialization; two added Python tests, no removed Rust/Python identities"
+}

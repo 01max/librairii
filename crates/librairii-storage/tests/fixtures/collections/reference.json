@@ -1,0 +1,170 @@
+{
+  "cases": [
+    {
+      "input": "  All\tStories ",
+      "name": "All Stories",
+      "normalizedName": "all stories",
+      "valid": true
+    },
+    {
+      "input": "ÉTÉ",
+      "name": "ÉTÉ",
+      "normalizedName": "ete",
+      "valid": true
+    },
+    {
+      "input": "𝑨",
+      "name": "𝑨",
+      "normalizedName": "A",
+      "valid": true
+    },
+    {
+      "input": "İIıi",
+      "name": "İIıi",
+      "normalizedName": "iiıi",
+      "valid": true
+    },
+    {
+      "input": "ab",
+      "name": "a b",
+      "normalizedName": "a b",
+      "valid": true
+    },
+    {
+      "input": "a​b",
+      "name": "a​b",
+      "normalizedName": "a​b",
+      "valid": true
+    },
+    {
+      "input": "a\u0000b",
+      "name": "",
+      "normalizedName": "",
+      "valid": false
+    },
+    {
+      "input": "́",
+      "name": "",
+      "normalizedName": "",
+      "valid": false
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "normalizedName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": true
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "name": "",
+      "normalizedName": "",
+      "valid": false
+    },
+    {
+      "input": "á́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́́",
+      "name": "",
+      "normalizedName": "",
+      "valid": false
+    }
+  ],
+  "events": [
+    {
+      "revision": 1,
+      "id": 1,
+      "name": "𝑨 ÉTÉ",
+      "normalizedName": "A ete",
+      "position": 0,
+      "queryVersion": 5,
+      "queryPayload": "{\"name\":\"A\"}",
+      "validity": "valid"
+    },
+    {
+      "revision": 1,
+      "id": 2,
+      "name": "Independent",
+      "normalizedName": "independent",
+      "position": 1,
+      "queryVersion": 5,
+      "queryPayload": "{\"name\":\"a\"}",
+      "validity": "valid"
+    },
+    {
+      "revision": 2,
+      "id": 1,
+      "name": "𝑨 ÉTÉ",
+      "normalizedName": "A ete",
+      "position": 0,
+      "queryVersion": 5,
+      "queryPayload": "{\"name\":\"a\"}",
+      "validity": "valid"
+    },
+    {
+      "revision": 3,
+      "id": 1,
+      "name": "Histoires d'ÉTÉ",
+      "normalizedName": "histoires d'ete",
+      "position": 0,
+      "queryVersion": 5,
+      "queryPayload": "{\"name\":\"a\"}",
+      "validity": "valid"
+    },
+    {
+      "duplicateName": true
+    },
+    {
+      "revision": 4,
+      "id": 1,
+      "name": "Histoires d'ÉTÉ",
+      "normalizedName": "histoires d'ete",
+      "position": 0,
+      "queryVersion": 5,
+      "queryPayload": "{}",
+      "validity": "valid"
+    },
+    [
+      {
+        "revision": 1,
+        "id": 2,
+        "name": "Independent",
+        "normalizedName": "independent",
+        "position": 0,
+        "queryVersion": 5,
+        "queryPayload": "{\"name\":\"a\"}",
+        "validity": "valid"
+      },
+      {
+        "revision": 4,
+        "id": 1,
+        "name": "Histoires d'ÉTÉ",
+        "normalizedName": "histoires d'ete",
+        "position": 1,
+        "queryVersion": 5,
+        "queryPayload": "{}",
+        "validity": "valid"
+      }
+    ],
+    {
+      "revision": 2,
+      "id": 77,
+      "name": "Legacy",
+      "normalizedName": "legacy",
+      "position": 77,
+      "queryVersion": 1,
+      "queryPayload": "{\"page\":9,\"name\":\"moon\",\"brokenState\":\"broken\"}",
+      "validity": "needs_attention"
+    },
+    {
+      "revision": 2,
+      "id": 88,
+      "name": "Unsupported",
+      "normalizedName": "unsupported",
+      "position": 88,
+      "queryVersion": 99,
+      "queryPayload": "{\"name\":\"forest\"}",
+      "validity": "needs_attention"
+    }
+  ],
+  "go": "go1.26.5",
+  "scalarDigest": "719ac97bc7c8ab003ec830102bc45f859078539cf639fac2b175a7944a210491",
+  "unicode": "15.0.0"
+}

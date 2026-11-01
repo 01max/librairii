@@ -81,6 +81,7 @@ import LibrarySidebar from './LibrarySidebar';
 import LibraryViewPicker from './LibraryViewPicker';
 import {useLibraryView} from './library-view';
 import {useNoticePreferences} from './notice-preferences';
+import {exportPreferenceHandover} from './preference-handover';
 import OperationHistoryDialog from './OperationHistoryDialog';
 import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
@@ -1849,7 +1850,8 @@ function App() {
 
     return (
         <div className={`app view-${libraryView}`}>
- <SettingsPanel onLocation={setLibraryRoot} onReady={() => setSettingsRevision((value) => value + 1)}/>
+ <SettingsPanel onLocation={setLibraryRoot} onReady={() => setSettingsRevision((value) => value + 1)}
+    onExportPreferences={() => exportPreferenceHandover(libraryView, dismissedOperations, luniiSyncDismissed, queryHistory.handover())}/>
             <span className="sr-only" data-testid="application-state">
                 {t("Application state:")}{' '}{applicationState}
             </span>

@@ -17,3 +17,10 @@ config/master.key
 /src-tauri/
 /storage/
 vendor/bundle/
+
+# Rust build and quality outputs (keep Cargo.lock tracked).
+/target/
+/fuzz/target/
+/fuzz/artifacts/
+**/*.snap.new
+__pycache__/

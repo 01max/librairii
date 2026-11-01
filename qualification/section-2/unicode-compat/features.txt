@@ -1,0 +1,24 @@
+qualification-unicode-compat v0.0.0 (/Users/maxime/.ao/data/worktrees/librairii/librairii-4/qualification/section-2/unicode-compat)
+unicode-general-category v0.6.0
+serde_json feature "default"
+serde_json v1.0.154
+memchr v2.8.3
+serde_core v1.0.229
+itoa feature "default"
+itoa v1.0.18
+zmij feature "default"
+zmij v1.0.23
+serde_json feature "std"
+serde_json v1.0.154 (*)
+memchr feature "std"
+memchr v2.8.3
+memchr feature "alloc"
+memchr v2.8.3
+serde_core feature "std"
+serde_core v1.0.229
+unicode-normalization feature "std"
+unicode-normalization v0.1.22
+tinyvec feature "alloc"
+tinyvec v1.13.3
+tinyvec feature "default"
+tinyvec v1.13.3

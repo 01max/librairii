@@ -1,0 +1,114 @@
+{
+  "format": "librairii.release-evidence-input",
+  "schema": 1,
+  "source_commit": "REPLACE_WITH_EMBEDDED_40_CHARACTER_BUILD_SOURCE",
+  "source_tree": "REPLACE_WITH_40_CHARACTER_SOURCE_TREE",
+  "targets": [
+    {
+      "target": "aarch64-apple-darwin",
+      "candidate": {
+        "path": "candidate-arm.zip",
+        "bytes": 0,
+        "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+        "artifact_id": 0,
+        "run_id": 0
+      },
+      "reports": {
+        "quality": {
+          "path": "quality-arm.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "scale": {
+          "path": "scale-arm.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "installed": {
+          "path": "installed-arm.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        }
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "candidate": {
+        "path": "candidate-intel.zip",
+        "bytes": 0,
+        "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+        "artifact_id": 0,
+        "run_id": 0
+      },
+      "reports": {
+        "quality": {
+          "path": "quality-intel.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "scale": {
+          "path": "scale-intel.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "installed": {
+          "path": "installed-intel.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        }
+      }
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "candidate": {
+        "path": "candidate-linux.zip",
+        "bytes": 0,
+        "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+        "artifact_id": 0,
+        "run_id": 0
+      },
+      "reports": {
+        "quality": {
+          "path": "quality-linux.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "scale": {
+          "path": "scale-linux.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        },
+        "installed": {
+          "path": "installed-linux.zip",
+          "bytes": 0,
+          "sha256": "REPLACE_WITH_PROVIDER_ZIP_SHA256",
+          "artifact_id": 0,
+          "run_id": 0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Final parity reconciliation and release review remain open.",
+    "VoiceOver execution is excluded; no macOS spoken accessibility claim.",
+    "Windows and script-specific CJK/Arabic IME qualification are deferred.",
+    "In-place Go adoption is not qualified; use independent library/profile/recovery roots."
+  ],
+  "retained_records": []
+}

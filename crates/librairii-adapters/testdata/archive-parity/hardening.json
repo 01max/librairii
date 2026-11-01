@@ -1,0 +1,161 @@
+{
+  "scope": "individually retained changed acceptance categories; frozen preservation corpus remains untouched",
+  "records": [
+    {
+      "category": "selected 7z member CRC",
+      "fixture": "selected-crc.7z",
+      "sha256": "81c55559bf53183189df7013e8ac1c99b210b24387d6b84c0b054e2db8e1a882",
+      "prior_go": {
+        "file": "selected-crc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "metadata_limit",
+      "rationale": "Compare actual requested metadata with its declared file CRC; baseline did not compare it.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "preceding solid member CRC",
+      "fixture": "preceding-crc.7z",
+      "sha256": "f8aa7c3c61996f529f983475325e086c6d62533171861e041275ea72cdec953e",
+      "prior_go": {
+        "file": "preceding-crc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bounded solid traversal validates predecessor CRC while streaming through cancellation checkpoints.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "decoder memory estimate above256MiB",
+      "fixture": "dictionary-512m.7z",
+      "sha256": "ebeaf3ff5dd6411ea70d2ca4cec01dd20f38ef3b82d93dc912982aaccd0310ac",
+      "prior_go": {
+        "file": "dictionary-512m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Refuse declared decoder memory before construction, including unselected payloads; no unsafe allocation probe is needed.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "encoded/end header allocation above16MiB",
+      "fixture": "header-16m.7z",
+      "sha256": "1676a984e10f647ad1f40ad387ea2a7f93c69df2a62c54f609ecbc5b33dfa23b",
+      "prior_go": {
+        "file": "header-16m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bound parser buffering before allocation; valid ignored Dummy properties do not justify allocating unlimited header bytes.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "decoded header allocation above16MiB",
+      "fixture": "decoded-header-16m.7z",
+      "sha256": "09c24110e4785c60c72d54585edc17106807b9d6efa73e7f56fee836370ebf59",
+      "prior_go": {
+        "file": "decoded-header-16m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bound encoded header expansion before buffering its decoded representation.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "more than8 coders per block",
+      "fixture": "coders-nine.7z",
+      "sha256": "403233a161f7b00442ece5b201b8e29091e6236c99d59f7d824ab71fa1fb075f",
+      "prior_go": {
+        "file": "coders-nine.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bound recursive coder graph depth/work before decoder creation; nine valid identity coders are rejected.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "more than8 streams per coder",
+      "fixture": "streams-nine.7z",
+      "sha256": "0d536e30dd25adc3e38f6ff1d675f50f01e89a27eb8b69d9763e4983a5ec2379",
+      "prior_go": {
+        "file": "streams-nine.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bound stream graph allocation/quadratic linking; baseline index-only inspection accepts this uninterpreted multi-stream payload.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "more than10000 aggregate coders",
+      "fixture": "total-coders-10002.7z",
+      "sha256": "35a93ff83cd51bb5d9b87ce55d79ae056a32a3a08a0f73dd500bcb6906983f80",
+      "prior_go": {
+        "file": "total-coders-10002.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "Bound total parser graph allocation independently of frozen entry count.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "unmodelled decoder memory in unused blocks",
+      "fixture": "unknown-unused-coder.7z",
+      "sha256": "8e55093fdf1f7a5ce1b52e39e773a748e11554c4ca8d60997521d308af69eeee",
+      "prior_go": {
+        "file": "unknown-unused-coder.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "invalid_container",
+      "rationale": "A decoder memory budget cannot be established for unknown methods, even if index-only Go inspection would not request bytes.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "incomplete PNG framing",
+      "fixture": "png-header-only.zip",
+      "sha256": "0c4a99074d0b57b301af2d383069af871778a72908b09ae506010c7fcaf8b9ed",
+      "prior_go": {
+        "file": "png-header-only.zip",
+        "format": "studio_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "artwork_limit",
+      "rationale": "Require PNG decoder header/framing acceptance rather than IHDR-only RGBA DecodeConfig acceptance; preserve compressed artwork without full raster decode.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "Zstd frame window above128MiB",
+      "fixture": "zstd-window-256m.7z",
+      "sha256": "6b1a77103e5a9b720a6d925b267cbb32881cdb7497926b7f8e2e9810ebc4fc83",
+      "prior_go": {
+        "file": "zstd-window-256m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "metadata_limit",
+      "rationale": "Refuse a valid 256MiB Zstd window under the separately enforced 128MiB Zstd window clamp. This is stricter than both frozen Go acceptance and the global 256MiB decoder model limit, and is independently recorded rather than folded into that other category.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    },
+    {
+      "category": "more than10000 aggregate packed streams",
+      "fixture": "pack-streams-12000.7z",
+      "sha256": "55d2a63022cd47207550bea5583bfb2bdd5509fef67e58adf7be5a624ffa1577",
+      "prior_go": {
+        "file": "pack-streams-12000.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "entry_limit",
+      "rationale": "Bound parser allocations for packed-stream offsets/sizes independently of file and coder counts. This official7zz-produced archive has 3000 files/coders and 12000 packed streams; all files independently test successfully and Go accepts its complete import identity. The 10000 structural ceiling deliberately rejects it.",
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
+    }
+  ]
+}

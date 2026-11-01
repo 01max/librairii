@@ -1,0 +1,58 @@
+import {Button,ComboBox,VerticalBox,HorizontalBox,Palette} from "std-widgets.slint";
+export struct ReportGroup {heading:string,entries:[string]}
+component Label inherits Text {wrap: word-wrap;color: Palette.foreground;vertical-stretch:0;}
+component Command inherits Button {
+    callback reveal(length,length);
+    changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}
+}
+export component Operations inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> picking;
+    in property <bool> loading;
+    in property <bool> history-report;
+    in property <string> retry-label;
+    callback back-history();
+    in property <[string]> choices;
+    in-out property <int> selected;
+    in property <string> choice;
+    in property <string> summary;
+    in property <string> notice;
+    in property <string> runtime;
+    in property <[string]> items;
+    in property <[ReportGroup]> groups;
+    in property <bool> cancellable;
+    in property <bool> retryable;
+    in property <bool> previous;
+    in property <bool> next;
+    in property <bool> revealable;
+    in property <string> reveal-notice;
+    callback reveal-destination();
+    callback pick();callback cancel();callback retry();callback select(int);callback refresh();callback page(int);callback reveal(length,length);
+    public function activate(){if root.history-report {back.focus();}else{choose.focus();}}
+    out property <bool> first-focused: root.history-report ? back.has-focus : choose.has-focus;
+    out property <bool> selector-focused: selector.has-focus;
+    out property <string> displayed-choice:selector.current-value;
+    public function sync-choice(){selector.current-index=root.selected;selector.current-value=root.choice;}
+    padding:0px;spacing:10px;
+    back:=Command {visible:root.history-report;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.picking;text:root.french ? "Retour à l’historique" : "Back to History";clicked=>{root.back-history();}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {visible:!root.history-report;height:self.visible ? self.preferred-height : 0px;text: root.french ? "Importez de 1 à 1 000 archives PK, ZIP ou 7z. Les originaux sont conservés. Vous pouvez continuer à parcourir la bibliothèque pendant les imports." : "Import 1 to 1,000 PK, ZIP or 7z archives. Original files are preserved. You can keep browsing while imports run.";}
+    choose:=Command {visible:!root.history-report;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.picking;text:root.picking ? (root.french ? "Sélection des fichiers…" : "Choosing files…") : (root.french ? "Choisir des archives…" : "Choose archives…");clicked=>{root.pick();}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {text:root.runtime;accessible-live-region:polite;}
+    Label {text:root.notice;accessible-live-region:polite;}
+    selector:=ComboBox {enabled:root.active && !root.picking && root.choices.length>0 && !root.loading;model:root.choices;current-index <=> root.selected;accessible-label:root.french ? "Opération" : "Operation";selected(_)=>{root.select(self.current-index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    HorizontalBox {padding:0px;spacing:8px;
+        Command {enabled:root.active && !root.picking;text:root.french ? "Actualiser" : "Refresh";clicked=>{root.refresh();}reveal(y,h)=>{root.reveal(y,h);}}
+        Command {enabled:root.active && !root.picking && !root.loading && root.cancellable;text:root.french ? "Annuler l’opération" : "Cancel operation";clicked=>{root.cancel();}reveal(y,h)=>{root.reveal(y,h);}}
+    }
+    Command {enabled:root.active && !root.picking && !root.loading && root.retryable;text:root.retry-label;clicked=>{root.retry();}reveal(y,h)=>{root.reveal(y,h);}}
+    Command {visible:root.revealable;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.picking && !root.loading && root.revealable;text:root.french ? "Afficher la destination" : "Reveal destination";clicked=>{root.reveal-destination();}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {text:root.loading ? "" : root.reveal-notice;accessible-live-region:polite;}
+    Label {text:root.summary;}
+    for group in root.groups: VerticalBox {padding:0px;spacing:6px;Label {text:group.heading;font-weight:600;}for item in group.entries: Label {text:item;}}
+    for item in root.items: Label {visible:root.groups.length==0;height:self.visible ? self.preferred-height : 0px;text:item;}
+    HorizontalBox {padding:0px;spacing:8px;
+        Command {enabled:root.active && !root.picking && !root.loading && root.previous;text:root.french ? "Résultats précédents" : "Previous results";clicked=>{root.page(-1);}reveal(y,h)=>{root.reveal(y,h);}}
+        Command {enabled:root.active && !root.picking && !root.loading && root.next;text:root.french ? "Résultats suivants" : "Next results";clicked=>{root.page(1);}reveal(y,h)=>{root.reveal(y,h);}}
+    }
+}

@@ -1,0 +1,277 @@
+name: Task 2 native qualification
+
+on:
+  pull_request:
+    paths:
+      - 'qualification/section-2/**'
+      - '.github/workflows/task2-qualification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: task2-qualification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spike:
+    name: Task 2 spike ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+      SLINT_BACKEND: winit-skia-software
+      RUST_TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Linux desktop build and CPU smoke prerequisites
+        if: runner.os == 'Linux'
+        run: >-
+          .github/scripts/ubuntu-apt build-essential clang cmake ninja-build pkg-config python3
+          libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev
+          libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev
+          libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
+          libvulkan1 mesa-vulkan-drivers mesa-utils time weston wayland-utils dbus
+          qemu-system-x86 qemu-utils cloud-image-utils genisoimage acl
+      - name: Install the exact candidate compiler
+        run: |
+          mkdir -p target/task2-evidence
+          git rev-parse HEAD > target/task2-evidence/source.txt
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("qualification/section-2/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal --component rustfmt --component clippy
+      - name: Cache the isolated spike graph and build outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: task2-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('qualification/section-2/rust-toolchain.toml', 'qualification/section-2/Cargo.toml', 'qualification/section-2/Cargo.lock') }}
+          restore-keys: task2-build-v1-${{ runner.os }}-${{ runner.arch }}-
+          path: |
+            ~/.cargo/registry/
+            qualification/section-2/target/
+      - name: Restore the exact compiled helper tools
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: rust-tools-v1-${{ runner.os }}-${{ runner.arch }}-quality-${{ hashFiles('rust-toolchain.toml', '.config/rust-tools.toml', '.github/scripts/install-rust-tools.py') }}
+          path: ${{ runner.tool_cache }}/librairii-cargo-tools/quality
+      - name: Ensure pinned test helpers
+        env:
+          CARGO_INSTALL_ROOT: ${{ runner.tool_cache }}/librairii-cargo-tools/quality
+          TOOL_SET: quality
+        run: |
+          export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
+          python3 -I -B .github/scripts/install-rust-tools.py "$TOOL_SET"
+          printf '%s\n' "$CARGO_INSTALL_ROOT/bin" >> "$GITHUB_PATH"
+      - name: Assert native architecture and record compiler
+        run: |
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
+          mkdir -p target/task2-evidence
+          git rev-parse HEAD > target/task2-evidence/source.txt
+          rustc -vV > target/task2-evidence/rustc.txt
+      - name: Rust formatting, warnings and tests
+        working-directory: qualification/section-2
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --features gui --all-targets -- -D warnings
+          cargo nextest run --locked --features gui --config-file ../../.config/nextest.toml --profile ci
+          cargo test --locked -p accesskit_atspi_common --lib
+          cargo test --locked --features gui --doc
+          python3 -I -B -c 'import ast,pathlib,subprocess; [ast.parse(pathlib.Path(p).read_bytes(), filename=p) for p in subprocess.check_output(["git","ls-files","--","*.py"], text=True).splitlines()]'
+          python3 -I -B -m unittest discover -s tests -p 'test_*.py'
+      - name: Build the native spike
+        working-directory: qualification/section-2
+        run: cargo build --locked --release --features gui --bin qualification-desktop
+      - name: Public controller and widget smokes
+        run: |
+          spike="$PWD/qualification/section-2/target/release/qualification-desktop"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a python3 qualification/section-2/run-smokes.py "$spike" 2>&1 | tee target/task2-evidence/gui-smokes.log
+          else
+            python3 qualification/section-2/run-smokes.py "$spike" 2>&1 | tee target/task2-evidence/gui-smokes.log
+          fi
+      - name: Assemble package and operator checklist
+        id: package
+        run: >-
+          python3 qualification/section-2/package.py
+          --binary qualification/section-2/target/release/qualification-desktop
+          --target "$RUST_TARGET"
+          --output "target/task2-evidence/task2-$RUST_TARGET" --no-disk-image
+      - name: Verify archive round-trip bytes and native host
+        run: |
+          roundtrip="$RUNNER_TEMP/task2-roundtrip"
+          mkdir -p "$roundtrip"
+          tar -xzf "target/task2-evidence/task2-$RUST_TARGET.tar.gz" -C "$roundtrip"
+          python3 qualification/section-2/observe.py --package "$roundtrip/task2-$RUST_TARGET" \
+            --operator ci-archive-byte-verification --output target/task2-evidence/archive-verification.json
+      - name: Measure retained local artwork reads and full PNG decoding
+        run: |
+          binary="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/qualification-desktop"
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            binary="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/LibrairiiQualification.app/Contents/MacOS/qualification-desktop"
+          fi
+          "$binary" --artwork-probe > target/task2-evidence/artwork-performance.log
+      - name: Inspect packaged native runtime requirements
+        run: >-
+          python3 qualification/section-2/inspect-runtime.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --output target/task2-evidence/runtime-requirements.json
+      - name: Force Linux GPU initialization failure and prove Skia CPU recovery
+        if: runner.os == 'Linux'
+        run: >-
+          python3 qualification/section-2/check-gpu-recovery.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --output target/task2-evidence/gpu-recovery
+      - name: Record actual Orca speech and keyboard accessibility in private Linux desktops
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-accessibility-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/accessibility-linux
+      - name: Exercise the packaged Linux app on isolated Wayland without X11 fallback
+        if: runner.os == 'Linux'
+        run: >-
+          dbus-run-session -- python3 qualification/section-2/check-wayland.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --output target/task2-evidence/wayland
+      - name: Launch the verified Linux package offline without source or development tools
+        if: runner.os == 'Linux'
+        run: >-
+          python3 qualification/section-2/check-clean-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/clean-linux
+      - name: Observe real portal pickers, parent association, native focus and folder reveal
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-native-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/native-linux
+      - name: Retain native Linux traces before the independent VM checks
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: task2-native-linux-${{ github.event.pull_request.head.sha || github.sha }}
+          path: target/task2-evidence/native-linux/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Install, reboot and reinstall the verified package in an offline native Linux VM
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -u):rw" /dev/kvm
+          python3 qualification/section-2/check-linux-vm.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --output target/task2-evidence/linux-vm
+      - name: Check headless native AX snapshot attribute fixtures
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          python3 -I -B qualification/section-2/native-macos/check-attributes.py "$RUNNER_TEMP/task2-ax-attributes"
+          cp "$RUNNER_TEMP/task2-ax-attributes/receipt.json" target/task2-evidence/macos-ax-attribute-fixtures.json
+      - name: Inventory macOS native observer access without requesting privacy permissions
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          xcrun swiftc qualification/section-2/macos-automation-access.swift -o "$RUNNER_TEMP/task2-macos-access"
+          "$RUNNER_TEMP/task2-macos-access" > target/task2-evidence/macos-automation-access.json
+      - name: Observe actual native macOS sheets, menus, clipboard and folder reveal
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          xcrun swiftc qualification/section-2/native-macos/observer.swift -o "$RUNNER_TEMP/task2-native-macos"
+          python3 qualification/section-2/check-native-macos.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --helper "$RUNNER_TEMP/task2-native-macos" \
+            --output target/task2-evidence/native-macos
+      - name: Observe French UTF-8 dead keys and native editing on the disposable macOS account
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        env:
+          TASK2_INPUT_CI: '1'
+        run: |
+          xcrun swiftc qualification/section-2/native-macos/observer.swift -o "$RUNNER_TEMP/task2-input-macos"
+          python3 qualification/section-2/check-input-macos.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --helper "$RUNNER_TEMP/task2-input-macos" \
+            --output target/task2-evidence/input-macos
+      - name: Observe native Linux window sizes, contrast and mixed-scale transitions
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-display-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/display-linux
+      - name: Observe native Mac window sizes, localized dialogs and contrast
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-display-macos.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --helper "$RUNNER_TEMP/task2-native-macos"
+          --output target/task2-evidence/display-macos
+      - name: Launch and relaunch the Mac package with denied source and development access
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-clean-macos.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --helper "$RUNNER_TEMP/task2-native-macos"
+          --output target/task2-evidence/clean-macos
+      - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
+        run: |
+          package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          archive="$PWD/target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          output="$PWD/target/task2-evidence/resources"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a python3 qualification/section-2/measure-resources.py \
+              --package "$package" --archive "$archive" --output "$output"
+          else
+            python3 qualification/section-2/measure-resources.py \
+              --package "$package" --archive "$archive" --output "$output"
+          fi
+      - name: Verify and exercise the packaged macOS app
+        if: runner.os == 'macOS'
+        run: |
+          app="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/LibrairiiQualification.app"
+          codesign --verify --deep --strict --verbose=2 "$app" 2>&1 | tee target/task2-evidence/bundle-signature.txt
+          codesign --display --verbose=2 "$app" 2>> target/task2-evidence/bundle-signature.txt
+          python3 qualification/section-2/run-smokes.py "$app/Contents/MacOS/qualification-desktop" \
+            2>&1 | tee target/task2-evidence/packaged-gui-smokes.log
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          app = pathlib.Path(os.environ['RUNNER_TEMP']) / 'task2-roundtrip' / ('task2-' + os.environ['RUST_TARGET']) / 'LibrairiiQualification.app'
+          result = subprocess.run(['/usr/sbin/spctl', '--assess', '--type', 'execute', '--verbose=4', str(app)],
+              capture_output=True, text=True, timeout=30)
+          pathlib.Path('target/task2-evidence/gatekeeper-assessment.json').write_text(json.dumps({
+              'returncode': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr,
+              'developer_id': False, 'notarized': False,
+              'note': 'Ad-hoc resource sealing verifies integrity; Gatekeeper acceptance is not claimed.'}, indent=2) + '\n')
+          PY
+      - name: Retain qualification packages and automated evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: task2-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            target/task2-evidence/
+            qualification/section-2/target/nextest/ci/junit.xml
+          if-no-files-found: error
+          retention-days: 30

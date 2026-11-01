@@ -1,0 +1,307 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-23",
+  "implementation_commit": "3b003cfe1fe8b8615f26a35d1d3b18dd4c594ccd",
+  "workflow_run": 40010930728,
+  "workflow_url": "https://github.com/01max/librairii/actions/runs/40010930728",
+  "artifact_id": 12525823226,
+  "artifact_zip_sha256": "ff3238257528d4552ef234eeeb127e275665d01dc7bac7e7e302ba2662c7e77d",
+  "raw_report_sha256": "daaf4e144451300bc3e759ea14aa8a858189753a233ce2f7dae5988d5a469f72",
+  "report": {
+    "source": "4e3d4f8f9126c5041761bcd422f76609b57ec885",
+    "source_dirty": false,
+    "target": "x86_64-unknown-linux-gnu",
+    "binary_sha256": "77dbe210237abb3ddddbc5e0253e17fc6b30237e008dc33a3286349dbfdac68a",
+    "archive": {
+      "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+      "bytes": 14625597,
+      "sha256": "0890a2285f2223260656d0731894bf5d87354ef322e06d49dc11271d30350c30"
+    },
+    "base": "ubuntu:24.04@sha256:a2d43bffc46670d7108bb3c0468c67c5557c4c92e83e1e34cbff1322ad1b94dc",
+    "image": "sha256:0c2264bee5a57c846c807dfef90482c02dd8acb8879fd2ec77c52ccfe37646cb",
+    "checks": {
+      "native_nonroot_no_tools": true,
+      "complete_run": true,
+      "network_disabled": true,
+      "readonly_unprivileged_root": true,
+      "no_host_source_or_tool_mounts": true,
+      "all_linked_libraries_resolve": true,
+      "no_development_or_browser_packages": true,
+      "x11-normal": true,
+      "x11-cpu": true,
+      "x11_relaunch_owned_shutdown": true,
+      "wayland-normal": true,
+      "wayland-cpu": true,
+      "wayland_relaunch_owned_shutdown": true,
+      "container_exited_successfully": true,
+      "binary_matches_package": true,
+      "owned_runtime_removed": true
+    },
+    "runs": {
+      "x11-normal": {
+        "checks": {
+          "process_completed": true,
+          "component_input_and_scene": true,
+          "actual_surface_identified": true,
+          "explicit_cpu_surface": true,
+          "fresh_distinct_frames": true
+        },
+        "snapshots": {
+          "multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+          "filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+        },
+        "actual_surface": [
+          "Slint: Build config: release; Backend: Skia renderer (skia backend wgpu; surface: 32 bpp)"
+        ]
+      },
+      "x11-cpu": {
+        "checks": {
+          "process_completed": true,
+          "component_input_and_scene": true,
+          "actual_surface_identified": true,
+          "explicit_cpu_surface": true,
+          "fresh_distinct_frames": true
+        },
+        "snapshots": {
+          "multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+          "filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+        },
+        "actual_surface": [
+          "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+        ]
+      },
+      "wayland-normal": {
+        "checks": {
+          "process_completed": true,
+          "xdg_window_configured": true,
+          "window_buffer_submitted": true,
+          "component_input_and_scene": true,
+          "actual_surface_identified": true,
+          "explicit_cpu_surface": true,
+          "fresh_distinct_frames": true
+        },
+        "snapshots": {
+          "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+          "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+        },
+        "actual_surface": [
+          "Slint: Build config: release; Backend: Skia renderer (skia backend wgpu; surface: 32 bpp)"
+        ]
+      },
+      "wayland-cpu": {
+        "checks": {
+          "process_completed": true,
+          "xdg_window_configured": true,
+          "window_buffer_submitted": true,
+          "component_input_and_scene": true,
+          "actual_surface_identified": true,
+          "explicit_cpu_surface": true,
+          "fresh_distinct_frames": true
+        },
+        "snapshots": {
+          "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+          "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+        },
+        "actual_surface": [
+          "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+        ]
+      }
+    },
+    "runtime_files": {
+      "packages.txt": "1b092d13f608a32b69a2ea55f5ca77f197ffe0531449420e9c6076a8bee4d31f",
+      "wayland-cpu.log": "6d14a59fd0988a4f9b7f252c98ee5bd3117d9d3ddc0ea1dea6c1ec78f7052c2f",
+      "x11-relaunch.log": "4d93606afe7e4c4a699099b50f183a9f58c46b94135a40a836253cb919b8a46a",
+      "xvfb.log": "2a7ada64cbc3f33c2239b5b825250a8e5ea211e43d60ac6eb81758d0aa9fbf09",
+      "os-release.txt": "87458b3b1f1ca0e5c693ade771de7007c3783bdc692fa6b39eb6414bf2af2763",
+      "wayland-relaunch.log": "c07173bd111d2c019d3d4051c2f4a46682d0761e52ee1d9c5e19ba2244c5580c",
+      "wayland-cpu.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "x11-normal.log": "67ebad6c34af9a0fbde49b6c13122313c028e8dba0b0cf5289e687a399f7a85e",
+      "x11-cpu.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "weston.log": "e77d493741c4e499e0ff465943ba62380de5349c048192b14f306300f5609b17",
+      "x11-relaunch.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "wayland-normal.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "wayland-relaunch.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "x11-normal.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "executable.sha256": "b11ca8ff9768cee229f3bea860ac9a566e8a6cff1296e397f338bc7ad51749cf",
+      "wayland-normal.log": "2c84abf4a1fd21a5e1876500178aa7ff6666961c5d80cb7bd4c08927177e1c89",
+      "linked-libraries.txt": "c0d4aef931208fec3547cc942f7ee8e61aff8eb4157d3b2466f32928b162d420",
+      "runtime-facts.txt": "b9451e243d0ce58d8642109b3aef377f2d11aaa342e1a0e53eb216e70c378b62",
+      "x11-cpu.log": "903fcb7ec6d0e5fd7736808ec4d8d4e43e688b3783b04e1dbcc67b47b6f8ca8b",
+      "x11-cpu/multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+      "x11-cpu/filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42",
+      "wayland-cpu/multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+      "wayland-cpu/filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d",
+      "wayland-normal/multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+      "wayland-normal/filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d",
+      "x11-normal/multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+      "x11-normal/filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+    },
+    "errors": [],
+    "isolated_linux_runtime": "pass",
+    "clean_host_qualified": false,
+    "macos_clean_host_qualified": false,
+    "portal_integration_qualified": false,
+    "physical_input_qualified": false,
+    "toolkit_selected": false,
+    "scope": "Offline native Linux runtime container with no development tools/source, actual X11/Wayland GUI submissions and fresh-process relaunch. Not a full desktop install or macOS qualification."
+  },
+  "independent_review": "All16 checks recomputed against raw logs/container settings; all27 runtime hashes/eight PNGs verified. Visually readable French/CJK before and after0042 filtering; actual WGPU/software surfaces and both same-toplevel Wayland configure/ack/attach/commit sequences. Archive digest is recorded by the package verifier; selected evidence extraction omits archive payload.",
+  "retained_failures": [
+    {
+      "commit": "0e17aa6",
+      "run": 40008230875,
+      "reason": "DBus could not resolve mapped numeric UID; app not started"
+    },
+    {
+      "commit": "7e9f3f4",
+      "run": 40009932756,
+      "reason": "Inherited file-size limit also restricted graphics buffers; no successful frame"
+    }
+  ],
+  "qualification": "Isolated offline native Linux runtime only. Full clean-host/macOS/portal/physical/toolkit flags remain false.",
+  "continuation_revalidation": {
+    "implementation_commit": "230cc47ecf3c567e5540b98134602c1a5b535945",
+    "workflow_run": 40018196257,
+    "artifact_id": 12530166359,
+    "artifact_zip_sha256": "dafef629628c1f97ea3246a957c9f71f4caf4a767c91a00c60289483815682e1",
+    "raw_report_sha256": "0345e935b3dba4d849d773e15485f4d1de69a8765f131a6c973b32637cde9803",
+    "report": {
+      "source": "2439bcbb28faaae7457d0fe9d21921ba4f844f20",
+      "source_dirty": false,
+      "target": "x86_64-unknown-linux-gnu",
+      "binary_sha256": "564bb81527a42d3b4b1ce313ca8387f3a234d6e31477f2f26e68f62e7900b569",
+      "archive": {
+        "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+        "bytes": 14625712,
+        "sha256": "662dd830e89a8084e0c5304e0fe9e5014ff7970bc4f52ef83f98404f86b5b742"
+      },
+      "image": "sha256:97ce1bbc94abd095f22a321303cceac2921a6d90fc3174884f580ba358237831",
+      "checks": {
+        "native_nonroot_no_tools": true,
+        "complete_run": true,
+        "network_disabled": true,
+        "readonly_unprivileged_root": true,
+        "no_host_source_or_tool_mounts": true,
+        "all_linked_libraries_resolve": true,
+        "no_development_or_browser_packages": true,
+        "x11-normal": true,
+        "x11-cpu": true,
+        "x11_relaunch_owned_shutdown": true,
+        "wayland-normal": true,
+        "wayland-cpu": true,
+        "wayland_relaunch_owned_shutdown": true,
+        "container_exited_successfully": true,
+        "binary_matches_package": true,
+        "owned_runtime_removed": true
+      },
+      "runs": {
+        "x11-normal": {
+          "checks": {
+            "process_completed": true,
+            "component_input_and_scene": true,
+            "actual_surface_identified": true,
+            "explicit_cpu_surface": true,
+            "fresh_distinct_frames": true
+          },
+          "snapshots": {
+            "multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+            "filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+          },
+          "actual_surface": [
+            "Slint: Build config: release; Backend: Skia renderer (skia backend wgpu; surface: 32 bpp)"
+          ]
+        },
+        "x11-cpu": {
+          "checks": {
+            "process_completed": true,
+            "component_input_and_scene": true,
+            "actual_surface_identified": true,
+            "explicit_cpu_surface": true,
+            "fresh_distinct_frames": true
+          },
+          "snapshots": {
+            "multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+            "filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+          },
+          "actual_surface": [
+            "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+          ]
+        },
+        "wayland-normal": {
+          "checks": {
+            "process_completed": true,
+            "xdg_window_configured": true,
+            "window_buffer_submitted": true,
+            "component_input_and_scene": true,
+            "actual_surface_identified": true,
+            "explicit_cpu_surface": true,
+            "fresh_distinct_frames": true
+          },
+          "snapshots": {
+            "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+            "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+          },
+          "actual_surface": [
+            "Slint: Build config: release; Backend: Skia renderer (skia backend wgpu; surface: 32 bpp)"
+          ]
+        },
+        "wayland-cpu": {
+          "checks": {
+            "process_completed": true,
+            "xdg_window_configured": true,
+            "window_buffer_submitted": true,
+            "component_input_and_scene": true,
+            "actual_surface_identified": true,
+            "explicit_cpu_surface": true,
+            "fresh_distinct_frames": true
+          },
+          "snapshots": {
+            "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+            "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+          },
+          "actual_surface": [
+            "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+          ]
+        }
+      },
+      "runtime_files": {
+        "packages.txt": "1b092d13f608a32b69a2ea55f5ca77f197ffe0531449420e9c6076a8bee4d31f",
+        "wayland-cpu.log": "a68040014c7fe92fbdd7214cc7f9c9de46c32305960b2f43dcda6940042d3365",
+        "x11-relaunch.log": "d8fcf42473ae7dba712af600f48f532194b4d677d2d2b82dd4ac57bdadc584f0",
+        "xvfb.log": "2a7ada64cbc3f33c2239b5b825250a8e5ea211e43d60ac6eb81758d0aa9fbf09",
+        "os-release.txt": "87458b3b1f1ca0e5c693ade771de7007c3783bdc692fa6b39eb6414bf2af2763",
+        "wayland-relaunch.log": "11305c9b5ac34d271460249532eafde70639b6915c97cb1536f7c3079d913ad0",
+        "wayland-cpu.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "x11-normal.log": "7fcd89ece832f282d96cbcacc8efcee205335069f2674f882c8550a9bb816bc6",
+        "x11-cpu.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "weston.log": "db4a50537269c0a7debc117effcd9f226d28a16e04a0e215ec021d4f3e1ac671",
+        "x11-relaunch.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "wayland-normal.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "wayland-relaunch.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "x11-normal.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "executable.sha256": "ab6819d3f4908f2e90d82f0774c39355feaeaadcc33a9329225f244377b19315",
+        "wayland-normal.log": "4917fc7a144916566fc99af765de3fdd899dbe7428828209811841c6065dd338",
+        "linked-libraries.txt": "098b20b39fba2ba33291499636001e699b849b3ef0071e81675f1a01e90f421f",
+        "runtime-facts.txt": "b9451e243d0ce58d8642109b3aef377f2d11aaa342e1a0e53eb216e70c378b62",
+        "x11-cpu.log": "14b3bb6fcf52f6bc8981ae6534d7c4b26c0e485e3eccb192f42000a0c0fe259d",
+        "x11-cpu/multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+        "x11-cpu/filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42",
+        "wayland-cpu/multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+        "wayland-cpu/filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d",
+        "wayland-normal/multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+        "wayland-normal/filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d",
+        "x11-normal/multilingual.png": "4a9af5fdb2362d26db5f6456b74e2647de5f84ab51acd95da80eee003bdb2105",
+        "x11-normal/filtered.png": "7101facdb1f0e2d3e1233a890de4c5136a63e4a6161a2b3e9949f1c03ffb9a42"
+      },
+      "errors": [],
+      "isolated_linux_runtime": "pass",
+      "clean_host_qualified": false,
+      "macos_clean_host_qualified": false,
+      "portal_integration_qualified": false,
+      "physical_input_qualified": false,
+      "toolkit_selected": false,
+      "scope": "Offline native Linux runtime container with no development tools/source, actual X11/Wayland GUI submissions and fresh-process relaunch. Not a full desktop install or macOS qualification."
+    },
+    "independent_review": "Approved scoped revalidation: all 16 checks and 27 runtime-file hashes recomputed; source/binary/archive match the native integration result and all 711 archive payload hashes verify. All eight PNGs are byte-identical to the previously visually reviewed readable French/CJK frames. No full clean-host, physical-input or toolkit qualification follows."
+  }
+}

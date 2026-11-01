@@ -51,6 +51,16 @@ func (a *App) CancelLibraryMove() SettingsSnapshot {
 func (a *App) runLibraryMove(ctx context.Context, p *MovePreparation) {
 	defer a.libraryGate.Unlock()
 	s := a.settings
+	if err := s.storage.BeginRelocation(); err != nil {
+		s.mu.Lock()
+		s.move.Phase = "failed"
+		s.move.Error = "settings.busy"
+		s.move.Cancelable = false
+		s.cancelMove = nil
+		s.mu.Unlock()
+		return
+	}
+	defer s.storage.EndRelocation()
 	directory := s.storage.ConfigurationDirectory()
 	j := preferences.Journal{ID: p.ID, LibraryID: p.LibraryID, Source: p.Source, Destination: p.Destination, Phase: "reserved"}
 	committed := false
@@ -103,6 +113,9 @@ func (a *App) runLibraryMove(ctx context.Context, p *MovePreparation) {
 		if err = preferences.CopyLibrary(ctx, j, func(n int64) { s.mu.Lock(); s.move.Copied += n; s.mu.Unlock() }); err != nil {
 			return err
 		}
+		if err = s.storage.ProtectRelocationWorkspace(j.Workspace()); err != nil {
+			return err
+		}
 		phase("verifying", true)
 		if err = preferences.VerifyCopy(ctx, j, j.Workspace()); err != nil {
 			return err
@@ -121,6 +134,9 @@ func (a *App) runLibraryMove(ctx context.Context, p *MovePreparation) {
 			return err
 		}
 		if err = preferences.Publish(j.Workspace(), p.Destination, p.ID); err != nil {
+			return err
+		}
+		if err = s.storage.PublishedRelocation(j.Workspace(), p.Destination); err != nil {
 			return err
 		}
 		j.Phase = "published"
