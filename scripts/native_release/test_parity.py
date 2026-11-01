@@ -202,8 +202,15 @@ class ParityObservations(unittest.TestCase):
             self.contract = copy.deepcopy(original)
 
     def test_all_three_targets_and_each_mapped_case_are_required(self):
-        self.plan['targets'].pop()
+        removed = self.plan['targets'].pop()
         self.refused()
+        self.plan['targets'].append(removed)
+        candidate = self.plan['targets'][0]['candidate']
+        for member in ('package/artifact.json', 'stage/stage.json'):
+            self.mutate(candidate, member, lambda raw: fixtures.encoded(dict(json.loads(raw), version='9.9.9')))
+        with self.assertRaisesRegex(ValueError, 'candidate versions, source or graph differ across targets'):
+            self.run_audit()
+        self.assertFalse(self.output.exists())
         with self.assertRaises(ValueError):
             parity.row_observations(self.contract['rows'][0], set(), {}, {})
 

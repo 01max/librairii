@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import xml.etree.ElementTree as ET
 
-from .evidence import (MAX_JSON, archive, bound, candidate, file_record, hexadecimal,
+from .evidence import (IDENTITY, MAX_JSON, archive, bound, candidate, file_record, hexadecimal,
                        installed, member_digest, member_json, read_json,
                        relative_name, require)
 from .files import digest, regular, write_json
@@ -182,12 +182,16 @@ def audit(input_path, output_path):
     required = read_json(source_bytes(source, '.config/rust-test-baseline.json'))['required']
     rows = plan['targets']
     require(len(rows) == len(TARGETS) and {r['target'] for r in rows} == set(TARGETS), 'three distinct targets required')
-    observations, archives = {}, []
+    observations, archives, identity = {}, [], None
     for selection in rows:
         target = selection['target']
         require(set(selection['reports']) == {'quality', 'scale', 'installed'}, 'three report families required')
         require('signed_candidate' not in selection, 'this audit covers unsigned internal candidates only')
         package, _ = candidate(root, selection['candidate'], source, tree, target)
+        selected_identity = {key: package[key] for key in IDENTITY}
+        if identity is None:
+            identity = selected_identity
+        require(identity == selected_identity, 'candidate versions, source or graph differ across targets')
         archives.extend([selection['candidate'], *selection['reports'].values()])
         with archive(root, selection['reports']['quality']) as z:
             cases = passing_cases(z, source, target, required)
