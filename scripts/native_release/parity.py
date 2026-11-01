@@ -156,8 +156,9 @@ def audit(input_path, output_path):
     if output_path.exists() or output_path.is_symlink():
         raise FileExistsError('parity output already exists')
     require(regular(input_path).st_size <= MAX_JSON, 'oversized input plan')
-    input_sha = digest(input_path)
-    plan = read_json(input_path.read_bytes())
+    input_data = input_path.read_bytes()
+    input_sha = hashlib.sha256(input_data).hexdigest()
+    plan = read_json(input_data)
     require(plan['format'] == 'librairii.release-evidence-input' and plan['schema'] == 1,
             'unsupported evidence input plan')
     source, tree = hexadecimal(plan['source_commit'], 40), hexadecimal(plan['source_tree'], 40)

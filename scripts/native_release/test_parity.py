@@ -180,6 +180,15 @@ class ParityObservations(unittest.TestCase):
         with self.assertRaises(ValueError):
             parity.row_observations(self.contract['rows'][0], set(), {}, {})
 
+    def test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash(self):
+        other = copy.deepcopy(self.plan)
+        other['targets'][0]['reports']['quality']['artifact_id'] += 1000
+        read = Path.read_bytes
+        def replaced(path):
+            return fixtures.encoded(other) if path == self.input else read(path)
+        with mock.patch.object(Path, 'read_bytes', replaced):
+            self.refused()
+
     def test_incomplete_scale_and_unsigned_boundary_remain_explicit(self):
         row = self.plan['targets'][0]
         self.mutate(row['reports']['scale'], 'desktop/manifest.json',

@@ -6242,6 +6242,11 @@
         "position": 135,
         "identity": "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 136,
+        "identity": "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
+        "reason": "Task19.1 independent review regression: hash and parse one captured input, retain the final immutable-input recheck and all136 previous identities."
       }
     ]
   },

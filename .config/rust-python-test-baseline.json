@@ -135,6 +135,7 @@
     "test_parity.ParityObservations.test_installed_lane_stage_payload_and_hash_changes_are_refused",
     "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
     "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
-    "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit"
+    "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
+    "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash"
   ]
 }
