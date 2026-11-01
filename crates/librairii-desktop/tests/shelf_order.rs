@@ -52,7 +52,7 @@ fn controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen
     )
     .map_err(|e| e.to_string())?;
     let mut session = LibrarySession::new(library);
-    let (shelf, original) = session.drive(&locations, &WorkCancellation::default(), |runtime| {
+    let (shelf, expected_reopened) = session.drive(&locations, &WorkCancellation::default(), |runtime| {
         let shelf = runtime.command(|db, _, _| {
             committed(db.transaction(Default::default(), |tx| {
                 for id in 1..=145 {
@@ -113,12 +113,23 @@ fn controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen
         let mut frame = navigation.current().clone();
         frame.location.request.criteria.name = "story".into();
         navigation.replace(frame).map_err(|_| StorageError::InvalidNavigation)?;
-        controller.handle(runtime, generation, Action::MoveMember {
+        controller.handle(runtime, generation.clone(), Action::MoveMember {
             id: shelf, uuid: original[120].clone(), offset: -1,
         }, 3, &mut navigation);
         assert!(matches!(controller.snapshot.feedback, Some(Feedback::Error { .. })));
         assert_eq!(order()?, original);
-        Ok(SessionAction::finish((shelf, original)))
+        let mut frame = navigation.current().clone();
+        frame.location.request.criteria = Default::default();
+        frame.location.request.page = 6;
+        navigation.replace(frame).map_err(|_| StorageError::InvalidNavigation)?;
+        controller.handle(runtime, generation, Action::MoveMember {
+            id: shelf, uuid: original[120].clone(), offset: -1,
+        }, 4, &mut navigation);
+        assert!(matches!(controller.snapshot.feedback, Some(Feedback::Saved(id)) if id == shelf));
+        let mut persisted = original;
+        persisted.swap(120, 119);
+        assert_eq!(order()?, persisted);
+        Ok(SessionAction::finish((shelf, persisted)))
     }).map_err(|e| e.to_string())?;
     session.finish().map_err(|e| e.to_string())?;
     let library = NativeLibrary::reopen(&profile, &locations, &Default::default())?;
@@ -126,7 +137,7 @@ fn controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen
     let reopened = database.shelf_members(shelf)?.wait()?;
     assert_eq!(
         reopened.into_iter().map(|m| m.uuid).collect::<Vec<_>>(),
-        original
+        expected_reopened
     );
     database.close()?;
     drop(database);

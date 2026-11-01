@@ -1163,7 +1163,7 @@
           "suite": "librairii-desktop::shelf_order",
           "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
           "source": "crates/librairii-desktop/tests/shelf_order.rs",
-          "source_sha256": "99a02df18450c85fc83429fea72d0b9dff22c67f3123b4bffc417527cd581111"
+          "source_sha256": "d343f099fe40867a588c6fd89e3522d1ac32aa22d808ec605507e0765d5efa55"
         }
       ],
       "native_callbacks": [
