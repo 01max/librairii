@@ -18,6 +18,10 @@ cutover or retirement of the Go application.
   holds. Its 201 case links select 175 distinct Rust tests. A test can support
   several contracts without becoming several independently executed tests.
 
+The [semantic findings record](rewrite/section-19-parity-findings.md) describes
+the three omissions found by independent review and the dedicated regressions
+needed to resolve them. Older passing execution cannot supply those new cases.
+
 The assertion summaries describe the relevant checks, not a claim that test
 names prove every sentence in a contract. Read the actual assertions and raw
 observations. In particular, a passed callback group is evidence for that
