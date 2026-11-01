@@ -5750,6 +5750,45 @@
           "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup"
         },
         "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
+      },
+      {
+        "position": 642,
+        "identity": {
+          "suite": "librairii-desktop::shelf_order",
+          "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task19.1.3 independent Spec audit gap: real controller arrows beyond100 with145 approved members, gapped ranks and cross-page persistence. Preserve every previous identity, source pin and assertion."
+      },
+      {
+        "position": 643,
+        "identity": {
+          "suite": "librairii-desktop::removal_reimport",
+          "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task19.1.4 independent Spec audit gap: actual removal, manual copy-out and ImportExecutor reimport must reconnect UUID curation without resurrecting deleted manual tags. Preserve every previous identity, source pin and assertion."
+      },
+      {
+        "position": 644,
+        "identity": {
+          "suite": "librairii-storage::shelf_incomplete",
+          "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task19.1.5 independent Spec audit gap: actually commit a validated healthy addition while another source stays invalid, preserving existing unmatched/unavailable members and incomplete state. Preserve every previous identity, source pin and assertion."
       }
     ],
     "python": [
@@ -6207,6 +6246,46 @@
         "position": 128,
         "identity": "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 129,
+        "identity": "test_parity.ParityObservations.test_all_sixty_rows_observe_exact_cases_without_claiming_parity_or_release",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 130,
+        "identity": "test_parity.ParityObservations.test_missing_failed_skipped_duplicate_or_foreign_native_execution_is_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 131,
+        "identity": "test_parity.ParityObservations.test_missing_callback_or_changed_sealed_observation_cannot_pass",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 132,
+        "identity": "test_parity.ParityObservations.test_installed_lane_stage_payload_and_hash_changes_are_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 133,
+        "identity": "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 134,
+        "identity": "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 135,
+        "identity": "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 136,
+        "identity": "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
+        "reason": "Task19.1 independent review regression: hash and parse one captured input, retain the final immutable-input recheck and all136 previous identities."
       }
     ]
   },

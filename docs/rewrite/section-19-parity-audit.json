@@ -1,0 +1,2396 @@
+{
+  "format": "librairii.parity-audit-contract",
+  "schema": 1,
+  "planning_register": {
+    "path": "preservation/parity-register.json",
+    "sha256": "3eebca891c2bd4e3e738fe52d1abd495f7aeab71785f989077833695849cffaa"
+  },
+  "implementation_index": {
+    "path": "docs/rewrite/section-19-parity.json",
+    "sha256": "1e431bdbc377c9517992780f671811b01c558bfe7a140ec7289cf6dd2a732028"
+  },
+  "scope": "Reviewed assertions and actual observed case execution. Coverage completeness, provider authentication, public signing and release approval remain independent review obligations.",
+  "scope_decisions": {
+    "voiceover-excluded": "Owner decision 2026-10-23: VoiceOver execution excluded; no spoken macOS accessibility claim.",
+    "script-input-deferred": "Owner decision 2026-10-24: Japanese/Chinese/Arabic-specific input/IME/shaping deferred; valid UTF-8 data/filenames remain unrestricted.",
+    "windows-deferred": "Owner decision 2026-10-21: Windows qualification deferred to a separate change; historical Windows evidence is not production support.",
+    "isolated-adoption": "In-place Go adoption is refused without lifetime exclusion. Supported route verifies an independent library/native profile/recovery clone; legacy authority stays source-directed."
+  },
+  "release_holds": {
+    "final-candidate-and-independent-review": {
+      "tasks": [
+        "19.6",
+        "19.7"
+      ],
+      "owner": "01max",
+      "condition": "Select exact final distributions, reconcile every mandatory subcase and independently approve the complete three-target clean/upgraded rehearsal before promotion."
+    },
+    "public-mac-final-bytes": {
+      "tasks": [
+        "18.2",
+        "18.3",
+        "18.10",
+        "18.11"
+      ],
+      "owner": "01max",
+      "condition": "Human-controlled Developer ID signing/notarization/stapling and independent installed final-byte verification on both matching Mac targets."
+    }
+  },
+  "rows": [
+    {
+      "id": "P01",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "Exact root, identity, contained paths and source preservation; installed removal/reinstallation retains the library.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::layout_identity",
+          "name": "explicit_override_creates_exact_private_layout_without_profile_access",
+          "source": "crates/librairii-storage/tests/layout_identity.rs",
+          "source_sha256": "dafb115c6b154bc18648ed2a37d799df9b23964562a387a3a6c66a6345364287"
+        },
+        {
+          "suite": "librairii-storage::layout_identity",
+          "name": "symlinked_root_identity_and_managed_ancestors_are_refused",
+          "source": "crates/librairii-storage/tests/layout_identity.rs",
+          "source_sha256": "dafb115c6b154bc18648ed2a37d799df9b23964562a387a3a6c66a6345364287"
+        },
+        {
+          "suite": "librairii-storage::layout_identity",
+          "name": "managed_paths_retain_go_text_and_resolve_only_contained_components",
+          "source": "crates/librairii-storage/tests/layout_identity.rs",
+          "source_sha256": "dafb115c6b154bc18648ed2a37d799df9b23964562a387a3a6c66a6345364287"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "setup",
+        "reopen",
+        "uninstall-reinstall"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    },
+    {
+      "id": "P02",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "All eighteen migration prefixes retain schema identity and ledger; actual five-connection pragmas and coherent readers preserve the database contract.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::migrations",
+          "name": "every_actual_prefix_has_the_unchanged_identity_and_contiguous_ledger",
+          "source": "crates/librairii-storage/tests/migrations.rs",
+          "source_sha256": "32c43b2d66eee5148c1f4f76d8a73849425ee58acf03ad1583dd8779857ead38"
+        },
+        {
+          "suite": "librairii-storage::migrations",
+          "name": "foreign_empty_gapped_duplicate_unsorted_and_future_ledgers_fail_closed",
+          "source": "crates/librairii-storage/tests/migrations.rs",
+          "source_sha256": "32c43b2d66eee5148c1f4f76d8a73849425ee58acf03ad1583dd8779857ead38"
+        },
+        {
+          "suite": "librairii-storage::database_workers",
+          "name": "five_owned_connections_have_actual_required_pragmas_and_close_before_reuse",
+          "source": "crates/librairii-storage/tests/database_workers.rs",
+          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+        },
+        {
+          "suite": "librairii-storage::database_workers",
+          "name": "four_coherent_read_snapshots_run_concurrently_with_the_separate_writer",
+          "source": "crates/librairii-storage/tests/database_workers.rs",
+          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P03",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "Live-WAL backup, failed migration and explicit foreign-schema preservation retain the original database family and archive bytes.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::backup",
+          "name": "online_backup_includes_uncheckpointed_committed_wal_and_is_standalone",
+          "source": "crates/librairii-storage/tests/backup.rs",
+          "source_sha256": "b28385b2c8e4ba6b0e4aecf996fb13e31e72854e98b38140ef1b4ce3a0bdc360"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "backup::tests::migration_failure_restores_supported_prefix_and_preserves_newer_candidate",
+          "source": "crates/librairii-storage/src/backup.rs",
+          "source_sha256": "e439b668271727ef6a096b0e13aa2c938f9d564d14274005bfb0d6b92fdb9863"
+        },
+        {
+          "suite": "librairii-storage::backup",
+          "name": "foreign_probe_preserves_main_wal_shm_and_explicit_recovery_never_replaces",
+          "source": "crates/librairii-storage/tests/backup.rs",
+          "source_sha256": "b28385b2c8e4ba6b0e4aecf996fb13e31e72854e98b38140ef1b4ce3a0bdc360"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_confirmation_preserves_complete_family_and_archives",
+          "source": "crates/librairii-storage/src/native/owned/schema.rs",
+          "source_sha256": "b38bac727013a409576a25cda0d2d4f609901d49bd17689227af82d1c79b01ca"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "recovery"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P04",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "Streaming custody preserves original bytes; substituted source/stage and racing publication cannot gain ownership of unrelated files.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+          "source": "crates/librairii-storage/src/platform/unix/import_source/tests.rs",
+          "source_sha256": "f33c4ce8d8e89a35d8b1c30a8226f57aba969bddc7272287dff24406b5e00b7a"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::tests::source_substitution_after_hash_never_receives_an_owned_published_receipt",
+          "source": "crates/librairii-storage/src/platform/unix.rs",
+          "source_sha256": "bccc9b33bfbbf63b1cb8482c60753244f95066663e26724e73d5a6bf19fd125b"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::tests::destination_created_after_preflight_is_never_overwritten_by_publication",
+          "source": "crates/librairii-storage/src/platform/unix.rs",
+          "source_sha256": "bccc9b33bfbbf63b1cb8482c60753244f95066663e26724e73d5a6bf19fd125b"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::import_source::tests::cancelled_copy_retains_owned_stage_and_never_publishes_or_changes_source",
+          "source": "crates/librairii-storage/src/platform/unix/import_source/tests.rs",
+          "source_sha256": "f33c4ce8d8e89a35d8b1c30a8226f57aba969bddc7272287dff24406b5e00b7a"
+        }
+      ],
+      "native_callbacks": [
+        "operation_callbacks"
+      ],
+      "installed_checks": [
+        "import",
+        "trash-removal"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P05",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "All supported suffix/container families and misleading combinations are compared to preserved inspection outcomes, including independent 7z codecs and disguised STUdio rejection.",
+      "automated_cases": [
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_native_names",
+          "source": "crates/librairii-desktop/tests/imports.rs",
+          "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        }
+      ],
+      "native_callbacks": [
+        "operation_callbacks"
+      ],
+      "installed_checks": [
+        "import"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P06",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "Required entries, raw UUID/JSON/asset semantics and optional metadata remain distinct; full ZIP CRC and selected-block 7z behavior are explicitly tested.",
+      "automated_cases": [
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_json_rejects_strict_type_trailing_and_missing_references",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        }
+      ],
+      "native_callbacks": [
+        "details_removal_callbacks"
+      ],
+      "installed_checks": [
+        "import",
+        "inspection"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P07",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "Retained header/path/accounting boundaries and actual-read bounds fail closed; changed image/codec acceptance requires the retained hardening manifest.",
+      "automated_cases": [
+        {
+          "suite": "librairii-core",
+          "name": "import::tests::retained_header_limits_match_all_frozen_expected_codes",
+          "source": "crates/librairii-core/src/import/tests.rs",
+          "source_sha256": "ad446d8e58d824fe04a23aba654d44b3de3382466e801213378c779836657be3"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels",
+          "source": "crates/librairii-adapters/src/archives/tests.rs",
+          "source_sha256": "6fb789f7fdf965e1365450a01eef087d97f54e71c8e884a378c04775d545223f"
+        }
+      ],
+      "native_callbacks": [],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P08",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "Repeated/concurrent import, UUID conflicts, effect failures and process death preserve custody; late cancellation reports committed truth.",
+      "automated_cases": [
+        {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_duplicate_and_uuid_conflict_are_atomic_and_survive_reopen",
+          "source": "crates/librairii-desktop/tests/imports.rs",
+          "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        },
+        {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries",
+          "source": "crates/librairii-desktop/tests/imports.rs",
+          "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        },
+        {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes",
+          "source": "crates/librairii-desktop/tests/imports.rs",
+          "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        },
+        {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
+          "source": "crates/librairii-desktop/tests/imports.rs",
+          "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        }
+      ],
+      "native_callbacks": [
+        "operation_callbacks"
+      ],
+      "installed_checks": [
+        "import",
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P09",
+      "accountable_owner": "01max",
+      "workstream": "Runtime",
+      "assertions_reviewed": "Frozen worker/queue limits, metadata reservation and uncapped export remain distinct; native scale evidence supplements the bounded scheduler assertions.",
+      "automated_cases": [
+        {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_worker_configuration_matches_frozen_limits",
+          "source": "crates/librairii-app/src/jobs/tests.rs",
+          "source_sha256": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+        },
+        {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_one_metadata_reservation_lasts_until_report_acknowledgement",
+          "source": "crates/librairii-app/src/jobs/tests.rs",
+          "source_sha256": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+        },
+        {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_import_picker_limit_does_not_truncate_export_or_clone_item_payloads",
+          "source": "crates/librairii-app/src/jobs/tests.rs",
+          "source_sha256": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+        },
+        {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners",
+          "source": "crates/librairii-app/src/jobs/tests.rs",
+          "source_sha256": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+        }
+      ],
+      "native_callbacks": [
+        "operation_callbacks"
+      ],
+      "installed_checks": [
+        "import"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P10",
+      "accountable_owner": "01max",
+      "workstream": "Runtime",
+      "assertions_reviewed": "Durable SQL completion and interruption are exact and idempotent; coalescing rejects stale results and persistence failures retain actual owners.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_completion_is_atomic_exact_and_idempotent_across_siblings",
+          "source": "crates/librairii-storage/tests/operations_repository.rs",
+          "source_sha256": "613d45eae811d7bc61257e83867b7e11e5bb3f6d2fc7916102ab9203e8053f1a"
+        },
+        {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_interrupt_preserves_terminal_items_and_all_bytes",
+          "source": "crates/librairii-storage/tests/operations_repository.rs",
+          "source_sha256": "613d45eae811d7bc61257e83867b7e11e5bb3f6d2fc7916102ab9203e8053f1a"
+        },
+        {
+          "suite": "librairii-storage::native_jobs",
+          "name": "progress_coalesces_persists_and_rejects_late_producers_and_stale_responses",
+          "source": "crates/librairii-storage/tests/native_jobs.rs",
+          "source_sha256": "27db63d1a6533713ace02993c854589c022ffd1da6975f4496879384c353d491"
+        },
+        {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "three_real_failed_writes_then_continued_interruption_retains_owner_and_metadata_reservation",
+          "source": "crates/librairii-storage/tests/runtime_failures.rs",
+          "source_sha256": "f6e95816a270281b0780c789d86fef801c217444f04ba8bf51ff28c66ae4b232"
+        }
+      ],
+      "native_callbacks": [
+        "activity_history_callbacks"
+      ],
+      "installed_checks": [
+        "history",
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P11",
+      "accountable_owner": "01max",
+      "workstream": "Runtime",
+      "assertions_reviewed": "Graceful escalation cannot abandon settlement; owned shutdown joins compensation/reporting and the real crash transition matrix reconciles restart.",
+      "automated_cases": [
+        {
+          "suite": "librairii-app",
+          "name": "native_jobs::shutdown::tests::elapsed_wait_only_offers_explicit_escalation_and_never_claims_closed_or_settled",
+          "source": "crates/librairii-app/src/native_jobs/shutdown.rs",
+          "source_sha256": "f1fc7b188dc8fafcc743b65b5dcaaa23173d17069c6b305229d463cd6f00a2db"
+        },
+        {
+          "suite": "librairii-storage::native_jobs",
+          "name": "shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement",
+          "source": "crates/librairii-storage/tests/native_jobs.rs",
+          "source_sha256": "27db63d1a6533713ace02993c854589c022ffd1da6975f4496879384c353d491"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_operation_crash_transition_matrix_reconciles_history_and_progress",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        }
+      ],
+      "native_callbacks": [
+        "operation_callbacks"
+      ],
+      "installed_checks": [
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P12",
+      "accountable_owner": "01max",
+      "workstream": "Runtime",
+      "assertions_reviewed": "Diagnostics enforce explicit external selection, five bounded logs and sanitized aggregate-only ZIP content; collisions and uncertainty retain actual output.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_requires_explicit_external_selection_and_localizes_safe_failures",
+          "source": "crates/librairii-storage/src/diagnostics.rs",
+          "source_sha256": "d7ea78e7c3e270683f5ef3cb922fd8326a92320863c1b1c30262210d0e4a1d83"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_zip_has_only_sanitized_logs_and_aggregate_manifest",
+          "source": "crates/librairii-storage/src/diagnostics.rs",
+          "source_sha256": "d7ea78e7c3e270683f5ef3cb922fd8326a92320863c1b1c30262210d0e4a1d83"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_rotation_keeps_five_bounded_owned_logs",
+          "source": "crates/librairii-storage/src/diagnostics.rs",
+          "source_sha256": "d7ea78e7c3e270683f5ef3cb922fd8326a92320863c1b1c30262210d0e4a1d83"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_no_clobber_cancel_and_uncertain_publication_retain_actual_output",
+          "source": "crates/librairii-storage/src/diagnostics.rs",
+          "source_sha256": "d7ea78e7c3e270683f5ef3cb922fd8326a92320863c1b1c30262210d0e4a1d83"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P13",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Real worker preferences persist all three view modes; native frame matrix and keyboard callbacks retain both approved concepts and recovery/empty states.",
+      "automated_cases": [
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        }
+      ],
+      "native_callbacks": [
+        "keyboard_checks",
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "setup",
+        "recovery"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P14",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Frozen Unicode normalization and literal SQL search preserve ties, limits and one-pass semantics; native search callbacks retain the user's draft.",
+      "automated_cases": [
+        {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics",
+          "source": "crates/librairii-core/src/collection_codec/compatibility/normalization.rs",
+          "source_sha256": "abbbde9d182ca19466f5fc721b6220240993aa1291a234c712f29a940d67885d"
+        },
+        {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_name_limit_counts_normalized_unicode_characters",
+          "source": "crates/librairii-core/tests/query_normalization.rs",
+          "source_sha256": "65b6f00e1e3e11172cf3ef67c46e9e91ad86e7b0dd46b9fb9d232fb6eb96fb87"
+        },
+        {
+          "suite": "librairii-storage::queries",
+          "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
+          "source": "crates/librairii-storage/tests/queries.rs",
+          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+        },
+        {
+          "suite": "librairii-ui",
+          "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear",
+          "source": "crates/librairii-ui/src/filters.rs",
+          "source_sha256": "45d32570f230733e9b89bb5b9938ed69525e92894154a476f83f64fee9379f9d"
+        }
+      ],
+      "native_callbacks": [
+        "search_paging_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "voiceover-excluded",
+        "script-input-deferred",
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P15",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Boolean/choice/nested criteria, snapshot-coherent counts/pages and literal draft edits preserve composition and explicit clearing.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::queries",
+          "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
+          "source": "crates/librairii-storage/tests/queries.rs",
+          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+        },
+        {
+          "suite": "librairii-storage::queries",
+          "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+          "source": "crates/librairii-storage/tests/queries.rs",
+          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+        },
+        {
+          "suite": "librairii-storage::queries",
+          "name": "validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit",
+          "source": "crates/librairii-storage/tests/queries.rs",
+          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+        },
+        {
+          "suite": "librairii-ui",
+          "name": "filters::tests::choice_values_are_or_within_definition_and_boolean_removal_preserves_other_groups",
+          "source": "crates/librairii-ui/src/filters.rs",
+          "source_sha256": "45d32570f230733e9b89bb5b9938ed69525e92894154a476f83f64fee9379f9d"
+        }
+      ],
+      "native_callbacks": [
+        "filter_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P16",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Typed navigation restores refinement, page, sort and independent presentation across history/reopen; legacy dynamic and curated Shelf IDs remain separate.",
+      "automated_cases": [
+        {
+          "suite": "librairii-core::navigation",
+          "name": "navigation_restores_scope_refinement_selection_page_and_independent_presentation",
+          "source": "crates/librairii-core/tests/navigation.rs",
+          "source_sha256": "5f401678701f055228a62fe59562c546e18fe51c5f614ec92032cec64ef41eb0"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        },
+        {
+          "suite": "librairii-core::query_urls",
+          "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves",
+          "source": "crates/librairii-core/tests/query_urls.rs",
+          "source_sha256": "4c49e5f49c98b78fccabc51d7821e84c90f1aa8eb41ba16db0d08bece518bd91"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "manual_shelf_navigation_retains_sort_preference_across_history_and_reopen",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        }
+      ],
+      "native_callbacks": [
+        "history_restoration_callbacks"
+      ],
+      "installed_checks": [
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P17",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Strict saved/URL codec oracles retain predecessor behavior and byte bounds, recursively retire only legacy restrictions and reject malformed escapes.",
+      "automated_cases": [
+        {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases",
+          "source": "crates/librairii-core/src/collection_codec/mod.rs",
+          "source_sha256": "2507156310ab7e055a3ea30282432bd0d63ae93d692dbc2cd2ea270df2b04d4b"
+        },
+        {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening",
+          "source": "crates/librairii-core/src/collection_codec/mod.rs",
+          "source_sha256": "2507156310ab7e055a3ea30282432bd0d63ae93d692dbc2cd2ea270df2b04d4b"
+        },
+        {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible",
+          "source": "crates/librairii-core/src/collection_codec/mod.rs",
+          "source_sha256": "2507156310ab7e055a3ea30282432bd0d63ae93d692dbc2cd2ea270df2b04d4b"
+        },
+        {
+          "suite": "librairii-core::query_urls",
+          "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives",
+          "source": "crates/librairii-core/tests/query_urls.rs",
+          "source_sha256": "4c49e5f49c98b78fccabc51d7821e84c90f1aa8eb41ba16db0d08bece518bd91"
+        },
+        {
+          "suite": "librairii-core::query_urls",
+          "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success",
+          "source": "crates/librairii-core/tests/query_urls.rs",
+          "source_sha256": "4c49e5f49c98b78fccabc51d7821e84c90f1aa8eb41ba16db0d08bece518bd91"
+        }
+      ],
+      "native_callbacks": [
+        "history_restoration_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P18",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Frozen tag targets retain id/UUID authority; superseded query/generation results cannot retarget selection or current presentation.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-ui",
+          "name": "responses::tests::obsolete_activation_and_superseded_query_cannot_publish_into_current_view",
+          "source": "crates/librairii-ui/src/responses.rs",
+          "source_sha256": "86e56166855dae9a2b1842cdb6eadc6ada64fe0b5fd7914c8cf457cab6914a12"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        }
+      ],
+      "native_callbacks": [
+        "tag_callbacks",
+        "search_paging_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search",
+        "inspection"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P19",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Descriptions preserve readable paragraphs/entities while discarding active markup; native detail/removal callbacks cover disclosure, scroll reset and nested return.",
+      "automated_cases": [
+        {
+          "suite": "librairii-ui",
+          "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text",
+          "source": "crates/librairii-ui/src/description.rs",
+          "source_sha256": "b3113b3421b891448c5a65db2b170bfd5408b0a9d04b9f4e60c4d2549968aa4a"
+        },
+        {
+          "suite": "librairii-ui",
+          "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities",
+          "source": "crates/librairii-ui/src/description.rs",
+          "source_sha256": "b3113b3421b891448c5a65db2b170bfd5408b0a9d04b9f4e60c4d2549968aa4a"
+        }
+      ],
+      "native_callbacks": [
+        "details_removal_callbacks"
+      ],
+      "installed_checks": [
+        "inspection"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P20",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Stable tag keys, normalized uniqueness/order and confirmed deletion retain whole-query invalidation and Shelf decisions; failures roll back real writes.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        }
+      ],
+      "native_callbacks": [
+        "tag_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P21",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Mixed/additive assignments validate the entire frozen batch; no-op and failure cannot replace unrelated values or derived state.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        }
+      ],
+      "native_callbacks": [
+        "tag_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P22",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Derived Age identity/bands and user colors survive projection/reseed; display labels distinguish authored lookalikes without changing assignment rules.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "native_display_labels_preserve_boolean_choice_color_and_assignment_independence",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-app::localization",
+          "name": "native_tag_labels_translate_system_values_without_translating_authored_lookalikes",
+          "source": "crates/librairii-app/tests/localization.rs",
+          "source_sha256": "5d1e0ff9e540330687ece97a5a6fb7977103ff055c39932b2993208aed1d8499"
+        }
+      ],
+      "native_callbacks": [
+        "tag_callbacks"
+      ],
+      "installed_checks": [
+        "tags-search",
+        "metadata-artwork"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P23",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Independent flags preserve result/membership semantics; exact guarded Undo rejects a stale, unavailable or retargeted batch atomically.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "native_flag_undo_rejects_reused_uuid_and_mismatched_restore_authority_atomically",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::tags",
+          "name": "actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        }
+      ],
+      "native_callbacks": [
+        "flag_callbacks"
+      ],
+      "installed_checks": [
+        "broken-undo"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P24",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Flag-only changes do not invalidate curation or matching; native warning/Undo callbacks and installed restore supplement the independent flag oracle.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::tags",
+          "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+          "source": "crates/librairii-storage/tests/tags.rs",
+          "source_sha256": "8635c05afd7d578d6dcc5639ddb91399aea91e2625b300c787c5bffdea5c5b28"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "flag_callbacks"
+      ],
+      "installed_checks": [
+        "broken-undo"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P25",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Collection CRUD, legacy identity and explicit repair retain invalid bytes; live counts follow data changes without changing approved Shelves.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::collections",
+          "name": "collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_order",
+          "source": "crates/librairii-storage/tests/collections.rs",
+          "source_sha256": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+        },
+        {
+          "suite": "librairii-storage::collections",
+          "name": "frozen_go_crud_query_passes_legacy_ids_and_attention_match_after_restart",
+          "source": "crates/librairii-storage/tests/collections.rs",
+          "source_sha256": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+        },
+        {
+          "suite": "librairii-storage::collections",
+          "name": "explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writes",
+          "source": "crates/librairii-storage/tests/collections.rs",
+          "source_sha256": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+        },
+        {
+          "suite": "librairii-storage::collections",
+          "name": "live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation",
+          "source": "crates/librairii-storage/tests/collections.rs",
+          "source_sha256": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+        }
+      ],
+      "native_callbacks": [
+        "collection_callbacks"
+      ],
+      "installed_checks": [
+        "collections"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P26",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Union preview counts/deduplicates all pages and saves copied criteria independently of its sources; installed Collection export uses the matching scope.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::collections",
+          "name": "union_preview_counts_overlap_all_pages_and_saves_independent_definition",
+          "source": "crates/librairii-storage/tests/collections.rs",
+          "source_sha256": "a7b1b42cd9db3e01b9e4c433d7f764002b0994c20ca27fefb858719b579a234b"
+        },
+        {
+          "suite": "librairii-storage::exports",
+          "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        }
+      ],
+      "native_callbacks": [
+        "collection_callbacks",
+        "export_callbacks"
+      ],
+      "installed_checks": [
+        "export-collections"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P27",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Shelf CRUD has an independent namespace and UUID state across restart; reads and source attachment never approve new matches.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "crud_namespace_order_unavailable_duplicate_and_restart_are_independent",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "source_union_is_read_only_and_current_matches_do_not_rewrite_origins",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-create"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P28",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Initial creation is explicit, deduplicated and can select zero; frozen Go outcomes and stale input tests retain no-write preview semantics.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-create"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P29",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Manual retention, append/order, ordinary removal and exclusion remain distinct; view refinement cannot persist curation changes. The dedicated 145-member controller regression checks both arrow directions beyond100, gapped positions, full UUID order, selection/focus, page6-to5 transition, refined-view refusal and native reopen.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "manual_curation_retention_exclusions_order_and_noops_are_explicit",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never_persist",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-desktop::shelf_order",
+          "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
+          "source": "crates/librairii-desktop/tests/shelf_order.rs",
+          "source_sha256": "d343f099fe40867a588c6fd89e3522d1ac32aa22d808ec605507e0765d5efa55"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-create"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P30",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "UUID reimport reconnects a new numeric story without rewriting order/origins/exclusions; upgraded tag/metadata/curation/removal composes across restart. A dedicated real removal/copy-out/ImportExecutor reimport regression forces a new numeric story ID and verifies absent manual assignments, exact approved UUID order/retention/origins/exclusions, unavailable placeholders, original archive bytes and repeated native reopen.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-desktop::removal_reimport",
+          "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+          "source": "crates/librairii-desktop/tests/removal_reimport.rs",
+          "source_sha256": "57964c76c3d054070382249144c631f40d03890c79c79b0df9e4b98b027e93e1"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_callbacks"
+      ],
+      "installed_checks": [
+        "trash-removal",
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P31",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Source union is read-only; current matches and historical origins remain distinct through detachment and independent retention.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "source_union_is_read_only_and_current_matches_do_not_rewrite_origins",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-review"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P32",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Explicit defer/Keep/Exclude/removal decisions apply atomically with origins; creation and update reads cannot approve by default.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "update_decisions_defer_keep_exclude_and_remove_atomically_with_origins",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-review"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P33",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Uncertain coverage permits retention and validated additions while suppressing inferred removal; changes invalidate affected review authority. The dedicated real SQLite regression commits healthy Add/Apply before repairing the invalid source, checks healthy acceptance origin and unchanged unmatched/unavailable approvals, then reopens to verify persisted addition and continued incomplete/not-Up-to-date state with no inferred removals.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never_persist",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelf_incomplete",
+          "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+          "source": "crates/librairii-storage/tests/shelf_incomplete.rs",
+          "source_sha256": "e8089fe37cf3092e01ea43784973cd3ab10d898b104ee94fb7048ff6ee7455a6"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-review"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P34",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Ticket lifetime/kind/target/cache/replay and queued double-apply fail closed; flag-only changes remain separate from stale source/member decisions.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage",
+          "name": "shelves::tickets::tests::lifetime_kind_target_eviction_and_replay_are_fail_closed",
+          "source": "crates/librairii-storage/src/shelves/tickets.rs",
+          "source_sha256": "eb6b8341d6ae0eaaf92376ad52e90ee1dc767f7cf1d49ffceed0635eed870dce"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [
+        "shelf-review"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P35",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Warning acknowledgements persist without approving decisions and renew on changed coverage; native callbacks exercise mismatch, bounded review and paging.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "saved_shelf_warning_preferences_are_recognized_as_native_state",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "five_thousand_story_union_preview_apply_and_every_model_page_meet_budget",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P36",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Explicit UUID exclusions persist independently; manual add clears them, ordinary removal does not create them and unexclude cannot approve membership.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "manual_curation_retention_exclusions_order_and_noops_are_explicit",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P37",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Detachment requires complete decisions and retains unavailable/overlapping members; linked deletion commits across Shelves atomically.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_review_callbacks",
+        "collection_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P38",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Duplication preserves independent approved order/origins/exclusions/unavailable state and accepts no newly matching source members.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "crud_namespace_order_unavailable_duplicate_and_restart_are_independent",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        }
+      ],
+      "native_callbacks": [
+        "shelf_callbacks"
+      ],
+      "installed_checks": [],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P39",
+      "accountable_owner": "01max",
+      "workstream": "Catalog",
+      "assertions_reviewed": "Fixture-only HTTP tests enforce envelope/TLS/origin/redirect/deadline/byte bounds; installed ordinary startup remains offline.",
+      "automated_cases": [
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::guest_envelope_headers_and_exact_catalog_bytes_match_protocol",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::redirects_status_content_type_malformed_json_and_token_are_refused",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::actual_streamed_limits_apply_to_token_and_catalog_without_content_length",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::cancellation_and_total_deadline_interrupt_waiting_responses",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        }
+      ],
+      "native_callbacks": [
+        "sync_callbacks"
+      ],
+      "installed_checks": [
+        "offline-startup"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P40",
+      "accountable_owner": "01max",
+      "workstream": "Catalog",
+      "assertions_reviewed": "Exact staged raw bytes and atomic activation retain last good state on invalid/cancelled/interrupted refresh; cancellation inside activation finishes reporting.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::metadata",
+          "name": "staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable",
+          "source": "crates/librairii-storage/tests/metadata.rs",
+          "source_sha256": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+        },
+        {
+          "suite": "librairii-storage::metadata",
+          "name": "activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good",
+          "source": "crates/librairii-storage/tests/metadata.rs",
+          "source_sha256": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+        },
+        {
+          "suite": "librairii-storage::metadata",
+          "name": "interrupted_and_dropped_refreshes_settle_without_stranding_busy_or_losing_last_good",
+          "source": "crates/librairii-storage/tests/metadata.rs",
+          "source_sha256": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+        },
+        {
+          "suite": "librairii-app::metadata",
+          "name": "cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report",
+          "source": "crates/librairii-app/tests/metadata.rs",
+          "source_sha256": "9380bd1efe9222223d76f7dd528eca3cff6ea29833d26880e02baa1ce54d91cb"
+        }
+      ],
+      "native_callbacks": [
+        "sync_callbacks"
+      ],
+      "installed_checks": [
+        "metadata-artwork"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P41",
+      "accountable_owner": "01max",
+      "workstream": "Catalog",
+      "assertions_reviewed": "Frozen metadata fallback/provenance and Age resolution preserve manual flags/tags/Shelves; UI language remains independent of metadata policy.",
+      "automated_cases": [
+        {
+          "suite": "librairii-app::metadata",
+          "name": "exact_raw_hash_normalization_and_requested_same_language_available_fallback",
+          "source": "crates/librairii-app/tests/metadata.rs",
+          "source_sha256": "9380bd1efe9222223d76f7dd528eca3cff6ea29833d26880e02baa1ce54d91cb"
+        },
+        {
+          "suite": "librairii-storage::metadata",
+          "name": "resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_members",
+          "source": "crates/librairii-storage/tests/metadata.rs",
+          "source_sha256": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+        },
+        {
+          "suite": "librairii-storage::queries",
+          "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
+          "source": "crates/librairii-storage/tests/queries.rs",
+          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+        }
+      ],
+      "native_callbacks": [
+        "sync_callbacks"
+      ],
+      "installed_checks": [
+        "metadata-artwork",
+        "language"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P42",
+      "accountable_owner": "01max",
+      "workstream": "Catalog",
+      "assertions_reviewed": "Opaque artwork/cache rejects corruption and aliases, coalesces allowlisted misses and decodes/evicts within bounds; old root work cannot publish.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::metadata",
+          "name": "registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases",
+          "source": "crates/librairii-storage/tests/metadata.rs",
+          "source_sha256": "1e01f7af0d33601d8c4d891c64c95ce02082b3d00f0244aa528a24cfa13c46a3"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::artwork_allowlist_stream_limit_sniffing_and_concurrent_misses",
+          "source": "crates/librairii-adapters/src/lunii/tests.rs",
+          "source_sha256": "4d4fd141dc65b94ceaf1353c38a14a8c9c94bc2b62c63b629afb87a5a46f1d5e"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::thumbnails_decode_all_formats_reuse_lru_and_bound_pixels_and_output",
+          "source": "crates/librairii-adapters/src/thumbnails/tests.rs",
+          "source_sha256": "110913fdbe6710b4d7662cc703f3a52dd34e8af5447c25aac1d674ddf6937464"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::thumbnail_lru_evicts_old_results_at_the_entry_budget",
+          "source": "crates/librairii-adapters/src/thumbnails/tests.rs",
+          "source_sha256": "110913fdbe6710b4d7662cc703f3a52dd34e8af5447c25aac1d674ddf6937464"
+        },
+        {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::invalidation_rejects_old_work_and_fallback_is_official_then_embedded_then_placeholder",
+          "source": "crates/librairii-adapters/src/thumbnails/tests.rs",
+          "source_sha256": "110913fdbe6710b4d7662cc703f3a52dd34e8af5447c25aac1d674ddf6937464"
+        }
+      ],
+      "native_callbacks": [
+        "sync_callbacks"
+      ],
+      "installed_checks": [
+        "metadata-artwork"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P43",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Native sync callbacks exercise first prompt, last-success/failure/progress/cancel/retry and persistent visibility; handover retains the supported preference.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::handover",
+          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
+          "source": "crates/librairii-storage/tests/handover.rs",
+          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        }
+      ],
+      "native_callbacks": [
+        "sync_callbacks"
+      ],
+      "installed_checks": [
+        "metadata-artwork"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P44",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "All typed full-query/selection/Collection/approved-Shelf union scopes retain identity/order/overlap, including legacy dynamic history and more than 1000 results.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::exports",
+          "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        },
+        {
+          "suite": "librairii-storage::query_differential",
+          "name": "streaming_scope_exceeds_picker_and_page_limits_and_stops_on_callback_failure",
+          "source": "crates/librairii-storage/tests/query_differential.rs",
+          "source_sha256": "32764bf28d4bcc3f8f9b8f3f609736e0a46031f3d200fcb7b2a053523c01796f"
+        },
+        {
+          "suite": "librairii-storage::operation_lifecycle",
+          "name": "unavailable_exports_and_legacy_dynamic_names_keep_distinct_curated_identity",
+          "source": "crates/librairii-storage/tests/operation_lifecycle.rs",
+          "source_sha256": "aa86fd00696c615ae29e4f342229fe4338f140d6e8e9bc46678db0807e24ba83"
+        }
+      ],
+      "native_callbacks": [
+        "export_callbacks"
+      ],
+      "installed_checks": [
+        "export-results",
+        "export-selection",
+        "export-collections",
+        "export-shelves"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P45",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Complete preflight validates bytes/names, leaves skipped names unreserved and retains per-item reasons; native empty/refused previews leave the library usable.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::exports",
+          "name": "preflight_verifies_bytes_and_names_without_reserving_skipped_output_names",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        },
+        {
+          "suite": "librairii-storage::exports",
+          "name": "unicode_suffix_and_unsafe_sources_keep_per_item_preflight_reasons",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        }
+      ],
+      "native_callbacks": [
+        "export_callbacks"
+      ],
+      "installed_checks": [
+        "export-results"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P46",
+      "accountable_owner": "01max",
+      "workstream": "Domain",
+      "assertions_reviewed": "Prepared plans evict/consume/invalidate and queued copies recheck Broken after actual custody wait; completed output cannot be retroactively retracted.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::exports",
+          "name": "prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_boundary",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_export_rechecks_broken_after_waiting_for_actual_custody",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        }
+      ],
+      "native_callbacks": [
+        "export_callbacks"
+      ],
+      "installed_checks": [
+        "export-selection",
+        "broken-undo"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P47",
+      "accountable_owner": "01max",
+      "workstream": "Archive",
+      "assertions_reviewed": "Every frozen archive format exports exact original names/bytes; racing destinations, source refusal and short writes cannot authorize overwrite.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::exports",
+          "name": "passthrough_exports_all_seven_frozen_formats_with_exact_original_names_and_bytes",
+          "source": "crates/librairii-storage/tests/exports.rs",
+          "source_sha256": "165e35785b0e053cfdc4d8148c67c4df02d7a3983cc46a70929cd40141cbb061"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_prepared_export_runs_durable_reports_and_preserves_racing_destinations",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::export_output::tests::native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix",
+          "source": "crates/librairii-storage/src/platform/unix/export_output.rs",
+          "source_sha256": "e19e99fbf6ddc79e2730b2105b5d4669e3eeb0141658604e4630197ff4f6c81c"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "platform::unix::export_output::tests::native_export_refused_source_never_writes_destination_bytes",
+          "source": "crates/librairii-storage/src/platform/unix/export_output.rs",
+          "source_sha256": "e19e99fbf6ddc79e2730b2105b5d4669e3eeb0141658604e4630197ff4f6c81c"
+        }
+      ],
+      "native_callbacks": [
+        "export_callbacks"
+      ],
+      "installed_checks": [
+        "export-results"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P48",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Cancelled second copy and process-death recovery retain completed files and retire only owned temporaries; installed report verifies actual file-manager reveal.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_export_cancel_during_second_copy_keeps_completed_file_and_retires_partial",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_registered_temporaries_recover_after_process_death_and_preserve_final_files",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-storage::operation_history",
+          "name": "active_latest_preserves_null_ordering_and_reveal_requires_retained_valid_directory",
+          "source": "crates/librairii-storage/tests/operation_history.rs",
+          "source_sha256": "1371a0ca23a956f6a1dc2026f05e805be602a55f498517bba536211460c1d7c3"
+        }
+      ],
+      "native_callbacks": [
+        "export_callbacks",
+        "activity_history_callbacks"
+      ],
+      "installed_checks": [
+        "export-results",
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P49",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "Removal preserves source and Shelf UUID decisions with uncancelled compensation; kill at intent/move/delete recovers before intake and rejects foreign restore collisions. A dedicated real removal/copy-out/ImportExecutor reimport regression forces a new numeric story ID and verifies absent manual assignments, exact approved UUID order/retention/origins/exclusions, unavailable placeholders, original archive bytes and repeated native reopen.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled",
+          "source": "crates/librairii-storage/src/removal.rs",
+          "source_sha256": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake",
+          "source": "crates/librairii-storage/src/removal.rs",
+          "source_sha256": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
+          "source": "crates/librairii-storage/src/removal.rs",
+          "source_sha256": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c"
+        },
+        {
+          "suite": "librairii-desktop::removal_reimport",
+          "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+          "source": "crates/librairii-desktop/tests/removal_reimport.rs",
+          "source_sha256": "57964c76c3d054070382249144c631f40d03890c79c79b0df9e4b98b027e93e1"
+        }
+      ],
+      "native_callbacks": [
+        "details_removal_callbacks"
+      ],
+      "installed_checks": [
+        "trash-removal"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P50",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Twenty-row raw-key cursor history handles concurrent inserts; persisted terminal truth wins over stale snapshots and notice dismissal remains independent.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::operation_history",
+          "name": "history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts",
+          "source": "crates/librairii-storage/tests/operation_history.rs",
+          "source_sha256": "1371a0ca23a956f6a1dc2026f05e805be602a55f498517bba536211460c1d7c3"
+        },
+        {
+          "suite": "librairii-storage::operation_history",
+          "name": "active_latest_preserves_null_ordering_and_reveal_requires_retained_valid_directory",
+          "source": "crates/librairii-storage/tests/operation_history.rs",
+          "source_sha256": "1371a0ca23a956f6a1dc2026f05e805be602a55f498517bba536211460c1d7c3"
+        },
+        {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_saved_terminal_and_generation_query_stamps_reject_stale_observations",
+          "source": "crates/librairii-app/src/jobs/tests.rs",
+          "source_sha256": "3357ed83275f3c013390355018679138a8ad5c46fa5f70b95ccc42307d141ea2"
+        }
+      ],
+      "native_callbacks": [
+        "activity_history_callbacks"
+      ],
+      "installed_checks": [
+        "history",
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P51",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Actual Go handover preserves typed history; bounded library-bound atomic receipt refuses aliases/wrong versions and never resets newer native preferences.",
+      "automated_cases": [
+        {
+          "suite": "librairii-core::handover",
+          "name": "actual_go_handover_preserves_history_and_separates_overlapping_group_ids",
+          "source": "crates/librairii-core/tests/handover.rs",
+          "source_sha256": "473d1897ddee8cb6ce659dac5f8fd49d285f73880871edc9ef73b1c315b064ac"
+        },
+        {
+          "suite": "librairii-core::handover",
+          "name": "handover_refuses_wrong_library_versions_unknown_fields_duplicates_and_bounds",
+          "source": "crates/librairii-core/tests/handover.rs",
+          "source_sha256": "473d1897ddee8cb6ce659dac5f8fd49d285f73880871edc9ef73b1c315b064ac"
+        },
+        {
+          "suite": "librairii-storage::handover",
+          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
+          "source": "crates/librairii-storage/tests/handover.rs",
+          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+        },
+        {
+          "suite": "librairii-storage::handover",
+          "name": "wrong_library_or_invalid_transfer_preserves_every_native_profile_byte",
+          "source": "crates/librairii-storage/tests/handover.rs",
+          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+        }
+      ],
+      "native_callbacks": [
+        "history_restoration_callbacks"
+      ],
+      "installed_checks": [
+        "reopen"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    },
+    {
+      "id": "P52",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "First-run inspection is read-only until explicit exact-root confirmation; existing adoption requires independent clone authority, and atomic profile writes retain language/root.",
+      "automated_cases": [
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "first_run_inspection_is_readonly_and_explicit_language_never_initializes_a_library",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::fresh::tests::confirmed_setup_uses_exact_empty_or_missing_root_and_reopens_without_legacy_source",
+          "source": "crates/librairii-storage/src/native/owned/fresh.rs",
+          "source_sha256": "a9d6914cf17b1fef30347c8cc1215a8160e7bd1a9a424f9ed6d2a1836735a28f"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "64304c316e591e0a08a4916494e422b2d52302c6eac63b38acb88bad0ba61bfb"
+        },
+        {
+          "suite": "librairii-storage::profiles",
+          "name": "serialized_native_updates_keep_language_and_root_without_lost_snapshots",
+          "source": "crates/librairii-storage/tests/profiles.rs",
+          "source_sha256": "9935fe917a0e7c29394bc36dd8822f3440eda2f437eeb852bc95f213f3535177"
+        },
+        {
+          "suite": "librairii-storage::library_locks",
+          "name": "rust_lock_is_not_legacy_lifetime_exclusion_or_existing_adoption_authority",
+          "source": "crates/librairii-storage/tests/library_locks.rs",
+          "source_sha256": "5588b6a9950a099db0448550b6ebfea87ac066e8f02d950721672aaef1487568"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "setup",
+        "recovery"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    },
+    {
+      "id": "P53",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Exactly two languages and historical outcome fallback preserve authored content; failed persistence cannot change effective UI/menu projection.",
+      "automated_cases": [
+        {
+          "suite": "librairii-app::localization",
+          "name": "embedded_catalogs_render_numbers_plural_forms_and_authored_parameters",
+          "source": "crates/librairii-app/tests/localization.rs",
+          "source_sha256": "5d1e0ff9e540330687ece97a5a6fb7977103ff055c39932b2993208aed1d8499"
+        },
+        {
+          "suite": "librairii-app::localization",
+          "name": "historical_results_translate_known_messages_and_keep_unknown_original_details",
+          "source": "crates/librairii-app/tests/localization.rs",
+          "source_sha256": "5d1e0ff9e540330687ece97a5a6fb7977103ff055c39932b2993208aed1d8499"
+        },
+        {
+          "suite": "librairii-desktop::settings",
+          "name": "language_persistence_updates_existing_projection_and_pending_native_menus",
+          "source": "crates/librairii-desktop/tests/settings.rs",
+          "source_sha256": "cc74af965260d7819c58a5e739b10eec574d803d51df978790e857c3c6dcd7db"
+        },
+        {
+          "suite": "librairii-desktop::settings",
+          "name": "rejected_or_failed_language_updates_preserve_effective_text_and_durable_bytes",
+          "source": "crates/librairii-desktop/tests/settings.rs",
+          "source_sha256": "cc74af965260d7819c58a5e739b10eec574d803d51df978790e857c3c6dcd7db"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "language"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P54",
+      "accountable_owner": "01max",
+      "workstream": "Storage",
+      "assertions_reviewed": "Exact-root relocation copies the complete tree, commits authority once and reconstructs services; failures/crash/cancel/corruption retain conservative recovery.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::settings_target",
+          "name": "target_revalidation_detects_replacement_new_files_and_changed_ancestors",
+          "source": "crates/librairii-storage/tests/settings_target.rs",
+          "source_sha256": "36d7fe0343be720d651f9e5f387bfec8a9db16eb6fddc6a170ee345421070459"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::relocation_streams_complete_tree_commits_exact_root_and_reopens",
+          "source": "crates/librairii-storage/src/native/owned/relocation.rs",
+          "source_sha256": "3cba324972e9ee8063d6573d5772409b443eb9bed77c020beab5814a5c2c1f8a"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::committed_failure_recovers_destination_and_preserves_changed_and_new_source_files",
+          "source": "crates/librairii-storage/src/native/owned/relocation.rs",
+          "source_sha256": "3cba324972e9ee8063d6573d5772409b443eb9bed77c020beab5814a5c2c1f8a"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::crash_before_commit_and_corrupt_journal_never_replace_source_or_follow_foreign_paths",
+          "source": "crates/librairii-storage/src/native/owned/relocation.rs",
+          "source_sha256": "3cba324972e9ee8063d6573d5772409b443eb9bed77c020beab5814a5c2c1f8a"
+        },
+        {
+          "suite": "librairii-desktop::lifecycle",
+          "name": "desktop_move_reconstructs_real_services_and_invalidates_old_results",
+          "source": "crates/librairii-desktop/tests/lifecycle.rs",
+          "source_sha256": "603beede1e597a2c00e5c4b7d2b41f0c3873c029dfe9a1b8918b01956ee8645a"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "relocation",
+        "recovery"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    },
+    {
+      "id": "P55",
+      "accountable_owner": "01max",
+      "workstream": "Platform",
+      "assertions_reviewed": "Foreign profile/path syntax is retained without IO; explicit same-UUID locate/rebind refuses wrong/missing/foreign state without guessing or renaming archives.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::portability",
+          "name": "foreign_profile_syntax_is_explicit_strict_and_retained_without_path_io",
+          "source": "crates/librairii-storage/tests/portability.rs",
+          "source_sha256": "557b22805ac81d16e0f4ab0bd35cfdfe1b7a7a916de2a5e323f38561607b56b8"
+        },
+        {
+          "suite": "librairii-storage::portability",
+          "name": "profile_rebinding_borrows_verified_copy_keeps_raw_authority_and_never_replays_paths",
+          "source": "crates/librairii-storage/tests/portability.rs",
+          "source_sha256": "557b22805ac81d16e0f4ab0bd35cfdfe1b7a7a916de2a5e323f38561607b56b8"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "native::owned::locate::tests::locating_same_uuid_preserves_language_and_refuses_wrong_or_missing_database",
+          "source": "crates/librairii-storage/src/native/owned/locate.rs",
+          "source_sha256": "5953eab4d035237c73afdfddef987f8fac7086d1d230e0fe53e333a93aa060a0"
+        },
+        {
+          "suite": "librairii-storage::portability",
+          "name": "filename_diagnostics_never_normalize_or_claim_filesystem_equivalence",
+          "source": "crates/librairii-storage/tests/portability.rs",
+          "source_sha256": "557b22805ac81d16e0f4ab0bd35cfdfe1b7a7a916de2a5e323f38561607b56b8"
+        }
+      ],
+      "native_callbacks": [
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "recovery"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    },
+    {
+      "id": "P56",
+      "accountable_owner": "01max",
+      "workstream": "UI",
+      "assertions_reviewed": "Native frame/keyboard/callback matrix plus Linux spoken workflow evidence cover the scoped accessibility contract; the recorded owner exclusions remain visible.",
+      "automated_cases": [
+        {
+          "suite": "librairii-ui",
+          "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text",
+          "source": "crates/librairii-ui/src/description.rs",
+          "source_sha256": "b3113b3421b891448c5a65db2b170bfd5408b0a9d04b9f4e60c4d2549968aa4a"
+        },
+        {
+          "suite": "librairii-app::localization",
+          "name": "native_tag_labels_translate_system_values_without_translating_authored_lookalikes",
+          "source": "crates/librairii-app/tests/localization.rs",
+          "source_sha256": "5d1e0ff9e540330687ece97a5a6fb7977103ff055c39932b2993208aed1d8499"
+        }
+      ],
+      "native_callbacks": [
+        "keyboard_checks",
+        "shelf_review_callbacks",
+        "tag_callbacks"
+      ],
+      "installed_checks": [
+        "scaling",
+        "language"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "voiceover-excluded",
+        "script-input-deferred",
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P57",
+      "accountable_owner": "01max",
+      "workstream": "Platform",
+      "assertions_reviewed": "Isolated packaged startup refuses unsafe roots; installed inspection/native desktop observations establish actual dependencies, runtime and adapter behavior.",
+      "automated_cases": [
+        {
+          "suite": "librairii-desktop::release_identity",
+          "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup",
+          "source": "crates/librairii-desktop/tests/release_identity.rs",
+          "source_sha256": "9fb11f0277aa8d10ee89afd6adead5d3ccde2b2747f7ce955b3e1f7a82010000"
+        },
+        {
+          "suite": "librairii-desktop",
+          "name": "acceptance::tests::intake_rejects_external_paths_and_rechecks_owned_picker_paths_off_ui_thread",
+          "source": "crates/librairii-desktop/src/acceptance.rs",
+          "source_sha256": "a0454094df92a703e137e81b5d51d7ccc8d352ce7e038e27c8bce329a121d116"
+        },
+        {
+          "suite": "librairii-desktop::lifecycle",
+          "name": "desktop_move_reconstructs_real_services_and_invalidates_old_results",
+          "source": "crates/librairii-desktop/tests/lifecycle.rs",
+          "source_sha256": "603beede1e597a2c00e5c4b7d2b41f0c3873c029dfe9a1b8918b01956ee8645a"
+        }
+      ],
+      "native_callbacks": [
+        "keyboard_checks"
+      ],
+      "installed_checks": [
+        "offline-startup",
+        "export-results",
+        "scaling"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": [
+        "voiceover-excluded",
+        "script-input-deferred",
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P58",
+      "accountable_owner": "01max",
+      "workstream": "Release",
+      "assertions_reviewed": "Scale properties and complete 5000-story Shelf model assertions supplement the separately reviewed backend/native input/resource numerical evidence.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "five_thousand_story_union_preview_apply_and_every_model_page_meet_budget",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-core::scale_properties",
+          "name": "paged_navigation_preserves_unicode_and_exact_bounds",
+          "source": "crates/librairii-core/tests/scale_properties.rs",
+          "source_sha256": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
+        },
+        {
+          "suite": "librairii-core::scale_properties",
+          "name": "explicit_uuid_decisions_deduplicate_in_first_selected_order",
+          "source": "crates/librairii-core/tests/scale_properties.rs",
+          "source_sha256": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
+        }
+      ],
+      "native_callbacks": [
+        "search_paging_callbacks",
+        "shelf_review_callbacks"
+      ],
+      "installed_checks": [
+        "scaling"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review"
+      ],
+      "scope_decisions": []
+    },
+    {
+      "id": "P59",
+      "accountable_owner": "01max",
+      "workstream": "Release",
+      "assertions_reviewed": "Package identity and explicit-root refusal supplement exact archive/installed payload custody; public Mac signing and final-byte qualification remain release holds.",
+      "automated_cases": [
+        {
+          "suite": "librairii-desktop::release_identity",
+          "name": "package_build_identity_is_available_without_profile_or_display",
+          "source": "crates/librairii-desktop/tests/release_identity.rs",
+          "source_sha256": "9fb11f0277aa8d10ee89afd6adead5d3ccde2b2747f7ce955b3e1f7a82010000"
+        },
+        {
+          "suite": "librairii-desktop::release_identity",
+          "name": "product_version_is_available_without_profile_or_display",
+          "source": "crates/librairii-desktop/tests/release_identity.rs",
+          "source_sha256": "9fb11f0277aa8d10ee89afd6adead5d3ccde2b2747f7ce955b3e1f7a82010000"
+        },
+        {
+          "suite": "librairii-desktop::release_identity",
+          "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup",
+          "source": "crates/librairii-desktop/tests/release_identity.rs",
+          "source_sha256": "9fb11f0277aa8d10ee89afd6adead5d3ccde2b2747f7ce955b3e1f7a82010000"
+        }
+      ],
+      "native_callbacks": [],
+      "installed_checks": [
+        "uninstall-reinstall",
+        "offline-startup"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review",
+        "public-mac-final-bytes"
+      ],
+      "scope_decisions": [
+        "windows-deferred"
+      ]
+    },
+    {
+      "id": "P60",
+      "accountable_owner": "01max",
+      "workstream": "Release",
+      "assertions_reviewed": "The upgraded curation workflow, real process recovery and one-time handover supplement fresh/upgraded installed workflows and separate legacy/rollback rehearsals.",
+      "automated_cases": [
+        {
+          "suite": "librairii-storage::shelves",
+          "name": "v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose",
+          "source": "crates/librairii-storage/tests/shelves.rs",
+          "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::native_library",
+          "name": "native_operation_crash_transition_matrix_reconciles_history_and_progress",
+          "source": "crates/librairii-storage/tests/native_library.rs",
+          "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-storage::handover",
+          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
+          "source": "crates/librairii-storage/tests/handover.rs",
+          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+        }
+      ],
+      "native_callbacks": [
+        "activity_history_callbacks",
+        "maintenance_callbacks"
+      ],
+      "installed_checks": [
+        "import",
+        "inspection",
+        "metadata-artwork",
+        "tags-search",
+        "collections",
+        "shelf-create",
+        "shelf-review",
+        "broken-undo",
+        "export-results",
+        "export-selection",
+        "export-collections",
+        "export-shelves",
+        "trash-removal",
+        "reopen",
+        "setup",
+        "language",
+        "relocation",
+        "recovery",
+        "history",
+        "uninstall-reinstall",
+        "offline-startup",
+        "scaling"
+      ],
+      "release_holds": [
+        "final-candidate-and-independent-review",
+        "public-mac-final-bytes"
+      ],
+      "scope_decisions": [
+        "isolated-adoption"
+      ]
+    }
+  ]
+}
