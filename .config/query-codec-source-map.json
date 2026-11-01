@@ -5776,6 +5776,19 @@
           ]
         },
         "reason": "Task19.1.4 independent Spec audit gap: actual removal, manual copy-out and ImportExecutor reimport must reconnect UUID curation without resurrecting deleted manual tags. Preserve every previous identity, source pin and assertion."
+      },
+      {
+        "position": 644,
+        "identity": {
+          "suite": "librairii-storage::shelf_incomplete",
+          "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task19.1.5 independent Spec audit gap: actually commit a validated healthy addition while another source stays invalid, preserving existing unmatched/unavailable members and incomplete state. Preserve every previous identity, source pin and assertion."
       }
     ],
     "python": [

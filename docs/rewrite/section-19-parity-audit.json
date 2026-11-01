@@ -1278,7 +1278,7 @@
       "id": "P33",
       "accountable_owner": "01max",
       "workstream": "Domain",
-      "assertions_reviewed": "Uncertain coverage permits retention and validated additions while suppressing inferred removal; changes invalidate affected review authority.",
+      "assertions_reviewed": "Uncertain coverage permits retention and validated additions while suppressing inferred removal; changes invalidate affected review authority. The dedicated real SQLite regression commits healthy Add/Apply before repairing the invalid source, checks healthy acceptance origin and unchanged unmatched/unavailable approvals, then reopens to verify persisted addition and continued incomplete/not-Up-to-date state with no inferred removals.",
       "automated_cases": [
         {
           "suite": "librairii-storage::shelves",
@@ -1291,6 +1291,12 @@
           "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
           "source": "crates/librairii-storage/tests/shelves.rs",
           "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-storage::shelf_incomplete",
+          "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+          "source": "crates/librairii-storage/tests/shelf_incomplete.rs",
+          "source_sha256": "974e18c443da50fe4becd993b0170b717429f6aefd660317cc2a85c81c762683"
         }
       ],
       "native_callbacks": [

@@ -4113,6 +4113,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::shelf_incomplete",
+      "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

@@ -15,7 +15,7 @@ cutover or retirement of the Go application.
 - [`section-19-parity-audit.json`](rewrite/section-19-parity-audit.json) adds all
   sixty row obligations, named assertion sources and their SHA-256 values,
   accountable owner, native callback/workflow links, scope decisions and release
-  holds. Its 200 case links select 174 distinct Rust tests. A test can support
+  holds. Its 201 case links select 175 distinct Rust tests. A test can support
   several contracts without becoming several independently executed tests.
 
 The assertion summaries describe the relevant checks, not a claim that test
