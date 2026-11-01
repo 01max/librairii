@@ -38,7 +38,12 @@ describe each statement; they do not measure total process memory or disk I/O.
 
 The separate `query-plan-experiment-<target>-<source>` artifact contains the
 report, stderr and original backend manifest with source, host, fixture and
-executable identities. That copied manifest describes the original backend
+executable identities. Pre/post receipts verify the clean source and executable
+SHA-256/size against that manifest. `status.json` records the diagnostic step's
+actual outcome; a failure or skip cannot count as completed diagnostic evidence.
+The probe has a three-minute process timeout and five-minute step timeout.
+Its failure is retained separately without changing the acceptance job result.
+That copied manifest describes the original backend
 run, including an incomplete verdict if it failed; it does not seal or approve
 the experiment. Verify the original scale archive/provider hashes and binary
 binding alongside the experiment before reviewing its observations. Partial
