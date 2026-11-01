@@ -1139,7 +1139,7 @@
       "id": "P29",
       "accountable_owner": "01max",
       "workstream": "Domain",
-      "assertions_reviewed": "Manual retention, append/order, ordinary removal and exclusion remain distinct; view refinement cannot persist curation changes.",
+      "assertions_reviewed": "Manual retention, append/order, ordinary removal and exclusion remain distinct; view refinement cannot persist curation changes. The dedicated 145-member controller regression checks both arrow directions beyond100, gapped positions, full UUID order, selection/focus, page6-to5 transition, refined-view refusal and native reopen.",
       "automated_cases": [
         {
           "suite": "librairii-storage::shelves",
@@ -1158,6 +1158,12 @@
           "name": "native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids",
           "source": "crates/librairii-storage/tests/shelves.rs",
           "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-desktop::shelf_order",
+          "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
+          "source": "crates/librairii-desktop/tests/shelf_order.rs",
+          "source_sha256": "99a02df18450c85fc83429fea72d0b9dff22c67f3123b4bffc417527cd581111"
         }
       ],
       "native_callbacks": [

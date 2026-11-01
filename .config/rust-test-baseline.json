@@ -4095,6 +4095,15 @@
     {
       "suite": "librairii-desktop::release_identity",
       "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup"
+    },
+    {
+      "suite": "librairii-desktop::shelf_order",
+      "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
