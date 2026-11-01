@@ -4104,6 +4104,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-desktop::removal_reimport",
+      "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

@@ -24,8 +24,8 @@ It does not authorize promotion or retirement of the Go application.
 ## Parity audit index — 19.1
 
 The [named parity audit](../native-parity-audit.md) extends this historical index
-with [sixty assertion mappings](section-19-parity-audit.json), including 198 links
-to 173 distinct Rust test cases, relevant native callbacks and installed workflow
+with [sixty assertion mappings](section-19-parity-audit.json), including 200 links
+to 174 distinct Rust test cases, relevant native callbacks and installed workflow
 checks. The offline command verifies their actual execution and sealed evidence
 at the selected source; independent review still determines semantic coverage.
 The original index and frozen planning register retain their original identities

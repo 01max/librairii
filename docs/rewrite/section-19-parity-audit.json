@@ -1181,7 +1181,7 @@
       "id": "P30",
       "accountable_owner": "01max",
       "workstream": "Domain",
-      "assertions_reviewed": "UUID reimport reconnects a new numeric story without rewriting order/origins/exclusions; upgraded tag/metadata/curation/removal composes across restart.",
+      "assertions_reviewed": "UUID reimport reconnects a new numeric story without rewriting order/origins/exclusions; upgraded tag/metadata/curation/removal composes across restart. A dedicated real removal/copy-out/ImportExecutor reimport regression forces a new numeric story ID and verifies absent manual assignments, exact approved UUID order/retention/origins/exclusions, unavailable placeholders, original archive bytes and repeated native reopen.",
       "automated_cases": [
         {
           "suite": "librairii-storage::shelves",
@@ -1194,6 +1194,12 @@
           "name": "v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose",
           "source": "crates/librairii-storage/tests/shelves.rs",
           "source_sha256": "c594d5c94c77059af9f220437ed5f02961882737fea3e731cd2b70437ea40ddc"
+        },
+        {
+          "suite": "librairii-desktop::removal_reimport",
+          "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+          "source": "crates/librairii-desktop/tests/removal_reimport.rs",
+          "source_sha256": "9e7884c12c6faa7574619461b422b15227fd8b64a86daf55e66e68745b1dab93"
         }
       ],
       "native_callbacks": [
@@ -1856,7 +1862,7 @@
       "id": "P49",
       "accountable_owner": "01max",
       "workstream": "Storage",
-      "assertions_reviewed": "Removal preserves source and Shelf UUID decisions with uncancelled compensation; kill at intent/move/delete recovers before intake and rejects foreign restore collisions.",
+      "assertions_reviewed": "Removal preserves source and Shelf UUID decisions with uncancelled compensation; kill at intent/move/delete recovers before intake and rejects foreign restore collisions. A dedicated real removal/copy-out/ImportExecutor reimport regression forces a new numeric story ID and verifies absent manual assignments, exact approved UUID order/retention/origins/exclusions, unavailable placeholders, original archive bytes and repeated native reopen.",
       "automated_cases": [
         {
           "suite": "librairii-storage",
@@ -1875,6 +1881,12 @@
           "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
           "source": "crates/librairii-storage/src/removal.rs",
           "source_sha256": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c"
+        },
+        {
+          "suite": "librairii-desktop::removal_reimport",
+          "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
+          "source": "crates/librairii-desktop/tests/removal_reimport.rs",
+          "source_sha256": "9e7884c12c6faa7574619461b422b15227fd8b64a86daf55e66e68745b1dab93"
         }
       ],
       "native_callbacks": [
