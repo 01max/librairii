@@ -6157,6 +6157,56 @@
         "position": 118,
         "identity": "test_manual_tools.ManualTools.test_signing_refuses_invalid_selection_before_handoff",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
+      },
+      {
+        "position": 119,
+        "identity": "test_evidence.EvidenceManifest.test_all_three_targets_and_failed_history_are_indexed_without_release_approval",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 120,
+        "identity": "test_evidence.EvidenceManifest.test_outer_hash_mismatch_refuses_before_output",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 121,
+        "identity": "test_evidence.EvidenceManifest.test_inputs_changed_during_assembly_fail_without_output",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 122,
+        "identity": "test_evidence.EvidenceManifest.test_inner_distribution_and_actual_installed_byte_tampering_are_rejected",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 123,
+        "identity": "test_evidence.EvidenceManifest.test_cross_source_target_and_graph_reports_are_rejected",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 124,
+        "identity": "test_evidence.EvidenceManifest.test_missing_target_report_or_incomplete_gui_remains_incomplete",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 125,
+        "identity": "test_evidence.EvidenceManifest.test_wrong_compiler_profile_and_cross_target_package_graph_are_rejected",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 126,
+        "identity": "test_evidence.EvidenceManifest.test_duplicate_json_or_zip_identity_and_traversal_are_rejected",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 127,
+        "identity": "test_evidence.EvidenceManifest.test_existing_output_and_output_symlink_are_never_overwritten",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 128,
+        "identity": "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes",
+        "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       }
     ]
   },
