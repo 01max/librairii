@@ -6207,6 +6207,41 @@
         "position": 128,
         "identity": "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
+      },
+      {
+        "position": 129,
+        "identity": "test_parity.ParityObservations.test_all_sixty_rows_observe_exact_cases_without_claiming_parity_or_release",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 130,
+        "identity": "test_parity.ParityObservations.test_missing_failed_skipped_duplicate_or_foreign_native_execution_is_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 131,
+        "identity": "test_parity.ParityObservations.test_missing_callback_or_changed_sealed_observation_cannot_pass",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 132,
+        "identity": "test_parity.ParityObservations.test_installed_lane_stage_payload_and_hash_changes_are_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 133,
+        "identity": "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 134,
+        "identity": "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
+      },
+      {
+        "position": 135,
+        "identity": "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
+        "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       }
     ]
   },

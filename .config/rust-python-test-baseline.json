@@ -128,6 +128,13 @@
     "test_evidence.EvidenceManifest.test_wrong_compiler_profile_and_cross_target_package_graph_are_rejected",
     "test_evidence.EvidenceManifest.test_duplicate_json_or_zip_identity_and_traversal_are_rejected",
     "test_evidence.EvidenceManifest.test_existing_output_and_output_symlink_are_never_overwritten",
-    "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes"
+    "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes",
+    "test_parity.ParityObservations.test_all_sixty_rows_observe_exact_cases_without_claiming_parity_or_release",
+    "test_parity.ParityObservations.test_missing_failed_skipped_duplicate_or_foreign_native_execution_is_refused",
+    "test_parity.ParityObservations.test_missing_callback_or_changed_sealed_observation_cannot_pass",
+    "test_parity.ParityObservations.test_installed_lane_stage_payload_and_hash_changes_are_refused",
+    "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
+    "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
+    "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit"
   ]
 }
