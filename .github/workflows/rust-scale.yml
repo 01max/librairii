@@ -74,3 +74,18 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
+      - name: Compare first-page query plans after acceptance workloads
+        if: always() && !cancelled()
+        run: |
+          mkdir target/query-plan-experiment
+          cp target/quality/native-scale/manifest.json target/query-plan-experiment/backend-manifest.json
+          target/quality/native-scale/scale-backend --query-diagnostics > target/query-plan-experiment/report.json 2> target/query-plan-experiment/stderr.log
+      - name: Retain separate query-plan experiment
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: query-plan-experiment-${{ matrix.target }}-${{ github.sha }}
+          path: target/query-plan-experiment/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

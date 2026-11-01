@@ -1,6 +1,8 @@
 //! Retained Task 1 workload through actual Rust database workers, never user data.
 #[path = "scale-backend/cpu.rs"]
 mod cpu;
+#[path = "scale-backend/diagnostics.rs"]
+mod diagnostics;
 #[path = "scale-backend/fixture.rs"]
 mod fixture;
 #[path = "scale-backend/queries.rs"]
@@ -17,10 +19,11 @@ type Result<T = ()> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result {
     let arguments = std::env::args().skip(1).collect::<Vec<_>>();
-    let shelves_only = match arguments.as_slice() {
-        [] => false,
-        [mode] if mode == "--shelves" => true,
-        _ => return Err("usage: scale-backend [--shelves]".into()),
+    let (shelves_only, diagnose_queries) = match arguments.as_slice() {
+        [] => (false, false),
+        [mode] if mode == "--shelves" => (true, false),
+        [mode] if mode == "--query-diagnostics" => (false, true),
+        _ => return Err("usage: scale-backend [--shelves | --query-diagnostics]".into()),
     };
     let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let roots = TestRoots::new()?;
@@ -44,10 +47,18 @@ fn main() -> Result {
         let rows = fixture::seed(&database, &repository, roots.library())?;
         let fixture_ms = started.elapsed().as_secs_f64() * 1000.;
         (
-            "queries",
+            if diagnose_queries {
+                "query_plan_experiment"
+            } else {
+                "queries"
+            },
             rows.len(),
             fixture_ms,
-            queries::run(&database, &rows, roots.library())?,
+            if diagnose_queries {
+                diagnostics::run(&database)?
+            } else {
+                queries::run(&database, &rows, roots.library())?
+            },
         )
     };
     database.close()?;
@@ -62,7 +73,7 @@ fn main() -> Result {
     if retired_root.exists() {
         return Err("owned fixture was not retired".into());
     }
-    let passed = report["passed"].as_bool().unwrap_or(false);
+    let passed = diagnose_queries || report["passed"].as_bool().unwrap_or(false);
     let mut payload = json!({
         "format": "librairii.scale-backend", "version": 1,
         "stories": count, "fixture_generation_ms": fixture_ms, "workload":workload,
@@ -70,6 +81,11 @@ fn main() -> Result {
         "fixture_retired": true, "database_closed": true
     });
     payload[workload] = report;
+    if diagnose_queries {
+        payload["method"] = json!(
+            "separate diagnostic process; alternating paired page SQL; no acceptance verdict"
+        );
+    }
     println!("{}", serde_json::to_string_pretty(&payload)?);
     if !passed {
         return Err("retained backend performance gate failed; raw samples retained".into());
