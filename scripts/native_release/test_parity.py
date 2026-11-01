@@ -66,19 +66,31 @@ class ParityObservations(unittest.TestCase):
             self.mutate(row['reports']['quality'], 'nextest/ci/junit.xml', lambda _: ET.tostring(junit))
             package = self.fixture.packages[target]
             names = ['x11-fresh', 'x11-upgraded', 'wayland-fresh', 'wayland-upgraded'] if 'linux' in target else ['fresh', 'upgraded']
+            method = {'format': 'librairii.packaged-gui-method', 'schema': 1,
+                      'source_commit': fixtures.SOURCE, 'files': {'observer.py': fixtures.facts(b'observer')}}
+            processes = [{'name': name, 'retired': True} for name in
+                         ('workflow', 'reopen', 'recovery', 'reinstall', 'offline')]
             lanes = []
             for name in names:
                 member = 'gui/' + name + ('/case/' if 'linux' in target else '/')
                 raw = b'inert raw observation'
                 self.mutate(row['reports']['installed'], member + 'observed.txt', lambda _: raw)
-                report = {'source_commit': fixtures.SOURCE, 'target': target, 'artifact': package['artifact'],
-                          'complete': True, 'errors': [], 'checks': checks, 'files': {'observed.txt': fixtures.facts(raw)}}
+                case = 'fresh' if name.endswith('fresh') else 'upgraded'
+                report = {'format': 'librairii.packaged-gui', 'schema': 1,
+                          'source_commit': fixtures.SOURCE, 'target': target, 'artifact': package['artifact'],
+                          'host': 'synthetic', 'case': case,
+                          'session': name.split('-', 1)[0] if 'linux' in target else 'macOS',
+                          'backend': 'winit-skia' if case == 'fresh' else 'winit-skia-software',
+                          'method': method, 'processes': processes, 'signing': package['signing'],
+                          'public_release_qualified': False, 'complete': True, 'errors': [],
+                          'checks': checks, 'files': {'observed.txt': fixtures.facts(raw)}}
                 report_data = fixtures.encoded(report)
                 self.mutate(row['reports']['installed'], member + 'report.json', lambda _: report_data)
                 lanes.append({'name': name, 'passed': True, 'checks': list(checks),
-                              'sha256': hashlib.sha256(report_data).hexdigest()})
+                              'processes': processes, 'sha256': hashlib.sha256(report_data).hexdigest()})
             self.mutate(row['reports']['installed'], 'gui/qualification.json',
-                                lambda raw: fixtures.encoded(dict(json.loads(raw), lanes=lanes)))
+                                lambda raw: fixtures.encoded(dict(json.loads(raw), host='synthetic',
+                                                                   method=method, lanes=lanes)))
         self.save_contract()
 
     def mutate(self, record, name, change):
@@ -155,6 +167,12 @@ class ParityObservations(unittest.TestCase):
         for member, change in [
                 ('gui/qualification.json', lambda raw: fixtures.encoded(dict(json.loads(raw), lanes=[]))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), checks={}))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), format='other'))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), case='upgraded'))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), session='wayland'))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), backend='winit-skia-software'))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), method={}))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), processes=[]))),
                 ('gui/fresh/observed.txt', lambda _: b'changed'),
                 ('inspection/installed/bin/librairii', lambda _: b'changed installed bytes')]:
             with self.subTest(member=member):
@@ -162,6 +180,15 @@ class ParityObservations(unittest.TestCase):
                 self.refused()
                 path.write_bytes(original)
                 record.update(fixtures.facts(original))
+        with zipfile.ZipFile(path) as z:
+            fresh = z.read('gui/fresh/report.json')
+        self.mutate(record, 'gui/upgraded/report.json', lambda _: fresh)
+        def reuse_fresh(raw):
+            qualification = json.loads(raw)
+            qualification['lanes'][1]['sha256'] = hashlib.sha256(fresh).hexdigest()
+            return fixtures.encoded(qualification)
+        self.mutate(record, 'gui/qualification.json', reuse_fresh)
+        self.refused()
 
     def test_contract_omission_owner_source_and_unknown_decision_are_refused(self):
         original = copy.deepcopy(self.contract)

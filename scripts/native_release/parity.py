@@ -9,6 +9,7 @@ from .evidence import (MAX_JSON, archive, bound, candidate, file_record, hexadec
                        relative_name, require)
 from .files import digest, regular, write_json
 from .identity import TARGETS
+from packaged_acceptance.run import qualified
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -123,8 +124,17 @@ def installed_observations(z, package, source, target):
                 'failed or changed installed lane')
         report = member_json(z, name)
         bound(report, source, target)
-        require(report['artifact'] == package['artifact'] and report['complete'] is True
-                and report['errors'] == [] and set(report['checks']) == set(lane['checks']),
+        case = 'fresh' if lane['name'].endswith('fresh') else 'upgraded'
+        session = lane['name'].split('-', 1)[0] if 'linux' in target else 'macOS'
+        backend = 'winit-skia' if case == 'fresh' else 'winit-skia-software'
+        require(qualified(report) and report['artifact'] == package['artifact']
+                and report['case'] == case and report['session'] == session
+                and report['backend'] == backend and report['host'] == qualification['host']
+                and report['method'] == qualification['method']
+                and report['processes'] == lane['processes']
+                and report['signing'] == package['signing']
+                and report['public_release_qualified'] is False
+                and set(report['checks']) == set(lane['checks']),
                 'incomplete or foreign installed observations')
         sealed_files(z, name.removesuffix('report.json'), report['files'])
         reports[name] = report
