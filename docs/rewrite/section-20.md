@@ -131,3 +131,20 @@ for r in rows:
 print(f'{len(rows)} exact tracked paths verified; removal remains unauthorized')
 PY
 ```
+
+## Dependency correction encountered during plan validation
+
+The first Task20.2 CI source, `a18a1122d213c7b37364ad2f9c39540191c7fd0f`,
+failed Linux's existing `cargo audit --deny warnings` gate because the registry
+had yanked `async-executor 1.14.0`. This happened before workspace tests; later
+speech steps lacked the unbuilt native executable and do not establish a speech
+regression. The original failed log/archive and verdict remain retained.
+
+The [upstream 1.14.1 fix](https://github.com/smol-rs/async-executor/pull/164)
+reverts a state-lifetime optimization after a reported use-after-free when a
+waker races executor destruction. The correction updates only that package's
+locked version/checksum to the non-yanked 1.14.1 release. The registry dependency
+and feature declarations are unchanged; no audit waiver, acceptance relaxation
+or retirement action is added. The inventory remains explicitly bound to its
+original integration snapshot. Fresh native checks must validate the corrected
+graph; earlier observations do not qualify it or resolve P58.
