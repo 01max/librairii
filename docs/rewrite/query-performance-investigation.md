@@ -63,3 +63,55 @@ behavioral regression coverage, the unchanged full benchmarks and independent
 review. If the page SQL does not explain the cost, measure summary/count/worker
 phases separately instead of declaring success from another passing rerun.
 Human-controlled signing, final-byte qualification and release remain separate.
+
+## Complete-request phase experiment
+
+The reviewed three-target page-plan experiment at source
+`545f37a88000816322453642abd7efccf9b51612` does not support adopting the
+candidate query. Intel's candidate was slower in 18 of 20 pairs; ARM/Linux
+results were mixed and order-sensitive. It did not explain the historical P58
+failure. The next diagnostic, `scale-backend --query-phases`, measures the real
+complete first-page search path without changing SQL, worker limits or budgets.
+
+`query::search_observed` exposes synchronous typed phase boundaries from the
+same implementation ordinary search uses with a no-op callback. Ordinary
+search reads no diagnostic clocks. The observer records matching/validation,
+count, page preparation, cursor stepping/record decoding, and summary enrichment.
+Rows and summaries remain interleaved in their original order. Each successful
+search ends with `complete`; errors never produce a completed observation.
+
+The separate process uses a fresh isolated frozen 5,000-story fixture. One
+ordinary and one instrumented warmup precede twenty pairs, alternating order.
+Every full `Page` (including every summary field) must equal the ordinary warmup;
+total and ordered first-page IDs also match the frozen fixture. The expected
+full page is serialized, while each subsequent exact comparison is enforced by
+the pinned executing assertions. This is not independent serialization of all
+42 result pages.
+
+Each instrumented observation records raw `[phase, wall_ms, process_cpu_ms]`
+boundaries relative to the request, worker-entry/exit wall times, and complete
+request wall/process CPU duration. Consecutive boundary differences attribute
+intervals to the earlier phase; retain every row/summary interval before
+aggregating. The last row interval includes cursor exhaustion and statement
+cleanup. Time before worker entry includes admission, scheduling and transaction
+setup; time after worker exit includes transaction completion and result delivery.
+Neither is a pure queue-wait measurement. Phase instrumentation, allocations and
+clock reads add overhead, so retain the ordinary/instrumented paired comparison
+and order strata rather than subtracting an assumed constant overhead. CPU is
+process-wide and read at different instants from wall time; CPU/wall differences
+cannot establish a thread's off-CPU time or scheduler cause.
+
+CI runs this probe after all original acceptance workloads and the existing
+page-plan experiment. `scripts/run-query-diagnostic.py` provides the same
+source/executable checks and timeouts for both diagnostics. Each has its own
+status and archive; failure of either stays separate from acceptance. A missing,
+failed or incomplete report is not a completed experiment. Validate provider
+ZIP hashes, the copied backend manifest, native executable/profile and frozen
+fixture hashes before admitting observations. Require 20 alternating pairs,
+24 stories, complete equality assertions, monotonic finite boundaries, the
+expected phase sequence, success status, database closure and fixture retirement.
+
+A dominant measured phase guides a subsequent hypothesis test. It does not
+prove the cause of the older failure, authorize a budget change, or close P58,
+Task 19.7 or human-controlled release gates. Preserve the historical failure
+and all unchanged acceptance results alongside the new observations.
