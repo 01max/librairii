@@ -45,7 +45,10 @@ class Driver:
         (output/'initial-window-ready.json').write_text(json.dumps(initial, indent=2)+'\n')
 
     def snapshot(self, name=None):
-        snapshot = self.observer.call('snapshot-window')
+        # Named captures also need the observer's bounded read-only wait when
+        # AppKit invalidates a tree during a transition. Nested waits share
+        # their original deadline; no input or partial capture is repeated.
+        snapshot = self.observer.wait(lambda: self.observer.call('snapshot-window'))
         if name:
             (self.output/(name+'.json')).write_text(json.dumps(snapshot, indent=2, ensure_ascii=False)+'\n')
             self.observer.capture(name, snapshot)

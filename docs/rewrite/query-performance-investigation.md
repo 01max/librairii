@@ -124,3 +124,15 @@ earlier successful measurements remain attributed to their original source.
 The compatible `0.13.6` lockfile correction adds no waiver and does not establish
 a search-performance fix. Fresh corrected-source evidence is required; the
 earlier measurements do not qualify the updated dependency graph.
+
+The same source's Intel installed-package run also retained a failed named
+capture after a language transition: the native observer returned its typed
+unfiltered-tree-unavailable response (`-25202`, exit 75). The packaged driver
+called the read directly outside the observer's existing bounded wait. Named
+captures now use that read-only wait, sharing any outer deadline and saving
+only a complete snapshot. A headless response replay reproduces the original
+failure and checks recovery, permanent expiry and rejection of foreign-PID or
+command-error replies. No input is retried and no assertion or deadline is
+relaxed. This repairs observation handling; the original run stays failed,
+fresh installed-package evidence remains required, and no product-performance
+cause or fix is inferred.
