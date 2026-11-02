@@ -5,6 +5,8 @@ mod cpu;
 mod diagnostics;
 #[path = "scale-backend/fixture.rs"]
 mod fixture;
+#[path = "scale-backend/phases.rs"]
+mod phases;
 #[path = "scale-backend/queries.rs"]
 mod queries;
 #[path = "scale-backend/shelves.rs"]
@@ -19,11 +21,16 @@ type Result<T = ()> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result {
     let arguments = std::env::args().skip(1).collect::<Vec<_>>();
-    let (shelves_only, diagnose_queries) = match arguments.as_slice() {
-        [] => (false, false),
-        [mode] if mode == "--shelves" => (true, false),
-        [mode] if mode == "--query-diagnostics" => (false, true),
-        _ => return Err("usage: scale-backend [--shelves | --query-diagnostics]".into()),
+    let (shelves_only, diagnose_queries, diagnose_phases) = match arguments.as_slice() {
+        [] => (false, false, false),
+        [mode] if mode == "--shelves" => (true, false, false),
+        [mode] if mode == "--query-diagnostics" => (false, true, false),
+        [mode] if mode == "--query-phases" => (false, false, true),
+        _ => {
+            return Err(
+                "usage: scale-backend [--shelves | --query-diagnostics | --query-phases]".into(),
+            );
+        }
     };
     let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let roots = TestRoots::new()?;
@@ -47,14 +54,18 @@ fn main() -> Result {
         let rows = fixture::seed(&database, &repository, roots.library())?;
         let fixture_ms = started.elapsed().as_secs_f64() * 1000.;
         (
-            if diagnose_queries {
+            if diagnose_phases {
+                "query_phase_experiment"
+            } else if diagnose_queries {
                 "query_plan_experiment"
             } else {
                 "queries"
             },
             rows.len(),
             fixture_ms,
-            if diagnose_queries {
+            if diagnose_phases {
+                phases::run(&database, &rows)?
+            } else if diagnose_queries {
                 diagnostics::run(&database)?
             } else {
                 queries::run(&database, &rows, roots.library())?
@@ -73,7 +84,7 @@ fn main() -> Result {
     if retired_root.exists() {
         return Err("owned fixture was not retired".into());
     }
-    let passed = diagnose_queries || report["passed"].as_bool().unwrap_or(false);
+    let passed = diagnose_phases || diagnose_queries || report["passed"].as_bool().unwrap_or(false);
     let mut payload = json!({
         "format": "librairii.scale-backend", "version": 1,
         "stories": count, "fixture_generation_ms": fixture_ms, "workload":workload,
@@ -84,6 +95,11 @@ fn main() -> Result {
     if diagnose_queries {
         payload["method"] = json!(
             "separate diagnostic process; alternating paired page SQL; no acceptance verdict"
+        );
+    }
+    if diagnose_phases {
+        payload["method"] = json!(
+            "separate diagnostic process; alternating ordinary/instrumented complete requests; no acceptance verdict"
         );
     }
     println!("{}", serde_json::to_string_pretty(&payload)?);

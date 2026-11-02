@@ -277,8 +277,39 @@ fn page_sql(request: &QueryRequest, from: &str, args: &mut Vec<Value>, locale: &
     }
 }
 
+/// Start of a search phase; Row includes cursor stepping and record decoding.
+/// Summary includes metadata lookup and display construction. Page includes
+/// statement preparation/binding. Complete closes the last phase, before result
+/// construction, transaction completion and delivery.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchPhase {
+    Matching,
+    Count,
+    Page,
+    Row,
+    Summary,
+    Complete,
+}
+
 pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Result<Page> {
+    search_observed(tx, request, locale, |_| {})
+}
+
+/// Observe phase boundaries on the real search path within one snapshot.
+/// The callback runs synchronously on the database worker: it must not block,
+/// queue work or perform I/O. Failed searches have no Complete event. Ordinary
+/// search uses a monomorphized no-op callback and does not read any clocks.
+/// Timing an instrumented call is diagnostic evidence, not an acceptance sample.
+pub fn search_observed(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+    mut observe: impl FnMut(SearchPhase),
+) -> Result<Page> {
+    observe(SearchPhase::Matching);
     let (request, from, mut args) = matching(tx, request, locale)?;
+    observe(SearchPhase::Count);
     let total: i64 = tx.query_row(
         &format!("SELECT COUNT(*){from}"),
         params_from_iter(args.iter()),
@@ -288,12 +319,18 @@ pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Resu
     let mut stories = Vec::new();
     // Huge valid page numbers are empty pages, not integer-wrap offsets.
     if request.page <= total_pages {
+        observe(SearchPhase::Page);
         let mut statement = tx.prepare(&page_sql(&request, &from, &mut args, locale))?;
         let mut rows = statement.query(params_from_iter(args))?;
-        while let Some(row) = rows.next()? {
-            stories.push(summary(tx, &Record::read(row)?, locale)?);
+        loop {
+            observe(SearchPhase::Row);
+            let Some(row) = rows.next()? else { break };
+            let record = Record::read(row)?;
+            observe(SearchPhase::Summary);
+            stories.push(summary(tx, &record, locale)?);
         }
     }
+    observe(SearchPhase::Complete);
     Ok(Page {
         stories,
         page: request.page,
