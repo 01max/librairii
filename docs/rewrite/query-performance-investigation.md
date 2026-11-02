@@ -115,3 +115,12 @@ A dominant measured phase guides a subsequent hypothesis test. It does not
 prove the cause of the older failure, authorize a budget change, or close P58,
 Task 19.7 or human-controlled release gates. Preserve the historical failure
 and all unchanged acceptance results alongside the new observations.
+
+The first phase experiment source, `f5d8a2c94fc461d47d44dd0b1ee01d3c9b3ba160`,
+has independently reviewed diagnostics on all three targets. Its ARM quality
+job subsequently failed the dependency gate for `RUSTSEC-2026-0433` in
+`pulldown-cmark 0.13.5`, before workspace tests ran. That failed run and the
+earlier successful measurements remain attributed to their original source.
+The compatible `0.13.6` lockfile correction adds no waiver and does not establish
+a search-performance fix. Fresh corrected-source evidence is required; the
+earlier measurements do not qualify the updated dependency graph.
