@@ -48,7 +48,9 @@ class Driver:
         # Named captures also need the observer's bounded read-only wait when
         # AppKit invalidates a tree during a transition. Nested waits share
         # their original deadline; no input or partial capture is repeated.
-        snapshot = self.observer.wait(lambda: self.observer.call('snapshot-window'))
+        parent = self.module._ACTIVE_WAIT.get()
+        timeout = max(0, parent.deadline - time.monotonic()) if parent else 12
+        snapshot = self.observer.wait(lambda: self.observer.call('snapshot-window'), timeout=timeout)
         if name:
             (self.output/(name+'.json')).write_text(json.dumps(snapshot, indent=2, ensure_ascii=False)+'\n')
             self.observer.capture(name, snapshot)

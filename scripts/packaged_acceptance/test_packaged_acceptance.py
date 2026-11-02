@@ -351,9 +351,11 @@ class PackagedAdmission(unittest.TestCase):
         complete = {'pid': 3081, 'nodes': [{'role': 'AXWindow'}]}
         ready = {'returncode': 0, 'errors': [], 'output': json.dumps(complete)}
         for scenario, outer_budget in [('transient', None), ('transient', 3),
+                                        ('late_recovery', 15),
                                         ('persistent', 3), ('foreign', 3), ('command_error', 3)]:
             with self.subTest(scenario=scenario, outer_budget=outer_budget), tempfile.TemporaryDirectory() as temporary:
                 driver = Driver.__new__(Driver)
+                driver.module = module
                 driver.output = Path(temporary)
                 driver.observer = module.Observer(Path('/unused/helper'), driver.output, 3081)
                 driver.observer.capture = Mock()
@@ -365,7 +367,11 @@ class PackagedAdmission(unittest.TestCase):
                         return {**pending, 'output': pending['output'].replace('3081', '9999')}
                     if scenario == 'command_error':
                         return {**pending, 'errors': ['deadline']}
-                    return ready if scenario == 'transient' and len(calls) == 2 else pending
+                    if scenario == 'transient' and len(calls) == 2:
+                        return ready
+                    if scenario == 'late_recovery' and now[0] >= 13:
+                        return ready
+                    return pending
                 with patch.object(module.common.wayland, 'command', side_effect=command), \
                      patch.object(module.time, 'monotonic', side_effect=lambda: now[0]), \
                      patch.object(module.time, 'sleep', side_effect=lambda duration: now.__setitem__(0, now[0]+duration)):
@@ -373,14 +379,14 @@ class PackagedAdmission(unittest.TestCase):
                         if outer_budget is None:
                             return driver.snapshot('language')
                         return driver.wait(lambda: driver.snapshot('language'), timeout=outer_budget)
-                    if scenario == 'transient':
+                    if scenario in ('transient', 'late_recovery'):
                         self.assertEqual(snapshot(), complete)
                         self.assertEqual(json.loads((driver.output/'language.json').read_text()), complete)
                         driver.observer.capture.assert_called_once_with('language', complete)
-                        self.assertEqual(len(calls), 2)
+                        self.assertEqual(len(calls), 13 if scenario == 'late_recovery' else 2)
                         budget = outer_budget or 12
-                        self.assertEqual(calls[0][2], budget)
-                        self.assertAlmostEqual(calls[1][2], budget-1.05)
+                        self.assertEqual(calls[0][2], min(12, budget))
+                        self.assertAlmostEqual(calls[1][2], min(12, budget-1.05))
                     else:
                         with self.assertRaises(TimeoutError if scenario == 'persistent' else RuntimeError):
                             snapshot()
