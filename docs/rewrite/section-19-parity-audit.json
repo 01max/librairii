@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "1e431bdbc377c9517992780f671811b01c558bfe7a140ec7289cf6dd2a732028"
+    "sha256": "cba02d24015bdfa8f39a469264d2c138ff245743954c715bb2cc47512e36e0e1"
   },
   "scope": "Reviewed assertions and actual observed case execution. Coverage completeness, provider authentication, public signing and release approval remain independent review obligations.",
   "scope_decisions": {
@@ -593,7 +593,7 @@
           "suite": "librairii-storage::queries",
           "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
           "source": "crates/librairii-storage/tests/queries.rs",
-          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+          "source_sha256": "27a8a7be07f46b5bebb0ac29398e40de67677e2719d67f59e95069c33616e8cb"
         },
         {
           "suite": "librairii-ui",
@@ -627,19 +627,19 @@
           "suite": "librairii-storage::queries",
           "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
           "source": "crates/librairii-storage/tests/queries.rs",
-          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+          "source_sha256": "27a8a7be07f46b5bebb0ac29398e40de67677e2719d67f59e95069c33616e8cb"
         },
         {
           "suite": "librairii-storage::queries",
           "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
           "source": "crates/librairii-storage/tests/queries.rs",
-          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+          "source_sha256": "27a8a7be07f46b5bebb0ac29398e40de67677e2719d67f59e95069c33616e8cb"
         },
         {
           "suite": "librairii-storage::queries",
           "name": "validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit",
           "source": "crates/librairii-storage/tests/queries.rs",
-          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+          "source_sha256": "27a8a7be07f46b5bebb0ac29398e40de67677e2719d67f59e95069c33616e8cb"
         },
         {
           "suite": "librairii-ui",
@@ -1583,7 +1583,7 @@
           "suite": "librairii-storage::queries",
           "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
           "source": "crates/librairii-storage/tests/queries.rs",
-          "source_sha256": "aad73d68d0ac8281528f69448c656f89aecd54eb844006d8432c75fb2224a92a"
+          "source_sha256": "27a8a7be07f46b5bebb0ac29398e40de67677e2719d67f59e95069c33616e8cb"
         }
       ],
       "native_callbacks": [
