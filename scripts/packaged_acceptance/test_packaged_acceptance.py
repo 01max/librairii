@@ -338,6 +338,67 @@ class PackagedAdmission(unittest.TestCase):
                 self.assertTrue(receipt['retired'])
                 self.assertEqual(receipt['returncode'], -9 if live else 0)
 
+    def test_mac_named_snapshot_requires_complete_observation_within_shared_deadline(self):
+        from packaged_acceptance.macos import Driver
+        source = Path(__file__).resolve().parents[2]/'qualification/section-2/check-native-macos.py'
+        spec = importlib.util.spec_from_file_location('packaged_snapshot_test', source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        # Exact typed refusal retained in PR75's Intel installed-app failure.
+        pending = {'returncode': 75, 'errors': [], 'output': json.dumps({
+            'format': 'librairii.native-tree-snapshot-unavailable', 'schema': 1,
+            'pid': 3081, 'scope': 'unfiltered', 'status': -25202})}
+        complete = {'pid': 3081, 'nodes': [{'role': 'AXWindow'}]}
+        ready = {'returncode': 0, 'errors': [], 'output': json.dumps(complete)}
+        for scenario, outer_budget in [('transient', None), ('transient', 3),
+                                        ('late_recovery', 15),
+                                        ('persistent', 3), ('foreign', 3), ('command_error', 3)]:
+            with self.subTest(scenario=scenario, outer_budget=outer_budget), tempfile.TemporaryDirectory() as temporary:
+                driver = Driver.__new__(Driver)
+                driver.module = module
+                driver.output = Path(temporary)
+                driver.observer = module.Observer(Path('/unused/helper'), driver.output, 3081)
+                driver.observer.capture = Mock()
+                now, calls = [0.0], []
+                def command(argv, env, log, timeout):
+                    calls.append((argv[1], json.loads(argv[2]), timeout))
+                    now[0] += min(1, timeout)
+                    if scenario == 'foreign':
+                        return {**pending, 'output': pending['output'].replace('3081', '9999')}
+                    if scenario == 'command_error':
+                        return {**pending, 'errors': ['deadline']}
+                    if scenario == 'transient' and len(calls) == 2:
+                        return ready
+                    if scenario == 'late_recovery' and now[0] >= 13:
+                        return ready
+                    return pending
+                with patch.object(module.common.wayland, 'command', side_effect=command), \
+                     patch.object(module.time, 'monotonic', side_effect=lambda: now[0]), \
+                     patch.object(module.time, 'sleep', side_effect=lambda duration: now.__setitem__(0, now[0]+duration)):
+                    def snapshot():
+                        if outer_budget is None:
+                            return driver.snapshot('language')
+                        return driver.wait(lambda: driver.snapshot('language'), timeout=outer_budget)
+                    if scenario in ('transient', 'late_recovery'):
+                        self.assertEqual(snapshot(), complete)
+                        self.assertEqual(json.loads((driver.output/'language.json').read_text()), complete)
+                        driver.observer.capture.assert_called_once_with('language', complete)
+                        self.assertEqual(len(calls), 13 if scenario == 'late_recovery' else 2)
+                        budget = outer_budget or 12
+                        self.assertEqual(calls[0][2], min(12, budget))
+                        self.assertAlmostEqual(calls[1][2], min(12, budget-1.05))
+                    else:
+                        with self.assertRaises(TimeoutError if scenario == 'persistent' else RuntimeError):
+                            snapshot()
+                        self.assertFalse((driver.output/'language.json').exists())
+                        driver.observer.capture.assert_not_called()
+                        self.assertEqual(len(calls), 3 if scenario == 'persistent' else 1)
+                        if scenario == 'persistent':
+                            self.assertEqual(now[0], 3)
+                self.assertTrue(all(action == 'snapshot-window' and request == {'pid': 3081}
+                                    for action, request, _ in calls))
+                self.assertIsNone(module._ACTIVE_WAIT.get())
+
     def test_mac_activation_waits_for_the_exact_owned_visible_window(self):
         from packaged_acceptance.macos import Driver
         pid = 123

@@ -80,7 +80,14 @@ not established; independent library/profile/recovery adoption is required.
 
 The reviewed graph inputs are `Cargo.lock`, `fuzz/Cargo.lock`, `deny.toml`,
 `.config/dependency-exceptions.toml`, `.config/native-toolkit.json` and the
-source/notice inventories. Task 19 does not change those inputs. The selected
+source/notice inventories. The initial Task 19 audit did not change those inputs.
+During Task 19.7.2 validation, the current advisory database rejected
+`pulldown-cmark 0.13.5` for
+[RUSTSEC-2026-0433](https://rustsec.org/advisories/RUSTSEC-2026-0433.html).
+The root lockfile now selects the compatible patched `0.13.6`; no advisory
+exception is added. The separately locked fuzz graph does not contain this
+package. Earlier artifacts retain their original source and graph identities;
+the corrected graph requires fresh validation and package evidence. The selected
 toolkit remains Slint 1.18.1, Winit 0.30.13 and Skia 0.153.3, including the
 reviewed local derivative provenance. The exact build selects the configured
 default product features; a hypothetical all-features graph is not its SBOM.

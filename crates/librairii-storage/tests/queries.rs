@@ -348,3 +348,74 @@ fn validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn search_phase_observation_preserves_complete_pages_and_error_boundaries() -> TestResult {
+    use query::SearchPhase::{Complete, Count, Matching, Page, Row, Summary};
+    let roots = TestRoots::new()?;
+    let library = library(&roots)?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db)?;
+    db.read(|tx| {
+        for (request, wanted) in [
+            (QueryRequest::default(), vec![1, 3, 4, 2]),
+            (named("ETE"), vec![4]),
+            (named("no match"), vec![]),
+            (
+                QueryRequest {
+                    page: 2,
+                    page_size: 2,
+                    ..Default::default()
+                },
+                vec![4, 2],
+            ),
+            (
+                QueryRequest {
+                    page: i64::MAX,
+                    ..Default::default()
+                },
+                vec![],
+            ),
+            (
+                QueryRequest {
+                    sort: "imported_desc".into(),
+                    ..Default::default()
+                },
+                vec![4, 3, 2, 1],
+            ),
+        ] {
+            let ordinary = query::search(tx, request.clone(), "fr-FR")?;
+            let mut phases = Vec::new();
+            let observed = query::search_observed(tx, request, "fr-FR", |p| phases.push(p))?;
+            assert_eq!(observed, ordinary, "all Page and StorySummary fields");
+            assert_eq!(ids(&observed), wanted);
+            let mut expected = vec![Matching, Count];
+            if !wanted.is_empty() {
+                expected.push(Page);
+                for _ in &wanted {
+                    expected.extend([Row, Summary]);
+                }
+                expected.push(Row); // cursor exhaustion remains observed
+            }
+            expected.push(Complete);
+            assert_eq!(phases, expected);
+        }
+        let mut request = QueryRequest::default();
+        request.criteria.boolean_filters.push(BooleanFilter {
+            definition_id: 99,
+            state: "ignored".into(),
+        });
+        let mut phases = Vec::new();
+        let result = query::search_observed(tx, request, "fr-FR", |p| phases.push(p));
+        assert!(matches!(result, Err(StorageError::QueryInput(_))));
+        assert_eq!(
+            phases,
+            vec![Matching],
+            "invalid ownership cannot complete or execute page work"
+        );
+        Ok(())
+    })?
+    .wait()?;
+    db.close()?;
+    Ok(())
+}
