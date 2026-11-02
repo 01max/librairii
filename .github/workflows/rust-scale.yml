@@ -74,3 +74,63 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
+      - name: Compare first-page query plans after acceptance workloads
+        id: query_plan
+        if: always() && !cancelled()
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          mkdir target/query-plan-experiment
+          cp target/quality/native-scale/manifest.json target/query-plan-experiment/backend-manifest.json
+          python3 -I -B - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          destination = Path('target/query-plan-experiment')
+          manifest = json.loads((destination / 'backend-manifest.json').read_bytes())
+          binary = Path('target/quality/native-scale/scale-backend')
+          def identity():
+              source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+              if subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal']):
+                  raise ValueError('diagnostic requires clean source')
+              raw = binary.read_bytes()
+              digest = hashlib.sha256(raw).hexdigest()
+              if (source != manifest['source_commit'] or digest != manifest['executable']['sha256']
+                      or len(raw) != manifest['executable']['bytes']):
+                  raise ValueError('diagnostic executable/source differs from retained backend')
+              return {'source_commit': source, 'target': manifest['target'],
+                      'executable_sha256': digest, 'executable_bytes': len(raw)}
+          before = identity()
+          (destination / 'identity-before.json').write_text(json.dumps(before, indent=2) + '\n')
+          try:
+              with (destination / 'report.json').open('w') as report, (destination / 'stderr.log').open('w') as log:
+                  subprocess.run([str(binary), '--query-diagnostics'], stdout=report, stderr=log,
+                                 check=True, timeout=180)
+          finally:
+              after = identity()
+              (destination / 'identity-after.json').write_text(json.dumps(after, indent=2) + '\n')
+              if before != after:
+                  raise ValueError('diagnostic identity changed during execution')
+          PY
+      - name: Record diagnostic outcome separately from acceptance
+        if: always()
+        env:
+          QUERY_PLAN_OUTCOME: ${{ steps.query_plan.outcome }}
+        run: |
+          python3 -I -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          destination = Path('target/query-plan-experiment')
+          destination.mkdir(exist_ok=True)
+          (destination / 'status.json').write_text(json.dumps({
+              'outcome': os.environ['QUERY_PLAN_OUTCOME'], 'acceptance_evidence': False,
+              'causal_fix_proven': False}, indent=2) + '\n')
+          PY
+      - name: Retain separate query-plan experiment
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: query-plan-experiment-${{ matrix.target }}-${{ github.sha }}
+          path: target/query-plan-experiment/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
