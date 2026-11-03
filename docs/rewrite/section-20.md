@@ -5,7 +5,7 @@ select a release candidate, approve cutover or complete Tasks 20.1/20.3–20.5.
 Signing/final-byte qualification and the historical P58 performance hold remain
 open. Task 20 uses one dedicated branch/PR, with dedicated commits for its
 subtasks. Execution of this plan remains gated on the complete release rehearsal
-and the owner's cutover decision; completing20.2 does not complete Task20.
+and the owner's cutover decision; completing 20.2 does not complete Task 20.
 
 ## Exact inventory
 
@@ -154,13 +154,13 @@ graph; earlier observations do not qualify it or resolve P58.
 
 Corrected dependency source `adcc898d637047037791d59ebea4bed14c215af4`
 failed the unchanged Linux method2 pointer wall-time gate: desktop p95
-103.715590ms and loaded resource p95 121.320197ms against100ms. Each cohort
-retains64 samples with four over100ms. The raw archive/provider SHA256 and
+103.715590 ms and loaded resource p95 121.320197 ms against 100 ms. Each cohort
+retains 64 samples with four over 100 ms. The raw archive/provider SHA256 and
 independent reviews remain preserved; this observation cannot be rescored.
 
 The follow-up records pre-`xdotool` launch, process return and state-observation
 monotonic timestamps alongside the existing uniquely numbered native callback.
-All64 clock handshakes occur after the complete input/navigation workload and
+All 64 clock handshakes occur after the complete input/navigation workload and
 constrain one conservative clock-offset interval. The diagnostic distinguishes
 process lifetime from callback bounds and callback-to-observation bounds.
 Process return is not the event-post timestamp: process lifetime may overlap
@@ -168,13 +168,13 @@ application handling and must not be subtracted as pure posting overhead.
 Callback-to-observation includes state publication and observer scheduling;
 it does not distinguish those mechanisms by itself.
 
-Acceptance remains method2's complete post-to-state wall interval,64 input and
-pointer samples,20 cold navigation samples and unchanged100/3000ms limits.
+Acceptance remains method2's complete post-to-state wall interval, 64 input and
+pointer samples, 20 cold navigation samples and unchanged 100/3000 ms limits.
 Integer nanosecond timestamps avoid float clock subtraction; no sample is
 trimmed or retried. Diagnostic callback bounds never replace acceptance values.
 Raw cohorts are written before synchronization so a diagnostic error cannot
-hide an already measured failure. Diagnostics explicitly carry `joined_log_verified:false`: collection happens
-before shutdown. Offline review must bind every acknowledgement to the complete
+hide an already measured failure. Diagnostics explicitly carry
+`joined_log_verified:false`: collection happens before shutdown. Offline review must bind every acknowledgement to the complete
 joined `dispatch-events.json` using `dispatch.verify_events` before interpreting
 the bounds. Positive worker join and fixture retirement are also required.
 
@@ -182,6 +182,29 @@ The hypotheses are posting/process delay, actual UI handling delay and
 publication/observer delay. A fresh passing run alone proves none of them and
 cannot close this failure or the separate historical P58 hold. Any correction
 must follow the measured cause and retain both old and new evidence.
+
+### First diagnostic observation
+
+Source `4640a9638ee65c537829455c17667b0d2b3c81bf` completed all ten Linux
+cohorts: 640 keyboard samples, 640 pointer samples, 200 cold completions and 640
+clock handshakes. Both independent reviews matched every measured acknowledgement
+to the 1,910 joined native events and verified positive cleanup, source/compiler
+identity, fixture pins and archive seals. The original full scale audit passes.
+
+Pointer wall p95 ranges 17.439892–24.214861 ms; conservative callback-upper p95
+ranges 3.931608–9.552520 ms. No individual keyboard or pointer sample exceeds 100 ms.
+The runner reports AMD EPYC 9V45, while the failed source reported EPYC 9V74.
+This is not a matched-host before/after comparison. The observation verifies
+that the diagnostics work, but supplies no slow event and proves no historical
+cause or runtime correction. The original 103.715590/121.320197 ms failures remain
+failed; neither they nor P58 are closed by this passing observation.
+
+Raw [artifact 13215372848](https://github.com/01max/librairii/actions/runs/41601327214/artifacts/13215372848)
+is retained locally under `target/task20-linux-latency/scale-linux.zip`, with
+provider SHA-256 `35b45cbd9a2ee4502c17e69595487f4ed18b114ecb994153a77b3e2320493d88`.
+The source-bound offline receipt inventories every expected cohort, including
+missing or refused diagnostics, and never upgrades diagnostic bounds into
+acceptance measurements.
 
 ## Storage-handover readiness correction
 
