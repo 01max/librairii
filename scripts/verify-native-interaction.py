@@ -7,6 +7,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,6 +20,27 @@ def module(name, path):
 
 scale = module('backend_scale', ROOT / 'scripts/verify-native-scale.py')
 native = module('desktop_scale', ROOT / 'qualification/section-16/native.py')
+
+
+def inspect_renderers(binary, destination, helper):
+    cases, failures = [], []
+    for name, backend in [('gpu-api', 'winit-skia'), ('software', 'winit-skia-software')]:
+        try:
+            cases.append(native.inspect(binary, destination / name, backend, helper))
+        except Exception as error:
+            failures.append({'renderer': name, 'error': repr(error)})
+            try:
+                report = json.loads((destination / name / 'report.json').read_text())
+                if not isinstance(report, dict):
+                    raise ValueError('invalid renderer report')
+            except (OSError, ValueError):
+                report = {}
+            cases.append({**report, 'complete': False})
+            # A failed gate can still have positive cleanup. Only then is it
+            # safe to start another native process; unknown custody stops here.
+            if report.get('workers_joined') is not True or report.get('fixture_retired') is not True:
+                break
+    return cases, failures
 
 
 def main():
@@ -55,20 +77,21 @@ def main():
     if platform.system() == 'Darwin':
         helper = destination / 'input-macos'
         subprocess.run(['xcrun', 'swiftc', str(ROOT / 'qualification/section-16/input-macos.swift'), '-o', str(helper)], check=True)
-    cases = []
-    for name, backend in [('gpu-api', 'winit-skia'), ('software', 'winit-skia-software')]:
-        cases.append(native.inspect(binary, destination / name, backend, helper))
+    cases, failures = inspect_renderers(binary, destination, helper)
     if scale.output(['git', 'rev-parse', 'HEAD']) != source or scale.output(['git', 'status', '--porcelain', '--untracked-files=normal']):
         raise ValueError('source changed during native measurement')
     if scale.digest(binary) != manifest['executable']['sha256'] or scale.digest(ROOT / 'Cargo.lock') != manifest['cargo_lock_sha256']:
         raise ValueError('executable/lock changed during native measurement')
-    manifest['complete'] = all(c['complete'] for c in cases)
+    manifest['complete'] = len(cases) == 2 and not failures and all(c['complete'] for c in cases)
+    manifest['failures'] = failures
+    manifest['attempted_renderers'] = ['gpu-api', 'software'][:len(cases)]
     manifest['files'] = {str(p.relative_to(destination)): scale.digest(p) for p in destination.rglob('*') if p.is_file() and p.name != 'manifest.json'}
     (destination / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     if not manifest['complete']:
-        raise ValueError('both actual rendering paths required')
+        raise ValueError('both actual rendering paths required: ' + json.dumps(failures))
     print(json.dumps({'source': source, 'native_input_method_version': native.input_method_version(), 'native_input_loading_cache': 'passed'}))
 
 
 if __name__ == '__main__':
+    subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_interaction.py')], check=True)
     main()
