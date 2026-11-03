@@ -69,7 +69,15 @@ def detach_owned_image(mount, image):
         if len(matches) > 1:
             raise RuntimeError('ambiguous owned image attachment')
         # Retain only our image's observation, never ambient image metadata.
-        observations.append({'owned_image': matches[0] if matches else None})
+        record = None
+        if matches:
+            entities = matches[0].get('system-entities')
+            record = {'image-path': matches[0]['image-path'], 'system-entities': [
+                {key: entity[key] for key in ('dev-entry', 'content-hint', 'mount-point')
+                 if isinstance(entity.get(key), str)}
+                for entity in entities if isinstance(entity, dict)
+            ] if isinstance(entities, list) else None}
+        observations.append({'owned_image': record})
         return matches[0] if matches else None
 
     def disposed(row):

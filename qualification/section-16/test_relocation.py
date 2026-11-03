@@ -121,7 +121,8 @@ class ImageDisposal(unittest.TestCase):
                     devices = next(snapshots)
                     rows = [{'image-path': '/unrelated/image.dmg', 'system-entities': [{'dev-entry': '/dev/disk99'}]}]
                     if devices is not None:
-                        rows.append({'image-path': str(image), 'system-entities': devices})
+                        rows.append({'image-path': str(image), 'image-alias': b'opaque plist alias',
+                                     'system-entities': devices})
                     return subprocess.CompletedProcess(argv, 0, plistlib.dumps({'images': rows}).decode(), '')
                 return subprocess.CompletedProcess(argv, next(exits), '', 'simulated detach status')
 
