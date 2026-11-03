@@ -41,12 +41,31 @@ class LinuxDispatchTests(unittest.TestCase):
         self.assertIs(state, end)
         self.assertEqual(raw['ack'], ack)
 
-    def test_stale_or_skipped_callback_is_rejected(self):
+    def test_bad_callback_retains_wall_until_post_retention_validation(self):
         for sequence in [7, 9]:
             end = {'dispatch': {'browser_focus': {'kind': 'browser-focus', 'sequence': sequence}}}
-            with self.assertRaisesRegex(ValueError, 'one new actual'):
-                linux.observe(lambda: None, lambda: end, lambda s: True,
+            with patch.object(linux.time, 'monotonic_ns', side_effect=[1, 2, 3]):
+                state, wall, raw = linux.observe(lambda: None, lambda: end, lambda s: True,
                     {'dispatch': {'browser_focus_sequence': 7}}, 'browser-focus', 0, lambda p, seconds: p())
+            self.assertEqual(wall, .000002)
+            self.assertEqual(raw['ack']['sequence'], sequence)
+            self.assertIs(state, end)
+
+    def test_partial_cohort_survives_diagnostic_refusal(self):
+        native = load('native')
+        def refuse(pid, output, measured):
+            measured['pointer_ms'].append(125)
+            measured['pointer_states'].append({'focus_key': 31})
+            measured['clock_calibrations'].append({'sequence': 1})
+            raise ValueError('diagnostic failure')
+        with tempfile.TemporaryDirectory() as root:
+            with patch.object(native, 'linux_input_cohort', side_effect=refuse):
+                with self.assertRaisesRegex(ValueError, 'diagnostic failure'):
+                    native.linux_input(123, Path(root))
+            import json
+            raw = json.loads((Path(root) / 'linux-dispatch-raw.json').read_text())
+            self.assertEqual(raw['pointer_ms'], [125])
+            self.assertEqual(raw['clock_calibrations'], [{'sequence': 1}])
 
     def measured(self, callback=5, publication=200, posting=1):
         samples, clocks = fixtures.observations(callback, publication, posting)

@@ -46,6 +46,17 @@ def wait(predicate, seconds=15):
 
 
 def linux_input(pid, output):
+    measured = {key: [] for key in ('input_ms', 'input_states', 'input_dispatch_samples',
+                'pointer_ms', 'pointer_states', 'pointer_dispatch_samples',
+                'navigation_ms', 'endpoints', 'clock_calibrations')}
+    try:
+        return linux_input_cohort(pid, output, measured)
+    finally:
+        # Diagnostic refusals and partial workloads must retain every measured sample.
+        (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
+
+
+def linux_input_cohort(pid, output, measured):
     spec = importlib.util.spec_from_file_location('linux_dispatch', Path(__file__).with_name('linux_dispatch.py'))
     diagnostic = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(diagnostic)
@@ -62,7 +73,7 @@ def linux_input(pid, output):
             wait(lambda: (s := state(output)) and (s['query_focused'] or s['focus_key'] != before['focus_key']))
         raise ValueError('native reverse Tab did not reach Search')
     search()
-    samples, input_states, input_dispatch = [], [], []
+    samples, input_states, input_dispatch = (measured[k] for k in ('input_ms', 'input_states', 'input_dispatch_samples'))
     for n in range(64):
         before = wait(lambda: (s := state(output)) and s['running_import'] and s)
         wanted = 'x' if n % 2 == 0 else ''
@@ -76,7 +87,7 @@ def linux_input(pid, output):
             raise ValueError('real import ended during input sample')
     point = json.loads(subprocess.check_output(['/usr/bin/python3', str(Path(__file__).with_name('resource-linux.py')), str(pid), '--point'], text=True, timeout=15))
     publish(output / 'pointer-target.json', json.dumps(point))
-    pointers, pointer_states, pointer_dispatch = [], [], []
+    pointers, pointer_states, pointer_dispatch = (measured[k] for k in ('pointer_ms', 'pointer_states', 'pointer_dispatch_samples'))
     for n in range(64):
         search()
         before = wait(lambda: (s := state(output)) and s['running_import'] and s)
@@ -90,7 +101,7 @@ def linux_input(pid, output):
         pointer_states.append(end)
         if not end['running_import']:
             raise ValueError('real import ended during pointer sample')
-    navigation, endpoints = [], []
+    navigation, endpoints = measured['navigation_ms'], measured['endpoints']
     for n in range(21):
         # Evict the first page using144 other real covers before each trial.
         for page in range(2, 8):
@@ -122,15 +133,15 @@ def linux_input(pid, output):
             endpoints.append(end)
         key('Home')
         wait(lambda: (s := state(output)) and s['selected_index'] == 0 and s['settled'])
-    measured = {'input_ms': samples, 'input_states': input_states, 'input_p95_ms': sorted(samples)[60],
+    measured.update({'input_ms': samples, 'input_states': input_states, 'input_p95_ms': sorted(samples)[60],
             'pointer_ms': pointers, 'pointer_states': pointer_states, 'pointer_p95_ms': sorted(pointers)[60], 'pointer_target': point,
             'navigation_ms': navigation, 'navigation_p95_ms': sorted(navigation)[18], 'endpoints': endpoints,
-            'method': 'pre-xdotool native post through actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End'}
+            'method': 'pre-xdotool native post through actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End'})
     measured['input_dispatch_samples'] = input_dispatch
     measured['pointer_dispatch_samples'] = pointer_dispatch
     # Retain the complete acceptance cohort even if diagnostic synchronization fails.
     (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
-    measured['clock_calibrations'] = diagnostic.calibrate(output, publish, wait)
+    diagnostic.calibrate(output, publish, wait, measured['clock_calibrations'])
     (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
     measured['dispatch_diagnostics'] = diagnostic.summarize(measured, dispatch_protocol())
     return measured

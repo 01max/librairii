@@ -6,23 +6,23 @@ import time
 def observe(post, read, predicate, before, kind, index, wait):
     """Measure the existing post-to-observation interval and retain its boundaries."""
     key = 'search' if kind == 'search' else 'browser_focus'
-    sequence = before['dispatch'][key + '_sequence']
+    sequence = before.get('dispatch', {}).get(key + '_sequence')
     start = time.monotonic_ns()
     post()
     posted = time.monotonic_ns()
     end = wait(lambda: (s := read()) and predicate(s) and s, 1)
     observed = time.monotonic_ns()
-    ack = end['dispatch'][key]
-    if ack['kind'] != kind or ack['sequence'] != sequence + 1:
-        raise ValueError('one new actual Linux callback per input required')
+    # Validation follows raw retention, so a bad witness cannot discard a wall sample.
+    ack = end.get('dispatch', {}).get(key)
     raw = {'n': index, 'before_sequence': sequence, 'ack': ack,
            'start_ns': start, 'posted_ns': posted, 'observed_ns': observed}
     return end, (observed - start) / 1e6, raw
 
 
-def calibrate(output, publish, wait):
+def calibrate(output, publish, wait, rows=None):
     """Bound one offset with all64 handshakes after all acceptance inputs."""
-    rows = []
+    if rows is None:
+        rows = []
     for sequence in range(1, 65):
         before = time.monotonic_ns()
         publish(output / 'dispatch-clock-request', str(sequence))
