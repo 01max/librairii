@@ -183,6 +183,13 @@ fn validate_native_namespace(
     }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
+    // A marker-only profile is a legitimate interrupted first setup. Saved
+    // library preferences without their binding are lost state, not a new install.
+    if !entries.iter().any(|name| name == "settings.json")
+        && entries.iter().any(|name| name != profile::MARKER)
+    {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
     root.regular_entry(std::ffi::OsStr::new("interface.json"))?;
     root.regular_entry(std::ffi::OsStr::new("handover.json"))?;
     let mut marker = root.open_regular(
@@ -410,6 +417,60 @@ mod tests {
         for (path, bytes) in originals {
             assert_eq!(fs::read(path)?, bytes);
         }
+        Ok(())
+    }
+    #[test]
+    fn missing_native_binding_with_saved_preferences_requires_recovery() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let cancel = WorkCancellation::default();
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let id = "b0000000-0000-4000-8000-000000000013".parse()?;
+        let selected = roots.library().join("original Rust library");
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            super::super::TargetPreview::inspect(&selected, &[], &cancel)?,
+            &store,
+            &locations,
+            id,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        store.save_interface(&profile::InterfacePreferences::new(id))?;
+        let preferences = fs::read(locations.native.join("interface.json"))?;
+        let database = fs::read(selected.join("db/librairii.sqlite3"))?;
+        drop(store);
+        fs::remove_file(locations.native.join("settings.json"))?;
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Recovery { .. }
+        ));
+        assert!(prepare_native_profile(&locations, &cancel).is_err());
+        // Direct storage initialization must enforce the same recovery boundary.
+        let store = profile::NativeProfileStore::open_native(&locations.native)?;
+        let replacement = roots.library().join("must not replace binding");
+        assert!(
+            crate::native::NativeLibrary::initialize_confirmed(
+                super::super::TargetPreview::inspect(&replacement, &[], &cancel)?,
+                &store,
+                &locations,
+                id,
+                librairii_app::localization::Language::English,
+                &cancel,
+            )
+            .is_err()
+        );
+        assert!(!replacement.exists());
+        assert!(!locations.native.join("settings.json").exists());
+        assert_eq!(
+            fs::read(locations.native.join("interface.json"))?,
+            preferences
+        );
+        assert_eq!(fs::read(selected.join("db/librairii.sqlite3"))?, database);
         Ok(())
     }
 }

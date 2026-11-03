@@ -62,13 +62,12 @@ results do not update a replacement view or library. Work queues, progress
 delivery, review/export preparations and visible models have explicit bounds;
 terminal operation results remain durable in SQLite.
 
-Startup inspects recovery state before ordinary mutation. The participating
-Go bridge and Rust retain OS-backed ownership through recovery and resource
-closure; a PID file is not authority. Native adoption uses a verified independent
-copy with a separate native profile/recovery workspace unless lifetime exclusion
-of unmodified legacy executables can be established. Go settings continue to
-select the source. The supported route and rollback limits are documented in
-the [transition guide](../native-transition.md).
+Startup inspects native recovery state before ordinary mutation. Rust retains
+OS-backed ownership through recovery and resource closure; a PID file is not
+authority. First setup creates a new library and independent native profile.
+Go settings, data and journals are ignored. Existing native state must reopen
+or enter recovery, with no silent replacement. See the
+[starting-fresh and recovery guide](../native-transition.md).
 
 The library retains its UUID, `db/librairii.sqlite3`, migrations 001–018,
 archives, catalogs, staging, trash, logs and durable operation records. The

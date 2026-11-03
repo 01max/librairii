@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "c50b620676e421c61526a3e51d155fc04169539fad384569e3f9037f908a7269"
+    "sha256": "2b1f3abb297b729304deccf55e6f2745c6a205d09a8abfaac1f570c7b410f3f2"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
@@ -2004,7 +2004,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "21ffee548870a6dee49f99105890e50dfcd86593794b940a4c00a50da5ebf209"
+          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
         },
         {
           "suite": "librairii-storage::profiles",
@@ -2017,6 +2017,12 @@
           "name": "rust_lock_is_not_legacy_lifetime_exclusion_or_existing_adoption_authority",
           "source": "crates/librairii-storage/tests/library_locks.rs",
           "source_sha256": "5588b6a9950a099db0448550b6ebfea87ac066e8f02d950721672aaef1487568"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
         }
       ],
       "native_callbacks": [
@@ -2349,7 +2355,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "21ffee548870a6dee49f99105890e50dfcd86593794b940a4c00a50da5ebf209"
+          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
         }
       ],
       "native_callbacks": [

@@ -783,6 +783,13 @@ impl NativeProfileStore {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
             })?;
+        // Preferences identify a previously bound library; missing settings
+        // cannot authorize a replacement identity through direct fresh setup.
+        if !entries.iter().any(|entry| entry == SETTINGS)
+            && entries.iter().any(|entry| entry != MARKER)
+        {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
         if entries.iter().any(|entry| {
             entry != MARKER
                 && entry != SETTINGS

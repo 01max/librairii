@@ -5776,6 +5776,19 @@
           ]
         },
         "reason": "Task19.1.5 independent Spec audit gap: actually commit a validated healthy addition while another source stays invalid, preserving existing unmatched/unavailable members and incomplete state. Preserve every previous identity, source pin and assertion."
+      },
+      {
+        "position": 644,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: distinguish missing native binding from pristine setup; retain existing preferences and library bytes."
       }
     ],
     "python": [
