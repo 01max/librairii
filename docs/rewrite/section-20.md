@@ -70,6 +70,18 @@ passed. Both independent evidence reviews verified the archive, source and
 Only one of eight resource pairs completed, so its four passing display runs
 do not establish resource qualification. The original failed verdict remains.
 
+The corrected source `8c8fea5ae283e762010b2bf01c3166269c408968` passes
+all 639 deep regression tests, but its Intel resource warmup also fails startup:
+**1687.514 ms**, with idle CPU **2.202%** and peak RSS **127,266,816 bytes**
+within budget. Its first snapshot arrived at 8.362 ms, window construction at
+1081.591 ms and first UI timer at 1631.781 ms on the child's clock. This again
+localizes most delay before the constructed-window boundary; it does not identify
+the responsible operation. The original measurements and all 1,193 resource
+seals remain retained. Temporary `[DEBUG-task20-startup]` timings split toolkit,
+component and menu initialization for the next CI probe; remove them after
+diagnosis. This probe changes neither execution order nor acceptance thresholds
+and is not a performance correction.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid
