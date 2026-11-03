@@ -4405,6 +4405,20 @@
       "sha256": "3b5d358e3f61ef890c859f6366f1f6563c90c2da3e4b4082b4ca49ccd4cd0d2a",
       "bytes": 12820,
       "git_blob": "47cb0625468b1b9edb14c7d10bd059796d5db094"
+    },
+    {
+      "path": "crates/librairii-storage/examples/application_handover.rs",
+      "mode": "100644",
+      "git_blob": "c8086269b3d5e86f507e534c9f8fb1b2ec3b6e2b",
+      "sha256": "ed9f7da81334b5b0b3b9a04821774e7eb6545ea3725aab8783d70574f82417e9",
+      "bytes": 18672
+    },
+    {
+      "path": "crates/librairii-storage/examples/upgrade_handover.rs",
+      "mode": "100644",
+      "git_blob": "f73392ceddc7a0cc470c3148ed0e6b0f6ab398b1",
+      "sha256": "8a987c447b1ed9914997792ed70494c422749b097773b1cf97d1feeb0d2c0cf2",
+      "bytes": 18884
     }
   ],
   "retained_inputs": [

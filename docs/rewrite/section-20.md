@@ -9,7 +9,7 @@ its actual removals separately.
 
 ## Current implementation
 
-The [actual retirement record](legacy-retirement.json) binds 375 removed tracked
+The [actual retirement record](legacy-retirement.json) binds 377 removed tracked
 runtime/tool files to their pre-removal hashes and preserves all 49 shared inputs.
 Before removal, 251 additional original module files were retained under
 `preservation/oracle-files/`, verified against the unchanged original oracle
