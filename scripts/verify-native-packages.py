@@ -112,7 +112,7 @@ def main():
             helper = output/'macos-observer'
             subprocess.run(['xcrun', 'swiftc', '-module-cache-path', str(output/'swift-modules'),
                             str(ROOT/'qualification/section-2/native-macos/observer.swift'), '-o', str(helper)], check=True)
-            for case, backend in [('fresh', 'winit-skia'), ('upgraded', 'winit-skia-software')]:
+            for case, backend in [('fresh', 'winit-skia'), ('fresh-software', 'winit-skia-software')]:
                 lane = {'name': case, 'passed': False}
                 result['lanes'].append(lane)
                 try:
@@ -137,7 +137,7 @@ def main():
             result['image_id'] = image_id
             invocation = uuid.uuid4().hex
             for session in ('x11', 'wayland'):
-                for case, backend in [('fresh', 'winit-skia'), ('upgraded', 'winit-skia-software')]:
+                for case, backend in [('fresh', 'winit-skia'), ('fresh-software', 'winit-skia-software')]:
                     name = session+'-'+case
                     destination = output/name
                     destination.mkdir()

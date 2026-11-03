@@ -276,7 +276,7 @@ def assemble(input_path, output_path):
               'review_required': ['Authenticate provider IDs and independently selected archive hashes.',
                                   'Review raw assertions, numerical limits, native observations and retirement.',
                                   'Reconcile every mandatory parity row and the full release rehearsal.',
-                                  'Review final Mac signatures, notarization, stapling and matching-host final bytes.',
-                                  'Authorize release publication and cutover separately.']}
+                                  'Review final ad-hoc Mac signatures, documented first-launch approval and matching-host final bytes.',
+                                  'Authorize release publication separately; legacy migration is outside this release.']}
     write_json(output_path, result)
     return result

@@ -57,8 +57,10 @@ def assemble(root, stage, requested_output):
                          'To update, quit Librairii and replace the application. To uninstall, remove\n'
                          'only Librairii.app. Keep your independent native profile, library, backups\n'
                          'and recovery journals. Reinstall and select the same library to reopen it.\n'
-                         'This internal candidate uses an ad-hoc signature. It is NOT Developer ID\n'
-                         'signed, notarized, stapled or qualified for public distribution.\n')
+                         'This free package uses an ad-hoc integrity signature, without Developer ID\n'
+                         'signing or Apple notarization. For a trusted downloaded build, first launch\n'
+                         'may require System Settings > Privacy & Security > Open Anyway.\n'
+                         'Old Go libraries and settings are not imported; start with a new folder.\n')
         for path in [*image.rglob('*'), image]:
             os.utime(path, (release['source_date_epoch'], release['source_date_epoch']))
         run(['/usr/bin/codesign', '--force', '--sign', '-', '--timestamp=none', str(app)])

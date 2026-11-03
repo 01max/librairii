@@ -10,7 +10,7 @@ use librairii_storage::{
     database::WorkCancellation,
     native::{NativeCloseFailure, NativeLibrary, NewInstallFailure},
     profile::{NativeProfileStore, ProfileLocations},
-    settings::{AdoptionSetupFailure, Startup, TargetPreview},
+    settings::{Startup, TargetPreview},
 };
 use std::{
     cell::OnceCell,
@@ -34,7 +34,6 @@ enum Held<'p> {
     },
     Setup(Box<NewInstallFailure<'p>>),
     Close(Box<NativeCloseFailure<'p>>),
-    Adoption(AdoptionSetupFailure<'p>),
     Move(Box<librairii_storage::native::RelocationFailure<'p>>),
 }
 impl Held<'_> {
@@ -45,7 +44,6 @@ impl Held<'_> {
             Self::Active { error, .. } | Self::Recovery { error, .. } => error.to_string(),
             Self::Setup(f) => f.to_string(),
             Self::Close(f) => f.to_string(),
-            Self::Adoption(f) => f.to_string(),
             Self::Move(f) => f.to_string(),
         }
     }
@@ -54,7 +52,7 @@ impl Held<'_> {
             Self::Schema(_) | Self::SchemaFailed(_) => false,
             Self::Active { native, .. } => native.runtime_reusable(),
             Self::Close(f) => matches!(f.storage_error(), StorageError::ProfileBusy),
-            Self::Recovery { .. } | Self::Adoption(_) => false,
+            Self::Recovery { .. } => false,
             Self::Move(f) => {
                 f.commit_status() != librairii_storage::native::CommitStatus::Uncertain
             }
@@ -117,18 +115,11 @@ pub(crate) fn run(
             }
         };
     };
-    let mut input = None;
     let (mode, language, current, proposed, error) = match *decision {
         Startup::ConfirmFolder { suggested } => {
             let saved = librairii_storage::profile::read_legacy(&locations.native)
                 .ok()
-                .flatten()
-                .or_else(|| {
-                    locations
-                        .legacy
-                        .as_ref()
-                        .and_then(|p| librairii_storage::profile::read_legacy(p).ok().flatten())
-                });
+                .flatten();
             (
                 Mode::Setup,
                 saved
@@ -136,25 +127,6 @@ pub(crate) fn run(
                     .unwrap_or_else(crate::settings::system_language),
                 None,
                 Some(suggested),
-                None,
-            )
-        }
-        Startup::AdoptIndependent(source) => {
-            let language = librairii_storage::profile::read_legacy(&locations.native)
-                .ok()
-                .flatten()
-                .and_then(|d| Language::explicit(&d.profile().language).ok())
-                .unwrap_or(
-                    Language::explicit(&source.profile().profile().language)
-                        .map_err(|_| StorageError::InvalidProfile)?,
-                );
-            let path = Some(source.root().into());
-            input = Some(source);
-            (
-                Mode::Adoption,
-                language,
-                path,
-                Some(locations.data.join("library")),
                 None,
             )
         }
@@ -189,10 +161,9 @@ pub(crate) fn run(
     let mut target: Option<TargetPreview> = None;
     let mut snapshot = empty(mode, language);
     snapshot.workflows.settings.current = current;
-    snapshot.workflows.settings.source = input.as_ref().map(|i| i.root().into());
     snapshot.workflows.settings.proposed = proposed;
     snapshot.workflows.settings.error = error;
-    snapshot.workflows.settings.can_confirm = matches!(mode, Mode::Setup | Mode::Adoption);
+    snapshot.workflows.settings.can_confirm = matches!(mode, Mode::Setup);
     snapshot.workflows.settings.can_retry = matches!(mode, Mode::Recovery);
     snapshot.workflows.settings.can_locate = mode == Mode::Recovery;
     let mut open = mode == Mode::Library;
@@ -315,20 +286,12 @@ pub(crate) fn run(
                         }
                         Action::Select(path)
                             if held.is_none()
-                                && matches!(
-                                    snapshot.workflows.settings.mode,
-                                    Mode::Setup | Mode::Adoption
-                                ) =>
+                                && matches!(snapshot.workflows.settings.mode, Mode::Setup) =>
                         {
                             let cancel = control.begin(Stage::Checking)?;
                             snapshot.workflows.settings.can_confirm = false;
                             let result: Result<()> = (|| {
-                                let mut preview = preview(
-                                    &path,
-                                    &locations,
-                                    input.as_ref().map(|i| i.root()),
-                                    &cancel,
-                                )?;
+                                let mut preview = preview(&path, &locations, &cancel)?;
                                 let writable = preview.check_writable(&cancel);
                                 snapshot.workflows.settings.recovery_required =
                                     preview.has_retained_probes();
@@ -351,11 +314,7 @@ pub(crate) fn run(
                             if held.is_none() && snapshot.workflows.settings.can_confirm =>
                         {
                             let store = prepare_store(&store_cell, &locations)?;
-                            let cancel = control.begin(if input.is_some() {
-                                Stage::Adopting
-                            } else {
-                                Stage::Creating
-                            })?;
+                            let cancel = control.begin(Stage::Creating)?;
                             let selected = match target.take() {
                                 Some(target) => target,
                                 None => preview(
@@ -366,16 +325,10 @@ pub(crate) fn run(
                                         .as_deref()
                                         .ok_or(StorageError::SettingsDestination)?,
                                     &locations,
-                                    input.as_ref().map(|i| i.root()),
                                     &cancel,
                                 )?,
                             };
-                            let initialized = if let Some(input) = input.take() {
-                                librairii_storage::settings::confirm_adoption(
-                                    input, selected, store, &locations, &cancel,
-                                )
-                                .map_err(Held::Adoption)
-                            } else {
+                            let initialized = {
                                 let id = librairii_adapters::identities::job_id()
                                     .map_err(|source| StorageError::Io {
                                         operation: "generate library identity",
@@ -401,22 +354,6 @@ pub(crate) fn run(
                                     match close_native(native, store, &channels, &snapshot) {
                                         Ok(()) => open = true,
                                         Err(f) => held = Some(f),
-                                    }
-                                }
-                                Err(Held::Adoption(AdoptionSetupFailure::Preparation {
-                                    error,
-                                    input: retained_input,
-                                    target: retained_target,
-                                })) => {
-                                    snapshot.workflows.settings.error = Some(error.to_string());
-                                    snapshot.workflows.settings.recovery_required =
-                                        retained_target.has_retained_probes();
-                                    input = Some(*retained_input);
-                                    target = Some(*retained_target);
-                                    snapshot.workflows.settings.mode = Mode::Adoption;
-                                    snapshot.phase = Phase::Adoption;
-                                    if snapshot.workflows.settings.recovery_required {
-                                        control.retain();
                                     }
                                 }
                                 Err(f) => held = Some(f),
@@ -595,13 +532,11 @@ fn project_held(held: &Option<Held<'_>>, snapshot: &mut Snapshot, control: &Cont
 fn preview(
     path: &Path,
     locations: &ProfileLocations,
-    source: Option<&Path>,
     cancel: &WorkCancellation,
 ) -> Result<TargetPreview> {
     let legacy = librairii_storage::settings::default_legacy_root(locations)?;
     let mut excluded = vec![locations.native.as_path(), legacy.as_path()];
     excluded.extend(locations.legacy.as_deref());
-    excluded.extend(source);
     TargetPreview::inspect(path, &excluded, cancel)
 }
 fn existing_store<'a>(
@@ -775,7 +710,6 @@ fn recover_closed<'p>(
 fn empty(mode: Mode, language: Language) -> Snapshot {
     let phase = match mode {
         Mode::Setup | Mode::Override => Phase::Setup,
-        Mode::Adoption => Phase::Adoption,
         _ => Phase::Recovery,
     };
     let workflows = crate::workflows::Snapshot {

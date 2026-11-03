@@ -1,7 +1,6 @@
 //! Read-only startup decisions. No failed input falls back to initialization.
 use crate::{
     LibraryIdentity, Result, StorageError,
-    adoption::{ClosedLibraryInput, ClosedManifest},
     database::WorkCancellation,
     platform::unix::Directory,
     profile::{self, Profile, ProfileDocument, ProfileLocations},
@@ -18,7 +17,6 @@ pub enum Startup {
         suggested: PathBuf,
     },
     Native(ProfileDocument),
-    AdoptIndependent(ClosedLibraryInput),
     Recovery {
         configured: Option<Profile>,
         cause: StorageError,
@@ -58,24 +56,10 @@ pub fn prepare_native_profile(
     {
         return Err(StorageError::PathEscape);
     }
+    // Old profiles and journals are not inputs to a fresh Rust installation.
+    // Reserve their fixed namespaces without decoding their contents.
     let mut excluded = vec![default_legacy_root(locations)?];
-    if let Some(legacy) = &locations.legacy {
-        if let Some(document) = profile::read_legacy(legacy)? {
-            let p = document.profile();
-            if p.recovering || (!p.complete && (!p.root.is_empty() || !p.library_id.is_empty())) {
-                return Err(StorageError::RecoveryBindingRequired);
-            }
-            if p.complete {
-                excluded.push(PathBuf::from(&p.root));
-            }
-        }
-        match fs::symlink_metadata(legacy.join("relocation.json")) {
-            Ok(_) => return Err(StorageError::RecoveryBindingRequired),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-            Err(e) => return Err(StorageError::io("inspect legacy recovery before setup", e)),
-        }
-        excluded.push(legacy.clone());
-    }
+    excluded.extend(locations.legacy.iter().cloned());
     for root in excluded {
         let root = resolve(&root, false)?.0;
         if physical_overlap(&root, &native)? || physical_overlap(&root, &data)? {
@@ -168,88 +152,9 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
             }
         }
         validate_native_namespace(locations, cancellation)?;
-        let default = default_legacy_root(locations)?;
-        let legacy = locations
-            .legacy
-            .as_ref()
-            .map(|path| profile::read_legacy(path))
-            .transpose()?
-            .flatten();
-        let (root, language, document) = if let Some(document) = legacy {
-            configured = Some(document.profile().clone());
-            let p = document.profile();
-            if p.recovering || (!p.complete && (!p.root.is_empty() || !p.library_id.is_empty())) {
-                return Err(StorageError::RecoveryBindingRequired);
-            }
-            if p.complete {
-                (PathBuf::from(&p.root), p.language.clone(), Some(document))
-            } else {
-                (default.clone(), p.language.clone(), None)
-            }
-        } else {
-            (default.clone(), "en".into(), None)
-        };
-        match fs::read_dir(&root) {
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound && document.is_none() => {
-                return Ok(Startup::ConfirmFolder {
-                    suggested: locations.data.join("library"),
-                });
-            }
-            Err(e) => return Err(StorageError::io("inspect selected startup root", e)),
-            Ok(mut entries) => {
-                if entries.next().is_none() && document.is_none() {
-                    return Ok(Startup::ConfirmFolder {
-                        suggested: locations.data.join("library"),
-                    });
-                }
-            }
-        }
-        let directory = Directory::open(&root)?;
-        let manifest = super::RelocationManifest::capture(&directory, cancellation)?;
-        let mut entries = Vec::new();
-        for entry in manifest.entries {
-            let path = entry
-                .path
-                .iter()
-                .map(|p| std::str::from_utf8(p).map_err(|_| StorageError::AdoptionInputInvalid))
-                .collect::<Result<Vec<_>>>()?
-                .join("/");
-            entries.push(serde_json::json!({"path":path,"size":entry.bytes,"sha256":entry.sha256,"directory":entry.directory}));
-        }
-        let manifest = ClosedManifest::decode(
-            &serde_json::to_vec(&entries).map_err(|_| StorageError::AdoptionInputInvalid)?,
-        )?;
-        let document = if let Some(document) = document {
-            document
-        } else {
-            let mut marker = directory.open_regular(
-                std::ffi::OsStr::new(crate::identity::IDENTITY_FILE),
-                rustix::fs::OFlags::RDONLY,
-            )?;
-            let mut bytes = Vec::new();
-            (&mut marker)
-                .take(1025)
-                .read_to_end(&mut bytes)
-                .map_err(|e| StorageError::io("read bounded default identity", e))?;
-            let identity = LibraryIdentity::from_bytes(bytes)?;
-            ProfileDocument::decode(
-                &serde_json::to_vec(&Profile {
-                    version: 1,
-                    language,
-                    root: root.to_str().ok_or(StorageError::InvalidProfile)?.into(),
-                    library_id: identity.spelling().into(),
-                    complete: true,
-                    recovering: false,
-                })
-                .map_err(|_| StorageError::InvalidProfile)?,
-            )?
-        };
-        Ok(Startup::AdoptIndependent(ClosedLibraryInput::verify(
-            &root,
-            document,
-            manifest,
-            cancellation,
-        )?))
+        Ok(Startup::ConfirmFolder {
+            suggested: locations.data.join("library"),
+        })
     })();
     result.unwrap_or_else(|cause| Startup::Recovery { configured, cause })
 }
@@ -305,83 +210,6 @@ pub fn default_legacy_root(locations: &ProfileLocations) -> Result<PathBuf> {
         .parent()
         .ok_or(StorageError::InvalidProfile)?
         .join(name))
-}
-
-#[derive(Debug)]
-pub enum AdoptionSetupFailure<'profile> {
-    Preparation {
-        error: StorageError,
-        input: Box<ClosedLibraryInput>,
-        target: Box<super::TargetPreview>,
-    },
-    Copy(Box<crate::adoption::IndependentCopyFailure>),
-    Binding(Box<crate::native::NativeBindingFailure<'profile>>),
-}
-impl std::fmt::Display for AdoptionSetupFailure<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Preparation { error, .. } => error.fmt(f),
-            Self::Copy(e) => e.fmt(f),
-            Self::Binding(e) => e.fmt(f),
-        }
-    }
-}
-impl std::error::Error for AdoptionSetupFailure<'_> {}
-/// Explicit clone confirmation only. The legacy input stays read-only; all
-/// candidate writes use physically independent files and the native namespace.
-pub fn confirm_adoption<'profile>(
-    input: ClosedLibraryInput,
-    mut target: super::TargetPreview,
-    store: &'profile profile::NativeProfileStore,
-    locations: &ProfileLocations,
-    cancel: &WorkCancellation,
-) -> std::result::Result<crate::native::NativeLibrary<'profile>, AdoptionSetupFailure<'profile>> {
-    let prepared = (|| -> Result<()> {
-        let default = default_legacy_root(locations)?;
-        let mut excluded = vec![input.root(), locations.native.as_path(), default.as_path()];
-        if let Some(legacy) = &locations.legacy {
-            excluded.push(legacy);
-        }
-        target.protect(&excluded, cancel)?;
-        target.check_writable(cancel)?;
-        let mut parent = target.anchor.duplicate()?;
-        let mut path = target.anchor_path.clone();
-        for name in target
-            .missing
-            .iter()
-            .take(target.missing.len().saturating_sub(1))
-        {
-            parent = parent.create_child(name)?;
-            parent.flush()?;
-            path.push(name);
-        }
-        parent.matches_metadata(
-            &fs::symlink_metadata(&path)
-                .map_err(|e| StorageError::io("revalidate adoption parent", e))?,
-        )?;
-        if let Some(existing) = &target.existing {
-            parent.remove_empty_child(
-                target
-                    .missing
-                    .last()
-                    .ok_or(StorageError::SettingsDestination)?,
-                existing,
-            )?;
-        }
-        Ok(())
-    })();
-    if let Err(error) = prepared {
-        return Err(AdoptionSetupFailure::Preparation {
-            error,
-            input: Box::new(input),
-            target: Box::new(target),
-        });
-    }
-    let copy = input
-        .copy_to_new_root(target.resolved(), cancel)
-        .map_err(AdoptionSetupFailure::Copy)?;
-    crate::native::NativeLibrary::bind_selected_copy(copy, store, locations, cancel)
-        .map_err(AdoptionSetupFailure::Binding)
 }
 
 #[cfg(test)]
@@ -461,38 +289,9 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn preparation_preserves_invalid_and_legacy_state_before_creating_native_containers()
-    -> TestResult {
+    fn invalid_native_profile_is_preserved_before_setup() -> TestResult {
         let roots = librairii_testkit::TestRoots::new()?;
         let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
-        let legacy = locations.legacy.as_ref().ok_or("legacy")?;
-        fs::create_dir_all(legacy)?;
-        fs::write(legacy.join("settings.json"), b"invalid")?;
-        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
-        assert_eq!(fs::read(legacy.join("settings.json"))?, b"invalid");
-        assert!(!locations.native.exists());
-        assert!(!locations.data.exists());
-        fs::write(
-            legacy.join("settings.json"),
-            serde_json::to_vec(&Profile {
-                version: 1,
-                language: "en".into(),
-                root: locations
-                    .data
-                    .parent()
-                    .ok_or("data")?
-                    .to_str()
-                    .ok_or("root")?
-                    .into(),
-                library_id: "b0000000-0000-4000-8000-000000000013".into(),
-                complete: true,
-                recovering: false,
-            })?,
-        )?;
-        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
-        assert!(!locations.native.exists());
-        assert!(!locations.data.exists());
-        fs::remove_file(legacy.join("settings.json"))?;
         fs::create_dir_all(&locations.native)?;
         fs::write(
             locations.native.join("settings.json"),
@@ -549,34 +348,68 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn default_legacy_library_requires_confirmed_independent_clone_at_exact_choice() -> TestResult {
-        let (roots, _copy, locations) = crate::test_support::native_copy()?;
-        let default = default_legacy_root(&locations)?;
-        fs::rename(roots.library().join("closed-source"), &default)?;
-        let before = fs::read(default.join("db/librairii.sqlite3"))?;
-        let Startup::AdoptIndependent(input) = inspect_startup(&locations, &Default::default())
-        else {
-            return Err("adoption offer".into());
+    fn fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state()
+    -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let legacy = locations.legacy.as_ref().ok_or("legacy namespace")?;
+        let old_root = default_legacy_root(&locations)?;
+        fs::create_dir_all(legacy)?;
+        fs::create_dir_all(old_root.join("db"))?;
+        let originals = [
+            (
+                legacy.join("settings.json"),
+                b"invalid old settings".as_slice(),
+            ),
+            (
+                legacy.join("relocation.json"),
+                b"unfinished old move".as_slice(),
+            ),
+            (
+                old_root.join("db/librairii.sqlite3"),
+                b"old database".as_slice(),
+            ),
+        ];
+        for (path, bytes) in &originals {
+            fs::write(path, bytes)?;
+        }
+        let cancel = WorkCancellation::default();
+        let Startup::ConfirmFolder { suggested } = inspect_startup(&locations, &cancel) else {
+            return Err("old state blocked fresh setup".into());
         };
-        assert_eq!(fs::read(default.join("db/librairii.sqlite3"))?, before);
-        let store = profile::NativeProfileStore::create_fresh(&locations.native)?;
-        let selected = roots.library().join("my selected clone");
-        fs::create_dir(&selected)?;
-        let preview = super::super::TargetPreview::inspect(&selected, &[], &Default::default())?;
-        let native = confirm_adoption(input, preview, &store, &locations, &Default::default())
-            .map_err(|f| f.to_string())?;
-        assert_eq!(native.layout().root(), selected);
+        assert_eq!(suggested, locations.data.join("library"));
+        assert!(!locations.native.exists());
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let target = super::super::TargetPreview::inspect(&suggested, &[], &cancel)?;
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            target,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
         let mut db = crate::database::Database::open_native(&native)?;
+        assert_eq!(
+            db.read(|c| c
+                .query_row("SELECT COUNT(*) FROM stories", [], |r| r.get::<_, i64>(0))
+                .map_err(StorageError::from))?
+                .wait()?,
+            0
+        );
         db.close()?;
         drop(db);
         native.finish().map_err(|f| f.to_string())?;
-        assert_eq!(fs::read(default.join("db/librairii.sqlite3"))?, before);
-        let reopened =
-            crate::native::NativeLibrary::reopen(&store, &locations, &Default::default())?;
-        let mut db = crate::database::Database::open_native(&reopened)?;
-        db.close()?;
-        drop(db);
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Native(_)
+        ));
+        let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
         reopened.finish().map_err(|f| f.to_string())?;
+        for (path, bytes) in originals {
+            assert_eq!(fs::read(path)?, bytes);
+        }
         Ok(())
     }
 }

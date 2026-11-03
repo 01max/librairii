@@ -4,8 +4,9 @@ Librairii keeps a private, local library of story archives. Importing creates a
 managed copy; it never edits, renames, moves or deletes your selected source.
 This guide describes the Rust native candidate on
 `rewrite-in-rust-native-desktop`. See the [platform matrix](release-platforms.md)
-for installation requirements and remaining public Mac signing gates. For an
-existing Go library, follow the [transition guide](native-transition.md) first.
+for installation requirements. The free Mac package uses an ad-hoc signature.
+First launch creates a new Rust library; existing Go data and preferences are
+left untouched. See [starting fresh](native-transition.md).
 
 ![Native Library in List view with one selected synthetic story](assets/native/library.png)
 
@@ -432,7 +433,10 @@ Open **Librairii → Settings…** (or **⌘,**) on macOS. On Linux use the
 application menu or **Settings…** in navigation. The settings panel is also
 available when the library needs recovery.
 
-![Native Settings with language, library, diagnostics and preference transfer](assets/native/settings.png)
+![Earlier native Settings capture with language, library and diagnostics](assets/native/settings.png)
+
+This historical capture includes a preference-transfer control that has since
+been removed; current setup starts fresh.
 
 Choose **Français** or **English** for the interface. Your explicit choice is
 remembered and applies immediately. On first launch, French is selected for a
@@ -445,10 +449,9 @@ language; OS-controlled file pickers can follow the operating system's language.
 A new installation asks you to confirm where the library will live before
 creating it. You can accept the proposed platform default or choose a different
 empty folder using the native picker. The selected folder itself becomes the
-library root. For an existing Go installation, native startup instead requires a verified
-**independent copy** into a different empty folder. It does not silently adopt
-the Go source; follow the [transition guide](native-transition.md). Subsequent
-native launches reopen their saved native library.
+library root. Existing Go libraries, settings and journals are ignored and left
+untouched. Import archive files normally to populate the new library. Subsequent
+native launches reopen their saved Rust library.
 
 To move the library, choose **Change library folder…**, select an empty folder, review
 the destination and total size, and choose **Move the complete library**. Wait for imports,
@@ -482,15 +485,13 @@ movable library:
 | Linux | `$XDG_CONFIG_HOME/librairii-native/`, or `~/.config/librairii-native/` |
 
 Include the entire native configuration directory in a backup, with language,
-binding, navigation/presentation, handover receipt and relocation recovery.
+binding, navigation/presentation and relocation recovery.
 A corrupt or unsupported profile requires recovery instead of silently resetting.
 Recovery may offer **Retry the verified move** or **Keep the source and unfinished
-copy**; read which location remains authoritative. Imported Go journals do not
-authorize native cleanup. Keep source, unfinished destination, profile and
+copy**; read which location remains authoritative. Old Go journals are ignored. Keep source, unfinished destination, profile and
 journals; never delete locks, SQLite sidecars or control records to force opening.
 Changed, unrelated and uncertain files are retained. Language stays changeable.
 
-The [transition guide](native-transition.md) explains backups, preference import
-and rollback to an original Go source or a separate pre-native backup. Do not
-manually repoint legacy settings at native files. The developer/test override is
-not a production adoption or recovery route.
+The [starting-fresh guide](native-transition.md) explains native backups and
+recovery. Go data migration and rollback are outside this application's scope.
+The developer/test override is not a production recovery route.

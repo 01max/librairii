@@ -112,8 +112,8 @@ def quality_observations(z, source, target):
 def installed_observations(z, package, source, target):
     installed(z, package, source, target)
     qualification = member_json(z, 'gui/qualification.json')
-    expected = ({'x11-fresh', 'x11-upgraded', 'wayland-fresh', 'wayland-upgraded'}
-                if 'linux' in target else {'fresh', 'upgraded'})
+    expected = ({'x11-fresh', 'x11-fresh-software', 'wayland-fresh', 'wayland-fresh-software'}
+                if 'linux' in target else {'fresh', 'fresh-software'})
     lanes = qualification['lanes']
     require(len(lanes) == len(expected) and {r['name'] for r in lanes} == expected,
             'missing or duplicate installed lane')
@@ -124,7 +124,7 @@ def installed_observations(z, package, source, target):
                 'failed or changed installed lane')
         report = member_json(z, name)
         bound(report, source, target)
-        case = 'fresh' if lane['name'].endswith('fresh') else 'upgraded'
+        case = 'fresh' if lane['name'].endswith('fresh') else 'fresh-software'
         session = lane['name'].split('-', 1)[0] if 'linux' in target else 'macOS'
         backend = 'winit-skia' if case == 'fresh' else 'winit-skia-software'
         require(qualified(report) and report['artifact'] == package['artifact']

@@ -1,4 +1,4 @@
-# Legacy runtime retirement plan
+# Rust-only runtime and historical retirement plan
 
 **Current scope (2026-11-03):** the owner approved a fresh Rust app and retirement
 of the old runtime without Go data migration or paid Mac signing. The
@@ -6,6 +6,38 @@ of the old runtime without Go data migration or paid Mac signing. The
 signed-release and legacy cutover prerequisites below. The original inventory
 and observations remain historical evidence; the Task 20 implementation records
 its actual removals separately.
+
+## Current implementation
+
+The [actual retirement record](legacy-retirement.json) binds 375 removed tracked
+runtime/tool files to their pre-removal hashes and preserves all 49 shared inputs.
+Before removal, 251 additional original module files were retained under
+`preservation/oracle-files/`, verified against the unchanged original oracle
+manifest. The optional reference generator now refuses missing archived files;
+it never falls back to the working application tree.
+
+Production startup offers a fresh Rust library and ignores old Go settings,
+databases and journals. The desktop preference-transfer control is removed.
+Native preferences, library reopening, relocation and recovery remain. Both
+installed renderer routes start fresh; the software route includes old files
+and verifies their bytes are untouched. All 22 installed workflow checkpoints
+and PR-blocking performance budgets remain required.
+
+Make commands, dependency automation and product CI now target Rust. The old
+Go/Wails jobs and bridge rehearsals are retired; manual native candidate reruns,
+three-target quality/scale/packages and focused Rust checks remain. The Mac
+builder provides free ad-hoc DMGs with first-launch instructions. Protected paid
+signing remains optional, human-controlled and separate from normal CI.
+
+Local headless checks and independent review/CI evidence for this implementation
+are recorded below when complete. No historical performance failure is rescored,
+no public release is approved and no personal data is removed by this change.
+
+## Historical Task 20.2 plan (superseded prerequisites)
+
+The remainder preserves the original plan and observations. Its references to
+still-present Go code, compatible bridge/rollback and mandatory paid signing
+are historical; the current contract and retirement record above govern this PR.
 
 Task 20.2 prepares a removal manifest. It does **not** retire any runtime,
 select a release candidate, approve cutover or complete Tasks 20.1/20.3–20.5.

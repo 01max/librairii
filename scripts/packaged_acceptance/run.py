@@ -87,7 +87,7 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
               'method': method,
               'checks': {}, 'processes': [], 'errors': [], 'complete': False,
               'signing': inspection['signing'], 'public_release_qualified': False}
-    fixture = Fixture(fixture_source or root, output, case == 'upgraded')
+    fixture = Fixture(fixture_source or root, output, case == 'fresh-software')
     application = None
     driver = None
     installation = fixture.root/'installation'
@@ -118,7 +118,7 @@ def run(root, inspection_path, source, target, requested_output, case, backend, 
             raise ValueError('unexpected/duplicate packaged acceptance checkpoint')
         driver.snapshot(name)
         report['checks'][name] = value
-    french = case == 'upgraded'
+    french = case == 'fresh-software'
     words = lambda en, fr: fr if french else en
     try:
         copy_tree(installed, installation)

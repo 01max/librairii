@@ -12,15 +12,13 @@ available for a later Windows qualification pass.
 | Rust scale and resilience | Every PR, main/integration push, or manual run | Retained backend, native input/completion, display and release-resource workloads on all three native targets |
 | Task 2 qualification | Changes to `qualification/section-2/**` or its workflow; manual run | Supporting toolkit/native-host observations; historical spike results remain source-bound |
 | Rust focused checks | Integration/main pushes; PRs changing the lane, toolchain/dependency pins, fuzz or benchmark harness; weekly/manual | Coverage, benchmark smoke, bounded fuzzing; measured benchmarks on weekly/manual runs |
-| Protected Mac signing | Manual dispatch after trusted workflow registration and owner setup | Trusted signing/notarization/stapling, followed by credentialless inspection and full installed-GUI verification of the final signed bytes |
-| Go/Wails selector | Every PR, main push, or manual run | Tests the path selector, then reads the complete local Git diff |
-| Go/Wails verification and Linux release evidence | Relevant changes, unknown paths, unavailable history, or manual run | Existing macOS `make check`/build and Linux packaged acceptance/archive checks |
+| Optional paid Mac signing | Manual dispatch after trusted workflow registration and owner setup | Trusted signing/notarization/stapling, followed by credentialless inspection and full installed-GUI verification of the final signed bytes |
 
-Routine Rust changes therefore run three complete native suites, without the
-additional Go/Wails builds or focused analysis job. CI wiring changes exercise
-the affected lanes before merge. Scheduled GitHub workflows use the default
-branch, currently Go `main`; the explicit integration push trigger keeps focused
-checks active during the rewrite.
+Routine changes run the complete Rust native suites. The Go/Wails product jobs
+are retired. `ci.yml` retains only the manually selected native package rerun;
+it requires the exact package run, source and independent checksum. CI wiring
+changes exercise the affected lanes before merge. Integration pushes keep
+focused checks active while the rewrite is developed separately from `main`.
 
 Performance remains blocking on every PR, including the unchanged 100 ms native
 dispatch and 3000 ms completion limits. A slower shared runner does not waive a
@@ -46,18 +44,13 @@ failed command is accepted only when those disposal checks independently pass.
 Filtered observations are retained as `native-relocation-disposal.json`; unknown
 identity or disposal preserves the workspace and fails the job.
 
-The selector in `.github/scripts/legacy-ci-changes.py` skips Go/Wails only for
-changes entirely within the Rust workspace/configuration or rewrite documents.
-Everything else runs those suites. It reads NUL-delimited Git paths, includes
-deletions and both sides of renames, and has no API path-list limit. A shallow
-checkout that lacks the comparison commit runs the suites. Go/Wails is still the
-working app until the cutover; its jobs live together in `ci.yml` and can be forced
-with that workflow's manual dispatch. The native Rust contributor commands and
-the retained Go tooling requirements are in the
-[development guide](../development.md).
+The [development guide](../development.md) documents the Rust-only contributor
+commands. Frozen Go reference inputs are retained, but ordinary CI neither
+installs Go/Node nor builds the old product.
 
 Native package jobs build before installation jobs. Build/payload inspection,
-actual installed GUI and public signing are separate evidence gates. ARM and
+actual installed GUI and optional paid signing are separate evidence gates.
+Free ad-hoc Mac packages are the default and need no signing credentials. ARM and
 Intel use separate matching hosts; Linux runs the installed workflows under
 X11 and Wayland. The signing workflow permits only `main` or the integration
 branch and requires the protected `native-macos-signing` environment. A PR job

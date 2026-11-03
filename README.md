@@ -107,19 +107,20 @@ and source; earlier Go/Wails images remain as historical references.
 
 The native candidate targets macOS 15+ on Apple silicon and Intel, and Ubuntu
 24.04 x86-64. Choose the package matching your actual architecture. Native
-build/install instructions and the distinction between internal candidates and
-signed public distributions are in the [platform matrix](docs/release-platforms.md).
+build/install instructions are in the [platform matrix](docs/release-platforms.md).
+Mac packages use free ad-hoc signing; Apple membership is not required.
 
 | Platform | Native candidate |
 | :--- | :--- |
-| **macOS · Apple silicon** | Separate ARM application/DMG; matching-host builds and installed GUI pass in CI. Public signing/notarization/stapling remains gated. |
-| **macOS · Intel** | Separate Intel application/DMG, exercised on native Intel hardware. Public signed-byte verification remains gated. |
+| **macOS · Apple silicon** | Separate ARM application/DMG; matching-host builds and installed GUI pass in CI. Free ad-hoc signing; first launch may require per-app approval. |
+| **macOS · Intel** | Separate Intel application/DMG, exercised on native Intel hardware. Free ad-hoc signing; no Rosetta required. |
 | **Linux · x64** | Ubuntu 24.04/glibc 2.39 portable archive with executable, desktop entry and icons; X11/Wayland and GPU/software routes are exercised in CI. |
 
 Installed native packages need no Rust, Go, Node or browser runtime. Linux still
 needs its declared graphics/font/portal/file-manager services. To build the
-candidate, follow [native development](docs/development.md). For an existing Go
-library, use the [transition and recovery guide](docs/native-transition.md).
+candidate, follow [native development](docs/development.md). Start with a fresh
+Rust library and import your archives; old Go data/settings are not migrated.
+See [starting fresh and recovery](docs/native-transition.md).
 
 ### Your first shelf
 
@@ -198,21 +199,10 @@ doctests. Use the three declared native default configurations rather than
 | [Distribution commands](docs/development.md#build-distribution-candidates) | Plan/build a sealed native payload and assemble the matching DMG or Linux archive. |
 | [Platform verification](docs/release-platforms.md#evidence-for-each-candidate) | Inspect exact package bytes and run actual installed workflows in disposable CI. |
 
-Full native CI also rehearses the Go/native handover with Go **1.26.5**. Native
-packages do not require Go at runtime. Optional coverage/fuzz/benchmark commands
-and their extra pinned tools are listed in the development guide.
-
-<details>
-<summary><strong>Retained Go/Wails compatibility workflow</strong></summary>
-
-The Go/Wails/React implementation, oracle fixtures and release commands remain
-available until the separate release/cutover review. `make check`, `make build`,
-`make dmg` and `make linux` still operate on that implementation; they do not
-build the native Rust application. Node/Wails/browser prerequisites and the
-applicable legacy checks are documented in
-[the development guide](docs/development.md#retained-go-compatibility-checks).
-
-</details>
+`make setup`, `make check`, `make test` and `make build` target the Rust app.
+The Go/Wails runtime and Node frontend are retired. Frozen synthetic reference
+inputs remain for functional regression checks; normal builds and CI do not
+need Go. Optional coverage/fuzz/benchmark tools are listed in the development guide.
 
 ## Documentation
 
@@ -234,9 +224,7 @@ applicable legacy checks are documented in
 Found a bug or have an idea? [Open an issue](https://github.com/01max/librairii/issues)
 with the behavior you expected, what happened, and your platform. Documentation
 improvements and focused pull requests are welcome; start with the
-[development setup](#development) and run `cargo xtask check` plus applicable
-[retained Go checks](docs/development.md#retained-go-compatibility-checks) before
-submitting code changes.
+[development setup](#development) and run `cargo xtask check` before submitting code changes.
 
 ---
 

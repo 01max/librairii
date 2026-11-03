@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace()
+    fn setup_cancellation_invalid_profile_and_nonempty_target_never_initialize_or_replace()
     -> TestResult {
         let (roots, _copy, locations) = crate::test_support::native_copy()?;
         let store = NativeProfileStore::create_fresh(&locations.native)?;
@@ -116,18 +116,7 @@ mod tests {
         let legacy = legacy_default_root(&locations)?;
         fs::create_dir(&legacy)?;
         fs::write(legacy.join("keep"), b"original")?;
-        let preview = TargetPreview::inspect(&chosen, &[], &Default::default())?;
-        assert!(
-            NativeLibrary::initialize_confirmed(
-                preview,
-                &store,
-                &locations,
-                ID.parse()?,
-                Language::English,
-                &Default::default()
-            )
-            .is_err()
-        );
+        assert!(TargetPreview::inspect(&legacy, &[], &Default::default()).is_err());
         assert!(!chosen.exists());
         assert_eq!(fs::read(legacy.join("keep"))?, b"original");
         fs::write(locations.native.join("settings.json"), b"invalid")?;
@@ -265,28 +254,6 @@ impl<'profile> NewInstallAttempt<'profile> {
         namespace_roots(self.store, &self.locations)?;
         if !self.protected {
             let source = legacy_default_root(&self.locations)?;
-            if let Some(legacy) = &self.locations.legacy
-                && crate::profile::read_legacy(legacy)?.is_some_and(|document| {
-                    let p = document.profile();
-                    p.complete || p.recovering || !p.root.is_empty() || !p.library_id.is_empty()
-                })
-            {
-                return Err(StorageError::RecoveryBindingRequired);
-            }
-            match fs::read_dir(&source) {
-                Ok(mut entries) => {
-                    if entries.next().is_some() {
-                        return Err(StorageError::RecoveryBindingRequired);
-                    }
-                }
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
-                Err(error) => {
-                    return Err(StorageError::io(
-                        "inspect old default before new setup",
-                        error,
-                    ));
-                }
-            }
             let mut excluded = vec![self.locations.native.as_path(), source.as_path()];
             if let Some(legacy) = &self.locations.legacy {
                 excluded.push(legacy);

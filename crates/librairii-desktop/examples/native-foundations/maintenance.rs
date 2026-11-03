@@ -88,6 +88,10 @@ fn initialize(f: &mut Fixture, ui: &DesktopWindow) -> Result<PathBuf> {
             opened.workflows.settings
         ),
     )?;
+    check(
+        opened.page.as_ref().is_some_and(|p| p.stories.is_empty()),
+        "fresh library imported old stories",
+    )?;
     f.id = opened
         .navigation
         .as_ref()
@@ -397,7 +401,7 @@ fn override_checks(ui: &DesktopWindow) -> Result {
     )?;
     f.finish()
 }
-fn adoption_language_checks(ui: &DesktopWindow) -> Result {
+fn fresh_start_ignores_legacy_checks(ui: &DesktopWindow) -> Result {
     let mut f = setup(ui)?;
     language(&f, ui, "en")?;
     f.worker.borrow_mut().finish()?;
@@ -434,42 +438,51 @@ fn adoption_language_checks(ui: &DesktopWindow) -> Result {
         recovering: false,
     })?;
     std::fs::write(legacy.join("settings.json"), &source_profile)?;
+    std::fs::write(legacy.join("relocation.json"), b"unfinished old move")?;
     f.restart(ui)?;
     check(
-        f.view.borrow().snapshot.phase == Phase::Adoption
+        f.view.borrow().snapshot.phase == Phase::Setup
             && f.view.borrow().snapshot.language == Language::English
             && !ui.get_french(),
-        "independent native preference lost to legacy adoption language",
+        "fresh setup imported old data or language",
     )?;
-    let destination = f._roots.library().join("Independent adopted library");
+    let destination = f._roots.library().join("Fresh Rust library");
     choose(&f, ui, Picker::Folder, Some(destination));
     f.settle(ui)?;
     ui.invoke_settings_confirm();
     let opened = f.settle(ui)?;
     check(
         opened.phase == Phase::Library && opened.language == Language::English && !ui.get_french(),
-        "bound native library ignored its actual saved language",
+        "fresh native library ignored its actual saved language",
+    )?;
+    check(
+        opened.page.as_ref().is_some_and(|p| p.stories.is_empty()),
+        "fresh library imported old stories",
     )?;
     f.id = opened
         .navigation
         .as_ref()
-        .ok_or("adopted navigation")?
+        .ok_or("fresh navigation")?
         .library();
     for (name, bytes) in original {
         check(
             std::fs::read(source.join(name))? == bytes,
-            "native adoption changed legacy source bytes",
+            "fresh setup changed legacy source bytes",
         )?;
     }
     check(
         std::fs::read(legacy.join("settings.json"))? == source_profile,
-        "native adoption rewrote the legacy profile",
+        "fresh setup rewrote the legacy profile",
+    )?;
+    check(
+        std::fs::read(legacy.join("relocation.json"))? == b"unfinished old move",
+        "fresh setup rewrote the legacy recovery journal",
     )?;
     close(ui);
     f.restart(ui)?;
     check(
         !ui.get_french(),
-        "native adoption restart lost the independent choice",
+        "fresh setup restart lost the independent choice",
     )?;
     f.finish()
 }
@@ -612,69 +625,7 @@ fn schema_checks(ui: &DesktopWindow) -> Result {
     f.finish()
 }
 
-fn preference_checks(ui: &DesktopWindow) -> Result {
-    for code in ["en", "fr"] {
-        let mut f = setup(ui)?;
-        language(&f, ui, code)?;
-        initialize(&mut f, ui)?;
-        check(
-            ui.get_settings_data().can_import,
-            "native preference transfer is unreachable",
-        )?;
-        let before = f.worker.borrow().revision();
-        choose(&f, ui, Picker::Preferences, None);
-        check(
-            f.worker.borrow().revision() == before && ui.get_settings_transfer_focused(),
-            "cancelled transfer changed preferences or lost focus",
-        )?;
-        let selected = f._roots.profile().join("selected preferences.json");
-        std::fs::write(&selected, b"{invalid")?;
-        choose(&f, ui, Picker::Preferences, Some(selected.clone()));
-        let rejected = f.settle(ui)?;
-        check(
-            rejected.workflows.settings.notice == Some(Notice::PreferencesRejected)
-                && !f.locations.native.join("handover.json").exists(),
-            "invalid transfer changed native preferences",
-        )?;
-        let mut transfer: serde_json::Value = serde_json::from_slice(include_bytes!(
-            "../../../librairii-core/tests/fixtures/handover-v1.json"
-        ))?;
-        transfer["libraryId"] = f.id.to_string().into();
-        transfer["state"]["frames"] =
-            serde_json::json!([{"hash":"#/library?v=3&page=1","kind":"library"}]);
-        transfer["state"]["position"] = 0.into();
-        std::fs::write(&selected, serde_json::to_vec(&transfer)?)?;
-        choose(&f, ui, Picker::Preferences, Some(selected.clone()));
-        let imported = f.settle(ui)?;
-        check(
-            imported.workflows.settings.notice == Some(Notice::PreferencesImported)
-                && imported.workflows.operations.sync_hidden
-                && imported.navigation.as_ref().is_some_and(|n| {
-                    n.presentation() == librairii_core::navigation::Presentation::SmallCovers
-                }),
-            "valid transfer did not reach native worker/view",
-        )?;
-        let receipt = std::fs::read(f.locations.native.join("handover.json"))?;
-        choose(&f, ui, Picker::Preferences, Some(selected));
-        check(
-            f.settle(ui)?.workflows.settings.notice == Some(Notice::PreferencesAlreadyImported)
-                && std::fs::read(f.locations.native.join("handover.json"))? == receipt,
-            "repeat transfer replayed native preferences",
-        )?;
-        close(ui);
-        f.restart(ui)?;
-        check(
-            f.view.borrow().snapshot.phase == Phase::Library && ui.get_french() == (code == "fr"),
-            "imported native profile did not restart in saved language",
-        )?;
-        f.finish()?;
-    }
-    Ok(())
-}
-
 pub fn checks(ui: &DesktopWindow) -> Result {
-    eprintln!("maintenance: preference transfer en/fr");
-    preference_checks(ui)?;
     eprintln!("maintenance: setup");
     setup_checks(ui)?;
     eprintln!("maintenance: move");
@@ -683,8 +634,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     diagnostics_checks(ui)?;
     eprintln!("maintenance: recovery");
     recovery_checks(ui)?;
-    eprintln!("maintenance: adoption language");
-    adoption_language_checks(ui)?;
+    eprintln!("maintenance: fresh setup ignores legacy state");
+    fresh_start_ignores_legacy_checks(ui)?;
     eprintln!("maintenance: foreign schema");
     schema_checks(ui)?;
     eprintln!("maintenance: override");

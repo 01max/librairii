@@ -26,7 +26,7 @@ def main():
     linux = commands.add_parser('package-linux', help='assemble a Linux archive from the current verified stage')
     linux.add_argument('--stage', type=Path, required=True)
     linux.add_argument('--output', required=True)
-    mac = commands.add_parser('package-macos', help='assemble an explicitly unsigned .app/DMG from the current native stage')
+    mac = commands.add_parser('package-macos', help='assemble a free ad-hoc signed .app/DMG from the current native stage')
     mac.add_argument('--stage', type=Path, required=True)
     mac.add_argument('--output', required=True)
     installed = commands.add_parser('inspect-package', help='install and inspect final candidate bytes without a GUI')

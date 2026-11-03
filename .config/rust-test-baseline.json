@@ -3549,7 +3549,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace",
+      "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_nonempty_target_never_initialize_or_replace",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -3576,7 +3576,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+      "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -3720,7 +3720,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "settings::startup::tests::preparation_preserves_invalid_and_legacy_state_before_creating_native_containers",
+      "name": "settings::startup::tests::invalid_native_profile_is_preserved_before_setup",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -4057,15 +4057,6 @@
     {
       "suite": "librairii-storage::handover",
       "name": "selected_transfer_refuses_links_directories_pipes_and_oversized_files_without_effects",
-      "targets": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu"
-      ]
-    },
-    {
-      "suite": "librairii-desktop::presentation",
-      "name": "preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",

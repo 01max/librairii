@@ -991,7 +991,7 @@ class PackagedAdmission(unittest.TestCase):
             args = [path,'a'*40,report['target'],report['artifact'],report['backend'],'fresh','x11',report['method']]
             self.assertTrue(module.verify_report(*args)['passed'])
             for position, value in [(1,'c'*40),(2,'x86_64-apple-darwin'),
-                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'upgraded'),(6,'wayland'),
+                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'fresh-software'),(6,'wayland'),
                                     (7,dict(report['method'],source_commit='d'*40))]:
                 changed = list(args)
                 changed[position] = value
@@ -1015,6 +1015,9 @@ class PackagedAdmission(unittest.TestCase):
                       if path.read_bytes() == (source/'preservation/corpus/archives/clockwork-forest.plain.pk').read_bytes()]
                 self.assertEqual(len(pk), 1)
                 self.assertTrue(pk[0].name.endswith('.plain.pk'))
+                self.assertEqual(fixture.initial_uuids, {fixture.original_uuid})
+                self.assertEqual(list(fixture.candidate.iterdir()), [])
+                self.assertEqual((fixture.legacy_profile/'relocation.json').read_bytes(), b'unfinished old move')
                 self.assertEqual(len(list(fixture.review_inputs.iterdir())), 2)
                 self.assertTrue(all(path.name.endswith('.zip') for path in fixture.review_inputs.iterdir()))
                 environment = fixture.environment('winit-skia-software')

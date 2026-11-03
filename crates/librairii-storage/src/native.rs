@@ -1836,16 +1836,6 @@ mod owned {
             if physical_overlap(&legacy, &native)? || physical_overlap(&legacy, &data)? {
                 return Err(StorageError::PathEscape);
             }
-            match fs::symlink_metadata(legacy.join("relocation.json")) {
-                Ok(_) => return Err(StorageError::RecoveryBindingRequired),
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
-                Err(error) => {
-                    return Err(StorageError::io(
-                        "inspect explicit source recovery namespace",
-                        error,
-                    ));
-                }
-            }
         }
         Ok((native, data))
     }

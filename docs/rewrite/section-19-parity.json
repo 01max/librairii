@@ -21,7 +21,7 @@
   "scope_decisions": [
     "Owner excluded VoiceOver execution; no macOS spoken-screen-reader qualification claim.",
     "Japanese/Chinese/Arabic-specific input, IME and shaping qualification deferred; valid UTF-8 data/filenames remain lossless and unrestricted.",
-    "Windows deferred. No in-place Go adoption without proven lifetime exclusion; isolated native library/profile/recovery route used."
+    "Windows deferred. Owner selected a fresh Rust application: no Go data/profile adoption, compatible rollback or browser-preference transfer. Free ad-hoc Mac packages are the default; paid signing optional."
   ],
   "rows": [
     {
@@ -55,12 +55,12 @@
       "implementation": "crates/librairii-storage/src/database.rs",
       "delivery_evidence": "docs/rewrite/section-4.md",
       "observation_topics": [
-        "upgraded",
+        "fresh",
         "reopen"
       ],
       "workstream": "Storage",
       "accountable_owner": "01max",
-      "retained_contract": "Open existing SQLite without a format reset. Retain `product=librairii`, schema family `wails-go-sqlite`, contiguous migration-prefix validation, foreign keys, constraints, WAL, 5-second busy timeout, serialized writer and a read pool capped at four connections. Reject unknown/gapped/newer/foreign history before mutation.",
+      "retained_contract": "Rust-created SQLite databases reopen without data loss; retained schema/migration fixtures remain regression coverage, not a supported Go migration route. Validate history before mutation, preserve foreign keys, WAL, constraints, serialized writer and bounded read pool.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -233,7 +233,7 @@
       ],
       "workstream": "Runtime",
       "accountable_owner": "01max",
-      "retained_contract": "Preserve production two-worker behavior, configurable bound 1–8 and queue capacity `2 × workers`; import selection limit 1,000 is not an export-result cap. Browse remains responsive during import/sync/export. One active metadata sync; no duplicate start while pending.",
+      "retained_contract": "Preserve production two-worker behavior, configurable bound 1\u20138 and queue capacity `2 \u00d7 workers`; import selection limit 1,000 is not an export-result cap. Browse remains responsive during import/sync/export. One active metadata sync; no duplicate start while pending.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -307,7 +307,7 @@
       ],
       "workstream": "Runtime",
       "accountable_owner": "01max",
-      "retained_contract": "Bounded JSONL `events.jsonl`, default at most five files ×256 KiB. Explicit local diagnostic ZIP includes only validated logs/aggregate facts, excluding DB/archive bytes, tokens, absolute private paths and artwork. Native destination/cancel/failure remains actionable.",
+      "retained_contract": "Bounded JSONL `events.jsonl`, default at most five files \u00d7256 KiB. Explicit local diagnostic ZIP includes only validated logs/aggregate facts, excluding DB/archive bytes, tokens, absolute private paths and artwork. Native destination/cancel/failure remains actionable.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -342,8 +342,8 @@
         "crates/librairii-desktop/tests/presentation.rs"
       ],
       "source_sha256": {
-        "crates/librairii-ui/ui/desktop.slint": "c464ef59b2a318b1a279436c4b0049095c768917021f22ac5a58c3fee0159be3",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -462,7 +462,7 @@
         "crates/librairii-desktop/src/browsing/tests.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/browsing.rs": "4bc94ec224f8ecfd794c1c990f67a00ebc840ca887f301279a1ec21f13f10a1a",
+        "crates/librairii-desktop/src/browsing.rs": "e9a88649674bf174fb5224be94af7a181255ec2dc6d30deefae274b65b56b2e2",
         "crates/librairii-desktop/src/browsing/tests.rs": "f2630563054de968c5421c9163535f63af84d0d4820ec543d69bd0c7acc2b028"
       }
     },
@@ -488,7 +488,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/details.rs": "fefac07a38ec45697621f4bc74f3427e9fdba5ed0f0e2a4d94953e1e9a51846d",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -610,7 +610,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/flags.rs": "04902966fc26f28ae58ec54207b35c93535d57bbf4ebb8bd1dea18c2156fc4b3",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -876,7 +876,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/workflows/shelf_reviews.rs": "3778871087fd9bbe9c295e3f3d6ee997a56be9b6882ce77c2c325f86a08ab679",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -1073,7 +1073,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/sync.rs": "0eea2d4090b491a8ac5805be91ba63a27835a524d9518f963a560219448cab18",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -1224,7 +1224,7 @@
       ],
       "source_sha256": {
         "crates/librairii-storage/src/removal.rs": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -1254,14 +1254,15 @@
     },
     {
       "id": "P51",
-      "implementation": "crates/librairii-storage/src/profile/handover.rs",
+      "implementation": "crates/librairii-desktop/src/preferences.rs",
       "delivery_evidence": "docs/rewrite/section-17.md",
       "observation_topics": [
-        "upgrade-handover"
+        "reopen",
+        "native-preferences"
       ],
       "workstream": "UI",
       "accountable_owner": "01max",
-      "retained_contract": "Preserve view mode, per-operation terminal dismissal, sync-panel visibility, current semantic navigation and available back/forward state through supported versioned bridge. Dismissed operation stays hidden after stale events/restart but new IDs appear. Missing/corrupt preference storage retains safe session/default behavior, never library loss.",
+      "retained_contract": "Persist Rust view mode, semantic back/forward navigation, per-operation dismissal and sync visibility across restart. Invalid native preferences retain recovery/session behavior without library loss. Go/browser preference transfer is outside the owner-approved scope.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -1269,11 +1270,11 @@
       },
       "release_hold": "exact final-candidate evidence and independent all-target release review",
       "executable_check_sources": [
-        "crates/librairii-storage/tests/handover.rs"
+        "crates/librairii-desktop/tests/presentation.rs"
       ],
       "source_sha256": {
-        "crates/librairii-storage/src/profile/handover.rs": "c09b0f3c333fd4471d9c46574a123c713e4d12aae621d7dd94eb1aae157774a8",
-        "crates/librairii-storage/tests/handover.rs": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+        "crates/librairii-desktop/src/preferences.rs": "00f5df73a342aedb121bba94469fd1fa078dc6699432bd0c0e076153ee797481",
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
       }
     },
     {
@@ -1282,11 +1283,11 @@
       "delivery_evidence": "docs/rewrite/section-13.md",
       "observation_topics": [
         "setup",
-        "storage-handover"
+        "fresh-software"
       ],
       "workstream": "Storage",
       "accountable_owner": "01max",
-      "retained_contract": "New installation confirms language/exact selected empty root before initialization; picker cancel creates nothing, retry preserves partial confirmed setup. Adopt identifiable prior library in place only with proven lifetime exclusion; otherwise explicitly adopt an independent clone/native profile/recovery workspace while legacy settings/defaults retain the source. Versioned independent profile updates atomically/serially preserve concurrent language/root writes; corruption/unsupported profile enters recovery. Developer override bypasses production profile/onboarding, defaults English, disables relocation.",
+      "retained_contract": "New installation confirms language and exact empty root before initialization; picker cancellation creates no library. Ignore existing Go profiles, databases and journals. Preserve their bytes. Native profile corruption or a missing configured Rust library enters recovery. Atomic native updates retain language/root; explicit developer overrides remain isolated.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -1297,7 +1298,7 @@
         "crates/librairii-storage/tests/native_library.rs"
       ],
       "source_sha256": {
-        "crates/librairii-storage/src/settings/startup.rs": "64304c316e591e0a08a4916494e422b2d52302c6eac63b38acb88bad0ba61bfb",
+        "crates/librairii-storage/src/settings/startup.rs": "21ffee548870a6dee49f99105890e50dfcd86593794b940a4c00a50da5ebf209",
         "crates/librairii-storage/tests/native_library.rs": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
       }
     },
@@ -1310,7 +1311,7 @@
       ],
       "workstream": "UI",
       "accountable_owner": "01max",
-      "retained_contract": "Native/in-app Settings remain accessible during recovery, early startup command delivered once; macOS standard menu/⌘, plus editing roles; Linux menu and accelerator. Français/English applies immediately after durable write, preserving selection/query/unsaved input/jobs; localize all app text/plurals/dates/numbers/accessibility and historical outcomes, not authored content/metadata policy.",
+      "retained_contract": "Native/in-app Settings remain accessible during recovery, early startup command delivered once; macOS standard menu/\u2318, plus editing roles; Linux menu and accelerator. Fran\u00e7ais/English applies immediately after durable write, preserving selection/query/unsaved input/jobs; localize all app text/plurals/dates/numbers/accessibility and historical outcomes, not authored content/metadata policy.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -1398,8 +1399,8 @@
         "scripts/verify-native-speech.py"
       ],
       "source_sha256": {
-        "crates/librairii-ui/ui/desktop.slint": "c464ef59b2a318b1a279436c4b0049095c768917021f22ac5a58c3fee0159be3",
-        "crates/librairii-desktop/tests/presentation.rs": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524",
+        "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
+        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960",
         "scripts/verify-native-foundations.py": "cbfd56a2db07a5da5d5b4c827fe11f0573b4dd5fe1301cac08dc23a063ebb7f0",
         "scripts/verify-native-speech.py": "0798aacbabfdd16fe32b6b975cc489babe1e768d89c4b13b5b87ef85efe92fa0"
       }
@@ -1445,7 +1446,7 @@
       ],
       "workstream": "Release",
       "accountable_owner": "01max",
-      "retained_contract": "Retain 5,000-story query/count/page/artwork budgets, 1,000-story native expansion≤3 s and input p95≤100 ms; preserve 25-row review/warning/create/exclusion pages and one affected Shelf/page. Bounded worker/image/query models. Host baselines are observations; frame/timer gaps remain diagnostics.",
+      "retained_contract": "Retain 5,000-story query/count/page/artwork budgets, 1,000-story native expansion\u22643 s and input p95\u2264100 ms; preserve 25-row review/warning/create/exclusion pages and one affected Shelf/page. Bounded worker/image/query models. Host baselines are observations; frame/timer gaps remain diagnostics.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -1456,7 +1457,7 @@
         "crates/librairii-core/tests/scale_properties.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/browsing.rs": "4bc94ec224f8ecfd794c1c990f67a00ebc840ca887f301279a1ec21f13f10a1a",
+        "crates/librairii-desktop/src/browsing.rs": "e9a88649674bf174fb5224be94af7a181255ec2dc6d30deefae274b65b56b2e2",
         "crates/librairii-core/tests/scale_properties.rs": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
       }
     },
@@ -1492,7 +1493,7 @@
       "delivery_evidence": "docs/rewrite/section-18.md",
       "observation_topics": [
         "fresh",
-        "upgraded",
+        "fresh-software",
         "workflow",
         "reopen",
         "recovery",
@@ -1500,7 +1501,7 @@
       ],
       "workstream": "Release",
       "accountable_owner": "01max",
-      "retained_contract": "Complete end-to-end synthetic clean and upgraded workflows twice per actual package: import→inspect→catalog→tags→Collection→Shelf/review→Broken/Undo→export→trash→restart; settings/language/move/recovery and diagnostics included. Lifetime writer exclusion or isolated library/profile/recovery adoption, consistent whole-library/profile backup, verified rollback and retained post-backup user changes precede cutover. Retire Go/React only after every mandatory row closes.",
+      "retained_contract": "Complete synthetic fresh workflows on both native renderer routes per package: import, inspection, catalog, tags, Collections, Shelves, review, Broken/Undo, export, trash and restart, including settings/language/move/recovery/diagnostics. The software route includes ignored old Go files. Exact installed bytes and all functional/performance checks remain required. No Go migration, bridge release or compatible rollback prerequisite.",
       "platform_status": {
         "A": "candidate evidence indexed; final release closure pending",
         "I": "candidate evidence indexed; final release closure pending",
@@ -1508,11 +1509,11 @@
       },
       "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
       "executable_check_sources": [
-        "scripts/verify-upgrade-handover.py"
+        "scripts/packaged_acceptance/workflow.py"
       ],
       "source_sha256": {
-        "scripts/packaged_acceptance/workflow.py": "b8e72fc0d7acde0336613fce0f8a97af32af8881df708160b5836602c84f0070",
-        "scripts/verify-upgrade-handover.py": "ceaacf7e67c1bbbc9a8ca8687c13192aef7eeb18703e35d599b052d9dc60955a"
+        "scripts/packaged_acceptance/workflow.py": "c4851076cbe10cb937eb982060af89b73192a2f237bec6b98a0a0fc93a1016a6",
+        "scripts/packaged_acceptance/fixture.py": "5cc5a3f6be32778c45a5c9722b87d8954689c58041f2183f49a1b289b6dba207"
       }
     }
   ]

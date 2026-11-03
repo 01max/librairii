@@ -75,7 +75,6 @@ pub enum Command {
 pub enum Phase {
     Opening,
     Setup,
-    Adoption,
     Recovery,
     Library,
 }
