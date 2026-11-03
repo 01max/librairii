@@ -29,9 +29,17 @@ three-target quality/scale/packages and focused Rust checks remain. The Mac
 builder provides free ad-hoc DMGs with first-launch instructions. Protected paid
 signing remains optional, human-controlled and separate from normal CI.
 
-Local headless checks and independent review/CI evidence for this implementation
-are recorded below when complete. No historical performance failure is rescored,
-no public release is approved and no personal data is removed by this change.
+A fresh detached checkout of `171949e705351137f27b0c4ac03f7839e0d331f2`
+passed all **135 cumulative headless tests**, exact source/corpus/migration-byte
+checks, formatting and the no-side-effect Mac build preview. The local receipt
+is `target/task20-fresh-rust/clean-headless.json`; the combined log SHA-256 is
+`65db658f9cc030c4a565046f21fefa0e857e26f1dc3aa24eb7d82f356d43b49a`.
+The original checkout also passed all Python parses, inventory verification and
+frozen-module materialization. These are headless checks, not native app execution.
+Independent review and current-source three-target CI remain pending.
+
+No historical performance failure is rescored, no public release is approved
+and no personal data is removed by this change.
 
 ## Historical Task 20.2 plan (superseded prerequisites)
 
