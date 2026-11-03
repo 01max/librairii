@@ -36,7 +36,26 @@ is `target/task20-fresh-rust/clean-headless.json`; the combined log SHA-256 is
 `65db658f9cc030c4a565046f21fefa0e857e26f1dc3aa24eb7d82f356d43b49a`.
 The original checkout also passed all Python parses, inventory verification and
 frozen-module materialization. These are headless checks, not native app execution.
-Independent review and current-source three-target CI remain pending.
+After the storage recovery corrections, both independent Standards and Spec
+source reviews reported zero required findings at
+`2737e3c836a7838321fd1d1b3fefb9ba8747647d`. The same 135 headless tests and
+source/corpus/migration checks passed again. Review covered missing Rust settings,
+language saving after failed recovery, old namespace files and dangling links,
+earlier native v2 records, and current aliases into native data.
+
+[Task 20 PR #76](https://github.com/01max/librairii/pull/76) records the selected
+CI source, current three-target results and independent evidence review. Native
+compilation, regression tests, both fresh installed renderer routes and the
+unchanged performance budgets must pass on that source. Source review and
+headless checks do not substitute for those results. Preserve failed runs with
+their original verdicts when recording a corrected run.
+
+Remaining release work is selection and independent qualification of exact
+Rust-only distribution bytes, reconciliation of the recorded P58 performance
+hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid
+Apple signing are outside the required path. Optional paid-channel scripts stay
+human-operated. The local OpenSpec handover tracks task completion separately
+from release promotion and archival.
 
 No historical performance failure is rescored, no public release is approved
 and no personal data is removed by this change.
