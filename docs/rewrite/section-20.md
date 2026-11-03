@@ -35,7 +35,7 @@ release, exact downloadable bytes and verified recovery assets separately.
 
 ## Dependencies that must survive
 
-The removal PR must resolve these consumers explicitly, with matching tests.
+The Task 20 PR must resolve these consumers explicitly before removal, with matching tests.
 A Rust-only production package does not imply Rust-only qualification tooling.
 
 | Retained input or dependency | Current consumer and required treatment |
@@ -56,7 +56,7 @@ checksum/length and an existing retained-copy path, or `null` if no copy existed
 at inventory time. These annotations identify obligations; they do not certify
 that every future oracle or bridge dependency has already been detached.
 
-## Coordinated changes in the future retirement PR
+## Coordinated changes in the gated retirement work
 
 1. Complete Task 20.1 and all manifest prerequisites. Record final package hashes,
    the signed Mac evidence, recovery assets, resolved P58 decision and the complete
@@ -182,3 +182,20 @@ The hypotheses are posting/process delay, actual UI handling delay and
 publication/observer delay. A fresh passing run alone proves none of them and
 cannot close this failure or the separate historical P58 hold. Any correction
 must follow the measured cause and retain both old and new evidence.
+
+## Storage-handover readiness correction
+
+Diagnostic source `4640a9638ee65c537829455c17667b0d2b3c81bf` passed the ARM
+workspace and native UI checks but failed the separate Go/Rust storage rehearsal:
+the ready-file name existed while its payload was still empty. The Go helper
+creates the file before writing `go-flock-owned\n`; existence alone therefore
+races publication of the readiness payload. The failed archive and full log
+remain retained with their provider identity.
+
+A deterministic headless regression reproduces the empty/partial-write window.
+The rehearsal now waits for the exact complete payload while checking owner
+liveness and the original ten-second deadline, including after its final owner
+observation. Wrong payloads, owner exit and late readiness still fail. Five
+std-only Rust tests exercise this shared rehearsal function and run before the
+real CI handover. The real cross-language lock exclusion and post-kill reopen
+assertions remain unchanged; the marker is never substituted for those checks.

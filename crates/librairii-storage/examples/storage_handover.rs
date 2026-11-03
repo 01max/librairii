@@ -1,6 +1,9 @@
 //! Finite native storage rehearsal, driven with a manifest-only frozen Go build.
 //! It does not implement the preference bridge, GUI adoption or live relocation.
 #[cfg(unix)]
+#[path = "storage_handover/readiness.rs"]
+mod readiness;
+#[cfg(unix)]
 mod rehearsal {
     use librairii_storage::{
         StorageError,
@@ -255,16 +258,7 @@ mod rehearsal {
                 .spawn()?,
         );
         let deadline = Instant::now() + Duration::from_secs(10);
-        while !ready.exists() {
-            if child.0.try_wait()?.is_some() || Instant::now() >= deadline {
-                return Err("Go owner did not become ready".into());
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        if Instant::now() >= deadline {
-            return Err("late Go readiness".into());
-        }
-        assert_eq!(fs::read(ready)?, b"go-flock-owned\n");
+        super::readiness::wait_for_ready(&ready, || Ok(child.0.try_wait()?.is_none()), deadline)?;
         assert!(matches!(
             NativeLibrary::reopen(&store, &locations, &cancellation),
             Err(StorageError::LibraryInUse)

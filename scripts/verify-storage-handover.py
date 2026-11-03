@@ -15,6 +15,15 @@ def main():
     root = Path(__file__).resolve().parent.parent
     template = root / "scripts/storage-legacy-probe.go.in"
     with frozen_module(root, "storage-handover-") as (work, environment, manifest):
+        readiness_tests = work / "readiness-tests"
+        subprocess.run(["rustc", "--edition=2024", "--test",
+                        str(root / "crates/librairii-storage/examples/storage_handover/readiness.rs"),
+                        "-o", str(readiness_tests)], check=True)
+        readiness_log = root / "target/quality/storage-readiness-tests.log"
+        readiness_log.parent.mkdir(parents=True, exist_ok=True)
+        with readiness_log.open("w") as log:
+            subprocess.run([str(readiness_tests)], stdout=log, stderr=subprocess.STDOUT,
+                           check=True, timeout=15)
         driver = work / "driver/main.go"
         driver.parent.mkdir()
         driver.write_bytes(template.read_bytes())
