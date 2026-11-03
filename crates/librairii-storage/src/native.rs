@@ -1817,6 +1817,20 @@ mod owned {
     ) -> Result<()> {
         use crate::settings::target::physical_overlap;
         let (native, data) = namespace_roots(store, locations)?;
+        // This retained explicit-copy path still requires a closed source.
+        // Fresh native setup/reopening never treats old journals as authority.
+        if let Some(legacy) = &locations.legacy {
+            match fs::symlink_metadata(legacy.join("relocation.json")) {
+                Ok(_) => return Err(StorageError::RecoveryBindingRequired),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                Err(error) => {
+                    return Err(StorageError::io(
+                        "inspect explicit source recovery namespace",
+                        error,
+                    ));
+                }
+            }
+        }
         let source_actual = fs::canonicalize(source)
             .map_err(|e| StorageError::io("resolve original legacy source", e))?;
         if source_actual != source
