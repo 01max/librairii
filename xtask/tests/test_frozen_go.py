@@ -20,7 +20,9 @@ class FrozenGoTests(unittest.TestCase):
         path.write_bytes(b"package policy\n")
         manifest = {"files": [{"path": "internal/policy/policy.go",
                                "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}]}
-        (root / "preservation").mkdir()
+        retained = root / "preservation/oracle-files/internal/policy/policy.go.in"
+        retained.parent.mkdir(parents=True, exist_ok=True)
+        retained.write_bytes(path.read_bytes())
         (root / "preservation/oracle-source.json").write_text(json.dumps(manifest))
         return path
 
@@ -46,7 +48,7 @@ class FrozenGoTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             admitted = self.fixture(root)
-            admitted.write_bytes(b"package changed\n")
+            (root / "preservation/oracle-files/internal/policy/policy.go.in").write_bytes(b"package changed\n")
             with self.assertRaisesRegex(ValueError, "frozen source changed"):
                 with FROZEN_GO.frozen_module(root, "test-"):
                     self.fail("changed input was admitted")
@@ -58,7 +60,7 @@ class FrozenGoTests(unittest.TestCase):
             admitted = self.fixture(root)
             baseline = admitted.read_bytes()
             retained = root / 'preservation/oracle-files' / (admitted.relative_to(root).as_posix() + '.in')
-            retained.parent.mkdir(parents=True)
+            retained.parent.mkdir(parents=True, exist_ok=True)
             retained.write_bytes(baseline)
             admitted.write_bytes(b'package policy\nfunc Bridge() {}\n')
             with FROZEN_GO.frozen_module(root, 'test-') as (work, _, _):
@@ -73,8 +75,19 @@ class FrozenGoTests(unittest.TestCase):
             root = Path(directory)
             admitted = self.fixture(root)
             retained = root / 'preservation/oracle-files' / (admitted.relative_to(root).as_posix() + '.in')
-            retained.parent.mkdir(parents=True)
+            retained.parent.mkdir(parents=True, exist_ok=True)
+            retained.unlink()
             retained.symlink_to(admitted)
             with self.assertRaisesRegex(ValueError, 'aliased frozen source'):
                 with FROZEN_GO.frozen_module(root, 'test-'):
                     self.fail('alias admitted')
+
+    def test_missing_archive_never_falls_back_to_live_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            admitted = self.fixture(root)
+            (root / "preservation/oracle-files/internal/policy/policy.go.in").unlink()
+            self.assertTrue(admitted.exists())
+            with self.assertRaises(FileNotFoundError):
+                with FROZEN_GO.frozen_module(root, "test-"):
+                    self.fail("live source admitted")

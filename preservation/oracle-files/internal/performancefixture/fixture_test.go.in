@@ -1,0 +1,175 @@
+package performancefixture
+
+import (
+	"context"
+	"image/png"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
+	"github.com/01max/librairii/internal/storage"
+)
+
+func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
+	t.Parallel()
+
+	layout, err := storage.Initialize(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	opened, err := database.Open(
+		context.Background(),
+		filepath.Join(layout.Database, "librairii.sqlite3"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = opened.Close()
+	})
+	fixture, err := Generate(
+		context.Background(),
+		opened.Writer(),
+		layout,
+		MinimumLargeLibraryStories,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fixture.StoryCount != MinimumLargeLibraryStories ||
+		len(fixture.CollectionIDs) != 6 ||
+		len(fixture.EmbeddedArtworkPaths) != SyntheticArtworkVariants {
+		t.Fatalf("Generate() = %#v", fixture)
+	}
+	var storyCount int
+	var officialCount int
+	var collectionCount int
+	var nonSyntheticCount int
+	if err := opened.SQL().QueryRow(
+		"SELECT COUNT(*) FROM stories",
+	).Scan(&storyCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := opened.SQL().QueryRow(
+		"SELECT COUNT(*) FROM official_story_metadata",
+	).Scan(&officialCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := opened.SQL().QueryRow(
+		"SELECT COUNT(*) FROM collections",
+	).Scan(&collectionCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := opened.SQL().QueryRow(
+		`SELECT COUNT(*)
+		 FROM stories
+		 WHERE embedded_title NOT LIKE 'Synthetic %'
+		    OR embedded_description NOT LIKE 'Copyright-free synthetic %'`,
+	).Scan(&nonSyntheticCount); err != nil {
+		t.Fatal(err)
+	}
+	if storyCount != MinimumLargeLibraryStories ||
+		officialCount != MinimumLargeLibraryStories ||
+		collectionCount != len(fixture.CollectionIDs) ||
+		nonSyntheticCount != 0 {
+		t.Fatalf(
+			"counts = stories:%d official:%d collections:%d nonSynthetic:%d",
+			storyCount,
+			officialCount,
+			collectionCount,
+			nonSyntheticCount,
+		)
+	}
+	for _, relative := range fixture.EmbeddedArtworkPaths {
+		if !strings.HasPrefix(relative, "catalog/embedded/") {
+			t.Fatalf("embedded artwork path = %q", relative)
+		}
+		file, err := os.Open(filepath.Join(layout.Root, filepath.FromSlash(relative)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		config, decodeErr := png.DecodeConfig(file)
+		closeErr := file.Close()
+		if decodeErr != nil {
+			t.Fatal(decodeErr)
+		}
+		if closeErr != nil {
+			t.Fatal(closeErr)
+		}
+		if config.Width != SyntheticArtworkWidth ||
+			config.Height != SyntheticArtworkHeight {
+			t.Fatalf("artwork dimensions = %dx%d", config.Width, config.Height)
+		}
+	}
+	official, err := metadata.NewLibraryProvider(
+		metadata.NewRepository(opened.SQL()),
+		metadata.DefaultLocale,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstPage, err := library.NewQuery(opened.SQL(), official).Search(
+		context.Background(),
+		library.StoryLibraryQuery{
+			Page:     1,
+			PageSize: library.DefaultPageSize,
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstPageArtwork := make(map[string]struct{}, len(firstPage.Stories))
+	for _, story := range firstPage.Stories {
+		firstPageArtwork[story.ArtworkID] = struct{}{}
+	}
+	if len(firstPageArtwork) != len(firstPage.Stories) {
+		t.Fatalf(
+			"measured first-page distinct artwork IDs = %d, want %d",
+			len(firstPageArtwork),
+			len(firstPage.Stories),
+		)
+	}
+	plans, err := QueryPlans(context.Background(), opened.SQL())
+	if err != nil {
+		t.Fatal(err)
+	}
+	combinedPlan := strings.Join(plans["combinedFilters"], "\n")
+	if !strings.Contains(combinedPlan, "idx_story_archives_validation_story") && !strings.Contains(combinedPlan, "sqlite_autoindex_story_archives_1") {
+		t.Fatalf("combined plan omitted indexed archive lookup:\n%s", combinedPlan)
+	}
+	var flags, reserved int
+	if err := opened.SQL().QueryRow("SELECT count(*) FROM stories WHERE is_broken=1").Scan(&flags); err != nil {
+		t.Fatal(err)
+	}
+	if err := opened.SQL().QueryRow("SELECT count(*) FROM tag_definitions WHERE source='builtin' AND normalized_key='broken'").Scan(&reserved); err != nil {
+		t.Fatal(err)
+	}
+	if flags != MinimumLargeLibraryStories/7 || reserved != 0 {
+		t.Fatalf("fixture flags=%d, reserved=%d", flags, reserved)
+	}
+
+	for _, index := range []string{
+		"idx_official_metadata_language_story",
+		"idx_story_tag_assignments_filter",
+	} {
+		if !strings.Contains(combinedPlan, index) {
+			t.Fatalf("combined plan omitted %s:\n%s", index, combinedPlan)
+		}
+	}
+	if got := strings.Join(plans["substringSearch"], "\n"); !strings.Contains(
+		got,
+		"idx_stories_display_name_normalized",
+	) {
+		t.Fatalf("substring plan omitted normalized-name index:\n%s", got)
+	}
+	if got := strings.Join(plans["artworkLoad"], "\n"); !strings.Contains(
+		got,
+		"INTEGER PRIMARY KEY",
+	) {
+		t.Fatalf("artwork plan omitted primary-key lookup:\n%s", got)
+	}
+}

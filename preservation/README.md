@@ -1,9 +1,11 @@
 # Frozen Go product contract
 
-Task17's compatibility bridge changes maintained Go files. Their original bytes
-are retained under `oracle-files/` before editing. `scripts/frozen_go.py` uses
-these copies only after checking the unchanged `oracle-source.json` checksums;
-bridge additions and changed behavior never enter the historical oracle module.
+The optional historical Go generators use the complete original module retained
+under `oracle-files/`. Every selected `internal/`, `go.mod` and `go.sum` byte is
+checked against the unchanged `oracle-source.json`; `scripts/frozen_go.py` has
+no working-tree fallback. These are inert reference inputs, not the maintained
+application. Normal Rust build/test/package commands do not require Go or Node.
+The original complete checkout remains reconstructible from the pinned Git commit.
 
 This directory is section 1 of `rewrite-in-rust-native-desktop`. It preserves the working product as an oracle; it does not qualify a Rust implementation or any new platform. The separate OpenSpec repository remains separate and is never vendored as a nested Git repository.
 
