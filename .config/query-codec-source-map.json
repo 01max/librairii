@@ -5815,6 +5815,32 @@
           ]
         },
         "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 647,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::old_namespace_files_are_ignored_without_becoming_native_directories",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 648,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::previous_native_v2_canonical_exclusions_reopen_and_reserve_current_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
       }
     ],
     "python": [

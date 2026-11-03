@@ -490,7 +490,6 @@ mod tests {
             .ok_or("data parent")?
             .join("unavailable old data");
         symlink("missing/../unavailable old data", &old_root)?;
-        let old_link = fs::read_link(&old_root)?;
         let cancel = WorkCancellation::default();
         let Startup::ConfirmFolder { suggested } = inspect_startup(&locations, &cancel) else {
             return Err("old links blocked startup".into());
@@ -514,10 +513,16 @@ mod tests {
         db.close()?;
         drop(db);
         native.finish().map_err(|f| f.to_string())?;
+        // Changing unrelated old link targets must not change native authority.
+        fs::remove_file(&old_root)?;
+        symlink("another unavailable old folder", &old_root)?;
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
         reopened.finish().map_err(|f| f.to_string())?;
         assert_eq!(fs::read_link(legacy)?, missing_profile);
-        assert_eq!(fs::read_link(&old_root)?, old_link);
+        assert_eq!(
+            fs::read_link(&old_root)?,
+            PathBuf::from("another unavailable old folder")
+        );
         assert!(!missing_profile.exists());
         assert!(!missing_data.exists());
         Ok(())
@@ -556,6 +561,98 @@ mod tests {
         );
         assert!(!selected.exists());
         assert_eq!(fs::read_link(&old_root)?, selected);
+        Ok(())
+    }
+    #[test]
+    fn old_namespace_files_are_ignored_without_becoming_native_directories() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let legacy = locations.legacy.as_ref().ok_or("legacy namespace")?;
+        let old_root = default_legacy_root(&locations)?;
+        fs::create_dir_all(legacy.parent().ok_or("profile parent")?)?;
+        fs::create_dir_all(old_root.parent().ok_or("data parent")?)?;
+        fs::write(legacy, b"old profile namespace is a file")?;
+        fs::write(&old_root, b"old data namespace is a file")?;
+        let cancel = WorkCancellation::default();
+        let Startup::ConfirmFolder { suggested } = inspect_startup(&locations, &cancel) else {
+            return Err("old files blocked startup".into());
+        };
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let preview = super::super::TargetPreview::inspect(
+            &suggested,
+            &[legacy, &old_root, &locations.native],
+            &cancel,
+        )?;
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            preview,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        reopened.finish().map_err(|f| f.to_string())?;
+        assert_eq!(fs::read(legacy)?, b"old profile namespace is a file");
+        assert_eq!(fs::read(&old_root)?, b"old data namespace is a file");
+        assert!(super::super::TargetPreview::inspect(legacy, &[], &cancel).is_err());
+        assert!(super::super::TargetPreview::inspect(&old_root, &[], &cancel).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn previous_native_v2_canonical_exclusions_reopen_and_reserve_current_aliases() -> TestResult {
+        use std::os::unix::fs::symlink;
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let old_root = default_legacy_root(&locations)?;
+        let old_target = roots.library().join("old default target");
+        fs::create_dir(&old_target)?;
+        let old_target = fs::canonicalize(old_target)?;
+        fs::create_dir_all(old_root.parent().ok_or("data parent")?)?;
+        symlink(&old_target, &old_root)?;
+        let cancel = WorkCancellation::default();
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let selected = roots.library().join("existing Rust library");
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            super::super::TargetPreview::inspect(&selected, &[&old_root], &cancel)?,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        // Reproduce the previous v2 constructor's persisted canonical spelling.
+        let state_path = selected.join(crate::native::NATIVE_STATE_FILE);
+        let mut state: serde_json::Value = serde_json::from_slice(&fs::read(&state_path)?)?;
+        assert_eq!(state["version"], 2);
+        state["source_root"] = serde_json::json!(old_target);
+        state["root_policy"]["legacy_roots"] = serde_json::json!([old_target]);
+        fs::write(&state_path, serde_json::to_vec(&state)?)?;
+        let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        reopened.finish().map_err(|f| f.to_string())?;
+        fs::remove_file(&old_root)?;
+        symlink("unrelated missing old folder", &old_root)?;
+        let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        reopened.finish().map_err(|f| f.to_string())?;
+        let state = fs::read(&state_path)?;
+        let database = fs::read(selected.join("db/librairii.sqlite3"))?;
+        // Historical spelling must never exempt a new alias to native data.
+        fs::remove_file(&old_root)?;
+        symlink(&selected, &old_root)?;
+        assert!(crate::native::NativeLibrary::reopen(&store, &locations, &cancel).is_err());
+        assert_eq!(fs::read(&state_path)?, state);
+        assert_eq!(fs::read(selected.join("db/librairii.sqlite3"))?, database);
         Ok(())
     }
 }

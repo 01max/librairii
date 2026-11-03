@@ -1881,7 +1881,9 @@ mod owned {
             .parent()
             .ok_or(StorageError::PathEscape)?
             .join(name);
-        Ok(crate::settings::target::resolve_exclusion(&root)?.0)
+        // Persist the fixed reservation name, not an old link's mutable target.
+        // Actual aliases are projected/revalidated at each effect boundary.
+        Ok(root)
     }
     impl RootPolicy {
         fn for_source(source: &Path, locations: &ProfileLocations) -> Result<Self> {
@@ -1906,10 +1908,14 @@ mod owned {
     ) -> Result<()> {
         use crate::settings::target::{physical_contains, physical_overlap, resolve_exclusion};
         let (native, data) = namespace_roots(store, locations)?;
-        if !policy
-            .legacy_roots
-            .contains(&exact_path(&legacy_default_root(locations)?)?)
-            || !policy.legacy_roots.contains(&exact_path(source)?)
+        // Earlier v2 records stored the canonical old default; newer records
+        // retain its fixed name. Enforce today's exclusion independently of
+        // that spelling, while retaining every recorded source exclusion.
+        if !policy.legacy_roots.contains(&exact_path(source)?)
+            || physical_overlap(
+                root,
+                &resolve_exclusion(&legacy_default_root(locations)?)?.0,
+            )?
             || physical_overlap(root, &native)?
             || physical_contains(root, &data)?
         {

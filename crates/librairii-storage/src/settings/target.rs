@@ -455,7 +455,21 @@ pub(crate) fn resolve_exclusion(path: &Path) -> Result<(PathBuf, PathBuf, Vec<Os
         }
         Ok(projected)
     }
-    resolve(&project(path, &mut 40)?, false)
+    let projected = project(path, &mut 40)?;
+    // A malformed old namespace may be a file rather than a directory. Reserve
+    // that leaf without opening it or treating it as a candidate directory.
+    if fs::symlink_metadata(&projected).is_ok_and(|metadata| !metadata.is_dir()) {
+        let parent = projected
+            .parent()
+            .ok_or(StorageError::SettingsDestination)?;
+        let (parent, _, _) = resolve(parent, false)?;
+        let name = projected
+            .file_name()
+            .ok_or(StorageError::SettingsDestination)?
+            .to_owned();
+        return Ok((parent.join(&name), parent, vec![name]));
+    }
+    resolve(&projected, false)
 }
 
 /// Resolve through existing ancestors while retaining a missing tail. Existing
