@@ -3,8 +3,9 @@
 Task 20.2 prepares a removal manifest. It does **not** retire any runtime,
 select a release candidate, approve cutover or complete Tasks 20.1/20.3–20.5.
 Signing/final-byte qualification and the historical P58 performance hold remain
-open. The next execution of this plan belongs in a separately reviewed retirement
-PR after the complete release rehearsal and the owner's cutover decision.
+open. Task 20 uses one dedicated branch/PR, with dedicated commits for its
+subtasks. Execution of this plan remains gated on the complete release rehearsal
+and the owner's cutover decision; completing20.2 does not complete Task20.
 
 ## Exact inventory
 
@@ -148,3 +149,34 @@ and feature declarations are unchanged; no audit waiver, acceptance relaxation
 or retirement action is added. The inventory remains explicitly bound to its
 original integration snapshot. Fresh native checks must validate the corrected
 graph; earlier observations do not qualify it or resolve P58.
+
+## Linux pointer-latency investigation
+
+Corrected dependency source `adcc898d637047037791d59ebea4bed14c215af4`
+failed the unchanged Linux method2 pointer wall-time gate: desktop p95
+103.715590ms and loaded resource p95 121.320197ms against100ms. Each cohort
+retains64 samples with four over100ms. The raw archive/provider SHA256 and
+independent reviews remain preserved; this observation cannot be rescored.
+
+The follow-up records pre-`xdotool` launch, process return and state-observation
+monotonic timestamps alongside the existing uniquely numbered native callback.
+All64 clock handshakes occur after the complete input/navigation workload and
+constrain one conservative clock-offset interval. The diagnostic distinguishes
+process lifetime from callback bounds and callback-to-observation bounds.
+Process return is not the event-post timestamp: process lifetime may overlap
+application handling and must not be subtracted as pure posting overhead.
+Callback-to-observation includes state publication and observer scheduling;
+it does not distinguish those mechanisms by itself.
+
+Acceptance remains method2's complete post-to-state wall interval,64 input and
+pointer samples,20 cold navigation samples and unchanged100/3000ms limits.
+Integer nanosecond timestamps avoid float clock subtraction; no sample is
+trimmed or retried. Diagnostic callback bounds never replace acceptance values.
+Raw cohorts are written before synchronization so a diagnostic error cannot
+hide an already measured failure. The final joined native event log must be
+checked against every diagnostic acknowledgement before interpreting results.
+
+The hypotheses are posting/process delay, actual UI handling delay and
+publication/observer delay. A fresh passing run alone proves none of them and
+cannot close this failure or the separate historical P58 hold. Any correction
+must follow the measured cause and retain both old and new evidence.
