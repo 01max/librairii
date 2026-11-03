@@ -18,7 +18,7 @@ spec.loader.exec_module(relocation)
 
 
 class RelocationCustody(unittest.TestCase):
-    def exercise(self, *, primary=True, cleanup=False, attach=False):
+    def exercise(self, *, primary=True, cleanup=False, attach=False, receipt_copy=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             binary = root / 'rehearsal'
@@ -30,6 +30,8 @@ class RelocationCustody(unittest.TestCase):
             example.write_bytes(b'test example')
             work = root / 'owned-work'
             work.mkdir()
+            if receipt_copy:
+                (work / 'disposal.json').write_text('[]')
             old_stat = Path.stat
 
             def stat(path, *args, **kwargs):
@@ -51,13 +53,13 @@ class RelocationCustody(unittest.TestCase):
                 return SimpleNamespace(stdout='false\n' if argv[0] == 'git' and 'status' in argv else '')
 
             failure = None
-            with patch.object(relocation, 'ROOT', root), patch.object(relocation.tempfile, 'mkdtemp', return_value=str(work)), patch.object(relocation.platform, 'system', return_value='Darwin'), patch.object(relocation, 'run', side_effect=run), patch.object(relocation, 'detach_owned_image', side_effect=RuntimeError('cleanup detach failure') if cleanup else None, return_value=False) as detach, patch.object(Path, 'stat', stat), redirect_stdout(io.StringIO()):
+            with patch.object(relocation, 'ROOT', root), patch.object(relocation.tempfile, 'mkdtemp', return_value=str(work)), patch.object(relocation.platform, 'system', return_value='Darwin'), patch.object(relocation, 'run', side_effect=run), patch.object(relocation, 'detach_owned_image', side_effect=RuntimeError('cleanup detach failure') if cleanup else None, return_value=False) as detach, patch.object(Path, 'stat', stat), redirect_stdout(io.StringIO()), patch.object(relocation.shutil, 'copy2', side_effect=OSError('receipt unavailable') if receipt_copy else None):
                 try:
                     relocation.main()
                 except Exception as error:
                     failure = error
             detach.assert_called_once_with(work / 'mounted', work / 'owned.sparseimage')
-            if primary or cleanup or attach:
+            if primary or cleanup or attach or receipt_copy:
                 self.assertIsNotNone(failure)
                 self.assertTrue(work.is_dir(), 'uncertain/failed rehearsal must retain its owned image and fixtures')
                 self.assertEqual((work / 'owned.sparseimage').read_bytes(), b'owned image')
@@ -69,6 +71,8 @@ class RelocationCustody(unittest.TestCase):
                     self.assertIn('primary', receipt['primary_error'])
                 if cleanup:
                     self.assertIn('cleanup detach failure', receipt['cleanup_error'])
+                if receipt_copy:
+                    self.assertIn('receipt', receipt['cleanup_error'] + str(receipt['cleanup_notes']))
                 if primary:
                     self.assertIn('primary SQLite I/O failure', str(failure.__cause__))
                 self.assertFalse((root / 'target/quality/native-relocation.json').exists())
@@ -91,6 +95,11 @@ class RelocationCustody(unittest.TestCase):
 
     def test_cleanup_failure_after_success_retains_image(self):
         self.exercise(primary=False, cleanup=True)
+
+    def test_receipt_copy_failure_retains_primary_and_cleanup_errors(self):
+        self.exercise(primary=True, cleanup=True, receipt_copy=True)
+        self.exercise(primary=True, receipt_copy=True)
+        self.exercise(primary=False, receipt_copy=True)
 
     def test_failed_real_child_retains_both_streams_and_original_status(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -185,6 +194,15 @@ class ImageDisposal(unittest.TestCase):
                 # Before the fix the wrapper refuses the stale mountpoint,
                 # without consulting the available positive disposal evidence.
                 self.assertFalse(relocation.detach_owned_image(mount, image))
+
+    def test_receipt_write_failure_does_not_replace_cleanup_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mount = Path(directory) / 'mounted'
+            image = Path(directory) / 'owned.sparseimage'
+            with patch.object(relocation, 'run', side_effect=RuntimeError('original inventory failure')), patch.object(Path, 'write_text', side_effect=OSError('receipt unavailable')):
+                with self.assertRaisesRegex(RuntimeError, 'original inventory failure') as caught:
+                    relocation.detach_owned_image(mount, image)
+            self.assertIn('receipt unavailable', str(caught.exception.__notes__))
 
 
 if __name__ == '__main__':

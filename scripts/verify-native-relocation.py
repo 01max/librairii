@@ -54,6 +54,7 @@ def detach_owned_image(mount, image):
     """Detach only the owned image, verifying disposal independently of exit status."""
     observations = []
     forced = False
+    failure = None
 
     def inventory():
         result = run(["hdiutil", "info", "-plist"], stdout=subprocess.PIPE, timeout=30)
@@ -112,8 +113,16 @@ def detach_owned_image(mount, image):
                 raise RuntimeError(f'owned image remains attached after detach: {result.stderr.strip()}')
             time.sleep(attempt + 1)
         raise RuntimeError('owned image disposal incomplete')
+    except Exception as error:
+        failure = error
+        raise
     finally:
-        (image.parent / 'disposal.json').write_text(json.dumps(observations, indent=2) + '\n')
+        try:
+            (image.parent / 'disposal.json').write_text(json.dumps(observations, indent=2) + '\n')
+        except OSError as error:
+            if failure is None:
+                raise RuntimeError(f'owned image disposal receipt write failed: {error}') from error
+            failure.add_note(f'owned image disposal receipt write also failed: {error}')
 
 
 def main():
@@ -196,8 +205,14 @@ def main():
             disposal = work / 'disposal.json'
             if disposal.is_file():
                 output = ROOT / 'target/quality/native-relocation-disposal.json'
-                output.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(disposal, output)
+                try:
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(disposal, output)
+                except OSError as error:
+                    if cleanup is None:
+                        cleanup = RuntimeError(f'disposal receipt copy failed: {error}')
+                    else:
+                        cleanup.add_note(f'disposal receipt copy also failed: {error}')
             if primary is not None or cleanup is not None:
                 try:
                     current_device = mount.stat().st_dev
@@ -207,18 +222,30 @@ def main():
                            "mount": str(mount), "source": str(source), "mount_attempted": mounted,
                            "mounted_device": mount_device, "current_mount_device": current_device,
                            "owned_volume_detached": detached, "primary_error": repr(primary) if primary else None,
-                           "cleanup_error": repr(cleanup) if cleanup else None}
+                           "cleanup_error": repr(cleanup) if cleanup else None,
+                           "cleanup_notes": getattr(cleanup, '__notes__', [])}
                 output = ROOT / "target/quality/native-relocation-failure.json"
-                output.parent.mkdir(parents=True, exist_ok=True)
+                diagnostic_errors = []
+                try:
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                except OSError as error:
+                    diagnostic_errors.append(f'failure receipt directory: {error}')
                 # These files are outside the mounted tree. Retain them in the
                 # CI artifact even though the disposable runner will disappear.
                 for name in ("stdout", "stderr"):
                     stream = work / ("rehearsal." + name)
                     if stream.is_file():
-                        shutil.copy2(stream, output.with_suffix("." + name))
-                output.write_text(json.dumps(failure, indent=2) + "\n")
-                (work / "failure.json").write_text(json.dumps(failure, indent=2) + "\n")
-                raise RuntimeError(f"Native relocation failed; owned evidence retained at {work}; primary={primary!r}; cleanup={cleanup!r}") from (primary if primary is not None else cleanup)
+                        try:
+                            shutil.copy2(stream, output.with_suffix("." + name))
+                        except OSError as error:
+                            diagnostic_errors.append(f'{name} retention: {error}')
+                failure['diagnostic_errors'] = diagnostic_errors
+                for receipt in (output, work / 'failure.json'):
+                    try:
+                        receipt.write_text(json.dumps(failure, indent=2) + '\n')
+                    except OSError as error:
+                        diagnostic_errors.append(f'{receipt.name} retention: {error}')
+                raise RuntimeError(f"Native relocation failed; owned workspace retained at {work}; primary={primary!r}; cleanup={cleanup!r}; diagnostics={diagnostic_errors!r}") from (primary if primary is not None else cleanup)
         evidence["owned_volume_detached"] = True
         evidence["owned_volume_detach_forced"] = forced
         output = ROOT / "target/quality/native-relocation.json"
