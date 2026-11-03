@@ -48,6 +48,10 @@ def perform(driver, fixture, result, french):
     driver.picker(fixture.candidate)
     driver.press('Create library in this folder')
     driver.wait(lambda: fixture.current_root() == fixture.candidate)
+    # Profile publication precedes the closed-library handoff. A read-only
+    # SQLite connection in that gap can recreate WAL/SHM files and prevent
+    # closure. This control appears only once the live library owns the DB.
+    driver.wait(lambda: driver.find('Change library folder…', actionable=True))
     if fixture.rows('SELECT uuid FROM stories'):
         raise ValueError('fresh setup imported pre-existing stories')
     observe('setup', {'root': str(fixture.current_root()), 'fresh_library': True,

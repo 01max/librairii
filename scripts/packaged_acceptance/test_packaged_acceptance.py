@@ -24,6 +24,64 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_fresh_setup_observer_waits_for_library_before_opening_sqlite(self):
+        from packaged_acceptance.workflow import perform
+        class ReachedImport(Exception):
+            pass
+        # Replay the real publication/close/open boundary: a read-only WAL
+        # connection in the gap leaves sidecars even after its own close.
+        for french in (False, True):
+            with self.subTest(french=french), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                fixture = Fixture.__new__(Fixture)
+                fixture.library = root/'library'
+                fixture.candidate = fixture.library/'candidate'
+                fixture.native_profile = root/'profile'
+                fixture.legacy = None
+                fixture.candidate.mkdir(parents=True)
+                fixture.native_profile.mkdir()
+                database = fixture.candidate/'db/librairii.sqlite3'
+                database.parent.mkdir()
+                with closing(sqlite3.connect(database)) as writer:
+                    writer.execute('PRAGMA journal_mode=WAL')
+                    writer.execute('CREATE TABLE stories(uuid TEXT)')
+                    writer.execute('CREATE TABLE file_operations(id INTEGER)')
+                    writer.commit()
+                profile = fixture.native_profile/'settings.json'
+                profile.write_text(json.dumps({'root': str(fixture.candidate), 'language': 'en'}))
+                opened = []
+                def find(name, **options):
+                    if name == 'Change library folder…':
+                        self.assertTrue(options.get('actionable'))
+                        self.assertEqual(list(database.parent.iterdir()), [database],
+                                         'observer created sidecars before native close')
+                        writer = sqlite3.connect(database)
+                        writer.execute('SELECT * FROM stories').fetchall()
+                        opened.append(writer)
+                    return True
+                def press(name, **_):
+                    if name == 'Français':
+                        profile.write_text(json.dumps({'root': str(fixture.candidate), 'language': 'fr'}))
+                    if name in ('Import…', 'Importer…'):
+                        raise ReachedImport
+                def snapshot(*_):
+                    if not opened:
+                        sidecars = list(database.parent.glob('librairii.sqlite3-*'))
+                        self.fail('storage.closed_snapshot_required: observer left '+str(sidecars))
+                driver = SimpleNamespace(wait=lambda predicate, **_: predicate(),
+                                         find=find, press=press, picker=lambda _: None,
+                                         snapshot=snapshot)
+                result = {'checks': {}}
+                try:
+                    with self.assertRaises(ReachedImport):
+                        perform(driver, fixture, result, french)
+                    self.assertTrue(result['checks']['setup']['fresh_library'])
+                    self.assertEqual(result['checks']['language']['persisted'], 'fr' if french else 'en')
+                finally:
+                    for writer in opened:
+                        writer.close()
+                self.assertEqual(list(database.parent.iterdir()), [database])
+
     def test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window(self):
         from packaged_acceptance.linux import Driver
         from subprocess import CalledProcessError, TimeoutExpired
