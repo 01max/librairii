@@ -50,6 +50,26 @@ unchanged performance budgets must pass on that source. Source review and
 headless checks do not substitute for those results. Preserve failed runs with
 their original verdicts when recording a corrected run.
 
+The first Rust-only CI source, `db624e2c6e64ab62ff873265bfa8b4142f55706e`,
+built all three packages. ARM/Linux scale and Intel installed workflows passed.
+Workspace/deep checks exposed an unused copy-binding route, incomplete test
+close lifecycles and a missing explicit frozen-copy source-journal guard.
+Installed ARM/Linux checks also caught the observer querying SQLite between
+profile publication and the live-library handoff: even its read-only connection
+left WAL/SHM files. Separate commits correct these paths; a real SQLite workflow
+replay fails before the observer fix and passes afterward in both languages.
+The optional signing helper now consumes the actual installation text rather
+than a stale format. Both free Mac instruction documents remain byte-identical.
+The corrected headless suite contains **136 passing tests**; these checks do not
+exercise native apps or Apple signing services.
+
+That first source's Intel resource warmup failed startup at **2740.975 ms**
+against **1000 ms**. Idle CPU (**2.358%**) and peak RSS (**127,389,696 bytes**)
+passed. Both independent evidence reviews verified the archive, source and
+1,193 resource seals; no measurement defect or causal fix was established.
+Only one of eight resource pairs completed, so its four passing display runs
+do not establish resource qualification. The original failed verdict remains.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid
