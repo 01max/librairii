@@ -223,6 +223,6 @@ def audit(input_path, output_path):
               'numerical_acceptance_verified': False, 'public_release_qualified': False,
               'limitations': ['Named cases and selected fields are observed, not a proof that every contract subcase is covered.',
                               'Review raw assertions, images, spoken audio, recovery and numerical traces independently.',
-                              'Unsigned observations cannot close final signed-byte or promotion gates.']}
+                              'Ad-hoc observations do not authorize promotion; optional paid signatures require their own final-byte checks.']}
     write_json(output_path, result)
     return result

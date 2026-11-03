@@ -12,7 +12,7 @@ import tempfile
 
 from .files import copy_tree, digest, fresh_output, regular, write_json
 from .identity import clean_source, runtime_host
-from . import install, package
+from . import install, macos, package
 
 
 def selection(root, directory, source, target, expected_sha256):
@@ -153,9 +153,8 @@ def sign(root, directory, source, target, expected_sha256, requested_output, key
     app = image/'Librairii.app'
     install_text = image/'INSTALL.txt'
     text = install_text.read_text()
-    warning = ('This internal candidate uses an ad-hoc signature. It is NOT Developer ID\n'
-               'signed, notarized, stapled or qualified for public distribution.\n')
-    if warning not in text:
+    warning = macos.AD_HOC_NOTICE
+    if text.count(warning) != 1:
         raise ValueError('unsigned install instructions differ from the reviewed candidate format')
     install_text.write_text(text.replace(warning, 'This application and disk image carry Developer ID signatures and stapled\n'
                                         'notarization tickets. Installed GUI qualification is recorded separately.\n'))

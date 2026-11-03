@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_release import signing, package
+from native_release import signing, package, macos
 
 
 class Signing(unittest.TestCase):
@@ -22,9 +22,8 @@ class Signing(unittest.TestCase):
             prepared = root/'prepared'
             (prepared/'Librairii.app/Contents').mkdir(parents=True)
             (prepared/'Librairii.app/Contents/data').write_bytes(b'candidate bytes, never executed')
-            (prepared/'INSTALL.txt').write_text('This internal candidate uses an ad-hoc signature. It is NOT Developer ID\n'
-                                              'signed, notarized, stapled or qualified for public distribution.\n')
             release = {'version':'0.5.0','target':'aarch64-apple-darwin'}
+            (prepared/'INSTALL.txt').write_text(macos.install_instructions(release))
             with patch.object(signing,'selection',return_value=release), \
                  patch.object(signing.install,'artifact_record',return_value=(root/'unsigned.dmg',release)), \
                  patch.object(signing.install,'copy_payload',return_value=(prepared,root/'never-executed')), \
@@ -38,6 +37,11 @@ class Signing(unittest.TestCase):
                                              'target/native-release/signed',root/'keychain','profile','ABCDEFGHIJ','C'*40)['sealed'])
                 execute_inspection.assert_not_called()
                 execute_identity.assert_not_called()
+                instructions = (root/'target/native-release/signed/image/INSTALL.txt').read_text()
+                self.assertNotIn(macos.AD_HOC_NOTICE, instructions)
+                self.assertIn('Developer ID signatures and stapled\nnotarization tickets.', instructions)
+                self.assertIn('Old Go libraries and settings are not imported; start with a new folder.', instructions)
+                self.assertIn('Keep your independent native profile, library, backups', instructions)
 
     def test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci(self):
         path = Path(__file__).resolve().parents[1]/'sign-native-macos.py'
