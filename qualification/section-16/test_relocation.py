@@ -1,6 +1,9 @@
 """Exercise the real wrapper's ownership/error paths without mounting a volume."""
 import importlib.util
+from contextlib import redirect_stdout
+import io
 import json
+import plistlib
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
@@ -48,12 +51,12 @@ class RelocationCustody(unittest.TestCase):
                 return SimpleNamespace(stdout='false\n' if argv[0] == 'git' and 'status' in argv else '')
 
             failure = None
-            with patch.object(relocation, 'ROOT', root), patch.object(relocation.tempfile, 'mkdtemp', return_value=str(work)), patch.object(relocation.platform, 'system', return_value='Darwin'), patch.object(relocation, 'run', side_effect=run), patch.object(relocation, 'detach_owned_image', side_effect=RuntimeError('cleanup detach failure') if cleanup else None, return_value=False) as detach, patch.object(Path, 'stat', stat):
+            with patch.object(relocation, 'ROOT', root), patch.object(relocation.tempfile, 'mkdtemp', return_value=str(work)), patch.object(relocation.platform, 'system', return_value='Darwin'), patch.object(relocation, 'run', side_effect=run), patch.object(relocation, 'detach_owned_image', side_effect=RuntimeError('cleanup detach failure') if cleanup else None, return_value=False) as detach, patch.object(Path, 'stat', stat), redirect_stdout(io.StringIO()):
                 try:
                     relocation.main()
                 except Exception as error:
                     failure = error
-            detach.assert_called_once_with(work / 'mounted')
+            detach.assert_called_once_with(work / 'mounted', work / 'owned.sparseimage')
             if primary or cleanup or attach:
                 self.assertIsNotNone(failure)
                 self.assertTrue(work.is_dir(), 'uncertain/failed rehearsal must retain its owned image and fixtures')
@@ -99,6 +102,88 @@ class RelocationCustody(unittest.TestCase):
             self.assertEqual(caught.exception.returncode, 9)
             self.assertEqual((work / 'rehearsal.stdout').read_text(), 'partial output\n')
             self.assertEqual((work / 'rehearsal.stderr').read_text(), 'original disk I/O error\n')
+
+
+class ImageDisposal(unittest.TestCase):
+    def exercise(self, snapshots, exits, *, mounted=False, error=None):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            mount, image = work / 'mounted', work / 'owned.sparseimage'
+            mount.mkdir()
+            image.touch()
+            calls = []
+            snapshots = iter(snapshots)
+            exits = iter(exits)
+
+            def command(argv, **kwargs):
+                calls.append(argv)
+                if argv == ['hdiutil', 'info', '-plist']:
+                    devices = next(snapshots)
+                    rows = [{'image-path': '/unrelated/image.dmg', 'system-entities': [{'dev-entry': '/dev/disk99'}]}]
+                    if devices is not None:
+                        rows.append({'image-path': str(image), 'system-entities': devices})
+                    return subprocess.CompletedProcess(argv, 0, plistlib.dumps({'images': rows}).decode(), '')
+                return subprocess.CompletedProcess(argv, next(exits), '', 'simulated detach status')
+
+            with patch.object(relocation.subprocess, 'run', side_effect=command), patch.object(relocation.time, 'sleep'), patch.object(relocation.os.path, 'ismount', return_value=mounted):
+                if error:
+                    with self.assertRaisesRegex(RuntimeError, error):
+                        relocation.detach_owned_image(mount, image)
+                    result = None
+                else:
+                    result = relocation.detach_owned_image(mount, image)
+            receipt = json.loads((work / 'disposal.json').read_text())
+            self.assertNotIn('/unrelated/', json.dumps(receipt))
+            self.assertFalse(any('/dev/disk99' in c for c in calls))
+            return result, calls
+
+    def test_unmounted_but_attached_image_uses_its_backing_device(self):
+        device = [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4'}]
+        forced, calls = self.exercise([device, None], [0])
+        self.assertFalse(forced)
+        self.assertIn(['hdiutil', 'detach', '/dev/disk4'], calls)
+
+    def test_failed_command_with_verified_disposal_is_not_a_false_failure(self):
+        device = [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4'}]
+        self.assertFalse(self.exercise([device, None], [1])[0])
+
+    def test_success_exit_without_disposal_still_fails(self):
+        device = [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4'}]
+        self.exercise([device, device], [0], error='remains attached')
+
+    def test_missing_inventory_match_does_not_override_mounted_path(self):
+        self.exercise([None], [], mounted=True, error='mountpoint still uncertain')
+
+    def test_ambiguous_or_missing_backing_device_refuses(self):
+        for devices in [[], [{'dev-entry': '/dev/disk4'}],
+                        [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4s1'}],
+                        [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4'}] * 2]:
+            with self.subTest(devices=devices):
+                self.exercise([devices], [], error='unique owned image backing device')
+
+    def test_busy_retry_refreshes_owned_identity_before_force(self):
+        devices = [[{'content-hint': 'GUID_partition_scheme', 'dev-entry': f'/dev/disk{n}'}] for n in range(4, 8)]
+        forced, calls = self.exercise([devices[0], devices[0], devices[1], devices[1],
+                                      devices[2], devices[2], devices[3], None], [16, 16, 16, 0])
+        self.assertTrue(forced)
+        self.assertIn(['hdiutil', 'detach', '-force', '/dev/disk7'], calls)
+
+    def test_already_detached_image_requires_positive_inventory_and_mount_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mount = Path(directory) / 'mounted'
+            mount.mkdir()
+            image = Path(directory) / 'owned.sparseimage'
+            image.touch()
+
+            def command(argv, **kwargs):
+                if argv == ['hdiutil', 'info', '-plist']:
+                    return subprocess.CompletedProcess(argv, 0, plistlib.dumps({'images': []}).decode(), '')
+                return subprocess.CompletedProcess(argv, 1, '', 'hdiutil: detach failed - No such file or directory')
+
+            with patch.object(relocation.subprocess, 'run', side_effect=command):
+                # Before the fix the wrapper refuses the stale mountpoint,
+                # without consulting the available positive disposal evidence.
+                self.assertFalse(relocation.detach_owned_image(mount, image))
 
 
 if __name__ == '__main__':

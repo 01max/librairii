@@ -11,6 +11,8 @@ import json
 import os
 from pathlib import Path
 import platform
+import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -48,20 +50,62 @@ def rehearse(binary, source, mount, work):
                 (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
 
 
-def detach_owned_image(mount):
-    # macOS indexing/disk arbitration can retain the just-tested image after
-    # every rehearsal process has exited. Only our fresh image's mountpoint is
-    # accepted here; no ambient device/volume discovery or detach is performed.
-    for attempt in range(3):
-        result = subprocess.run(["hdiutil", "detach", str(mount)], text=True,
-                                capture_output=True, timeout=30)
-        if result.returncode == 0:
+def detach_owned_image(mount, image):
+    """Detach only the owned image, verifying disposal independently of exit status."""
+    observations = []
+    forced = False
+
+    def inventory():
+        result = run(["hdiutil", "info", "-plist"], stdout=subprocess.PIPE, timeout=30)
+        data = plistlib.loads(result.stdout.encode())
+        if not isinstance(data, dict) or not isinstance(data.get('images'), list):
+            raise RuntimeError('invalid disk image inventory')
+        matches = []
+        for row in data['images']:
+            if not isinstance(row, dict) or not isinstance(row.get('image-path'), str):
+                raise RuntimeError('invalid disk image identity')
+            if Path(row['image-path']).resolve() == image.resolve():
+                matches.append(row)
+        if len(matches) > 1:
+            raise RuntimeError('ambiguous owned image attachment')
+        # Retain only our image's observation, never ambient image metadata.
+        observations.append({'owned_image': matches[0] if matches else None})
+        return matches[0] if matches else None
+
+    def disposed(row):
+        if row is not None:
             return False
-        if result.returncode != 16:
-            raise RuntimeError(f"owned image detach failed: {result.stderr.strip()}")
-        time.sleep(attempt + 1)
-    run(["hdiutil", "detach", "-force", str(mount)], stdout=subprocess.PIPE, timeout=30)
-    return True
+        if mount.is_symlink() or os.path.ismount(mount) or mount.stat().st_dev != mount.parent.stat().st_dev:
+            raise RuntimeError('image absent but owned mountpoint still uncertain')
+        return True
+
+    try:
+        for attempt in range(4):
+            row = inventory()
+            if disposed(row):
+                return forced
+            entities = row.get('system-entities')
+            # Our APFS image was created with the default GUID partition map.
+            # Never guess a disk from a mountpoint or reuse a stale device ID.
+            if not isinstance(entities, list):
+                raise RuntimeError('owned image device inventory missing')
+            disks = [e.get('dev-entry') for e in entities if isinstance(e, dict)
+                     and e.get('content-hint') == 'GUID_partition_scheme']
+            if len(disks) != 1 or not isinstance(disks[0], str) or not re.fullmatch(r'/dev/disk[0-9]+', disks[0]):
+                raise RuntimeError('unique owned image backing device required')
+            forced = attempt == 3
+            command = ['hdiutil', 'detach'] + (['-force'] if forced else []) + [disks[0]]
+            result = subprocess.run(command, text=True, capture_output=True, timeout=30)
+            observations.append({'command': command, 'returncode': result.returncode,
+                                 'stdout': result.stdout, 'stderr': result.stderr})
+            if disposed(inventory()):
+                return forced
+            if result.returncode != 16 or forced:
+                raise RuntimeError(f'owned image remains attached after detach: {result.stderr.strip()}')
+            time.sleep(attempt + 1)
+        raise RuntimeError('owned image disposal incomplete')
+    finally:
+        (image.parent / 'disposal.json').write_text(json.dumps(observations, indent=2) + '\n')
 
 
 def main():
@@ -134,13 +178,18 @@ def main():
             if mounted:
                 try:
                     if system == "Darwin":
-                        forced = detach_owned_image(mount)
+                        forced = detach_owned_image(mount, image)
                     else:
                         run(["sudo", "-n", "umount", str(mount)])
                         forced = False
                     detached = True
                 except Exception as error:
                     cleanup = error
+            disposal = work / 'disposal.json'
+            if disposal.is_file():
+                output = ROOT / 'target/quality/native-relocation-disposal.json'
+                output.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(disposal, output)
             if primary is not None or cleanup is not None:
                 try:
                     current_device = mount.stat().st_dev
