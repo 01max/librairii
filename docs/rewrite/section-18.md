@@ -1,5 +1,11 @@
 # Task 18: native platform packages
 
+**Current owner scope (2026-11-03):** [fresh Rust state and free ad-hoc Mac
+packages](fresh-rust-contract.md) supersede this report's Go migration/rollback,
+retained-runtime and mandatory paid-signing requirements. Task 20 implements the
+retirement. The remaining content records earlier work and evidence; failed
+measurements and unfinished applicable package checks remain explicit.
+
 Integration base: `0e3b67da0af8836af4b89e3079c38a9997d0e7d8`.
 Branch `codex/rewrite-18-platform-packages` targets
 `rewrite-in-rust-native-desktop`.
