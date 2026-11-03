@@ -46,6 +46,9 @@ def wait(predicate, seconds=15):
 
 
 def linux_input(pid, output):
+    spec = importlib.util.spec_from_file_location('linux_dispatch', Path(__file__).with_name('linux_dispatch.py'))
+    diagnostic = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(diagnostic)
     xid = subprocess.check_output(['xdotool', 'search', '--sync', '--onlyvisible', '--pid', str(pid)], text=True, timeout=15).splitlines()[-1]
     subprocess.run(['xdotool', 'windowfocus', '--sync', xid], check=True, timeout=10)
     def key(value):
@@ -59,27 +62,31 @@ def linux_input(pid, output):
             wait(lambda: (s := state(output)) and (s['query_focused'] or s['focus_key'] != before['focus_key']))
         raise ValueError('native reverse Tab did not reach Search')
     search()
-    samples, input_states = [], []
+    samples, input_states, input_dispatch = [], [], []
     for n in range(64):
-        wait(lambda: state(output)['running_import'])
+        before = wait(lambda: (s := state(output)) and s['running_import'] and s)
         wanted = 'x' if n % 2 == 0 else ''
-        start = time.monotonic()
-        key('x' if n % 2 == 0 else 'BackSpace')
-        end = wait(lambda: (s := state(output)) and s['query'] == wanted and s, 1)
-        samples.append((time.monotonic() - start) * 1000)
+        end, duration, raw = diagnostic.observe(
+            lambda: key('x' if n % 2 == 0 else 'BackSpace'), lambda: state(output),
+            lambda s: s['query'] == wanted, before, 'search', n, wait)
+        samples.append(duration)
+        input_dispatch.append(raw)
         input_states.append(end)
         if not end['running_import']:
             raise ValueError('real import ended during input sample')
     point = json.loads(subprocess.check_output(['/usr/bin/python3', str(Path(__file__).with_name('resource-linux.py')), str(pid), '--point'], text=True, timeout=15))
     publish(output / 'pointer-target.json', json.dumps(point))
-    pointers, pointer_states = [], []
-    for _ in range(64):
+    pointers, pointer_states, pointer_dispatch = [], [], []
+    for n in range(64):
         search()
-        wait(lambda: state(output)['running_import'])
-        start = time.monotonic()
-        subprocess.run(['xdotool', 'mousemove', str(point['x']), str(point['y']), 'click', '--delay', '0', '1'], check=True, timeout=10)
-        end = wait(lambda: (s := state(output)) and s['focus_key'] == 31 and s, 1)
-        pointers.append((time.monotonic() - start) * 1000)
+        before = wait(lambda: (s := state(output)) and s['running_import'] and s)
+        if not before['query_focused'] or before['focus_key'] != 30:
+            raise ValueError('Linux pointer sample requires observed Search focus')
+        end, duration, raw = diagnostic.observe(
+            lambda: subprocess.run(['xdotool', 'mousemove', str(point['x']), str(point['y']), 'click', '--delay', '0', '1'], check=True, timeout=10),
+            lambda: state(output), lambda s: s['focus_key'] == 31, before, 'browser-focus', n, wait)
+        pointers.append(duration)
+        pointer_dispatch.append(raw)
         pointer_states.append(end)
         if not end['running_import']:
             raise ValueError('real import ended during pointer sample')
@@ -115,10 +122,18 @@ def linux_input(pid, output):
             endpoints.append(end)
         key('Home')
         wait(lambda: (s := state(output)) and s['selected_index'] == 0 and s['settled'])
-    return {'input_ms': samples, 'input_states': input_states, 'input_p95_ms': sorted(samples)[60],
+    measured = {'input_ms': samples, 'input_states': input_states, 'input_p95_ms': sorted(samples)[60],
             'pointer_ms': pointers, 'pointer_states': pointer_states, 'pointer_p95_ms': sorted(pointers)[60], 'pointer_target': point,
             'navigation_ms': navigation, 'navigation_p95_ms': sorted(navigation)[18], 'endpoints': endpoints,
             'method': 'pre-xdotool native post through actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End'}
+    measured['input_dispatch_samples'] = input_dispatch
+    measured['pointer_dispatch_samples'] = pointer_dispatch
+    # Retain the complete acceptance cohort even if diagnostic synchronization fails.
+    (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
+    measured['clock_calibrations'] = diagnostic.calibrate(output, publish, wait)
+    (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
+    measured['dispatch_diagnostics'] = diagnostic.summarize(measured, dispatch_protocol())
+    return measured
 
 
 def timed_arguments(binary, configuration, destination):
