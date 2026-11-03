@@ -173,8 +173,10 @@ pointer samples,20 cold navigation samples and unchanged100/3000ms limits.
 Integer nanosecond timestamps avoid float clock subtraction; no sample is
 trimmed or retried. Diagnostic callback bounds never replace acceptance values.
 Raw cohorts are written before synchronization so a diagnostic error cannot
-hide an already measured failure. The final joined native event log must be
-checked against every diagnostic acknowledgement before interpreting results.
+hide an already measured failure. Diagnostics explicitly carry `joined_log_verified:false`: collection happens
+before shutdown. Offline review must bind every acknowledgement to the complete
+joined `dispatch-events.json` using `dispatch.verify_events` before interpreting
+the bounds. Positive worker join and fixture retirement are also required.
 
 The hypotheses are posting/process delay, actual UI handling delay and
 publication/observer delay. A fresh passing run alone proves none of them and

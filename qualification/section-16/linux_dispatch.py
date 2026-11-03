@@ -6,14 +6,16 @@ import time
 def observe(post, read, predicate, before, kind, index, wait):
     """Measure the existing post-to-observation interval and retain its boundaries."""
     key = 'search' if kind == 'search' else 'browser_focus'
-    sequence = before.get('dispatch', {}).get(key + '_sequence')
+    previous = before.get('dispatch')
+    sequence = previous.get(key + '_sequence') if isinstance(previous, dict) else None
     start = time.monotonic_ns()
     post()
     posted = time.monotonic_ns()
     end = wait(lambda: (s := read()) and predicate(s) and s, 1)
     observed = time.monotonic_ns()
     # Validation follows raw retention, so a bad witness cannot discard a wall sample.
-    ack = end.get('dispatch', {}).get(key)
+    witnesses = end.get('dispatch')
+    ack = witnesses.get(key) if isinstance(witnesses, dict) else None
     raw = {'n': index, 'before_sequence': sequence, 'ack': ack,
            'start_ns': start, 'posted_ns': posted, 'observed_ns': observed}
     return end, (observed - start) / 1e6, raw
@@ -40,7 +42,7 @@ def calibrate(output, publish, wait, rows=None):
 
 def summarize(measured, protocol):
     """Conservative callback and publication bounds, with no gate rescore."""
-    result = {'version': 1, 'acceptance_evidence': False,
+    result = {'version': 1, 'acceptance_evidence': False, 'joined_log_verified': False,
               'method': 'pre-xdotool launch, process return, actual callback bounds, state observation; all64 clock intervals',
               'cohorts': {}}
     for prefix, kind in [('input', 'search'), ('pointer', 'browser-focus')]:

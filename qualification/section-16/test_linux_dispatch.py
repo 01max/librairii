@@ -51,6 +51,17 @@ class LinuxDispatchTests(unittest.TestCase):
             self.assertEqual(raw['ack']['sequence'], sequence)
             self.assertIs(state, end)
 
+    def test_null_or_non_object_dispatch_preserves_measured_endpoint(self):
+        for value in [None, [], 'invalid']:
+            end = {'focus_key': 31, 'dispatch': value}
+            with patch.object(linux.time, 'monotonic_ns', side_effect=[1, 2, 3]):
+                state, wall, raw = linux.observe(lambda: None, lambda: end, lambda s: True,
+                    {'dispatch': value}, 'browser-focus', 0, lambda p, seconds: p())
+            self.assertEqual(wall, .000002)
+            self.assertIsNone(raw['ack'])
+            self.assertIsNone(raw['before_sequence'])
+            self.assertIs(state, end)
+
     def test_partial_cohort_survives_diagnostic_refusal(self):
         native = load('native')
         def refuse(pid, output, measured):
@@ -87,6 +98,7 @@ class LinuxDispatchTests(unittest.TestCase):
                 result = linux.summarize(measured, protocol)
                 self.assertEqual(measured, before)
                 self.assertFalse(result['acceptance_evidence'])
+                self.assertFalse(result['joined_log_verified'])
                 self.assertGreater(sorted(measured['pointer_ms'])[60], 100)
                 row = result['cohorts']['pointer']['samples'][0]
                 self.assertEqual(row['process_return_ms'], posting)
