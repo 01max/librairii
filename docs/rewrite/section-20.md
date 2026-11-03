@@ -222,3 +222,27 @@ observation. Wrong payloads, owner exit and late readiness still fail. Five
 std-only Rust tests exercise this shared rehearsal function and run before the
 real CI handover. The real cross-language lock exclusion and post-kill reopen
 assertions remain unchanged; the marker is never substituted for those checks.
+
+## Intel scale failure retained from the diagnostic run
+
+The same source `4640a9638ee65c537829455c17667b0d2b3c81bf` failed the loaded
+`gpu-api-2` resource cohort on Intel macOS. Its existing 240-second overall
+observer watchdog expired before the Swift helper's Home-restoration wait ended.
+The last state already selected index zero but was not settled: displayed
+revision 354, pending revision 355. This establishes workload deadline exhaustion,
+not a specific UI, scheduler, renderer or state-publication cause. No deadline or
+acceptance budget is changed.
+
+The shutdown record reports no worker shutdown error, but the success protocol
+did not complete: the report records `workers_joined:false` and
+`fixture_retired:false`, and the supervisor retained the fixture. The final
+joined event log and complete helper sample report are absent. Earlier completed
+cohorts cannot qualify this incomplete resource run or supply its missing samples.
+Both independent reviews confirm that Intel scale remains failed, independently
+of the completed Linux diagnostic observation and the storage-readiness fix.
+
+Raw [artifact 13217332309](https://github.com/01max/librairii/actions/runs/41601327214/artifacts/13217332309)
+and the primary full job log are retained under `target/task20-linux-latency/`.
+The archive SHA-256 is
+`dfdf2a1e430c0966556e3ba0e08e1dde7fd386a13d7fb0a473424dbbf726c67f`.
+Historical latency failures, P58 and Task 20 release/cutover gates remain open.
