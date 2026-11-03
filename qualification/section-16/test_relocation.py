@@ -112,6 +112,17 @@ class RelocationCustody(unittest.TestCase):
             self.assertEqual((work / 'rehearsal.stdout').read_text(), 'partial output\n')
             self.assertEqual((work / 'rehearsal.stderr').read_text(), 'original disk I/O error\n')
 
+    def test_child_failure_survives_both_stream_retention_errors(self):
+        failures = [subprocess.CalledProcessError(9, ['owned-child'], output='partial', stderr='failure'),
+                    subprocess.TimeoutExpired(['owned-child'], 600, output=b'partial', stderr=b'failure')]
+        for original in failures:
+            with self.subTest(error=type(original).__name__), patch.object(relocation, 'run', side_effect=original), patch.object(Path, 'write_bytes', side_effect=OSError('receipt unavailable')) as write:
+                with self.assertRaises(type(original)) as caught:
+                    relocation.rehearse(Path('unused'), Path('unused'), Path('unused'), Path('unused'))
+                self.assertIs(caught.exception, original)
+                self.assertEqual(write.call_count, 2)
+                self.assertEqual(len(original.__notes__), 2)
+
 
 class ImageDisposal(unittest.TestCase):
     def exercise(self, snapshots, exits, *, mounted=False, error=None):

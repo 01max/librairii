@@ -36,18 +36,29 @@ def owned_workspace():
 
 def rehearse(binary, source, mount, work):
     result = None
+    failure = None
     try:
         result = run([str(binary), str(source), str(mount)], cwd=ROOT,
                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
         return result
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         result = error
+        failure = error
         raise
     finally:
         if result is not None:
+            errors = []
             for name in ("stdout", "stderr"):
                 value = getattr(result, name, None) or ""
-                (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
+                try:
+                    (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
+                except OSError as error:
+                    errors.append(f'child {name} retention failed: {error}')
+            if errors:
+                if failure is None:
+                    raise RuntimeError('; '.join(errors))
+                for note in errors:
+                    failure.add_note(note)
 
 
 def detach_owned_image(mount, image):
@@ -223,6 +234,7 @@ def main():
                            "mounted_device": mount_device, "current_mount_device": current_device,
                            "owned_volume_detached": detached, "primary_error": repr(primary) if primary else None,
                            "cleanup_error": repr(cleanup) if cleanup else None,
+                           "primary_notes": getattr(primary, '__notes__', []),
                            "cleanup_notes": getattr(cleanup, '__notes__', [])}
                 output = ROOT / "target/quality/native-relocation-failure.json"
                 diagnostic_errors = []
