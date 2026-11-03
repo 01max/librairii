@@ -805,7 +805,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, false, cancellation)
+            Self::bind_with_profile(copy, store, locations, None, cancellation)
         }
         pub(crate) fn bind_rebound(
             copy: IndependentCopy,
@@ -814,22 +814,13 @@ mod owned {
             foreign: &crate::profile::Profile,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, Some(foreign), false, cancellation)
-        }
-        pub(crate) fn bind_selected_copy(
-            copy: IndependentCopy,
-            store: &'profile NativeProfileStore,
-            locations: &ProfileLocations,
-            cancellation: &WorkCancellation,
-        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, true, cancellation)
+            Self::bind_with_profile(copy, store, locations, Some(foreign), cancellation)
         }
         fn bind_with_profile(
             mut copy: IndependentCopy,
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             foreign: Option<&crate::profile::Profile>,
-            explicit: bool,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
             let mut record = None;
@@ -850,22 +841,7 @@ mod owned {
                 }
                 copy.identity().require_spelling(&proposed.library_id)?;
                 proposed.root = exact_path(copy.root())?;
-                let policy = if explicit {
-                    Some(RootPolicy::for_source(copy.source_root(), locations)?)
-                } else {
-                    None
-                };
-                if let Some(policy) = &policy {
-                    require_explicit_paths(
-                        copy.root(),
-                        copy.source_root(),
-                        policy,
-                        store,
-                        locations,
-                    )?;
-                } else {
-                    require_paths(copy.root(), copy.source_root(), store, locations)?;
-                }
+                require_paths(copy.root(), copy.source_root(), store, locations)?;
                 let layout = LibraryLayout::probe(copy.root())?;
                 let root = copy.retain_root()?;
                 let database = root.child(OsStr::new("db"))?;
@@ -875,7 +851,7 @@ mod owned {
                 )?;
                 let document = Document {
                     format: "librairii.native-library".into(),
-                    version: if explicit { 2 } else { 1 },
+                    version: 1,
                     state: Phase::ImportedClosed,
                     epoch: 0,
                     native_profile_root: exact_path(
@@ -889,7 +865,7 @@ mod owned {
                     library_marker_sha256: digest(copy.identity().original_bytes()),
                     profile_marker_sha256: store.marker_digest()?,
                     source_manifest_sha256: copy.manifest_digest(),
-                    root_policy: policy,
+                    root_policy: None,
                     temporaries: Vec::new(),
                 };
                 record = Some(match Record::create(&root, document) {
