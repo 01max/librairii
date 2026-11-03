@@ -1,5 +1,12 @@
 # Legacy runtime retirement plan
 
+**Current scope (2026-11-03):** the owner approved a fresh Rust app and retirement
+of the old runtime without Go data migration or paid Mac signing. The
+[fresh Rust contract](fresh-rust-contract.md) supersedes the original bridge,
+signed-release and legacy cutover prerequisites below. The original inventory
+and observations remain historical evidence; the Task 20 implementation records
+its actual removals separately.
+
 Task 20.2 prepares a removal manifest. It does **not** retire any runtime,
 select a release candidate, approve cutover or complete Tasks 20.1/20.3–20.5.
 Signing/final-byte qualification and the historical P58 performance hold remain
