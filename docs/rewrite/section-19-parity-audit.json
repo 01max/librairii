@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "355d14d96ad5403fbcc18dd84d406c4099274c5fb94063c0b753a26e85320390"
+    "sha256": "2358da71d731da88b0d709d5e21753a10799474f969a0dd5aff05ddcc1f7a7e0"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
@@ -2004,7 +2004,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "b863ab12d54327e118fd780ee57f6fe764b09f51d10b7224c6bb4ac28e935b84"
+          "source_sha256": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a"
         },
         {
           "suite": "librairii-storage::profiles",
@@ -2022,19 +2022,19 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "b863ab12d54327e118fd780ee57f6fe764b09f51d10b7224c6bb4ac28e935b84"
+          "source_sha256": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a"
         },
         {
           "suite": "librairii-storage",
           "name": "settings::startup::tests::dangling_old_namespace_links_do_not_block_independent_setup_or_reopen",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "b863ab12d54327e118fd780ee57f6fe764b09f51d10b7224c6bb4ac28e935b84"
+          "source_sha256": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a"
         },
         {
           "suite": "librairii-storage",
           "name": "settings::startup::tests::dangling_old_links_still_exclude_future_native_profile_and_library_aliases",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "b863ab12d54327e118fd780ee57f6fe764b09f51d10b7224c6bb4ac28e935b84"
+          "source_sha256": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a"
         }
       ],
       "native_callbacks": [
@@ -2367,7 +2367,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "b863ab12d54327e118fd780ee57f6fe764b09f51d10b7224c6bb4ac28e935b84"
+          "source_sha256": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a"
         }
       ],
       "native_callbacks": [

@@ -845,6 +845,12 @@ impl NativeProfileStore {
             }
             return Err(error);
         }
+        // Retry may retain this store after a lost-binding recovery attempt.
+        // Saving language must not synthesize fresh settings over that evidence.
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if state.document.is_none() {
+            self.require_unrecovered_namespace()?;
+        }
         let mut next = state
             .document
             .as_ref()

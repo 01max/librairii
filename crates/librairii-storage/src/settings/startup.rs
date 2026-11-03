@@ -452,6 +452,22 @@ mod tests {
         assert!(prepare_native_profile(&locations, &cancel).is_err());
         // Direct storage initialization must enforce the same recovery boundary.
         let store = profile::NativeProfileStore::open_native(&locations.native)?;
+        // Recovery's Retry caches the store even when reopening fails. A later
+        // language choice must not publish an unbound replacement settings file.
+        assert!(crate::native::NativeLibrary::reopen(&store, &locations, &cancel).is_err());
+        assert!(
+            store
+                .update(|settings| {
+                    settings.language = "fr".into();
+                    Ok(())
+                })
+                .is_err()
+        );
+        assert!(!locations.native.join("settings.json").exists());
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Recovery { .. }
+        ));
         let replacement = roots.library().join("must not replace binding");
         assert!(
             crate::native::NativeLibrary::initialize_confirmed(
