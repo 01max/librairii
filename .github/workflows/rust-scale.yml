@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: rust-scale-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Native workers and owned volumes must finish cleanup before replacement.
+  cancel-in-progress: false
 
 jobs:
   native:

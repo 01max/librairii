@@ -22,6 +22,30 @@ the affected lanes before merge. Scheduled GitHub workflows use the default
 branch, currently Go `main`; the explicit integration push trigger keeps focused
 checks active during the rewrite.
 
+Performance remains blocking on every PR, including the unchanged 100 ms native
+dispatch and 3000 ms completion limits. A slower shared runner does not waive a
+failure. Passing later observations do not rescore retained failures.
+
+Native quality, scale and package workflows do not cancel an active run when a
+new commit arrives. Their workers and owned volumes must finish cleanup first.
+The concurrency group serializes replacements; superseded pending runs may still
+be dropped by GitHub before they start.
+
+Desktop scale records both renderer outcomes after a numerical failure when the
+failed case positively joined its workers and retired its fixture. Unknown
+cleanup stops further native execution. Any failed or unattempted renderer keeps
+the manifest incomplete and the job red; the final manifest retains failure
+messages and hashes for the files actually collected.
+
+macOS relocation cleanup resolves the fresh owned image through `hdiutil info
+-plist`, rather than relying on a mountpoint that may already have disappeared.
+Only its uniquely identified GUID backing device may be detached. Success
+requires both absence of that image from the attachment inventory and an
+unmounted owned mountpoint. A successful command alone is insufficient, and a
+failed command is accepted only when those disposal checks independently pass.
+Filtered observations are retained as `native-relocation-disposal.json`; unknown
+identity or disposal preserves the workspace and fails the job.
+
 The selector in `.github/scripts/legacy-ci-changes.py` skips Go/Wails only for
 changes entirely within the Rust workspace/configuration or rewrite documents.
 Everything else runs those suites. It reads NUL-delimited Git paths, includes
