@@ -1298,7 +1298,7 @@
         "crates/librairii-storage/tests/native_library.rs"
       ],
       "source_sha256": {
-        "crates/librairii-storage/src/settings/startup.rs": "3da3e2584b4dbb7227fd59f7d516b48ae1737c0f360f0b318972cce2ce15db0a",
+        "crates/librairii-storage/src/settings/startup.rs": "b45801a638bbe4e38abee4c7e1e7397ea9989188bedfb040d707d9eabf978c68",
         "crates/librairii-storage/tests/native_library.rs": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
       }
     },

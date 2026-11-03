@@ -413,6 +413,9 @@ mod tests {
             Startup::Native(_)
         ));
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&reopened)?;
+        db.close()?;
+        drop(db);
         reopened.finish().map_err(|f| f.to_string())?;
         for (path, bytes) in originals {
             assert_eq!(fs::read(path)?, bytes);
@@ -533,6 +536,9 @@ mod tests {
         fs::remove_file(&old_root)?;
         symlink("another unavailable old folder", &old_root)?;
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&reopened)?;
+        db.close()?;
+        drop(db);
         reopened.finish().map_err(|f| f.to_string())?;
         assert_eq!(fs::read_link(legacy)?, missing_profile);
         assert_eq!(
@@ -613,6 +619,9 @@ mod tests {
         drop(db);
         native.finish().map_err(|f| f.to_string())?;
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&reopened)?;
+        db.close()?;
+        drop(db);
         reopened.finish().map_err(|f| f.to_string())?;
         assert_eq!(fs::read(legacy)?, b"old profile namespace is a file");
         assert_eq!(fs::read(&old_root)?, b"old data namespace is a file");
@@ -656,10 +665,16 @@ mod tests {
         state["root_policy"]["legacy_roots"] = serde_json::json!([old_target]);
         fs::write(&state_path, serde_json::to_vec(&state)?)?;
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&reopened)?;
+        db.close()?;
+        drop(db);
         reopened.finish().map_err(|f| f.to_string())?;
         fs::remove_file(&old_root)?;
         symlink("unrelated missing old folder", &old_root)?;
         let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&reopened)?;
+        db.close()?;
+        drop(db);
         reopened.finish().map_err(|f| f.to_string())?;
         let state = fs::read(&state_path)?;
         let database = fs::read(selected.join("db/librairii.sqlite3"))?;

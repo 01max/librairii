@@ -286,6 +286,9 @@ mod tests {
     {
         let roots = librairii_testkit::TestRoots::new()?;
         let store = NativeProfileStore::create_fresh(&roots.profile().join("native"))?;
+        // A relocation starts with existing native settings; missing settings
+        // beside a journal are lost-binding evidence, not fresh setup authority.
+        store.update(|_| Ok(()))?;
         let expected = b"{\"format\":\"test-only-journal-prefix\"}";
         let mut file = store.namespace.create_control_record(OsStr::new(JOURNAL))?;
         file.file.write_all(&expected[..9])?;
