@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "2b1f3abb297b729304deccf55e6f2745c6a205d09a8abfaac1f570c7b410f3f2"
+    "sha256": "93f109ab550053038e99d67ef90a578f741762f4ca7ca909d420529e12af47fc"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
@@ -2004,7 +2004,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
+          "source_sha256": "d79504d02c8c86dc7e58f08d48b5b22cd02c0050a1882c7a888c9774ca601942"
         },
         {
           "suite": "librairii-storage::profiles",
@@ -2022,7 +2022,19 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
+          "source_sha256": "d79504d02c8c86dc7e58f08d48b5b22cd02c0050a1882c7a888c9774ca601942"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_namespace_links_do_not_block_independent_setup_or_reopen",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "d79504d02c8c86dc7e58f08d48b5b22cd02c0050a1882c7a888c9774ca601942"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_links_still_exclude_future_native_profile_and_library_aliases",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "d79504d02c8c86dc7e58f08d48b5b22cd02c0050a1882c7a888c9774ca601942"
         }
       ],
       "native_callbacks": [
@@ -2355,7 +2367,7 @@
           "suite": "librairii-storage",
           "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "defed728e648a4a8eda29d3ae2839833a2a0040305c015344ae03407aa89cd1f"
+          "source_sha256": "d79504d02c8c86dc7e58f08d48b5b22cd02c0050a1882c7a888c9774ca601942"
         }
       ],
       "native_callbacks": [

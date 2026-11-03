@@ -118,7 +118,7 @@ impl TargetPreview {
     ) -> Result<()> {
         for root in roots {
             self.exclusions
-                .push((root.to_path_buf(), resolve(root, false)?.0));
+                .push((root.to_path_buf(), resolve_exclusion(root)?.0));
         }
         self.revalidate(cancellation)
     }
@@ -133,7 +133,7 @@ impl TargetPreview {
         let (resolved, ancestor, missing) = resolve(requested, true)?;
         let exclusions = excluded_roots
             .iter()
-            .map(|path| resolve(path, false).map(|p| (path.to_path_buf(), p.0)))
+            .map(|path| resolve_exclusion(path).map(|p| (path.to_path_buf(), p.0)))
             .collect::<Result<Vec<_>>>()?;
         for (_, path) in &exclusions {
             if physical_overlap(path, &resolved)? {
@@ -200,7 +200,7 @@ impl TargetPreview {
             return Err(StorageError::SettingsDestination);
         }
         for (requested, resolved) in &self.exclusions {
-            let actual = resolve(requested, false)?.0;
+            let actual = resolve_exclusion(requested)?.0;
             if actual != *resolved || physical_overlap(&actual, &now)? {
                 return Err(StorageError::SettingsDestination);
             }
@@ -312,7 +312,7 @@ impl TargetPreview {
             if cancellation.is_cancelled() {
                 return Err(StorageError::Cancelled);
             }
-            let (_, parent, missing) = resolve(&excluded, false)?;
+            let (_, parent, missing) = resolve_exclusion(&excluded)?;
             // A missing immediate protected root (the old automatic default)
             // can alias the selected first component on a folding filesystem.
             // Probe the actual parent, using private names, before mkdir effects.
@@ -392,7 +392,7 @@ pub(crate) fn physical_contains(root: &Path, descendant: &Path) -> Result<bool> 
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
         Err(error) => return Err(StorageError::io("inspect excluded root identity", error)),
     };
-    let mut ancestor = resolve(descendant, false)?.1;
+    let mut ancestor = resolve_exclusion(descendant)?.1;
     loop {
         let metadata = fs::metadata(&ancestor)
             .map_err(|e| StorageError::io("inspect target ancestry identity", e))?;
@@ -404,6 +404,58 @@ pub(crate) fn physical_contains(root: &Path, descendant: &Path) -> Result<bool> 
         }
     }
     Ok(false)
+}
+
+/// Project a read-only exclusion through links even when their targets are
+/// absent. Old namespaces are reservations, not startup authority. Candidate
+/// paths still use strict `resolve(..., true)` and never gain write permission
+/// from this projection. Callers re-resolve exclusions before creating state.
+pub(crate) fn resolve_exclusion(path: &Path) -> Result<(PathBuf, PathBuf, Vec<OsString>)> {
+    if !path.is_absolute() || path.as_os_str().as_encoded_bytes().contains(&0) {
+        return Err(StorageError::SettingsDestination);
+    }
+    fn project(path: &Path, remaining_links: &mut usize) -> Result<PathBuf> {
+        let mut projected = PathBuf::new();
+        for component in path.components() {
+            match component {
+                Component::RootDir => projected.push(component.as_os_str()),
+                Component::CurDir => (),
+                Component::ParentDir => {
+                    projected.pop();
+                }
+                Component::Normal(name) => {
+                    projected.push(name);
+                    match fs::symlink_metadata(&projected) {
+                        Ok(metadata) if metadata.file_type().is_symlink() => {
+                            if *remaining_links == 0 {
+                                return Err(StorageError::SettingsDestination);
+                            }
+                            *remaining_links -= 1;
+                            let target = fs::read_link(&projected)
+                                .map_err(|e| StorageError::io("read excluded namespace link", e))?;
+                            let target = if target.is_absolute() {
+                                target
+                            } else {
+                                projected
+                                    .parent()
+                                    .ok_or(StorageError::SettingsDestination)?
+                                    .join(target)
+                            };
+                            projected = project(&target, remaining_links)?;
+                        }
+                        Ok(_) => (),
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                        Err(error) => {
+                            return Err(StorageError::io("inspect excluded namespace", error));
+                        }
+                    }
+                }
+                Component::Prefix(_) => return Err(StorageError::SettingsDestination),
+            }
+        }
+        Ok(projected)
+    }
+    resolve(&project(path, &mut 40)?, false)
 }
 
 /// Resolve through existing ancestors while retaining a missing tail. Existing

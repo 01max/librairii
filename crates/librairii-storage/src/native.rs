@@ -1826,13 +1826,7 @@ mod owned {
             }
             // Resolve a materialized legacy namespace too; do not let an alias
             // make the explicit native profile/data location legacy-discoverable.
-            let legacy = match fs::canonicalize(legacy) {
-                Ok(path) => path,
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => legacy.clone(),
-                Err(error) => {
-                    return Err(StorageError::io("inspect explicit legacy namespace", error));
-                }
-            };
+            let legacy = crate::settings::target::resolve_exclusion(legacy)?.0;
             if physical_overlap(&legacy, &native)? || physical_overlap(&legacy, &data)? {
                 return Err(StorageError::PathEscape);
             }
@@ -1887,7 +1881,7 @@ mod owned {
             .parent()
             .ok_or(StorageError::PathEscape)?
             .join(name);
-        Ok(crate::settings::target::resolve(&root, false)?.0)
+        Ok(crate::settings::target::resolve_exclusion(&root)?.0)
     }
     impl RootPolicy {
         fn for_source(source: &Path, locations: &ProfileLocations) -> Result<Self> {
@@ -1910,7 +1904,7 @@ mod owned {
         store: &NativeProfileStore,
         locations: &ProfileLocations,
     ) -> Result<()> {
-        use crate::settings::target::{physical_contains, physical_overlap, resolve};
+        use crate::settings::target::{physical_contains, physical_overlap, resolve_exclusion};
         let (native, data) = namespace_roots(store, locations)?;
         if !policy
             .legacy_roots
@@ -1922,12 +1916,12 @@ mod owned {
             return Err(StorageError::PathEscape);
         }
         if let Some(legacy) = &locations.legacy
-            && physical_overlap(root, &resolve(legacy, false)?.0)?
+            && physical_overlap(root, &resolve_exclusion(legacy)?.0)?
         {
             return Err(StorageError::PathEscape);
         }
         for legacy in &policy.legacy_roots {
-            if physical_overlap(root, &resolve(Path::new(legacy), false)?.0)? {
+            if physical_overlap(root, &resolve_exclusion(Path::new(legacy))?.0)? {
                 return Err(StorageError::PathEscape);
             }
         }

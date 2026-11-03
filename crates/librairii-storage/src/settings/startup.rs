@@ -30,7 +30,7 @@ pub fn prepare_native_profile(
     locations: &ProfileLocations,
     cancel: &WorkCancellation,
 ) -> Result<profile::NativeProfileStore> {
-    use super::target::{physical_overlap, resolve};
+    use super::target::{physical_overlap, resolve, resolve_exclusion};
     if cancel.is_cancelled() {
         return Err(StorageError::Cancelled);
     }
@@ -61,7 +61,7 @@ pub fn prepare_native_profile(
     let mut excluded = vec![default_legacy_root(locations)?];
     excluded.extend(locations.legacy.iter().cloned());
     for root in excluded {
-        let root = resolve(&root, false)?.0;
+        let root = resolve_exclusion(&root)?.0;
         if physical_overlap(&root, &native)? || physical_overlap(&root, &data)? {
             return Err(StorageError::PathEscape);
         }
@@ -471,6 +471,91 @@ mod tests {
             preferences
         );
         assert_eq!(fs::read(selected.join("db/librairii.sqlite3"))?, database);
+        Ok(())
+    }
+    #[test]
+    fn dangling_old_namespace_links_do_not_block_independent_setup_or_reopen() -> TestResult {
+        use std::os::unix::fs::symlink;
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let legacy = locations.legacy.as_ref().ok_or("legacy namespace")?;
+        let old_root = default_legacy_root(&locations)?;
+        fs::create_dir_all(legacy.parent().ok_or("profile parent")?)?;
+        fs::create_dir_all(old_root.parent().ok_or("data parent")?)?;
+        let missing_profile = roots.profile().join("unavailable old profile");
+        symlink(&missing_profile, legacy)?;
+        // Relative link and parent traversal still reserve the actual target.
+        let missing_data = old_root
+            .parent()
+            .ok_or("data parent")?
+            .join("unavailable old data");
+        symlink("missing/../unavailable old data", &old_root)?;
+        let old_link = fs::read_link(&old_root)?;
+        let cancel = WorkCancellation::default();
+        let Startup::ConfirmFolder { suggested } = inspect_startup(&locations, &cancel) else {
+            return Err("old links blocked startup".into());
+        };
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let preview = super::super::TargetPreview::inspect(
+            &suggested,
+            &[legacy, &old_root, &locations.native],
+            &cancel,
+        )?;
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            preview,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        let reopened = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        reopened.finish().map_err(|f| f.to_string())?;
+        assert_eq!(fs::read_link(legacy)?, missing_profile);
+        assert_eq!(fs::read_link(&old_root)?, old_link);
+        assert!(!missing_profile.exists());
+        assert!(!missing_data.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn dangling_old_links_still_exclude_future_native_profile_and_library_aliases() -> TestResult {
+        use std::os::unix::fs::symlink;
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let legacy = locations.legacy.as_ref().ok_or("legacy namespace")?;
+        fs::create_dir_all(legacy.parent().ok_or("profile parent")?)?;
+        symlink(&locations.native, legacy)?;
+        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
+        assert!(!locations.native.exists());
+        assert!(!locations.data.exists());
+        fs::remove_file(legacy)?;
+        let old_root = default_legacy_root(&locations)?;
+        fs::create_dir_all(old_root.parent().ok_or("data parent")?)?;
+        let selected = roots.library().join("future Rust library");
+        symlink(&selected, &old_root)?;
+        let cancel = WorkCancellation::default();
+        let store = prepare_native_profile(&locations, &cancel)?;
+        assert!(super::super::TargetPreview::inspect(&selected, &[&old_root], &cancel).is_err());
+        // Bypassing the UI preview must not bypass storage's exclusion checks.
+        assert!(
+            crate::native::NativeLibrary::initialize_confirmed(
+                super::super::TargetPreview::inspect(&selected, &[], &cancel)?,
+                &store,
+                &locations,
+                "b0000000-0000-4000-8000-000000000013".parse()?,
+                librairii_app::localization::Language::English,
+                &cancel,
+            )
+            .is_err()
+        );
+        assert!(!selected.exists());
+        assert_eq!(fs::read_link(&old_root)?, selected);
         Ok(())
     }
 }
