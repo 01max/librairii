@@ -6392,6 +6392,21 @@
         "position": 139,
         "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
         "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 140,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_absent_ambiguous_or_foreign_window_never_receives_activation",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
+      },
+      {
+        "position": 141,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_background_owned_window_receives_one_native_activation",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
+      },
+      {
+        "position": 142,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
       }
     ]
   },

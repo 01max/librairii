@@ -151,6 +151,25 @@ Both independent source reviews report zero required findings. Original failed
 logs and provider-verified archives remain retained; corrected Rust tests and
 native execution still require fresh CI after the current jobs finish.
 
+That source's Linux installed X11 GPU lane failed its initial foreground
+prerequisite, before any workflow check. The same-PID accessibility application
+had registered, and the product reported Setup at 69.661 ms and continued drawing
+frames. No retained active-window observation establishes why foreground
+ownership was absent. The process was killed and reaped with its reader retired;
+that cleanup is not a graceful worker shutdown. The other three Linux installed
+lanes and both Mac installed checks passed, without overriding the failed lane.
+
+The Linux observer now requests native activation once for one visible window
+whose actual `_NET_WM_PID` matches the installed process, then requires the exact
+window to become foreground and rechecks its owner. Window discovery, activation
+and observation share the original 15-second foreground deadline. Before/after
+properties and refusals are retained. Ambiguous, missing, foreign, late or
+ineffective activation fails without replay. Controlled headless regressions
+establish this observer contract, not the historical cause; fresh installed CI
+must validate the actual native route. The failed archive remains retained as
+[artifact 13286289297](https://github.com/01max/librairii/actions/runs/41748877717/artifacts/13286289297),
+SHA-256 `9680c882b7a433c826efda8209682bc0e78961b1120dff3a1a5ffe75760dfe19`.
+
 ### Linux dispatch measurement
 
 The same `d3e57b2` source failed its first Linux GPU resource warmup at

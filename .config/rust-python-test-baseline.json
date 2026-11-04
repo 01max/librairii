@@ -139,6 +139,9 @@
     "test_linux_input_admission.LinuxInputAdmission.test_captured_linux_delay_keeps_failed_wall_and_callback_bound_separate",
     "test_linux_input_admission.LinuxInputAdmission.test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch",
     "test_linux_input_admission.LinuxInputAdmission.test_linux_refuses_incomplete_clocks_and_keeps_original_observations",
-    "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join"
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
+    "test_installed_x11_activation.InstalledX11Activation.test_absent_ambiguous_or_foreign_window_never_receives_activation",
+    "test_installed_x11_activation.InstalledX11Activation.test_background_owned_window_receives_one_native_activation",
+    "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed"
   ]
 }
