@@ -44,6 +44,20 @@ The same source's ARM package build completed compilation and signing, then
 build and package logs. No packaging defect or recovery was established, and
 no retry, threshold change or successful package claim is inferred from it.
 
+The same source's Intel scale job failed the GPU input cohort because its
+observer could not locate the first story's native pointer bounds. The later
+fixture state showed page 1, 24 rows and active imports; it does not establish
+what accessibility exposed during the lookup. The separate resource/display
+manifest completed without failures. Artifact 13306723867 is retained with
+SHA-256 `d7784d52c967d272822b0ff6c95d3c731708250b8f78a41c529f5522deb38ad6`.
+
+The pointer observer now retains bounded failure-only diagnostics from reads it
+already performs: status counts, recent errors, candidate decisions and sampled
+labels. It adds no accessibility query, action, retry or successful output and
+changes no selection criterion, deadline or performance limit. Missing AX
+observations prevented a causal diagnosis; this improves the next failure's
+evidence and does not establish a fix or relabel the original run as passed.
+
 ## Cancellation backpressure correction
 
 Source `9ccfd31b701147ce3152c78e80d102779bf39299` passed the Linux deep
