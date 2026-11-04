@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "16b8f7f54ccbc3a3e74266904112dc6f0ba5acd00838be0f057c9644b9d2d361"
+    "sha256": "39923ecca452bbd58134051a59aa4fb7fbc24e29ae93b3b3e80bd1261ea57eb5"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
@@ -1670,6 +1670,18 @@
           "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
           "source": "crates/librairii-storage/tests/native_library.rs",
           "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+          "source": "crates/librairii-desktop/src/workflows/operations/sync_submission.rs",
+          "source_sha256": "2a794257a7eb44b1d894adbd8494e034005b62b5be61508b6fcb00ba90fdfc56"
+        },
+        {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+          "source": "crates/librairii-desktop/src/workflows/operations/sync_submission.rs",
+          "source_sha256": "2a794257a7eb44b1d894adbd8494e034005b62b5be61508b6fcb00ba90fdfc56"
         }
       ],
       "native_callbacks": [

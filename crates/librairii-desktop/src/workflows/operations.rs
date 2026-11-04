@@ -15,10 +15,13 @@ use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
+mod sync_submission;
+pub use sync_submission::RefusedSync;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Action {
     Sync,
+    RetrySync(RefusedSync),
     HideSync(bool),
     Import(Vec<PathBuf>),
     Cancel(String),
@@ -47,6 +50,7 @@ impl Action {
             Self::Cancel(id) | Self::Dismiss(id) | Self::Inspect { id, .. } => {
                 !id.is_empty() && id.len() <= 256
             }
+            Self::RetrySync(receipt) => !receipt.id.is_empty() && receipt.id.len() <= 256,
             Self::Refresh | Self::Sync | Self::HideSync(_) | Self::History(_) => true,
         }
     }
@@ -60,6 +64,7 @@ pub struct Snapshot {
     pub catalog_revision: Option<librairii_core::CatalogSnapshotId>,
     pub sync_hidden: bool,
     pub sync_preparing: bool,
+    pub sync_refused: Option<RefusedSync>,
     pub preference_error: bool,
     pub catalog: Option<librairii_core::metadata::CatalogStatus>,
     pub last_success_local: Option<librairii_adapters::datetime::LocalDateTime>,
@@ -87,6 +92,7 @@ pub struct History {
 }
 #[derive(Debug, Default)]
 pub struct Controller {
+    sync_submission: sync_submission::Submission,
     preferences: Option<librairii_storage::profile::InterfacePreferences>,
     pub snapshot: Snapshot,
     recent: VecDeque<String>,
@@ -159,7 +165,7 @@ impl Controller {
                 // Drain the previous admission receipt before offering another job.
                 effects |= self.poll(runtime, true)?.1;
                 match action {
-                    Action::Sync => {
+                    action @ (Action::Sync | Action::RetrySync(_)) => {
                         if self.snapshot.sync_preparing
                             || self.snapshot.cards.iter().any(|c| {
                                 c.operation.kind == OperationKind::MetadataSync
@@ -168,26 +174,36 @@ impl Controller {
                         {
                             return Err(StorageError::QueueFull);
                         }
-                        let id = librairii_adapters::identities::job_id()
-                            .map_err(|source| StorageError::Io {
-                                operation: "create metadata job identity",
-                                source,
-                            })?
-                            .to_string();
-                        let start = librairii_app::native_jobs::Start::new(
-                            librairii_app::ports::creation::NewOperation {
-                                id: id.clone(),
-                                kind: OperationKind::MetadataSync,
-                                source: None,
-                                destination: None,
-                                items: vec![librairii_app::ports::creation::NewItem {
-                                    source_name: "en-GB".into(),
-                                    ..Default::default()
-                                }],
-                            },
-                        )
-                        .map_err(|_| StorageError::CompatibilityInvariant)?;
-                        runtime.offer_metadata(start)?;
+                        let start = if let Action::RetrySync(receipt) = action {
+                            self.sync_submission.retry(&receipt, &generation)?
+                        } else {
+                            let id = librairii_adapters::identities::job_id()
+                                .map_err(|source| StorageError::Io {
+                                    operation: "create metadata job identity",
+                                    source,
+                                })?
+                                .to_string();
+                            librairii_app::native_jobs::Start::new(
+                                librairii_app::ports::creation::NewOperation {
+                                    id: id.clone(),
+                                    kind: OperationKind::MetadataSync,
+                                    source: None,
+                                    destination: None,
+                                    items: vec![librairii_app::ports::creation::NewItem {
+                                        source_name: "en-GB".into(),
+                                        ..Default::default()
+                                    }],
+                                },
+                            )
+                            .map_err(|_| StorageError::CompatibilityInvariant)?
+                        };
+                        let id = start.input().id.clone();
+                        self.sync_submission.offer(
+                            start,
+                            generation.clone(),
+                            revision,
+                            |start| runtime.offer_metadata(start),
+                        )?;
                         self.recent.push_front(id.clone());
                         self.recent.truncate(8);
                         self.snapshot.preparing = Some(id.clone());
@@ -350,6 +366,7 @@ impl Controller {
                 effects |= self.poll(runtime, true)?.1;
                 Ok(())
             })();
+        self.snapshot.sync_refused = self.sync_submission.receipt();
         if let Err(error) = result {
             if dismissing {
                 self.snapshot.notice_error = Some(error.to_string());

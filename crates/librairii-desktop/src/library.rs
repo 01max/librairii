@@ -164,17 +164,23 @@ impl<'gate> Runtime<'gate, '_, '_> {
             .map_err(|_| StorageError::RuntimeInUse)?;
         self.jobs.cancel(id).map_err(|_| StorageError::QueueFull)
     }
-    pub fn offer_metadata(&self, start: native_jobs::Start) -> Result<()> {
-        let _use = self
-            .gate
-            .enter_mutation()
-            .map_err(|_| StorageError::RuntimeInUse)?;
+    pub fn offer_metadata(
+        &self,
+        start: native_jobs::Start,
+    ) -> std::result::Result<(), (StorageError, native_jobs::Start)> {
+        let Ok(_use) = self.gate.enter_mutation() else {
+            return Err((StorageError::RuntimeInUse, start));
+        };
         if start.input().kind != librairii_core::OperationKind::MetadataSync {
-            return Err(StorageError::CompatibilityInvariant);
+            return Err((StorageError::CompatibilityInvariant, start));
         }
-        self.jobs
-            .try_start(start)
-            .map_err(|_| StorageError::QueueFull)
+        self.jobs.try_start(start).map_err(|(refusal, start)| {
+            let error = match refusal {
+                native_jobs::Refusal::Busy => StorageError::QueueFull,
+                native_jobs::Refusal::Closed => StorageError::IntakeClosed,
+            };
+            (error, start)
+        })
     }
     pub fn prepare_export(
         &self,

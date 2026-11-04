@@ -98,9 +98,11 @@ class Driver:
             self.desktop.screenshot(self.output/(name+'.png'))
         return report
 
-    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None, actionable=False):
+    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None, actionable=False, deadline=None):
         a = self.desktop.a
         for node in self.nodes(root):
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError('installed GUI observation deadline')
             try:
                 if ((node.name.startswith(name) if prefix else node.name == name)
                         and (not enabled or node.getState().contains(a.STATE_ENABLED))
@@ -113,25 +115,33 @@ class Driver:
                                 continue
                         except NotImplementedError:
                             continue
+                    if deadline is not None and time.monotonic() >= deadline:
+                        raise TimeoutError('installed GUI observation deadline')
                     return node
             except self.read_errors:
                 continue
         return None
 
-    def action(self, node):
+    def action(self, node, *, deadline=None):
         actions = node.queryAction()
         for index in range(actions.nActions):
             if actions.getName(index).lower() in ('click', 'press', 'activate', 'toggle'):
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('installed GUI action deadline')
                 if not actions.doAction(index):
                     raise ValueError('native accessibility action refused')
                 time.sleep(.08)
                 return
         raise ValueError('native control has no activation action: '+node.name)
 
-    def press(self, name, *, prefix=False):
-        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
+    def press(self, name, *, prefix=False, deadline=None):
+        options = {} if deadline is None else {'deadline': deadline}
+        wait_options = {} if deadline is None else {'timeout': max(0, deadline-time.monotonic())}
+        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True, **options), **wait_options)
         observed = {'name': node.name, 'role': node.getRoleName()}
-        self.action(node)
+        self.action(node, **options)
+        if deadline is not None and time.monotonic() >= deadline:
+            raise TimeoutError('installed GUI action deadline')
         return observed
 
     def focus(self, name, *, prefix=False, roles=None):

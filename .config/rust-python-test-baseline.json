@@ -133,6 +133,8 @@
     "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
     "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
     "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
-    "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source"
+    "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source",
+    "test_packaged_acceptance.PackagedAdmission.test_interruption_retries_only_explicit_unsubmitted_sync_once",
+    "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline"
   ]
 }

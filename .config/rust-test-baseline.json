@@ -4167,6 +4167,24 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

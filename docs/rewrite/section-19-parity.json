@@ -1073,11 +1073,13 @@
       },
       "release_hold": "exact final-candidate evidence and independent all-target release review",
       "executable_check_sources": [
-        "crates/librairii-desktop/tests/presentation.rs"
+        "crates/librairii-desktop/tests/presentation.rs",
+        "crates/librairii-desktop/src/workflows/operations/sync_submission.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/view/sync.rs": "0eea2d4090b491a8ac5805be91ba63a27835a524d9518f963a560219448cab18",
-        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
+        "crates/librairii-desktop/src/view/sync.rs": "46a94d8297eddf5ec9cfba85641ec4519c044ce391982be3c31d469cec1197fc",
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a",
+        "crates/librairii-desktop/src/workflows/operations/sync_submission.rs": "2a794257a7eb44b1d894adbd8494e034005b62b5be61508b6fcb00ba90fdfc56"
       }
     },
     {

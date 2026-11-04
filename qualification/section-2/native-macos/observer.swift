@@ -4,6 +4,7 @@ import ApplicationServices
 import Carbon
 import CoreGraphics
 import Foundation
+import Darwin
 
 enum Failure: Error { case invalid(String), staleSnapshot(String), unavailableRoot(String) }
 
@@ -800,6 +801,16 @@ do {
         let element = try resolve(app, selector)
         var status: AXError
         if operation == "press" {
+            if let raw = request["action_deadline_monotonic"] {
+                guard let deadline = raw as? Double, deadline.isFinite, deadline > 0 else {
+                    throw Failure.invalid("invalid native action deadline")
+                }
+                var now = timespec()
+                guard clock_gettime(CLOCK_MONOTONIC, &now) == 0,
+                      Double(now.tv_sec) + Double(now.tv_nsec) / 1_000_000_000 < deadline else {
+                    throw Failure.invalid("native action deadline")
+                }
+            }
             status = AXUIElementPerformAction(element, kAXPressAction as CFString)
         } else if operation == "focus" {
             guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {

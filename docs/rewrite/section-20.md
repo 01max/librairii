@@ -96,6 +96,28 @@ cumulative controller regression exercises two held imports, real progress and
 paging, cancellation and durable reopen. Native execution of this correction
 still requires fresh CI; headless checks cannot certify it.
 
+The same diagnostic source failed the Intel installed interruption prerequisite.
+The native Sync click was performed, then the app displayed `storage.queue_full`;
+all seven retained jobs were terminal and no new request reached the local catalog.
+The archive preserves that failure. These observations do not distinguish the
+scheduler's momentary lock contention, readiness and occupied admission slot.
+A generic error can also follow an accepted offer, so it cannot authorize replay.
+
+The correction preserves the scheduler rules and adds an explicit user retry
+only for the exact owned metadata command returned unsubmitted with Busy.
+The receipt binds its identity, command revision and library generation. Retry
+consumes that same command; closed/fenced/stale/consumed receipts cannot submit
+it again. The installed observer permits one click on this distinct retry control
+within the original ten-second request deadline. Missing SQL/HTTP or a generic
+error never causes a repeated Sync click. A real paused request, one durable
+running job, exact SIGKILL and retired capture remain required. Early failures
+now also release the fixture and retain an interruption receipt. Readiness, the
+actual native action boundary and the event witness share the original deadline;
+late success fails, with headless clock replays covering each boundary. The headless
+replay fails before this observer correction and passes afterward in English and
+French, including persistent refusal and uncertain-result cases. All 138
+headless tests pass; the Rust regression and native path await fresh CI.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid

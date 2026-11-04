@@ -5854,6 +5854,32 @@
           ]
         },
         "reason": "Task20 CI correction: hold actual tiny-import read/copy boundaries through real controller cancellation, preserving concurrent reports, progress, original bytes and joined reopen."
+      },
+      {
+        "position": 650,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 explicit same-input metadata retry after proven non-admission; reject stale, consumed, closed or fenced receipts."
+      },
+      {
+        "position": 651,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 explicit same-input metadata retry after proven non-admission; reject stale, consumed, closed or fenced receipts."
       }
     ],
     "python": [
@@ -6336,6 +6362,16 @@
         "position": 133,
         "identity": "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source",
         "reason": "Task20 frozen reference generators must fail closed when archived source is absent, even when live checkout bytes exist."
+      },
+      {
+        "position": 134,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_interruption_retries_only_explicit_unsubmitted_sync_once",
+        "reason": "Task20 bounded explicit unsubmitted-sync retry preserves real request, exact interruption and cleanup; uncertain results never authorize replay."
+      },
+      {
+        "position": 135,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline",
+        "reason": "Task20 retry native action readiness and completion share the unchanged request deadline; late input is refused."
       }
     ]
   },

@@ -7,6 +7,7 @@ import re
 import signal
 import subprocess
 import threading
+import time
 
 from native_release.files import digest, write_json
 from .workflow import reveal
@@ -137,23 +138,41 @@ class Session:
         fixture.catalog_waiting.clear()
         fixture.catalog_release.clear()
         fixture.pause_catalog = True
-        # The completed first sync retires its opt-in banner. Reopen uses the
-        # ordinary sidebar command, including the compact Navigation disclosure.
-        label = 'Synchroniser les métadonnées' if french else 'Sync official metadata'
-        if driver.find('Navigation', roles=('push button','AXButton'), actionable=True):
-            driver.press('Navigation')
-            driver.key('shift+Tab')  # Close-navigation wraps backwards to Settings.
-        else:
-            driver.focus('Historique' if french else 'History', roles=('push button','AXButton'))
-        reveal(driver, lambda: driver.find(label, actionable=True))
-        driver.press(label)
-        if not fixture.catalog_waiting.wait(10):
-            raise ValueError('no actual in-flight local catalog request before interruption')
-        running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")
-        if not running:
-            raise ValueError('metadata job was not durably running before interruption')
-        receipt = {'actual_local_request_in_flight': True, 'running': running, 'retired': False}
+        receipt = {'actual_local_request_in_flight': False, 'unsubmitted_retries': 0, 'retired': False}
         try:
+            # The first sync retires its banner; use the ordinary sidebar command.
+            label = 'Synchroniser les métadonnées' if french else 'Sync official metadata'
+            retry = 'Réessayer la demande' if french else 'Retry sync request'
+            if driver.find('Navigation', roles=('push button','AXButton'), actionable=True):
+                driver.press('Navigation')
+                driver.key('shift+Tab')  # Close-navigation wraps backwards to Settings.
+            else:
+                driver.focus('Historique' if french else 'History', roles=('push button','AXButton'))
+            reveal(driver, lambda: driver.find(label, actionable=True))
+            driver.press(label)
+            deadline = time.monotonic() + 10
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError('no actual in-flight local catalog request before interruption')
+                if fixture.catalog_waiting.wait(min(.05, remaining)):
+                    if time.monotonic() >= deadline:
+                        raise ValueError('no actual in-flight local catalog request before interruption')
+                    break
+                # This distinct control exists only for an owned Start returned
+                # unsubmitted. A generic error or absent SQL/HTTP is not retry
+                # authority. One explicit retry shares the original deadline.
+                if not receipt['unsubmitted_retries'] and driver.find(retry, actionable=True, deadline=deadline):
+                    if time.monotonic() >= deadline:
+                        raise ValueError('no actual in-flight local catalog request before interruption')
+                    driver.press(retry, deadline=deadline)
+                    receipt['unsubmitted_retries'] = 1
+                    if time.monotonic() >= deadline:
+                        raise ValueError('no actual in-flight local catalog request before interruption')
+            running = fixture.rows("SELECT id,status FROM file_operations WHERE kind='metadata_sync' AND status='running'")
+            if len(running) != 1:
+                raise ValueError('metadata job was not uniquely durably running before interruption')
+            receipt.update(actual_local_request_in_flight=True, running=running)
             if self.process.poll() is not None:
                 raise ValueError('product exited before the requested interruption')
             self.process.kill()
