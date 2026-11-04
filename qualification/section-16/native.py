@@ -12,7 +12,7 @@ import time
 
 
 def input_method_version():
-    return 3 if platform.system() == 'Darwin' else 2
+    return 3
 
 
 def dispatch_protocol():
@@ -50,7 +50,11 @@ def linux_input(pid, output):
                 'pointer_ms', 'pointer_states', 'pointer_dispatch_samples',
                 'navigation_ms', 'endpoints', 'clock_calibrations')}
     try:
-        return linux_input_cohort(pid, output, measured)
+        raw = linux_input_cohort(pid, output, measured)
+        # Preserve the original wall observations in the raw file. Method3
+        # replaces only the report's metric arrays with conservative callback
+        # bounds, using exactly the same protocol as the macOS helper.
+        return dispatch_protocol().measure(dict(raw))
     finally:
         # Diagnostic refusals and partial workloads must retain every measured sample.
         (output / 'linux-dispatch-raw.json').write_text(json.dumps(measured, indent=2) + '\n')
@@ -222,9 +226,8 @@ def inspect(binary, destination, backend, helper=None):
         joined = code == 0 and 'scale_complete; workers_joined=true' in (destination / 'execution.log').read_text()
         if not joined:
             raise ValueError('positive current-controller worker shutdown required')
-        if platform.system() == 'Darwin':
-            dispatch_protocol().verify_events(measured, json.loads((destination / 'dispatch-events.json').read_text()))
-            report['dispatch_witnesses_verified_after_join'] = True
+        dispatch_protocol().verify_events(measured, json.loads((destination / 'dispatch-events.json').read_text()))
+        report['dispatch_witnesses_verified_after_join'] = True
         owner.stdin.write('workers_joined\n')
         owner.stdin.close()
         if owner.wait(timeout=15) != 0 or Path(prepared['owner']).exists():

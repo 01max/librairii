@@ -99,8 +99,10 @@ bounded24-row pages,1,000 covers and both rendering routes remain required.
 Dispatch p95 stays≤100ms; completion p95 stays≤3,000ms. Completion still includes
 query expansion, fresh thumbnails and real Tab/End selection. Browser focus
 acknowledgement does not claim completion of the pointer handler or rendering.
-Linux retains method2's observation-wall upper bound. Producer manifests and
-raw admission identify the platform-specific method explicitly.
+At Task17, Linux retained method2's observation-wall upper bound. Task20 later
+extends method3 after independent review of a retained Linux post-callback delay;
+see [section20](section-20.md#linux-dispatch-measurement). Producer manifests and
+raw admission identify the measurement version explicitly.
 
 Regression cases distinguish200ms publication delay from205ms actual dispatch,
 retain slow event-posting cost, reject tampered/missing/ambiguous witnesses and

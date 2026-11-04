@@ -6372,6 +6372,26 @@
         "position": 135,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline",
         "reason": "Task20 retry native action readiness and completion share the unchanged request deadline; late input is refused."
+      },
+      {
+        "position": 136,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_captured_linux_delay_keeps_failed_wall_and_callback_bound_separate",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 137,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 138,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_refuses_incomplete_clocks_and_keeps_original_observations",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 139,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
       }
     ]
   },

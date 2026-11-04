@@ -1460,11 +1460,16 @@
       },
       "release_hold": "exact final-candidate evidence and independent all-target release review; final signed Mac package evidence",
       "executable_check_sources": [
-        "crates/librairii-core/tests/scale_properties.rs"
+        "crates/librairii-core/tests/scale_properties.rs",
+        "xtask/tests/test_linux_input_admission.py"
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/browsing.rs": "b477f1a31b1c61291fa75c7829f30119da5f20dd9c8d3dc7969734dd5e075bf9",
-        "crates/librairii-core/tests/scale_properties.rs": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
+        "crates/librairii-core/tests/scale_properties.rs": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8",
+        "qualification/section-16/native.py": "8713273dc0040a91748bd1886aab391f28852a1fc1bb7e198514cb0346161f2a",
+        "qualification/section-16/dispatch.py": "469b36af7405b462b43ac504ed2adcec40c805c37f429d6aae5cc572c9de0df8",
+        "qualification/section-16/fixtures/linux-keyboard-publication-delay.json": "f8dac4fb593439d18886e0e2597fcf7be2f5ee475f3ed40c71becc1f37e75628",
+        "xtask/tests/test_linux_input_admission.py": "06d2775a60aca3f09e5b40ad947ca3d12a977bfb2567027fbde51074f0e3dbbd"
       }
     },
     {

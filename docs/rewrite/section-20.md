@@ -151,6 +151,42 @@ Both independent source reviews report zero required findings. Original failed
 logs and provider-verified archives remain retained; corrected Rust tests and
 native execution still require fresh CI after the current jobs finish.
 
+### Linux dispatch measurement
+
+The same `d3e57b2` source failed its first Linux GPU resource warmup at
+**126.699703 ms keyboard observation-wall p95** against 100 ms. Pointer
+26.648978 ms and cold completion 382.583897 ms passed. The seven later resource
+pairs are absent. The original failed [artifact 13285297138](https://github.com/01max/librairii/actions/runs/41748877688/artifacts/13285297138)
+is retained: 131,368,054 bytes, SHA-256
+`73ca978a1da37319565552bce4245a7a07175241ee152bf830fc142ce681164e`.
+Both independent reviewers verified the source, all 8 backend/35 desktop/1,208
+resource seals, 64 keyboard and pointer samples, all 64 clock rounds and the
+joined 191-event native log, with positive worker join and fixture retirement.
+
+Those clocks conservatively bound keyboard callback p95 at **9.953264 ms**.
+Of ten keyboard observation walls above 100 ms, nine retain a minimum of
+105.852085–137.126096 ms after the actual callback. This locates the excess
+interval after dispatch; it does not distinguish timer/projection/render work,
+file publication or observer scheduling, or establish a product optimization.
+The raw run remains failed and does not qualify missing pairs or later source.
+
+Future Linux runs use the existing macOS method3 protocol: time from before the
+native input helper starts to the actual production search callback return or
+browser-focus acknowledgement, using the conservative bound from all 64 clock
+rounds and exact state/sequence correspondence. All original observation walls
+remain in both the raw file and report. Both platforms require the complete
+event log to match after positive worker join before marking a report complete.
+No new per-event arming, waiting or preconditioning is added. The 100 ms dispatch
+and 3000 ms cold-completion gates, samples, imports, covers and renderers are
+unchanged. Callback bounds do not claim visible completion.
+
+Headless regressions exercise the real Linux admission and inspection paths
+with inert processes: late observation remains visible, actual callback and
+event-posting delays still exceed the dispatch gate, missing clocks refuse
+admission, and a mismatched joined event refuses completion. A provenance-bound
+64-sample Linux trace preserves the original failed wall separately from its
+callback bounds. Fresh complete three-target CI remains required.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid

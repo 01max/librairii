@@ -135,6 +135,10 @@
     "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
     "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source",
     "test_packaged_acceptance.PackagedAdmission.test_interruption_retries_only_explicit_unsubmitted_sync_once",
-    "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline"
+    "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline",
+    "test_linux_input_admission.LinuxInputAdmission.test_captured_linux_delay_keeps_failed_wall_and_callback_bound_separate",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_refuses_incomplete_clocks_and_keeps_original_observations",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join"
   ]
 }
