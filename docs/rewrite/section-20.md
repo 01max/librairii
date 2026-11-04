@@ -170,6 +170,24 @@ must validate the actual native route. The failed archive remains retained as
 [artifact 13286289297](https://github.com/01max/librairii/actions/runs/41748877717/artifacts/13286289297),
 SHA-256 `9680c882b7a433c826efda8209682bc0e78961b1120dff3a1a5ffe75760dfe19`.
 
+The same source's Intel software resource warmup failed actual keyboard dispatch:
+its conservative p95 interval is **100.276104–113.836529 ms**, with observation
+wall p95 157.002305 ms. Four samples have lower bounds above 100 ms; their native
+posting calls returned in 0.091443–0.394185 ms. This locates the excess after
+posting and before callback return, without identifying event delivery,
+main-thread scheduling or handler work. Pointer 50.091044 ms and completion
+1319.232140 ms passed. Seven input cohorts and their joined event logs verify;
+three later software resource pairs are absent. Its failed
+[artifact 13286814027](https://github.com/01max/librairii/actions/runs/41748877688/artifacts/13286814027)
+has SHA-256 `c11ccb36a1b9a0d67479b1b6840a6b6a32aaccd11a23fb9bfeddd243c7754ec2`.
+
+A temporary qualification-only main-thread probe records timer stage timestamps
+on the same clock as the dispatch witnesses. It retains bounded in-memory records
+for slow timer work, long gaps between timers and changed search sequences,
+writing them only after worker join. The probe changes neither workload nor
+acceptance limits. It is diagnostic instrumentation, not an optimization;
+remove it after analysis and require fresh uninstrumented source qualification.
+
 ### Linux dispatch measurement
 
 The same `d3e57b2` source failed its first Linux GPU resource warmup at

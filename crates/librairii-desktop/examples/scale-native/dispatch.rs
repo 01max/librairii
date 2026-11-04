@@ -50,6 +50,14 @@ impl Witnesses {
         self.origin.elapsed().as_nanos() as u64
     }
 
+    pub fn diagnostic_origin(&self) -> Instant {
+        self.origin
+    }
+
+    pub fn search_sequence(&self) -> u64 {
+        self.searches
+    }
+
     fn record(&mut self, event: Value) {
         if self.events.len() < 4096 {
             self.events.push(event);

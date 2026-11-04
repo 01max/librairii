@@ -4,6 +4,8 @@
 mod dispatch;
 #[path = "scale-native/fixture.rs"]
 mod fixture;
+#[path = "scale-native/timing.rs"]
+mod timing;
 #[allow(dead_code)]
 #[path = "../src/view.rs"]
 mod view;
@@ -46,6 +48,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let view = view::install(&ui, worker.clone(), first)?;
     let dispatch = dispatch::Witnesses::install(&ui);
     let dispatch_timer = dispatch.clone();
+    let timing = Rc::new(RefCell::new(timing::Trace::new(
+        dispatch.borrow().diagnostic_origin(),
+    )));
+    let timing_timer = timing.clone();
     let closing = worker.clone();
     ui.on_quit(move || closing.borrow().request_shutdown());
     let weak = ui.as_weak();
@@ -83,6 +89,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         pending.borrow().request_shutdown();let _quit=slint::quit_event_loop();return;
       }
       let mut stage="window";
+      let mut tick=timing_timer.borrow().start(dispatch_timer.borrow().search_sequence());
       let result=(||->Result{
         let Some(ui)=weak.upgrade() else{return Err("window disappeared".into())};
         if !ui.window().has_winit_window() {return Ok(())}
@@ -93,6 +100,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             if pending.borrow().finished(){slint::quit_event_loop()?;}
             return Ok(())
         }
+        timing_timer.borrow().mark(&mut tick,1);
         if let Ok(text)=fs::read_to_string(output.join("dispatch-clock-request")) {
             let sequence=text.parse::<u64>()?;
             if sequence>clock_sequence {
@@ -103,8 +111,13 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             }
         }
         stage="projection";
-        view.borrow_mut().resize(&ui);menus.dispatch(&ui);
+        timing_timer.borrow().mark(&mut tick,2);
+        view.borrow_mut().resize(&ui);
+        timing_timer.borrow().mark(&mut tick,3);
+        menus.dispatch(&ui);
+        timing_timer.borrow().mark(&mut tick,4);
         if let Some(s)=pending.borrow().take_snapshot(){
+            timing_timer.borrow().mark(&mut tick,5);
             let revision=s.revision;let phase=s.phase;let expected=pending.borrow().revision();
             let accepted=view.borrow_mut().accept(&ui,s,expected);
             last_projection=Some((revision,phase,expected,accepted));
@@ -131,12 +144,14 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         let running=active_imports>0;
         let loading=output.join("start-load").exists();
         stage="import-offer";
+        timing_timer.borrow().mark(&mut tick,6);
         // An old projection can undercount work already offered. Await the
         // current controller revision before using its durable admission/card
         // observation to admit another batch; otherwise slow hosts self-flood.
         if loading && ready && snapshot.revision==pending.borrow().revision() && active_imports<2 && snapshot.workflows.operations.preparing.is_none() && offered_at.elapsed()>Duration::from_millis(250) && imports<64 && let Some(generation)=snapshot.generation.clone() {pending.borrow().offer(Command::Operations{generation,action:librairii_desktop::workflows::operations::Action::Import(config.imports.clone())})?;imports+=1;offered_at=Instant::now();
         }
         stage="page-offer";
+        timing_timer.borrow().mark(&mut tick,7);
         if let Ok(text)=fs::read_to_string(output.join("page")) {
             let requested=text.trim().parse::<i64>()?;
             if !(1..=42).contains(&requested){return Err("bounded qualification page required".into())}
@@ -149,6 +164,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             }
         }
         stage="geometry";
+        timing_timer.borrow().mark(&mut tick,8);
         if let Ok(bytes)=fs::read(output.join("geometry")) {
             let request:serde_json::Value=serde_json::from_slice(&bytes)?;
             let sequence=request["sequence"].as_u64().ok_or("geometry sequence")?;
@@ -163,6 +179,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             }
         }
         stage="capture";
+        timing_timer.borrow().mark(&mut tick,9);
         let sequence=fs::read_to_string(output.join("capture")).ok().and_then(|s|s.trim().parse::<u32>().ok()).unwrap_or(0);
         if sequence>last_capture {
             let pixels=ui.window().take_snapshot()?;
@@ -171,13 +188,17 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
         stage="state";
+        timing_timer.borrow().mark(&mut tick,10);
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
         let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"dispatch":dispatch_timer.borrow().summary(),"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"active_imports":active_imports,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
-        let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
+        let encoded=serde_json::to_vec(&state)?;
+        timing_timer.borrow().mark(&mut tick,11);
+        if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}
         if pending.borrow().finished(){slint::quit_event_loop()?;}
         Ok(())
       })();
+      timing_timer.borrow_mut().finish(tick);
       if let Err(e)=result{
         let message=e.to_string();
         // Retain the triggering controller observation before worker shutdown
@@ -224,6 +245,10 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         .into());
     }
     joined?;
+    atomic(
+        &failure_output.join("task20-main-thread-probe.json"),
+        serde_json::to_vec(&timing.borrow().report())?,
+    )?;
     atomic(
         &failure_output.join("dispatch-events.json"),
         serde_json::to_vec(dispatch.borrow().events()?)?,
