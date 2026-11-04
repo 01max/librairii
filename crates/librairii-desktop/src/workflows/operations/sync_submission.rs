@@ -33,7 +33,10 @@ impl Submission {
         {
             return Err(StorageError::SnapshotChanged);
         }
-        Ok(self.refused.take().expect("checked refusal").1)
+        self.refused
+            .take()
+            .map(|(_, start)| start)
+            .ok_or(StorageError::SnapshotChanged)
     }
 
     pub fn offer(
@@ -69,7 +72,9 @@ mod tests {
         lifecycle::LifecycleGate,
         ports::creation::{NewItem, NewOperation},
     };
-    fn input() -> Start {
+    type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+    fn input() -> TestResult<Start> {
         Start::new(NewOperation {
             id: "a0000000-0000-4000-8000-000000000097".into(),
             kind: librairii_core::OperationKind::MetadataSync,
@@ -80,14 +85,14 @@ mod tests {
                 ..Default::default()
             }],
         })
-        .unwrap()
+        .map_err(|_| "valid metadata input was refused".into())
     }
     #[test]
-    fn retry_keeps_owned_input_and_requires_current_receipt_and_generation() {
+    fn retry_keeps_owned_input_and_requires_current_receipt_and_generation() -> TestResult {
         let gate = LifecycleGate::new();
-        let generation = gate.enter().unwrap().generation().clone();
+        let generation = gate.enter()?.generation().clone();
         let mut submission = Submission::default();
-        let start = input();
+        let start = input()?;
         let address = start.input() as *const NewOperation;
         assert!(
             submission
@@ -97,11 +102,11 @@ mod tests {
                 )))
                 .is_err()
         );
-        let first = submission.receipt().unwrap();
+        let first = submission.receipt().ok_or("first refusal missing")?;
         let other = LifecycleGate::new();
         assert!(
             submission
-                .retry(&first, other.enter().unwrap().generation())
+                .retry(&first, other.enter()?.generation())
                 .is_err()
         );
         let mut wrong = first.clone();
@@ -110,7 +115,7 @@ mod tests {
         let mut wrong = first.clone();
         wrong.id.push('x');
         assert!(submission.retry(&wrong, &generation).is_err());
-        let start = submission.retry(&first, &generation).unwrap();
+        let start = submission.retry(&first, &generation)?;
         assert_eq!(start.input() as *const NewOperation, address);
         assert!(submission.retry(&first, &generation).is_err());
         assert!(
@@ -122,25 +127,24 @@ mod tests {
                 .is_err()
         );
         assert!(submission.retry(&first, &generation).is_err());
-        let second = submission.receipt().unwrap();
-        let start = submission.retry(&second, &generation).unwrap();
+        let second = submission.receipt().ok_or("second refusal missing")?;
+        let start = submission.retry(&second, &generation)?;
         let mut submitted = 0;
-        submission
-            .offer(start, generation.clone(), 6, |s| {
-                assert_eq!(s.input() as *const NewOperation, address);
-                submitted += 1;
-                Ok(())
-            })
-            .unwrap();
+        submission.offer(start, generation.clone(), 6, |s| {
+            assert_eq!(s.input() as *const NewOperation, address);
+            submitted += 1;
+            Ok(())
+        })?;
         assert_eq!(submitted, 1);
         assert!(submission.receipt().is_none());
         // Even a later observation failure cannot recover the consumed input.
         assert!(submission.retry(&second, &generation).is_err());
+        Ok(())
     }
     #[test]
-    fn closed_or_fenced_offers_never_authorize_retry() {
+    fn closed_or_fenced_offers_never_authorize_retry() -> TestResult {
         let gate = LifecycleGate::new();
-        let generation = gate.enter().unwrap().generation().clone();
+        let generation = gate.enter()?.generation().clone();
         for error in [
             StorageError::IntakeClosed,
             StorageError::RuntimeFenced,
@@ -149,10 +153,11 @@ mod tests {
             let mut submission = Submission::default();
             assert!(
                 submission
-                    .offer(input(), generation.clone(), 1, |s| Err((error, s)))
+                    .offer(input()?, generation.clone(), 1, |s| Err((error, s)))
                     .is_err()
             );
             assert!(submission.receipt().is_none());
         }
+        Ok(())
     }
 }

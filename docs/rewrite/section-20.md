@@ -139,6 +139,18 @@ The changed Swift observer also passed local type-checking without execution;
 its dedicated compiler cache was removed afterward. Fresh Rust/native CI remains
 required for the corrected source.
 
+The next source, `d3e57b28bf5ece60af458bc5dfdd7711e2b0a13a`, failed
+before Rust test execution: the maintenance example omitted three newly required
+optional observer fields, and the sync retry module used `expect`/`unwrap` in
+violation of the existing lint rules. The correction supplies `None` for ordinary
+maintenance fixtures, returns a checked error for an absent retry input, and
+propagates test setup errors without changing the assertions or lint policy.
+All desktop targets and examples then passed local compile-only Clippy with
+warnings denied; all 138 headless tests and source/corpus/migration checks pass.
+Both independent source reviews report zero required findings. Original failed
+logs and provider-verified archives remain retained; corrected Rust tests and
+native execution still require fresh CI after the current jobs finish.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid

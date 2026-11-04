@@ -27,6 +27,7 @@ fn setup(ui: &DesktopWindow) -> Result<Fixture> {
     let locations = ProfileLocations::for_host(&home, Some(&config), Some(&data))?;
     let worker = Rc::new(RefCell::new(Worker::start_with(Environment {
         catalog: None,
+        import_observer: None,
         home: home.into_os_string(),
         config: config.into_os_string(),
         data: data.into_os_string(),
@@ -39,6 +40,7 @@ fn setup(ui: &DesktopWindow) -> Result<Fixture> {
     let v = view::install(ui, worker.clone(), initial)?;
     Ok(Fixture {
         catalog: None,
+        import_observer: None,
         ui: ui.as_weak(),
         worker,
         view: v,
@@ -374,6 +376,7 @@ fn override_checks(ui: &DesktopWindow) -> Result {
     let locations = ProfileLocations::for_host(&roots.profile().join("never-read"), None, None)?;
     let f = Fixture {
         catalog: None,
+        import_observer: None,
         ui: ui.as_weak(),
         worker,
         view: v,
