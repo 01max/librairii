@@ -169,12 +169,13 @@ fn validate_native_namespace(
         }
         Err(e) => return Err(e),
     };
-    let entries = root.entries(6, cancel)?;
+    let entries = root.entries(7, cancel)?;
     if entries.is_empty() {
         return Ok(());
     }
     if entries.iter().any(|name| {
         name != profile::MARKER
+            && name != profile::SETUP_INTENT
             && name != "settings.json"
             && name != "navigation.json"
             && name != "shelf-warnings.json"
@@ -183,10 +184,14 @@ fn validate_native_namespace(
     }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
-    // A marker-only profile is a legitimate interrupted first setup. Saved
-    // library preferences without their binding are lost state, not a new install.
+    // Only the pending setup proof distinguishes an interrupted first setup
+    // from a completed binding whose settings were lost.
+    let setup_intent = profile::has_setup_intent(&root)?;
     if !entries.iter().any(|name| name == "settings.json")
-        && entries.iter().any(|name| name != profile::MARKER)
+        && (!setup_intent
+            || entries
+                .iter()
+                .any(|name| name != profile::MARKER && name != profile::SETUP_INTENT))
     {
         return Err(StorageError::RecoveryBindingRequired);
     }
@@ -490,6 +495,79 @@ mod tests {
             preferences
         );
         assert_eq!(fs::read(selected.join("db/librairii.sqlite3"))?, database);
+        Ok(())
+    }
+    #[test]
+    fn marker_only_namespace_after_lost_binding_cannot_start_another_library() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let cancel = WorkCancellation::default();
+        let store = prepare_native_profile(&locations, &cancel)?;
+        drop(store);
+        // A persisted pending intent still permits first setup after restart.
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::ConfirmFolder { .. }
+        ));
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let original = roots.library().join("external native library");
+        let id = "b0000000-0000-4000-8000-000000000013".parse()?;
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            super::super::TargetPreview::inspect(&original, &[], &cancel)?,
+            &store,
+            &locations,
+            id,
+            librairii_app::localization::Language::English,
+            &cancel,
+        )
+        .map_err(|failure| failure.to_string())?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|failure| failure.to_string())?;
+        let database = fs::read(original.join("db/librairii.sqlite3"))?;
+        assert_eq!(fs::read_dir(&locations.native)?.count(), 2);
+        drop(store);
+
+        fs::remove_file(locations.native.join("settings.json"))?;
+        assert_eq!(fs::read_dir(&locations.native)?.count(), 1);
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Recovery {
+                cause: StorageError::RecoveryBindingRequired,
+                ..
+            }
+        ));
+        assert!(matches!(
+            prepare_native_profile(&locations, &cancel),
+            Err(StorageError::RecoveryBindingRequired)
+        ));
+        let store = profile::NativeProfileStore::open_native(&locations.native)?;
+        assert!(matches!(
+            store.update(|profile| {
+                profile.language = "fr".into();
+                Ok(())
+            }),
+            Err(StorageError::RecoveryBindingRequired)
+        ));
+        let replacement = roots.library().join("replacement must not be created");
+        let attempted = crate::native::NativeLibrary::initialize_confirmed(
+            super::super::TargetPreview::inspect(&replacement, &[], &cancel)?,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000014".parse()?,
+            librairii_app::localization::Language::English,
+            &cancel,
+        );
+        assert!(matches!(
+            attempted
+                .as_ref()
+                .map_err(|failure| failure.storage_error()),
+            Err(StorageError::RecoveryBindingRequired)
+        ));
+        drop(attempted);
+        assert!(!replacement.exists());
+        assert_eq!(fs::read(original.join("db/librairii.sqlite3"))?, database);
         Ok(())
     }
     #[test]

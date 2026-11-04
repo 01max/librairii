@@ -5893,6 +5893,19 @@
           ]
         },
         "reason": "Task20 cancellation Busy receipt distinguishes refused admission from closed intake and failed observation after acceptance; never replay ambiguous cancellation."
+      },
+      {
+        "position": 653,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::marker_only_namespace_after_lost_binding_cannot_start_another_library",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "PR76 review: preserve interrupted fresh setup while refusing a new binding after completed native settings are lost."
       }
     ],
     "python": [
