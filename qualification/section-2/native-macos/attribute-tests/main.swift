@@ -330,6 +330,55 @@ do {
             "pending root protocol admitted a different failure")
     }
     let document = "/owned/Été 日本語/export"
+    // Reproduce the installed Intel Finder AXTitle=-25204 failure through
+    // the real scalar reader and complete snapshot reply boundary. No native
+    // reads or actions occur: the fixture functions above inject every result.
+    for attribute in [kAXTitleAttribute, kAXDocumentAttribute, kAXURLAttribute] {
+        scalarFixture[attribute] = encodedError(.cannotComplete)
+        let before = scalarReads
+        let unavailable = try snapshotReadReply(operation: "snapshot", pid: 395, document: document) {
+            _ = try checkedText(element, attribute, optional: true)
+            return ["nodes": ["partial"], "window": 0]
+        }
+        try require(unavailable.exitCode == 75 && scalarReads == before + 1
+            && unavailable.value["format"] as? String == "librairii.native-document-attribute-unavailable"
+            && unavailable.value["pid"] as? Int == 395 && unavailable.value["document"] as? String == document
+            && unavailable.value["status"] as? Int == -25204
+            && unavailable.value["attribute"] as? String == attribute && unavailable.value.count == 6,
+            "Finder failed read escaped as partial success or lacked its bound receipt")
+        for (operation, path) in [("press", document), ("status", document), ("snapshot-window", document),
+                                  ("snapshot", "")] {
+            do {
+                _ = try snapshotReadReply(operation: operation, pid: 395, document: path) {
+                    _ = try checkedText(element, attribute, optional: true)
+                    return [:]
+                }
+                throw TestFailure.mismatch("Finder pending receipt admitted an action or unbound read")
+            } catch Failure.unavailableDocumentAttribute(_) { }
+        }
+        for error in [AXError.failure, .invalidUIElement, .illegalArgument, .apiDisabled] {
+            scalarFixture[attribute] = encodedError(error)
+            do {
+                _ = try snapshotReadReply(operation: "snapshot", pid: 395, document: document) {
+                    _ = try checkedText(element, attribute, optional: true)
+                    return [:]
+                }
+                throw TestFailure.mismatch("Finder pending receipt admitted an unrelated scalar error")
+            } catch Failure.invalid(_) { }
+        }
+        scalarFixture[attribute] = "Ready"
+        let ready = try snapshotReadReply(operation: "snapshot", pid: 395, document: document) {
+            return ["value": try checkedText(element, attribute, optional: true)]
+        }
+        try require(ready.exitCode == 0 && ready.value["value"] as? String == "Ready",
+                    "Finder successful attribute read changed")
+        scalarFixture.removeValue(forKey: attribute)
+    }
+    for error in [Failure.unavailableDocumentAttribute(kAXChildrenAttribute),
+                  .unavailableDocumentAttribute("")] {
+        try require(unavailableDocumentSnapshotReply(error, operation: "snapshot", pid: 395,
+            document: document) == nil, "Finder protocol admitted an unrelated attribute")
+    }
     guard let pendingDocument = unavailableDocumentSnapshotReply(Failure.staleSnapshot("batch: -25202"),
         operation: "snapshot", pid: 395, document: document), let documentWire = try JSONSerialization.jsonObject(
         with: JSONSerialization.data(withJSONObject: pendingDocument)) as? [String: Any] else {

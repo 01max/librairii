@@ -7,6 +7,29 @@ signed-release and legacy cutover prerequisites below. The original inventory
 and observations remain historical evidence; the Task 20 implementation records
 its actual removals separately.
 
+## Finder observation correction
+
+Source `56fcb9316dcac99f166be5e83ae88dd57d54593a` passed all three scale
+jobs and both ARM/Linux installed workflows. Intel's installed workflow stopped
+after export when its first Finder snapshot returned `AXTitle=-25204`
+(`cannotComplete`). The original failed artifact
+[13304695749](https://github.com/01max/librairii/actions/runs/41790159060/artifacts/13304695749)
+is retained with SHA-256
+`6d33df95ba76f6a5e16416a60af96a75787339621f4ed2609b0c101a1acad34f`.
+The trace proves the read failed; it does not establish whether it would have
+recovered or whether Finder had opened the requested destination.
+
+The observer now returns an explicit unavailable receipt for that scalar read
+of the Finder title, document or URL. It binds the failed attribute, Finder PID
+and exact document, discards partial data, and permits a new read within the
+original deadline. Export and reveal actions are not repeated. Other errors,
+wrong identities, unresolved destinations and persistent unavailability still
+fail. Complete destination/file and window-retirement witnesses remain required.
+Headless protocol regressions cover recovery, deadline exhaustion and rejected
+receipts/actions; the inert Swift fixture injects the original scalar failure
+through the actual reader and snapshot boundary. Fresh native CI must validate
+the correction; the failed run remains failed.
+
 ## Cancellation backpressure correction
 
 Source `9ccfd31b701147ce3152c78e80d102779bf39299` passed the Linux deep
