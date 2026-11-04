@@ -84,6 +84,16 @@ The probe changes neither execution order nor acceptance thresholds and is not
 a performance correction; its results do not substitute for uninstrumented
 final-source qualification.
 
+That diagnostic source completed all eight Intel resource pairs and four display
+runs. Startup ranged **309.593–535.527 ms**, maximum idle CPU was **3.197%**,
+and maximum peak RSS was **134,942,720 bytes**. All 1,375 resource seals verify;
+all product workers joined and their fixtures retired. The tagged toolkit stage
+ranged 157.684–306.273 ms. This passing run did not reproduce the earlier delay,
+so it identifies no cause or performance fix and does not qualify later source.
+Raw [artifact 13284361798](https://github.com/01max/librairii/actions/runs/41741567592/artifacts/13284361798)
+is retained with SHA-256
+`9d6527d33af9eb8e697a9b05251602f50736b2448379f36ac19babf195dd4b1e`.
+
 The diagnostic source `b81f37dc284edc406e7eeec232f9e5eeaf48055a` also
 exposed a timing dependency in the ARM native cancellation fixture: both batches
 of 32 tiny duplicate archives finished before the required Cancel callback. Its
@@ -119,6 +129,15 @@ late success fails, with headless clock replays covering each boundary. The head
 replay fails before this observer correction and passes afterward in English and
 French, including persistent refusal and uncertain-result cases. All 138
 headless tests pass; the Rust regression and native path await fresh CI.
+
+After both corrections and removal of the diagnostic logging, a clean detached
+checkout of `297ab21b87f5befd1a796d55cbbb3c873e5ef2fc` passed all **138
+headless tests**, exact source/corpus/migration-byte checks, formatting and the
+non-executing Mac build preview. Its log SHA-256 is
+`330d90183bb4c66f32240f432bef1416f70ff7f510b6752bdb5dede73562aa82`.
+The changed Swift observer also passed local type-checking without execution;
+its dedicated compiler cache was removed afterward. Fresh Rust/native CI remains
+required for the corrected source.
 
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
