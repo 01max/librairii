@@ -1328,7 +1328,7 @@
         "crates/librairii-desktop/tests/settings.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/menus.rs": "6e54073e622cdd0de2c5556cbe1d8a17654ea872a37a3f26079c69556721e282",
+        "crates/librairii-desktop/src/menus.rs": "ad2ef184a12541b29abd833308b38c3e0b15f5dc9166a32ad612c9d3aacd7bdc",
         "crates/librairii-desktop/tests/settings.rs": "cc74af965260d7819c58a5e739b10eec574d803d51df978790e857c3c6dcd7db"
       }
     },

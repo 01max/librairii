@@ -77,10 +77,12 @@ within budget. Its first snapshot arrived at 8.362 ms, window construction at
 1081.591 ms and first UI timer at 1631.781 ms on the child's clock. This again
 localizes most delay before the constructed-window boundary; it does not identify
 the responsible operation. The original measurements and all 1,193 resource
-seals remain retained. Temporary `[DEBUG-task20-startup]` timings split toolkit,
-component and menu initialization for the next CI probe; remove them after
-diagnosis. This probe changes neither execution order nor acceptance thresholds
-and is not a performance correction.
+seals remain retained. Diagnostic source `b81f37dc284edc406e7eeec232f9e5eeaf48055a`
+adds temporary `[DEBUG-task20-startup]` timings around toolkit, component and
+menu initialization. Those timings are removed from the final implementation.
+The probe changes neither execution order nor acceptance thresholds and is not
+a performance correction; its results do not substitute for uninstrumented
+final-source qualification.
 
 The diagnostic source `b81f37dc284edc406e7eeec232f9e5eeaf48055a` also
 exposed a timing dependency in the ARM native cancellation fixture: both batches

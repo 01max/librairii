@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "39923ecca452bbd58134051a59aa4fb7fbc24e29ae93b3b3e80bd1261ea57eb5"
+    "sha256": "1b60114b322dcf1e9bf6fb19a45fc5e5d370aca884c465bdf331bc38e4c20a80"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
