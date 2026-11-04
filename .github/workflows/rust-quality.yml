@@ -61,7 +61,9 @@ jobs:
           set -o pipefail
           cargo test --locked -p fontique --lib -- --nocapture 2>&1 | tee target/quality/font-metadata-tests.log
       - name: Cumulative workspace check
-        run: cargo xtask check
+        run: |
+          set -o pipefail
+          cargo xtask check 2>&1 | tee target/quality/workspace-check.log
       - name: Qualified AT-SPI adapter lifetime regressions
         if: runner.os == 'Linux'
         run: |
