@@ -1470,10 +1470,7 @@
         "qualification/section-16/dispatch.py": "469b36af7405b462b43ac504ed2adcec40c805c37f429d6aae5cc572c9de0df8",
         "qualification/section-16/fixtures/linux-keyboard-publication-delay.json": "f8dac4fb593439d18886e0e2597fcf7be2f5ee475f3ed40c71becc1f37e75628",
         "xtask/tests/test_linux_input_admission.py": "06d2775a60aca3f09e5b40ad947ca3d12a977bfb2567027fbde51074f0e3dbbd",
-        "xtask/tests/test_installed_x11_activation.py": "a9e076f2865e088e675b0dda24b111c08ebc3efa457c0006e8f8eb5189b7fbe2",
-        "crates/librairii-desktop/examples/scale-native.rs": "baea20a960ddfabb429b0a2154b99700d565d29209c25334494ae0f75bb5b761",
-        "crates/librairii-desktop/examples/scale-native/dispatch.rs": "69f1cd008f4e1e7e501aa396a6cabe16d6cff67a684d8a81d5bbb7045da17849",
-        "crates/librairii-desktop/examples/scale-native/timing.rs": "4bcb8faf6e1b165a591bd196e1934327b9e78687805824ee20bd360d8f17bdab"
+        "xtask/tests/test_installed_x11_activation.py": "a9e076f2865e088e675b0dda24b111c08ebc3efa457c0006e8f8eb5189b7fbe2"
       }
     },
     {

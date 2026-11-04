@@ -190,12 +190,41 @@ three later software resource pairs are absent. Its failed
 [artifact 13286814027](https://github.com/01max/librairii/actions/runs/41748877688/artifacts/13286814027)
 has SHA-256 `c11ccb36a1b9a0d67479b1b6840a6b6a32aaccd11a23fb9bfeddd243c7754ec2`.
 
-A temporary qualification-only main-thread probe records timer stage timestamps
+A temporary qualification-only main-thread probe recorded timer stage timestamps
 on the same clock as the dispatch witnesses. It retains bounded in-memory records
 for slow timer work, long gaps between timers and changed search sequences,
-writing them only after worker join. The probe changes neither workload nor
-acceptance limits. It is diagnostic instrumentation, not an optimization;
-remove it after analysis and require fresh uninstrumented source qualification.
+writing them only after worker join. The probe changed neither workload nor
+acceptance limits. Its code and probe-only source pins are removed after retaining
+the raw observations. Fresh uninstrumented source qualification remains required;
+removing diagnostics does not establish a performance correction.
+
+Diagnostic source `842d3939e6cd5e6bb29c52d57c5c2d89454aa97a` completes
+all ten Linux input cohorts: 640 keyboard samples, 640 pointer samples, 200 cold
+completions and 1,910 matching joined events. Both independent reviews verify
+the 27 frozen inputs and all 8 backend/37 desktop/1,383 resource seals. Maximum
+cohort p95 is 20.952015 ms for keyboard, 14.148170 ms for pointer and 408.940778 ms
+for completion. All eight resource pairs and display checks pass; maximum startup
+is 529.234253 ms, idle CPU 0.815399% and RSS 235,532,288 bytes. The ten diagnostic
+traces have no overflow and no slow callback samples. This Xeon host differs
+from the earlier EPYC failure host. The passing observation establishes neither
+a historical cause nor an optimization and cannot qualify later uninstrumented
+source. Raw [artifact 13294200973](https://github.com/01max/librairii/actions/runs/41766355629/artifacts/13294200973)
+is retained with SHA-256
+`3f09f7faf510a7c420760cb071d8a56344b8e2f858299ab48cb184d708917eaf`.
+
+The same source's ten Intel input cohorts pass their existing p95 gates, while
+two individual callbacks are certainly above 100 ms: keyboard sequence 1 is
+bounded at 306.372212–319.633867 ms and software pointer sequence 5 at
+146.842726–158.747699 ms. A third pointer interval spans the threshold
+(88.515100–100.420073 ms). The first two guaranteed dispatch intervals fall
+entirely between recorded timers, within gaps of 897.853555 and 184.311300 ms.
+Posting takes less than 0.4 ms. These observations do not attribute the delay
+to the recorded timer bodies or distinguish rendering, other callbacks, event
+delivery and host scheduling. No cause or optimization is established, and
+the historical failed resource cohort keeps its verdict. Raw
+[artifact 13294806397](https://github.com/01max/librairii/actions/runs/41766355629/artifacts/13294806397)
+is retained with SHA-256
+`20ea47568e4f89a0abf9855d9c01d2039642b0e2c9c4d6c69a6a0dff395d9ee6`.
 
 ### Linux dispatch measurement
 
