@@ -130,12 +130,15 @@ fn cancel(f: &Fixture, ui: &DesktopWindow, allow_finished: bool) -> Result<Snaps
             )?;
             return Ok(snapshot);
         }
-        // Cancellation is idempotent for this exact operation. A busy receipt
-        // may be retried only while that same report still offers Cancel.
+        // Retry only proven scheduler refusal of this exact command revision.
+        // A failed read after accepted cancellation never authorizes replay.
         check(
-            data.details
-                .as_ref()
-                .is_some_and(|d| d.card.operation.identity.id == id)
+            data.cancel_refused
+                && data.revision == snapshot.revision
+                && data
+                    .details
+                    .as_ref()
+                    .is_some_and(|d| d.card.operation.identity.id == id)
                 && ui.get_operation_cancellable()
                 && !data.recovery_required
                 && !ui.get_operation_notice().is_empty(),

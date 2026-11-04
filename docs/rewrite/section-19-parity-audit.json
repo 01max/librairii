@@ -7,7 +7,7 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "905bc957566c686dd80bb5dc52a95838cbe44e42275c1583bde2bf4e11915d7d"
+    "sha256": "1aefa22938dacf94246b69eb67cd8e97bb5b5a02d83b66b7bd258ca7f719d6ac"
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
@@ -370,7 +370,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -556,13 +556,13 @@
           "suite": "librairii-desktop::presentation",
           "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-desktop::presentation",
           "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -682,7 +682,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-core::query_urls",
@@ -694,7 +694,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "manual_shelf_navigation_retains_sort_preference_across_history_and_reopen",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -776,7 +776,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -1375,7 +1375,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "saved_shelf_warning_preferences_are_recognized_as_native_state",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-storage::shelves",
@@ -1756,7 +1756,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -1972,19 +1972,19 @@
           "suite": "librairii-desktop::presentation",
           "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-desktop::presentation",
           "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-desktop::presentation",
           "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -2010,7 +2010,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "first_run_inspection_is_readonly_and_explicit_language_never_initializes_a_library",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-storage",

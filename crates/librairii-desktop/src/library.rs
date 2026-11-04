@@ -162,7 +162,10 @@ impl<'gate> Runtime<'gate, '_, '_> {
             .gate
             .enter_mutation()
             .map_err(|_| StorageError::RuntimeInUse)?;
-        self.jobs.cancel(id).map_err(|_| StorageError::QueueFull)
+        self.jobs.cancel(id).map_err(|(refusal, _)| match refusal {
+            native_jobs::Refusal::Busy => StorageError::QueueFull,
+            native_jobs::Refusal::Closed => StorageError::IntakeClosed,
+        })
     }
     pub fn offer_metadata(
         &self,

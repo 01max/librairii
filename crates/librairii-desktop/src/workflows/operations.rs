@@ -79,6 +79,9 @@ pub struct Snapshot {
     /// This revision's import offer returned its owned input before admission.
     /// A later observation failure must never be interpreted as this receipt.
     pub import_refused: bool,
+    /// This revision's cancel offer was refused before scheduler acceptance.
+    /// A failed observation after an accepted cancellation never sets this.
+    pub cancel_refused: bool,
     pub status: Option<RuntimeStatus>,
     pub progress: Vec<ProgressUpdate>,
 }
@@ -111,6 +114,7 @@ impl Controller {
         self.recent.truncate(8);
         self.snapshot.revision = revision;
         self.snapshot.import_refused = false;
+        self.snapshot.cancel_refused = false;
         self.snapshot.preparing = Some(id.clone());
         self.snapshot.details = None;
         self.selected = Some((id, 0));
@@ -149,6 +153,7 @@ impl Controller {
         self.snapshot.revision = revision;
         self.snapshot.error = None;
         self.snapshot.import_refused = false;
+        self.snapshot.cancel_refused = false;
         // An Inspect receipt certifies only its newly read report. A failure,
         // including a same-ID page/refresh, must never reuse the prior details.
         if matches!(&action, Action::Inspect { .. }) {
@@ -257,7 +262,7 @@ impl Controller {
                         }) {
                             return Err(StorageError::SnapshotChanged);
                         }
-                        runtime.cancel_operation(id)?;
+                        self.offer_cancel(id, |id| runtime.cancel_operation(id))?;
                     }
                     Action::Inspect { id, page } => {
                         // Only an observed operation can be selected from the feed.
@@ -380,6 +385,11 @@ impl Controller {
             self.snapshot.error = Some(error.to_string());
         }
         effects
+    }
+    fn offer_cancel(&mut self, id: String, offer: impl FnOnce(String) -> Result<()>) -> Result<()> {
+        let result = offer(id);
+        self.snapshot.cancel_refused = matches!(&result, Err(StorageError::QueueFull));
+        result
     }
     /// Returns (presentation changed, successful import effects changed).
     /// Progress never enters the command FIFO or creates another job runtime.
@@ -536,5 +546,35 @@ impl Controller {
         self.dirty = false;
         self.initialized = true;
         Ok((true, effects))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure() {
+        let mut controller = Controller::default();
+        let id = "cancelled-operation";
+        let result = controller.offer_cancel(id.into(), |received| {
+            assert_eq!(received, id);
+            Err(StorageError::QueueFull)
+        });
+        assert!(matches!(result, Err(StorageError::QueueFull)));
+        assert!(controller.snapshot.cancel_refused);
+
+        let result = controller.offer_cancel(id.into(), |_| Ok(()));
+        assert!(result.is_ok());
+        controller.snapshot.error = Some(StorageError::QueueFull.to_string());
+        assert!(!controller.snapshot.cancel_refused);
+
+        let result = controller.offer_cancel(id.into(), |_| Err(StorageError::IntakeClosed));
+        assert!(matches!(result, Err(StorageError::IntakeClosed)));
+        assert!(!controller.snapshot.cancel_refused);
+
+        controller.snapshot.cancel_refused = true;
+        controller.watch("different-import".into(), 2);
+        assert!(!controller.snapshot.cancel_refused);
     }
 }

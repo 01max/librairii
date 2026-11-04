@@ -7,6 +7,37 @@ signed-release and legacy cutover prerequisites below. The original inventory
 and observations remain historical evidence; the Task 20 implementation records
 its actual removals separately.
 
+## Cancellation backpressure correction
+
+Source `9ccfd31b701147ce3152c78e80d102779bf39299` passed the Linux deep
+suite (642 tests), ARM/Linux quality and all three installed-package workflows.
+Intel quality ran 640 tests: 639 passed and the held-import cancellation test
+failed on `storage.queue_full`. Its shared assertion did not record the action,
+so this observation does not identify an import, cancellation or database-read
+cause. The original failed artifact
+[13302145686](https://github.com/01max/librairii/actions/runs/41784731927/artifacts/13302145686)
+remains retained with SHA-256
+`94b14902d02f807ede49e5d188980f9078e967fb983084a331fa602a5c9956f7`.
+
+The test previously required every offer to succeed immediately, contrary to
+bounded scheduler backpressure. It now keeps action/revision/state diagnostics,
+retries read-only observations within its original eight-second deadline, and
+repeats imports only with an explicit non-admission receipt and no new operation.
+Cancellation now exposes a distinct pre-acceptance Busy receipt; closed intake
+and a failed read after accepted cancellation cannot authorize another offer.
+Both the test and native component fixture require this exact-revision receipt
+before repeating cancellation of the same observed active operation.
+
+The test observes each saved `cancel_requested` flag before cancelling the next
+job. A published presentation revision alone does not prove that the scheduler
+consumed its single cancellation slot. Waiting for terminal completion at that
+point could instead block a queued batch behind the other deliberately held
+batch. Both imports must still remain active while real copy progress appears,
+then finish with all 64 items cancelled, preserve source bytes, join workers,
+and reopen both complete paged reports. The correction changes no performance
+budget, worker capacity or automatic application retry policy. Fresh native CI
+must validate it; the historical failure is not relabeled as passed.
+
 ## Current implementation
 
 The [actual retirement record](legacy-retirement.json) binds 377 removed tracked

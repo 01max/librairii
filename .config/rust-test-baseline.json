@@ -4185,6 +4185,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::tests::cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

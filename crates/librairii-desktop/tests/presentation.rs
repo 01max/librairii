@@ -61,22 +61,35 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
     fn receive_revision(
         worker: &Worker,
         revision: u64,
+        action: &Action,
+        deadline: Instant,
     ) -> Result<Snapshot, Box<dyn std::error::Error>> {
-        let deadline = Instant::now() + Duration::from_secs(10);
         loop {
+            if worker.finished() || Instant::now() >= deadline {
+                return Err(format!(
+                    "native worker did not publish action {action:?}, revision {revision}"
+                )
+                .into());
+            }
             if let Some(snapshot) = worker.take_snapshot()
                 && snapshot.revision == revision
             {
-                assert!(!snapshot.workflows.operations.recovery_required);
                 assert!(
-                    snapshot.workflows.operations.error.is_none(),
-                    "{:?}",
-                    snapshot.workflows.operations.error
+                    Instant::now() < deadline,
+                    "late action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
+                );
+                assert!(
+                    !snapshot.workflows.operations.recovery_required,
+                    "action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
+                );
+                assert_eq!(
+                    snapshot.workflows.operations.revision, revision,
+                    "action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
                 );
                 return Ok(snapshot);
-            }
-            if worker.finished() || Instant::now() >= deadline {
-                return Err("native worker did not publish the offered revision".into());
             }
             std::thread::sleep(Duration::from_millis(2));
         }
@@ -113,18 +126,67 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
     fs::write(&source, &bytes)?;
     let mut worker = Worker::start_with(environment())?;
     let generation = receive(&worker)?.generation.ok_or("generation")?;
-    let observe = |action| -> Result<Snapshot, Box<dyn std::error::Error>> {
-        let revision = worker.offer(Command::Operations {
-            generation: generation.clone(),
-            action,
-        })?;
-        receive_revision(&worker, revision)
-    };
     let held = gate.hold();
     let deadline = Instant::now() + Duration::from_secs(8);
+    let offer = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        assert!(
+            Instant::now() < deadline,
+            "action {action:?} missed deadline"
+        );
+        let revision = worker.offer(Command::Operations {
+            generation: generation.clone(),
+            action: action.clone(),
+        })?;
+        receive_revision(&worker, revision, &action, deadline)
+    };
+    let observe = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        assert!(matches!(action, Action::Refresh | Action::Inspect { .. }));
+        loop {
+            let snapshot = offer(action.clone())?;
+            let data = &snapshot.workflows.operations;
+            if data.error.is_none() {
+                return Ok(snapshot);
+            }
+            // Only read-only observations may be repeated without an admission
+            // receipt. Never treat an ambiguous mutation error as a refusal.
+            assert!(
+                data.error.as_deref() == Some("storage.queue_full") && Instant::now() < deadline,
+                "action {action:?}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            eprintln!(
+                "read-only Busy: {action:?}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    };
     let mut ids = Vec::new();
     for count in 1..=2 {
-        observe(Action::Import(vec![source.clone(); 32]))?;
+        loop {
+            let snapshot = offer(Action::Import(vec![source.clone(); 32]))?;
+            let data = &snapshot.workflows.operations;
+            if data.error.is_none() {
+                break;
+            }
+            assert!(
+                data.error.as_deref() == Some("storage.queue_full")
+                    && data.import_refused
+                    && data.preparing.is_none()
+                    && data
+                        .cards
+                        .iter()
+                        .all(|card| ids.contains(&card.operation.identity.id))
+                    && Instant::now() < deadline,
+                "Import {count}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            eprintln!(
+                "explicitly refused Import {count}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            std::thread::sleep(Duration::from_millis(2));
+        }
         loop {
             let snapshot = observe(Action::Refresh)?;
             let operations = &snapshot.workflows.operations;
@@ -189,7 +251,48 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
         }
     }
     for id in &ids {
-        observe(Action::Cancel(id.clone()))?;
+        let mut may_offer = true;
+        loop {
+            let snapshot = observe(Action::Refresh)?;
+            let card = snapshot
+                .workflows
+                .operations
+                .cards
+                .iter()
+                .find(|card| card.operation.identity.id == *id)
+                .ok_or("cancellation target disappeared")?;
+            // This durable flag proves the coordinator consumed its single
+            // cancellation slot. Waiting for terminal here could deadlock a
+            // queued batch behind the other deliberately held import.
+            if card.operation.cancel_requested {
+                break;
+            }
+            assert!(
+                !is_terminal(card.operation.state) && Instant::now() < deadline,
+                "Cancel {id} did not become durable: {card:?}"
+            );
+            if may_offer {
+                let snapshot = offer(Action::Cancel(id.clone()))?;
+                let data = &snapshot.workflows.operations;
+                assert!(
+                    data.error.is_none()
+                        || (data.error.as_deref() == Some("storage.queue_full")
+                            && data.cancel_refused),
+                    "Cancel {id}, revision {}: {data:?}",
+                    snapshot.revision
+                );
+                // Only explicit pre-acceptance refusal permits another offer.
+                // Reobserve the same active target first; an accepted offer or
+                // an ambiguous observation failure never permits resubmission.
+                may_offer = data.error.is_some();
+                if may_offer {
+                    eprintln!(
+                        "Cancel Busy for {id}, revision {}: {data:?}",
+                        snapshot.revision
+                    );
+                }
+            }
+        }
     }
     loop {
         let snapshot = observe(Action::Refresh)?;
@@ -227,12 +330,23 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
     assert!(ids.contains(&snapshot.workflows.operations.cards[0].operation.identity.id));
     assert_eq!(snapshot.workflows.operations.cards[0].cancelled, 32);
     let generation = snapshot.generation.ok_or("reopened generation")?;
-    let inspect = |action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+    let inspect = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
         let revision = reopened.offer(Command::Operations {
             generation: generation.clone(),
-            action,
+            action: action.clone(),
         })?;
-        receive_revision(&reopened, revision)
+        let snapshot = receive_revision(
+            &reopened,
+            revision,
+            &action,
+            Instant::now() + Duration::from_secs(10),
+        )?;
+        assert!(
+            snapshot.workflows.operations.error.is_none(),
+            "reopened action {action:?}, revision {revision}: {:?}",
+            snapshot.workflows.operations
+        );
+        Ok(snapshot)
     };
     let snapshot = inspect(Action::History(HistoryAction::Open))?;
     let history = snapshot.workflows.operations.history;

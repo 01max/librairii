@@ -224,7 +224,7 @@
       "source_sha256": {
         "crates/librairii-app/src/importing.rs": "d368b162e863dfde47a8c68bbcdca099459a5a40ec3ba3663412434c644dde6e",
         "crates/librairii-desktop/tests/imports.rs": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627",
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef",
         "crates/librairii-desktop/tests/support/import_gate.rs": "9788b0e612efea22657152f0ac2ee53c4c8a89be72a52de2ff6a3b62bbc5830e"
       }
     },
@@ -347,7 +347,7 @@
       ],
       "source_sha256": {
         "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -492,7 +492,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/details.rs": "fefac07a38ec45697621f4bc74f3427e9fdba5ed0f0e2a4d94953e1e9a51846d",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -614,7 +614,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/flags.rs": "04902966fc26f28ae58ec54207b35c93535d57bbf4ebb8bd1dea18c2156fc4b3",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -880,7 +880,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/workflows/shelf_reviews.rs": "3778871087fd9bbe9c295e3f3d6ee997a56be9b6882ce77c2c325f86a08ab679",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -1078,7 +1078,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/sync.rs": "46a94d8297eddf5ec9cfba85641ec4519c044ce391982be3c31d469cec1197fc",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627",
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef",
         "crates/librairii-desktop/src/workflows/operations/sync_submission.rs": "6dbbd719ffa051bf1d788ee55bc0558ff7ff25000169e4f34d4bb7180411c0e1"
       }
     },
@@ -1230,7 +1230,7 @@
       ],
       "source_sha256": {
         "crates/librairii-storage/src/removal.rs": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -1280,7 +1280,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/preferences.rs": "00f5df73a342aedb121bba94469fd1fa078dc6699432bd0c0e076153ee797481",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627"
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
       }
     },
     {
@@ -1406,7 +1406,7 @@
       ],
       "source_sha256": {
         "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
-        "crates/librairii-desktop/tests/presentation.rs": "3155b78f93b3bd85db8f7ec8964affe0ec1749539dd9399da7886b23920be627",
+        "crates/librairii-desktop/tests/presentation.rs": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef",
         "scripts/verify-native-foundations.py": "cbfd56a2db07a5da5d5b4c827fe11f0573b4dd5fe1301cac08dc23a063ebb7f0",
         "scripts/verify-native-speech.py": "0798aacbabfdd16fe32b6b975cc489babe1e768d89c4b13b5b87ef85efe92fa0"
       }

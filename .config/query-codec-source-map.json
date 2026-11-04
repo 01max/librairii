@@ -5880,6 +5880,19 @@
           ]
         },
         "reason": "Task20 explicit same-input metadata retry after proven non-admission; reject stale, consumed, closed or fenced receipts."
+      },
+      {
+        "position": 652,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::tests::cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 cancellation Busy receipt distinguishes refused admission from closed intake and failed observation after acceptance; never replay ambiguous cancellation."
       }
     ],
     "python": [
