@@ -30,6 +30,20 @@ receipts/actions; the inert Swift fixture injects the original scalar failure
 through the actual reader and snapshot boundary. Fresh native CI must validate
 the correction; the failed run remains failed.
 
+Source `d4140f94ae99a9a3d4bb64070acf685bc6cbfee9` exposed an assertion
+mistake in the new inert Swift fixture on both Macs: the raw AX status is an
+`Int32`, but the test attempted an `Int` cast before JSON serialization. The
+fixture now checks the serialized JSON response, as the existing wire tests do,
+while preserving every exact identity/status assertion and adding schema 1.
+A Foundation-only replay of the actual receipt function reproduces the old
+assertion failure and passes after serialization; it makes no accessibility
+calls. Original logs and artifacts 13305651433/13306380361 remain retained.
+
+The same source's ARM package build completed compilation and signing, then
+`hdiutil create` failed with `Resource busy`. Artifact 13305696410 retains the
+build and package logs. No packaging defect or recovery was established, and
+no retry, threshold change or successful package claim is inferred from it.
+
 ## Cancellation backpressure correction
 
 Source `9ccfd31b701147ce3152c78e80d102779bf39299` passed the Linux deep

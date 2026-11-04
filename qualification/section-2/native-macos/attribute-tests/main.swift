@@ -340,11 +340,16 @@ do {
             _ = try checkedText(element, attribute, optional: true)
             return ["nodes": ["partial"], "window": 0]
         }
+        guard let unavailableWire = try JSONSerialization.jsonObject(
+            with: JSONSerialization.data(withJSONObject: unavailable.value)) as? [String: Any] else {
+            throw TestFailure.mismatch("Finder unavailable receipt is not a JSON object")
+        }
         try require(unavailable.exitCode == 75 && scalarReads == before + 1
-            && unavailable.value["format"] as? String == "librairii.native-document-attribute-unavailable"
-            && unavailable.value["pid"] as? Int == 395 && unavailable.value["document"] as? String == document
-            && unavailable.value["status"] as? Int == -25204
-            && unavailable.value["attribute"] as? String == attribute && unavailable.value.count == 6,
+            && unavailableWire["format"] as? String == "librairii.native-document-attribute-unavailable"
+            && unavailableWire["schema"] as? Int == 1
+            && unavailableWire["pid"] as? Int == 395 && unavailableWire["document"] as? String == document
+            && unavailableWire["status"] as? Int == -25204
+            && unavailableWire["attribute"] as? String == attribute && unavailableWire.count == 6,
             "Finder failed read escaped as partial success or lacked its bound receipt")
         for (operation, path) in [("press", document), ("status", document), ("snapshot-window", document),
                                   ("snapshot", "")] {
