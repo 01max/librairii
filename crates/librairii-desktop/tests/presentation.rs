@@ -51,9 +51,36 @@ fn receive(worker: &Worker) -> Result<Snapshot, Box<dyn std::error::Error>> {
 #[test]
 fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports() -> TestResult
 {
-    use librairii_core::operations::is_terminal;
-    use librairii_desktop::workflows::operations::Action;
+    use librairii_core::{
+        OperationState,
+        operations::{ItemState, is_terminal},
+    };
+    use librairii_desktop::workflows::operations::{Action, HistoryAction};
+    use std::collections::BTreeSet;
     use std::sync::Arc;
+    fn receive_revision(
+        worker: &Worker,
+        revision: u64,
+    ) -> Result<Snapshot, Box<dyn std::error::Error>> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(snapshot) = worker.take_snapshot()
+                && snapshot.revision == revision
+            {
+                assert!(!snapshot.workflows.operations.recovery_required);
+                assert!(
+                    snapshot.workflows.operations.error.is_none(),
+                    "{:?}",
+                    snapshot.workflows.operations.error
+                );
+                return Ok(snapshot);
+            }
+            if worker.finished() || Instant::now() >= deadline {
+                return Err("native worker did not publish the offered revision".into());
+            }
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    }
     struct ObservedEnvironment {
         base: Environment,
         gate: Arc<import_gate::ImportGate>,
@@ -87,18 +114,11 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
     let mut worker = Worker::start_with(environment())?;
     let generation = receive(&worker)?.generation.ok_or("generation")?;
     let observe = |action| -> Result<Snapshot, Box<dyn std::error::Error>> {
-        worker.offer(Command::Operations {
+        let revision = worker.offer(Command::Operations {
             generation: generation.clone(),
             action,
         })?;
-        let snapshot = receive(&worker)?;
-        assert!(!snapshot.workflows.operations.recovery_required);
-        assert!(
-            snapshot.workflows.operations.error.is_none(),
-            "{:?}",
-            snapshot.workflows.operations.error
-        );
-        Ok(snapshot)
+        receive_revision(&worker, revision)
     };
     let held = gate.hold();
     let deadline = Instant::now() + Duration::from_secs(8);
@@ -201,15 +221,62 @@ fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_re
     assert_eq!(fs::read(&source)?, bytes);
     let mut reopened = Worker::start_with(environment())?;
     let snapshot = receive(&reopened)?;
-    assert_eq!(snapshot.workflows.operations.cards.len(), 2);
-    assert!(
-        snapshot
-            .workflows
-            .operations
+    // Recent notices are session-local; reopening offers only the latest import.
+    // History and both paged reports must retain all cancelled work.
+    assert_eq!(snapshot.workflows.operations.cards.len(), 1);
+    assert!(ids.contains(&snapshot.workflows.operations.cards[0].operation.identity.id));
+    assert_eq!(snapshot.workflows.operations.cards[0].cancelled, 32);
+    let generation = snapshot.generation.ok_or("reopened generation")?;
+    let inspect = |action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        let revision = reopened.offer(Command::Operations {
+            generation: generation.clone(),
+            action,
+        })?;
+        receive_revision(&reopened, revision)
+    };
+    let snapshot = inspect(Action::History(HistoryAction::Open))?;
+    let history = snapshot.workflows.operations.history;
+    assert!(history.error.is_none(), "{:?}", history.error);
+    assert_eq!(history.cards.len(), 2);
+    assert_eq!(
+        history
             .cards
             .iter()
-            .all(|card| card.cancelled == 32)
+            .map(|card| card.operation.identity.id.clone())
+            .collect::<BTreeSet<_>>(),
+        ids.iter().cloned().collect()
     );
+    assert!(
+        history
+            .cards
+            .iter()
+            .all(|card| card.cancelled == 32 && card.operation.state == OperationState::Cancelled)
+    );
+    for id in &ids {
+        let mut item_ids = BTreeSet::new();
+        for page in [0, 1] {
+            let snapshot = inspect(Action::Inspect {
+                id: id.clone(),
+                page,
+            })?;
+            let details = snapshot
+                .workflows
+                .operations
+                .details
+                .ok_or("reopened report")?;
+            assert_eq!(details.card.operation.identity.id, *id);
+            assert_eq!(details.card.operation.state, OperationState::Cancelled);
+            assert_eq!(details.card.cancelled, 32);
+            assert_eq!((details.page, details.pages), (page, 2));
+            assert_eq!(details.items.len(), if page == 1 { 7 } else { 25 });
+            for item in details.items {
+                assert_eq!(item.operation_id, *id);
+                assert_eq!(item.state, ItemState::Cancelled);
+                assert!(item_ids.insert(item.identity.id));
+            }
+        }
+        assert_eq!(item_ids.len(), 32);
+    }
     reopened.finish()?;
     Ok(())
 }

@@ -108,6 +108,15 @@ cumulative controller regression exercises two held imports, real progress and
 paging, cancellation and durable reopen. Native execution of this correction
 still requires fresh CI; headless checks cannot certify it.
 
+Source `842d3939e6cd5e6bb29c52d57c5c2d89454aa97a` reached that new
+controller regression and exposed its incorrect reopen assertion: compact notices
+show only the latest terminal import, while History retains both cancelled jobs.
+The correction explicitly opens History, checks both exact job identities and
+cancelled totals, then reads both pages of each report and verifies 32 unique cancelled item
+identities per job. Commands wait for their matching published revision.
+The original active-work, real-progress and source-preservation checks remain.
+The failed run remains retained; execution of the corrected test requires fresh CI.
+
 The same diagnostic source failed the Intel installed interruption prerequisite.
 The native Sync click was performed, then the app displayed `storage.queue_full`;
 all seven retained jobs were terminal and no new request reached the local catalog.
