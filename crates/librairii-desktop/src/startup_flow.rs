@@ -66,6 +66,7 @@ pub(crate) fn run(
     mailbox: &Arc<Mutex<Option<Snapshot>>>,
     stop: &Arc<AtomicBool>,
     catalog: Option<librairii_adapters::lunii::CatalogClient>,
+    import_observer: Option<crate::imports::ImportObservation>,
     control: Control,
 ) -> Result<()> {
     let StartupSelection::Production {
@@ -85,6 +86,7 @@ pub(crate) fn run(
                 mailbox,
                 stop,
                 catalog_client: catalog,
+                import_observer,
                 control,
                 initial_revision: 0,
                 initial_settings: &snapshot.workflows.settings,
@@ -205,6 +207,7 @@ pub(crate) fn run(
                             mailbox,
                             stop,
                             catalog_client: catalog.clone(),
+                            import_observer: import_observer.clone(),
                             control: control.clone(),
                             initial_revision: snapshot.revision,
                             initial_settings: &snapshot.workflows.settings,

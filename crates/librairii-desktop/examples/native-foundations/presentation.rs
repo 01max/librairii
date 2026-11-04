@@ -50,11 +50,15 @@ pub use sync_checks::{Surface as SyncSurface, checks as sync};
 
 struct Environment {
     catalog: Option<librairii_adapters::lunii::CatalogClient>,
+    import_observer: Option<librairii_desktop::imports::ImportObservation>,
     home: OsString,
     config: OsString,
     data: OsString,
 }
 impl StartupEnvironment for Environment {
+    fn import_observer(&self) -> Option<librairii_desktop::imports::ImportObservation> {
+        self.import_observer.clone()
+    }
     fn catalog_client(&self) -> Option<librairii_adapters::lunii::CatalogClient> {
         self.catalog.clone()
     }
@@ -70,6 +74,7 @@ impl StartupEnvironment for Environment {
 
 struct Fixture {
     catalog: Option<librairii_adapters::lunii::CatalogClient>,
+    import_observer: Option<librairii_desktop::imports::ImportObservation>,
     ui: slint::Weak<DesktopWindow>,
     worker: Rc<RefCell<Worker>>,
     view: Rc<RefCell<view::View>>,
@@ -82,18 +87,25 @@ impl Fixture {
         Self::open_with(ui, false)
     }
     fn open_with(ui: &DesktopWindow, real: bool) -> Result<Self> {
-        Self::open_configured(ui, real, None)
+        Self::open_configured(ui, real, None, None)
+    }
+    fn open_imports(
+        ui: &DesktopWindow,
+        observer: librairii_desktop::imports::ImportObservation,
+    ) -> Result<Self> {
+        Self::open_configured(ui, false, None, Some(observer))
     }
     fn open_catalog(
         ui: &DesktopWindow,
         client: librairii_adapters::lunii::CatalogClient,
     ) -> Result<Self> {
-        Self::open_configured(ui, true, Some(client))
+        Self::open_configured(ui, true, Some(client), None)
     }
     fn open_configured(
         ui: &DesktopWindow,
         real: bool,
         catalog: Option<librairii_adapters::lunii::CatalogClient>,
+        import_observer: Option<librairii_desktop::imports::ImportObservation>,
     ) -> Result<Self> {
         let roots = TestRoots::new()?;
         let home = roots.profile().join("home");
@@ -206,6 +218,7 @@ impl Fixture {
         drop(store);
         let worker = Rc::new(RefCell::new(Worker::start_with(Environment {
             catalog: catalog.clone(),
+            import_observer: import_observer.clone(),
             home: home.into_os_string(),
             config: config.into_os_string(),
             data: data.into_os_string(),
@@ -215,6 +228,7 @@ impl Fixture {
         let view = view::install(ui, worker.clone(), initial)?;
         Ok(Self {
             catalog,
+            import_observer,
             ui: ui.as_weak(),
             worker,
             view,
@@ -256,6 +270,7 @@ impl Fixture {
         self.worker.borrow_mut().finish()?;
         *self.worker.borrow_mut() = Worker::start_with(Environment {
             catalog: self.catalog.clone(),
+            import_observer: self.import_observer.clone(),
             home: self._roots.profile().join("home").into_os_string(),
             config: self._roots.profile().join("config").into_os_string(),
             data: self._roots.library().join("data").into_os_string(),

@@ -217,11 +217,15 @@
       },
       "release_hold": "exact final-candidate evidence and independent all-target release review",
       "executable_check_sources": [
-        "crates/librairii-desktop/tests/imports.rs"
+        "crates/librairii-desktop/tests/imports.rs",
+        "crates/librairii-desktop/tests/presentation.rs",
+        "crates/librairii-desktop/tests/support/import_gate.rs"
       ],
       "source_sha256": {
         "crates/librairii-app/src/importing.rs": "d368b162e863dfde47a8c68bbcdca099459a5a40ec3ba3663412434c644dde6e",
-        "crates/librairii-desktop/tests/imports.rs": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        "crates/librairii-desktop/tests/imports.rs": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb",
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a",
+        "crates/librairii-desktop/tests/support/import_gate.rs": "9788b0e612efea22657152f0ac2ee53c4c8a89be72a52de2ff6a3b62bbc5830e"
       }
     },
     {
@@ -343,7 +347,7 @@
       ],
       "source_sha256": {
         "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -462,7 +466,7 @@
         "crates/librairii-desktop/src/browsing/tests.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/browsing.rs": "e9a88649674bf174fb5224be94af7a181255ec2dc6d30deefae274b65b56b2e2",
+        "crates/librairii-desktop/src/browsing.rs": "b477f1a31b1c61291fa75c7829f30119da5f20dd9c8d3dc7969734dd5e075bf9",
         "crates/librairii-desktop/src/browsing/tests.rs": "f2630563054de968c5421c9163535f63af84d0d4820ec543d69bd0c7acc2b028"
       }
     },
@@ -488,7 +492,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/details.rs": "fefac07a38ec45697621f4bc74f3427e9fdba5ed0f0e2a4d94953e1e9a51846d",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -610,7 +614,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/flags.rs": "04902966fc26f28ae58ec54207b35c93535d57bbf4ebb8bd1dea18c2156fc4b3",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -876,7 +880,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/workflows/shelf_reviews.rs": "3778871087fd9bbe9c295e3f3d6ee997a56be9b6882ce77c2c325f86a08ab679",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -1073,7 +1077,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/view/sync.rs": "0eea2d4090b491a8ac5805be91ba63a27835a524d9518f963a560219448cab18",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -1224,7 +1228,7 @@
       ],
       "source_sha256": {
         "crates/librairii-storage/src/removal.rs": "84374b71aa02f9782c6585360fbc06ddbdb7fa0fd0922b5c32cfcb507ce4bd5c",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -1274,7 +1278,7 @@
       ],
       "source_sha256": {
         "crates/librairii-desktop/src/preferences.rs": "00f5df73a342aedb121bba94469fd1fa078dc6699432bd0c0e076153ee797481",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960"
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a"
       }
     },
     {
@@ -1400,7 +1404,7 @@
       ],
       "source_sha256": {
         "crates/librairii-ui/ui/desktop.slint": "223eb6e4a491c919f8243723947a7826b6a547f8b0a233110ea3bc4b4371c4c1",
-        "crates/librairii-desktop/tests/presentation.rs": "abd545ab5f91ce21b747d267f62664a06cd4dbc01a2310d2b2ea8ceafe6b9960",
+        "crates/librairii-desktop/tests/presentation.rs": "046fd789e9d22a85dc0a3f4153e55ea538322a80aae050801f8493d2d5fc824a",
         "scripts/verify-native-foundations.py": "cbfd56a2db07a5da5d5b4c827fe11f0573b4dd5fe1301cac08dc23a063ebb7f0",
         "scripts/verify-native-speech.py": "0798aacbabfdd16fe32b6b975cc489babe1e768d89c4b13b5b87ef85efe92fa0"
       }
@@ -1457,7 +1461,7 @@
         "crates/librairii-core/tests/scale_properties.rs"
       ],
       "source_sha256": {
-        "crates/librairii-desktop/src/browsing.rs": "e9a88649674bf174fb5224be94af7a181255ec2dc6d30deefae274b65b56b2e2",
+        "crates/librairii-desktop/src/browsing.rs": "b477f1a31b1c61291fa75c7829f30119da5f20dd9c8d3dc7969734dd5e075bf9",
         "crates/librairii-core/tests/scale_properties.rs": "ea6d483b5bc3713d959b2af8bb101f2d3bd2fca4e1d4d76e490ab97f7fc667b8"
       }
     },

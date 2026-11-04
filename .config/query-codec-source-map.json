@@ -5841,6 +5841,19 @@
           ]
         },
         "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 649,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 CI correction: hold actual tiny-import read/copy boundaries through real controller cancellation, preserving concurrent reports, progress, original bytes and joined reopen."
       }
     ],
     "python": [

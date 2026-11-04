@@ -189,6 +189,7 @@ fn run(
     maintenance: crate::maintenance::Control,
 ) -> Result<(), String> {
     let catalog_client = environment.catalog_client();
+    let import_observer = environment.import_observer();
     let selection = select_startup_with_progress(&environment, &startup_cancel, || {
         *mailbox
             .lock()
@@ -217,6 +218,7 @@ fn run(
         &mailbox,
         &stop,
         catalog_client,
+        import_observer,
         maintenance,
     )
     .map_err(|e| e.to_string())

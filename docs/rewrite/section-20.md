@@ -82,6 +82,20 @@ component and menu initialization for the next CI probe; remove them after
 diagnosis. This probe changes neither execution order nor acceptance thresholds
 and is not a performance correction.
 
+The diagnostic source `b81f37dc284edc406e7eeec232f9e5eeaf48055a` also
+exposed a timing dependency in the ARM native cancellation fixture: both batches
+of 32 tiny duplicate archives finished before the required Cancel callback. Its
+retained snapshot shows successful operations and `storage.snapshot_changed`,
+so this run does not establish a failed cancellation of active work. The fixture
+now supplies the existing import effect observer through the native controller,
+holds actual read/copy boundaries, and releases one chunk for the original
+progress/validation-notice assertion. Real cancellation releases the held work;
+cancelled-item reports, source preservation and reopen remain asserted. Ordinary
+startup supplies no observer, and no environment variable enables it. A new
+cumulative controller regression exercises two held imports, real progress and
+paging, cancellation and durable reopen. Native execution of this correction
+still requires fresh CI; headless checks cannot certify it.
+
 Remaining release work is selection and independent qualification of exact
 Rust-only distribution bytes, reconciliation of the recorded P58 performance
 hold, and an explicit publication decision. Go bridge/upgrade rehearsal and paid

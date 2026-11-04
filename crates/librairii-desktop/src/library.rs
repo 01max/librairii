@@ -61,6 +61,7 @@ pub struct LibrarySession<'profile> {
     move_notice: Option<MoveNotice>,
     operation_generation: u64,
     catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    import_observer: Option<crate::imports::ImportObservation>,
 }
 #[derive(Debug)]
 enum Owner<'p> {
@@ -354,6 +355,7 @@ impl<'profile> LibrarySession<'profile> {
             move_notice: None,
             operation_generation: 1,
             catalog_client: None,
+            import_observer: None,
         }
     }
     pub fn isolated(library: IsolatedLibrary) -> Self {
@@ -365,6 +367,7 @@ impl<'profile> LibrarySession<'profile> {
             move_notice: None,
             operation_generation: 1,
             catalog_client: None,
+            import_observer: None,
         }
     }
     /// Presentation only. Cleanup itself still requires qualified storage
@@ -378,6 +381,13 @@ impl<'profile> LibrarySession<'profile> {
         client: Option<librairii_adapters::lunii::CatalogClient>,
     ) -> Self {
         self.catalog_client = client;
+        self
+    }
+    pub fn with_import_observer(
+        mut self,
+        observer: Option<crate::imports::ImportObservation>,
+    ) -> Self {
+        self.import_observer = observer;
         self
     }
     pub(crate) fn retryable(&self) -> bool {
@@ -472,7 +482,10 @@ impl<'profile> LibrarySession<'profile> {
                                     client,
                                 )
                             });
-                        let imports = ImportExecutor::new(&database);
+                        let imports = self.import_observer.as_deref().map_or_else(
+                            || ImportExecutor::new(&database),
+                            |observer| ImportExecutor::observed(&database, observer),
+                        );
                         let metadata = crate::metadata_jobs::MetadataExecutor::new(
                             &database,
                             self.catalog_client.clone(),

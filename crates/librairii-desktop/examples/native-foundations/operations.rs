@@ -1,4 +1,6 @@
 //! Owned archive selections exercise the exact production post-picker boundary.
+#[path = "../../tests/support/import_gate.rs"]
+mod import_gate;
 use super::{Fixture, Result, check, view};
 use librairii_core::{OperationKind, operations::is_terminal};
 use librairii_desktop::presentation::Snapshot;
@@ -198,7 +200,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     while ui.get_dialog() != 0 {
         ui.invoke_close_dialog();
     }
-    let mut f = Fixture::open(ui)?;
+    let gate = std::sync::Arc::new(import_gate::ImportGate::default());
+    let mut f = Fixture::open_imports(ui, gate.clone())?;
     let before = f.view.borrow().snapshot.workflows.operations.cards.len();
     ui.invoke_show_panel(2);
     f.settle(ui)?;
@@ -299,10 +302,13 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "retry did not create a separate idempotent operation",
     )?;
     // Cancel is admitted through the real scheduler while a full batch owns work.
+    // Keep actual reads pending while exercising paging and picker validation.
+    // Tiny duplicate archives must not finish merely because the UI is descheduled.
+    let held = gate.hold();
     start_import(&f, ui, vec![source("clockwork-forest.plain.pk"); 32])?;
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
-        if ui.get_operation_cancellable() {
+        if ui.get_operation_cancellable() && gate.entered() > 0 {
             break;
         }
         if f.view
@@ -385,7 +391,23 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         f.worker.borrow().revision() == revision && ui.get_operation_notice().contains("1,000"),
         "invalid picker batch created work or lacked corrective feedback",
     )?;
-    f.settle(ui)?;
+    gate.advance_read();
+    loop {
+        let snapshot = f.settle(ui)?;
+        if snapshot
+            .workflows
+            .operations
+            .progress
+            .iter()
+            .any(|progress| progress.completed > 0)
+        {
+            break;
+        }
+        check(
+            Instant::now() < deadline,
+            "held import did not publish actual copy progress",
+        )?;
+    }
     check(
         ui.get_operation_notice().contains("1,000"),
         "progress erased picker validation feedback",
@@ -430,6 +452,10 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     cancel(&f, ui, false)?;
     let cancelled = complete(&f, ui)?;
     check(
+        !gate.timed_out() && gate.cancelled() > 0,
+        "import checkpoint did not observe actual cancellation",
+    )?;
+    check(
         cancelled
             .workflows
             .operations
@@ -457,6 +483,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         cancel(&f, ui, true)?;
         complete(&f, ui)?;
     }
+    drop(held);
     ui.invoke_close_dialog();
     f.restart(ui)?;
     check(

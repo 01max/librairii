@@ -410,6 +410,7 @@ pub(crate) struct Context<'a> {
     pub mailbox: &'a Arc<Mutex<Option<Snapshot>>>,
     pub stop: &'a AtomicBool,
     pub catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    pub import_observer: Option<crate::imports::ImportObservation>,
     pub control: crate::maintenance::Control,
     pub initial_revision: u64,
     pub initial_settings: &'a crate::maintenance::Snapshot,
@@ -474,6 +475,7 @@ fn run_session<'p>(
         mailbox,
         stop,
         catalog_client,
+        import_observer,
         control,
         initial_revision,
         initial_settings,
@@ -523,6 +525,7 @@ fn run_session<'p>(
     let mut session = Some(
         initialize()?
             .with_catalog_client(catalog_client.clone())
+            .with_import_observer(import_observer.clone())
             .with_cleanup_notice(if initial_settings.cleanup_pending {
                 initial_settings.retained.clone()
             } else {
@@ -912,7 +915,7 @@ fn run_session<'p>(
             catalog: catalog_client.clone(),
         };
         match crate::maintenance::recovery::settle(failure, retained, &mut recovery)? {
-            Some(resumed) => session = Some(resumed),
+            Some(resumed) => session = Some(resumed.with_import_observer(import_observer.clone())),
             None => return Ok(()),
         }
     }

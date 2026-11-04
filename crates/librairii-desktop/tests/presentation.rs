@@ -17,6 +17,8 @@ use std::{
     time::{Duration, Instant},
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+#[path = "support/import_gate.rs"]
+mod import_gate;
 struct Environment {
     home: OsString,
     config: OsString,
@@ -45,6 +47,171 @@ fn receive(worker: &Worker) -> Result<Snapshot, Box<dyn std::error::Error>> {
         }
         std::thread::sleep(Duration::from_millis(2));
     }
+}
+#[test]
+fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports() -> TestResult
+{
+    use librairii_core::operations::is_terminal;
+    use librairii_desktop::workflows::operations::Action;
+    use std::sync::Arc;
+    struct ObservedEnvironment {
+        base: Environment,
+        gate: Arc<import_gate::ImportGate>,
+    }
+    impl StartupEnvironment for ObservedEnvironment {
+        fn variable(&self, name: &str) -> Option<OsString> {
+            self.base.variable(name)
+        }
+        fn import_observer(&self) -> Option<librairii_desktop::imports::ImportObservation> {
+            Some(self.gate.clone())
+        }
+    }
+    let (roots, _locations, _id, mut seed) = library_worker()?;
+    receive(&seed)?;
+    seed.finish()?;
+    let gate = Arc::new(import_gate::ImportGate::default());
+    let environment = || ObservedEnvironment {
+        base: Environment {
+            home: roots.profile().join("home").into_os_string(),
+            config: roots.profile().join("config").into_os_string(),
+            data: roots.library().join("data").into_os_string(),
+        },
+        gate: gate.clone(),
+    };
+    let source = roots.profile().join("cancel.plain.pk");
+    let bytes = fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../preservation/corpus/archives/clockwork-forest.plain.pk"),
+    )?;
+    fs::write(&source, &bytes)?;
+    let mut worker = Worker::start_with(environment())?;
+    let generation = receive(&worker)?.generation.ok_or("generation")?;
+    let observe = |action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        worker.offer(Command::Operations {
+            generation: generation.clone(),
+            action,
+        })?;
+        let snapshot = receive(&worker)?;
+        assert!(!snapshot.workflows.operations.recovery_required);
+        assert!(
+            snapshot.workflows.operations.error.is_none(),
+            "{:?}",
+            snapshot.workflows.operations.error
+        );
+        Ok(snapshot)
+    };
+    let held = gate.hold();
+    let deadline = Instant::now() + Duration::from_secs(8);
+    let mut ids = Vec::new();
+    for count in 1..=2 {
+        observe(Action::Import(vec![source.clone(); 32]))?;
+        loop {
+            let snapshot = observe(Action::Refresh)?;
+            let operations = &snapshot.workflows.operations;
+            if operations.preparing.is_none()
+                && operations.cards.len() == count
+                && gate.entered() > 0
+            {
+                assert!(
+                    operations
+                        .cards
+                        .iter()
+                        .all(|card| !is_terminal(card.operation.state))
+                );
+                ids = operations
+                    .cards
+                    .iter()
+                    .map(|card| card.operation.identity.id.clone())
+                    .collect();
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err("real import checkpoint was not reached".into());
+            }
+        }
+    }
+    // Exercise other commands while tiny archives remain active; no sleep or
+    // archive size is responsible for the cancellation window.
+    gate.advance_read();
+    loop {
+        let snapshot = observe(Action::Refresh)?;
+        if snapshot
+            .workflows
+            .operations
+            .progress
+            .iter()
+            .any(|progress| progress.completed > 0)
+        {
+            assert!(
+                snapshot
+                    .workflows
+                    .operations
+                    .cards
+                    .iter()
+                    .all(|card| !is_terminal(card.operation.state))
+            );
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("held imports did not publish real copy progress".into());
+        }
+    }
+    for id in &ids {
+        for page in [1, 0] {
+            let snapshot = observe(Action::Inspect {
+                id: id.clone(),
+                page,
+            })?;
+            let details = snapshot.workflows.operations.details.ok_or("report")?;
+            assert_eq!(details.card.operation.identity.id, *id);
+            assert!(!is_terminal(details.card.operation.state));
+            assert_eq!(details.items.len(), if page == 1 { 7 } else { 25 });
+        }
+    }
+    for id in &ids {
+        observe(Action::Cancel(id.clone()))?;
+    }
+    loop {
+        let snapshot = observe(Action::Refresh)?;
+        if snapshot
+            .workflows
+            .operations
+            .cards
+            .iter()
+            .all(|card| is_terminal(card.operation.state))
+        {
+            assert!(
+                snapshot
+                    .workflows
+                    .operations
+                    .cards
+                    .iter()
+                    .all(|card| card.cancelled == 32)
+            );
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("held imports did not cancel".into());
+        }
+    }
+    assert!(gate.cancelled() > 0);
+    assert!(!gate.timed_out());
+    drop(held);
+    worker.finish()?;
+    assert_eq!(fs::read(&source)?, bytes);
+    let mut reopened = Worker::start_with(environment())?;
+    let snapshot = receive(&reopened)?;
+    assert_eq!(snapshot.workflows.operations.cards.len(), 2);
+    assert!(
+        snapshot
+            .workflows
+            .operations
+            .cards
+            .iter()
+            .all(|card| card.cancelled == 32)
+    );
+    reopened.finish()?;
+    Ok(())
 }
 #[test]
 fn isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews()
