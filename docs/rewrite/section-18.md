@@ -148,21 +148,19 @@ The SPDX field contract follows the official
 [relationship](https://spdx.github.io/spdx-spec/v2.3.1/relationships-between-SPDX-elements/)
 specifications.
 
-## Credentials and remaining gates
+## Optional credentials and remaining gates
 
-The initial read-only capability check found zero repository secret names and
-zero valid local codesigning identities. No secret value was requested or read.
-Public Mac signing/notarization/stapling remains incomplete. Unsigned build and
-qualification work proceeds independently. Signing execution must isolate
-credentials from untrusted pull-request builds and verify the final distributed
-bytes, following Apple's
+Default ad-hoc Mac packages require no paid Apple credentials. If the owner
+later chooses Developer ID distribution, signing execution must isolate
+credentials from untrusted pull-request builds and verify the resulting bytes,
+following Apple's
 [notarization workflow](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
 
 The intended baselines remain macOS15+ on ARM and real Intel hardware, and
 Ubuntu24.04 x86-64 with declared glibc/system dependencies. These are qualification
 targets until actual installed-package reports establish support. Windows is
-outside this change. Task19 release-readiness and Task20 runtime retirement do
-not become complete through packaging alone.
+outside this change. Task19 release-readiness does not become complete through
+packaging alone; Task20 runtime retirement is already complete.
 
 ## Installed GUI isolation
 
@@ -192,7 +190,7 @@ Screenshots, control observations, SQLite results, managed/exported hashes,
 native file-manager location/retirement and process shutdown evidence are
 retained against the artifact checksum. Missing checkpoints fail qualification.
 
-Each target runs fresh English/GPU-API and upgraded French/forced-CPU cases;
+Each target runs fresh English/GPU-API and fresh French/forced-CPU cases;
 Linux repeats both under private X11 and Wayland desktops. The Linux observer
 image contains runtime libraries, the GTK portal and Thunar, with no build or
 archive tools. It runs read-only with no external network and no source checkout
@@ -202,18 +200,34 @@ owned launches cover the complete workflow, ordinary reopen, a real in-flight
 catalog SIGKILL/reopen, missing-location recovery and application-only
 uninstall/reinstall with retained library/profile bytes.
 
-The driver implementation and its custody checks are prepared. These commands
-do not count as passing installed evidence until their actual native CI reports
-pass. All Task18 GUI and public-signing checkboxes remain open at this point.
+The French/software fixture includes old Go files and verifies their bytes are
+ignored and unchanged. Both lanes create new Rust state; neither adopts a Go
+library or transfers browser preferences.
+
+For 18.10, review the package's embedded source/target identity and native
+dependency report together with each installed lane's `launch.json`, runtime
+mapping capture, sandbox/container configuration and offline-startup checkpoint.
+The Mac sandbox excludes checkout reads and permits only the installed product
+and the OS reveal launcher as executable children. Linux's runtime container
+has no mounted checkout, build tools or external network. Observers and package
+inspection tools run outside the product's isolation boundary. The launch
+directory is unrelated to the checkout, and the offline reopen requires the
+local catalog listener to be closed with durable library state unchanged.
+These observations qualify the tested runtime isolation; a hosted runner itself
+is not claimed to have no development tools installed.
+
+Commands and headless tests do not count as passing installed evidence until
+their actual native CI reports pass. Preserve the raw source-bound reports and
+review every required lane before closing the remaining Task18 checkboxes.
 
 ## Verification
 
-The three required Rust integration tests execute the actual product's identity
+The initial package implementation added three Rust integration tests for the product's identity
 commands with no display or normal profile environment and deliberately invalid
 startup configuration, including missing packaged-acceptance roots. Three
 additional Rust checks exercise fixture/catalog admission, persisted foreign
-roots and picker substitution before controller execution. Eighteen additional
-Python checks, plus five packaged-GUI custody checks, cover compiler aliases
+roots and picker substitution before controller execution. The cumulative
+Python and packaged-GUI custody checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in
@@ -229,14 +243,14 @@ bounded fixture authority check.
 Each export freezes its independently selected UUIDs, original filenames,
 managed hashes/sizes, group provenance and eligible/skipped item outcomes before
 starting. Completion requires the exact new durable operation and exact output
-set, including the expected Broken-story skip in the upgraded fixture. Partial
+set, including the expected Broken-story skip in the French/software fixture. Partial
 copies or a different scope cannot qualify. Reopen also runs with the catalog
 listener stopped and connection refusal observed, at an actual native display
 scale of 1.25 after the initial scale 1 launch. Native scale/geometry diagnostics,
 visible controls and screenshots must agree. SIGKILL recovery requires the
 actual signal exit status and positive output-reader retirement.
 
-## Protected Mac signing
+## Optional protected Mac signing
 
 For owner-operated setup and command previews, use the
 [manual build and signing guide](../native-build-and-sign.md). Public signing
