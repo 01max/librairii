@@ -242,9 +242,9 @@ bounded fixture authority check.
 
 Each export freezes its independently selected UUIDs, original filenames,
 managed hashes/sizes, group provenance and eligible/skipped item outcomes before
-starting. Completion requires the exact new durable operation and exact output
-set, including the expected Broken-story skip in the French/software fixture. Partial
-copies or a different scope cannot qualify. Reopen also runs with the catalog
+starting. Completion requires the exact new durable operation, output set and
+eligibility outcomes. The fresh workflow restores eligibility through Undo
+before exporting. Partial copies or a different scope cannot qualify. Reopen also runs with the catalog
 listener stopped and connection refusal observed, at an actual native display
 scale of 1.25 after the initial scale 1 launch. Native scale/geometry diagnostics,
 visible controls and screenshots must agree. SIGKILL recovery requires the
