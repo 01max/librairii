@@ -14,6 +14,11 @@
       "historical_sha256": "b45801a638bbe4e38abee4c7e1e7397ea9989188bedfb040d707d9eabf978c68",
       "current_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa",
       "reason": "PR76 review: distinguish interrupted first setup from a lost completed native binding."
+    },
+    "scripts/native_release/install.py": {
+      "historical_sha256": "ce4c1de001d71874baa41ef20c8561a31a285a8db87e61784f4fa831f62b1619",
+      "current_sha256": "28afaf6d0a48d583270890cd3a012c1bde4fbca7d485c3cac13f5e45072c3050",
+      "reason": "Task18.2: require independent post-detach device/mount absence and reject unidentified inventory entries before reporting retirement."
     }
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",

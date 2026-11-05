@@ -76,8 +76,9 @@ def image_custody(artifact, mount):
     images = plistlib.loads(observed.stdout)['images']
     if not isinstance(images, list) or any(
             not isinstance(image, dict)
-            or not isinstance(image.get('system-entities', []), list)
-            or any(not isinstance(entity, dict) for entity in image.get('system-entities', []))
+            or not isinstance(image.get('image-path'), str) or not image['image-path']
+            or not isinstance(image.get('system-entities'), list)
+            or any(not isinstance(entity, dict) for entity in image['system-entities'])
             for image in images):
         raise ValueError('invalid disk image inventory')
     return {'matching_images': [image for image in images

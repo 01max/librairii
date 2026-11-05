@@ -86,7 +86,8 @@ class PlatformPackages(unittest.TestCase):
             root = Path(temporary).resolve()
             artifact = root/'owned.dmg'
             artifact.write_bytes(b'synthetic image')
-            for name in ('owned-device', 'foreign-mount', 'mount-only', 'missing-inventory', 'timeout', 'absent'):
+            for name in ('owned-device', 'foreign-mount', 'mount-only', 'missing-inventory',
+                         'unidentified-image', 'empty-path', 'missing-entities', 'malformed-entity', 'timeout', 'absent'):
                 with self.subTest(name=name):
                     destination = root/name
                     destination.mkdir()
@@ -96,6 +97,10 @@ class PlatformPackages(unittest.TestCase):
                     remaining = {
                         'owned-device': [{'image-path': str(artifact), 'system-entities': [{'dev-entry': '/dev/disk123'}]}],
                         'foreign-mount': [{'image-path': str(root/'unrelated.dmg'), 'system-entities': [entity]}],
+                        'unidentified-image': [{}],
+                        'empty-path': [{'image-path': '', 'system-entities': []}],
+                        'missing-entities': [{'image-path': str(artifact)}],
+                        'malformed-entity': [{'image-path': str(artifact), 'system-entities': ['invalid']}],
                     }.get(name, [])
                     inventory = {} if name == 'missing-inventory' else {'images': remaining}
                     final = (TimeoutExpired('hdiutil', 15) if name == 'timeout'
