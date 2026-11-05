@@ -19,6 +19,11 @@
       "historical_sha256": "ce4c1de001d71874baa41ef20c8561a31a285a8db87e61784f4fa831f62b1619",
       "current_sha256": "28afaf6d0a48d583270890cd3a012c1bde4fbca7d485c3cac13f5e45072c3050",
       "reason": "Task18.2: require independent post-detach device/mount absence and reject unidentified inventory entries before reporting retirement."
+    },
+    "scripts/native_release/test_packages.py": {
+      "historical_sha256": "58295fd10a882fbf0f2aa9c934ae47eed802dd667f027c1edbc52cd70672a75c",
+      "current_sha256": "9f3f2146723d370a989c5b102a364572d8671ec269d1c229b6ced23de67ac814",
+      "reason": "Task18.2/18.3: retain prior package assertions and add independent image-retirement refusal cases plus observed native Intel host facts."
     }
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",

@@ -250,6 +250,41 @@ scale of 1.25 after the initial scale 1 launch. Native scale/geometry diagnostic
 visible controls and screenshots must agree. SIGKILL recovery requires the
 actual signal exit status and positive output-reader retirement.
 
+## Independent package review
+
+Task18.11 reviews one source-bound package set, separately from Task19's final
+release-promotion decision. Preserve the provider artifact IDs, run/job/source
+identities, ZIP sizes and digests before reading reports directly from the ZIPs.
+Use the exact packages inspected by the installed jobs; a newer successful
+build cannot replace missing or failed installed evidence.
+
+| Target | Required installed lanes | Host and package observations |
+| --- | --- | --- |
+| ARM Mac | English/GPU-API, French/software | ARM Mach-O, macOS15.0 deployment, native ARM host, ad-hoc code/resource integrity, final DMG checksum |
+| Intel Mac | English/GPU-API, French/software | x86-64 Mach-O, macOS15.0 deployment, actual Intel CPU/host, ad-hoc code/resource integrity, final DMG checksum |
+| Linux x86-64 | Both lanes under X11 and Wayland | ELF architecture, Ubuntu24.04/glibc2.39 dependency ceiling, declared runtime libraries, final archive checksum |
+
+For each target, independently join the artifact manifest, embedded executable
+identity, installed payload hashes/modes, notices/SBOM, native linkage, observer
+method and actual host. Inspect raw native actions, accessibility trees and
+screenshots alongside the durable SQLite/profile and managed/export byte
+observations. All 22 workflow checkpoints and five retired processes per lane
+must agree, including offline reopen, forced interruption, identity-verified
+recovery and application-only uninstall/reinstall. Mac image retirement also
+requires the independent post-detach absence receipt described above.
+
+The review retains accessibility's accepted scope: Mac AX semantics and Linux
+AT-SPI/Orca evidence; VoiceOver execution remains deferred by owner decision.
+Reports must distinguish the final installed checks from supporting quality,
+scale and adapter evidence on the selected source. A summary boolean, a copied
+test name or headless test success cannot replace those raw observations.
+
+Standards and Spec reviews retain separate findings and receipts. Missing
+hardware, incomplete captures, failed commands and uncertain cleanup remain
+explicit; close a requirement only when the available evidence establishes it.
+Record limitations without changing earlier verdicts or claiming release
+promotion, notarization or a historical performance fix.
+
 ## Optional protected Mac signing
 
 For owner-operated setup and command previews, use the
