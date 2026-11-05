@@ -337,6 +337,14 @@ expires = "2027-01-24"
 
 [[exceptions]]
 kind = "advisory"
+selector = "RUSTSEC-2026-0441"
+owner = "01max"
+reason = "Informational unmaintained advisory for pin-utils@0.1.1, pulled by spin_on in pinned Slint 1.18.1; no compatible patched version exists. Reassess the toolkit graph before expiry; no vulnerability advisory is suppressed."
+tracking = "https://rustsec.org/advisories/RUSTSEC-2026-0441"
+expires = "2027-01-24"
+
+[[exceptions]]
+kind = "advisory"
 selector = "RUSTSEC-2025-0141"
 owner = "01max"
 reason = "Informational unmaintained notice for bincode 2.0.1, locked by typed-index-collections 3.5.0 optional support. Cargo tree --target all -i bincode confirms that feature is not selected. Retain the qualified toolkit and reassess upstream before expiry; no vulnerability advisory is suppressed."
