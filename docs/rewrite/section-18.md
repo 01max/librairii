@@ -9,13 +9,18 @@ Current integration base: `9b34e26298850cb6ced764e5c3e3e8a687aa30b2`.
 Branch `codex/rewrite-18-final-packages` targets
 `rewrite-in-rust-native-desktop`.
 
-Task 18 is in progress. A staged payload, unsigned application or successful
-build does not qualify an installed distribution. Package, GUI, clean-host,
-reopen/recovery, final-byte signature and independent review gates remain
-explicit until their actual reports pass. The remaining Task 18 work covers
-18.2, 18.3, 18.10 and 18.11 together. Task 19 release promotion and its historical
-performance hold remain separate; current passing measurements do not explain
-or relabel historical failures.
+Task 18 package qualification passed for the exact source-bound package set
+described in the [final evidence index](section-18-final-evidence.json). Independent
+Standards and Spec reviews found no required issues in 18.2, 18.3, 18.10 or
+18.11. The index records the reviewed PR head, actual CI checkout source, all
+three inner distribution hashes, twelve provider artifact IDs and ZIP digests,
+and the hashes of the independent review receipts. The raw ZIPs and review
+records are retained in the [draft Task 18 evidence release](https://github.com/01max/librairii/releases/tag/untagged-483e90ef4c09c7d427e5),
+separately from the 30-day Actions copies and ignored local `target/` directory.
+This is an internal ad-hoc package qualification. Task 19 release promotion and
+its historical performance hold remain open; current passing measurements do
+not explain or relabel historical failures. A later source revision needs its
+own source-bound evidence before inheriting this verdict.
 
 ## Release entry point
 
@@ -156,9 +161,8 @@ credentials from untrusted pull-request builds and verify the resulting bytes,
 following Apple's
 [notarization workflow](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
 
-The intended baselines remain macOS15+ on ARM and real Intel hardware, and
-Ubuntu24.04 x86-64 with declared glibc/system dependencies. These are qualification
-targets until actual installed-package reports establish support. Windows is
+The qualified baselines are macOS15+ on ARM and real Intel hardware, and
+Ubuntu24.04 x86-64 with declared glibc/system dependencies. Windows is
 outside this change. Task19 release-readiness does not become complete through
 packaging alone; Task20 runtime retirement is already complete.
 
@@ -216,9 +220,9 @@ local catalog listener to be closed with durable library state unchanged.
 These observations qualify the tested runtime isolation; a hosted runner itself
 is not claimed to have no development tools installed.
 
-Commands and headless tests do not count as passing installed evidence until
-their actual native CI reports pass. Preserve the raw source-bound reports and
-review every required lane before closing the remaining Task18 checkboxes.
+Commands and headless tests alone do not count as installed evidence. The
+source-bound native CI reports, raw observations and independent reviews indexed
+above cover every required lane for the reviewed package set.
 
 ## Verification
 
