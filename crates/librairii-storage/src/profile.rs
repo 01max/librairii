@@ -844,14 +844,13 @@ impl NativeProfileStore {
         // Preferences identify a previously bound library; missing settings
         // cannot authorize a replacement identity through direct fresh setup.
         let setup_intent = has_setup_intent(&self.namespace)?;
-        if !entries.iter().any(|entry| entry == SETTINGS) {
-            if entries
+        if !entries.iter().any(|entry| entry == SETTINGS)
+            && (entries
                 .iter()
                 .any(|entry| entry != MARKER && entry != SETUP_INTENT)
-                || (!setup_intent && !self.fresh_namespace.load(Ordering::Acquire))
-            {
-                return Err(StorageError::RecoveryBindingRequired);
-            }
+                || (!setup_intent && !self.fresh_namespace.load(Ordering::Acquire)))
+        {
+            return Err(StorageError::RecoveryBindingRequired);
         }
         if entries.iter().any(|entry| {
             entry != MARKER
@@ -1567,7 +1566,7 @@ mod tests {
         assert!(matches!(result, Err(StorageError::PathEscape)));
         assert_eq!(fs::read(outside.join(SETTINGS))?, b"foreign untouched");
         assert_eq!(fs::read_dir(outside)?.count(), 1);
-        assert_eq!(fs::read_dir(&retained)?.count(), 2);
+        assert_eq!(fs::read_dir(&retained)?.count(), 3);
         fs::remove_file(&directory)?;
         fs::rename(&retained, &directory)?;
         assert_eq!(

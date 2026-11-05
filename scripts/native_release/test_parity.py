@@ -195,6 +195,12 @@ class ParityObservations(unittest.TestCase):
         for mutate in [lambda c: c['rows'].pop(),
                        lambda c: c['rows'][0].update(accountable_owner=''),
                        lambda c: c['rows'][0]['automated_cases'][0].update(source_sha256='0' * 64),
+                       lambda c: c['reviewed_source_updates'][
+                           'crates/librairii-storage/src/settings/startup.rs'].update(
+                               historical_sha256='0' * 64),
+                       lambda c: c['reviewed_source_updates'][
+                           'crates/librairii-storage/src/settings/startup.rs'].update(
+                               current_sha256='0' * 64),
                        lambda c: c['rows'][0]['scope_decisions'].append('unapproved-exclusion')]:
             mutate(self.contract)
             self.save_contract()

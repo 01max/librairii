@@ -35,6 +35,9 @@ def contract_sources(contract, source):
                  records['implementation_index']['rows']):
         require([r['id'] for r in rows] == ids, 'all sixty distinct ordered parity IDs required')
     pinned = {}
+    updates = contract.get('reviewed_source_updates', {})
+    require(isinstance(updates, dict), 'invalid reviewed source updates')
+    used_updates = set()
     for row, implementation in zip(contract['rows'], records['implementation_index']['rows'], strict=True):
         require(row['accountable_owner'] and row['workstream'] == implementation['workstream']
                 and row['assertions_reviewed'] and row['automated_cases'], 'incomplete parity obligation')
@@ -42,6 +45,15 @@ def contract_sources(contract, source):
                 'unknown or missing release hold')
         require(all(k in contract['scope_decisions'] for k in row['scope_decisions']), 'unknown scope decision')
         for path, sha in implementation['source_sha256'].items():
+            if path in updates:
+                update = updates[path]
+                require(isinstance(update, dict)
+                        and set(update) == {'historical_sha256', 'current_sha256', 'reason'}
+                        and update['historical_sha256'] == sha
+                        and isinstance(update['reason'], str) and update['reason'].strip(),
+                        'invalid reviewed source update: ' + path)
+                sha = update['current_sha256']
+                used_updates.add(path)
             require(path not in pinned or pinned[path] == sha, 'conflicting source pin')
             pinned[path] = sha
         identities = [(c['suite'], c['name']) for c in row['automated_cases']]
@@ -50,6 +62,7 @@ def contract_sources(contract, source):
             path, sha = case['source'], case['source_sha256']
             require(path not in pinned or pinned[path] == sha, 'conflicting assertion pin')
             pinned[path] = sha
+    require(used_updates == set(updates), 'unmapped reviewed source update')
     for path, sha in pinned.items():
         require(hashlib.sha256(source_bytes(source, path)).hexdigest() == sha,
                 'reviewed implementation/assertion differs at observed source: ' + path)
