@@ -57,14 +57,21 @@ def runtime_host(root, target):
         raise ValueError('package verification requires the matching native host')
     evidence = {'system': system, 'arch': arch,
                 'os_release': platform.release(), 'os_version': platform.version()}
-    if system == 'Darwin' and int(platform.mac_ver()[0].split('.')[0]) < 15:
-        raise ValueError('macOS package verification requires macOS15 or later')
+    if system == 'Darwin':
+        evidence['macos_version'] = platform.mac_ver()[0]
+        if int(evidence['macos_version'].split('.')[0]) < 15:
+            raise ValueError('macOS package verification requires macOS15 or later')
     if target == 'x86_64-apple-darwin':
         brand = output(root, ['sysctl', '-n', 'machdep.cpu.brand_string'])
         translated = subprocess.run(['sysctl', '-in', 'sysctl.proc_translated'], capture_output=True, text=True, check=False)
         if 'Intel' not in brand or translated.stdout.strip() == '1':
             raise ValueError('Intel release requires actual Intel hardware')
         evidence['cpu'] = brand
+        # Intel hosts can lack this sysctl key. Retain the actual probe, including
+        # its error, rather than presenting missing output as a successful false.
+        evidence['translation_probe'] = {'returncode': translated.returncode,
+                                         'stdout': translated.stdout.strip(),
+                                         'stderr': translated.stderr.strip()}
     return evidence
 
 

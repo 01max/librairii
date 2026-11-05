@@ -117,6 +117,11 @@ job. Installed-host validation needs no Rust toolchain and refuses an Intel
 result running through Rosetta. The installation job also runs the checksum-keyed
 production GUI workflow; byte inspection and GUI qualification remain separate
 receipts and gates.
+The installed-host record includes the macOS product version as well as the
+kernel version. Intel records retain the actual CPU brand and translation-probe
+status/output; an absent sysctl key is not reported as a successful probe.
+The gate requires the native x86-64 host and Intel CPU and refuses an affirmative
+Rosetta result. The installed Mach-O must separately declare x86-64 and macOS15.0.
 After detaching an owned Mac image, inspection reads a new OS image inventory
 and checks the mountpoint independently. `mount-retirement.json` must show no
 matching image, mount owner or mounted directory before `mount-cleanup.json`

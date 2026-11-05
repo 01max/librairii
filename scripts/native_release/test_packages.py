@@ -121,16 +121,27 @@ class PlatformPackages(unittest.TestCase):
     def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
         from subprocess import CompletedProcess
         with patch('native_release.identity.platform.system', return_value='Darwin'), \
-             patch('native_release.identity.platform.machine', return_value='x86_64'), \
+             patch('native_release.identity.platform.machine', return_value='x86_64') as machine, \
              patch('native_release.identity.platform.mac_ver', return_value=('15.7', (), '')), \
              patch('native_release.identity.output', return_value='Intel(R) Core(TM) processor') as output, \
              patch('native_release.identity.subprocess.run', return_value=CompletedProcess([], 1, stdout='', stderr='')) as run:
             observed = runtime_host(Path('/unused'), 'x86_64-apple-darwin')
             self.assertIn('Intel', observed['cpu'])
+            self.assertEqual(observed['macos_version'], '15.7')
+            self.assertEqual(observed['translation_probe'], {'returncode': 1, 'stdout': '', 'stderr': ''})
             self.assertEqual(output.call_args.args[1], ['sysctl', '-n', 'machdep.cpu.brand_string'])
             self.assertEqual(run.call_args.args[0], ['sysctl', '-in', 'sysctl.proc_translated'])
             run.return_value = CompletedProcess([], 0, stdout='1\n', stderr='')
             with self.assertRaisesRegex(ValueError, 'actual Intel hardware'):
+                runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+            run.return_value = CompletedProcess([], 0, stdout='0\n', stderr='')
+            self.assertEqual(runtime_host(Path('/unused'), 'x86_64-apple-darwin')['translation_probe'],
+                             {'returncode': 0, 'stdout': '0', 'stderr': ''})
+            output.return_value = 'Apple M1'
+            with self.assertRaisesRegex(ValueError, 'actual Intel hardware'):
+                runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+            machine.return_value = 'arm64'
+            with self.assertRaisesRegex(ValueError, 'matching native host'):
                 runtime_host(Path('/unused'), 'x86_64-apple-darwin')
 
     def test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members(self):
