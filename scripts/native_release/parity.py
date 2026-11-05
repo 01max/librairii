@@ -35,6 +35,9 @@ def contract_sources(contract, source):
                  records['implementation_index']['rows']):
         require([r['id'] for r in rows] == ids, 'all sixty distinct ordered parity IDs required')
     pinned = {}
+    updates = contract.get('reviewed_source_updates', {})
+    require(isinstance(updates, dict), 'invalid reviewed source updates')
+    used_updates = set()
     for row, implementation in zip(contract['rows'], records['implementation_index']['rows'], strict=True):
         require(row['accountable_owner'] and row['workstream'] == implementation['workstream']
                 and row['assertions_reviewed'] and row['automated_cases'], 'incomplete parity obligation')
@@ -42,6 +45,15 @@ def contract_sources(contract, source):
                 'unknown or missing release hold')
         require(all(k in contract['scope_decisions'] for k in row['scope_decisions']), 'unknown scope decision')
         for path, sha in implementation['source_sha256'].items():
+            if path in updates:
+                update = updates[path]
+                require(isinstance(update, dict)
+                        and set(update) == {'historical_sha256', 'current_sha256', 'reason'}
+                        and update['historical_sha256'] == sha
+                        and isinstance(update['reason'], str) and update['reason'].strip(),
+                        'invalid reviewed source update: ' + path)
+                sha = update['current_sha256']
+                used_updates.add(path)
             require(path not in pinned or pinned[path] == sha, 'conflicting source pin')
             pinned[path] = sha
         identities = [(c['suite'], c['name']) for c in row['automated_cases']]
@@ -50,6 +62,7 @@ def contract_sources(contract, source):
             path, sha = case['source'], case['source_sha256']
             require(path not in pinned or pinned[path] == sha, 'conflicting assertion pin')
             pinned[path] = sha
+    require(used_updates == set(updates), 'unmapped reviewed source update')
     for path, sha in pinned.items():
         require(hashlib.sha256(source_bytes(source, path)).hexdigest() == sha,
                 'reviewed implementation/assertion differs at observed source: ' + path)
@@ -112,8 +125,8 @@ def quality_observations(z, source, target):
 def installed_observations(z, package, source, target):
     installed(z, package, source, target)
     qualification = member_json(z, 'gui/qualification.json')
-    expected = ({'x11-fresh', 'x11-upgraded', 'wayland-fresh', 'wayland-upgraded'}
-                if 'linux' in target else {'fresh', 'upgraded'})
+    expected = ({'x11-fresh', 'x11-fresh-software', 'wayland-fresh', 'wayland-fresh-software'}
+                if 'linux' in target else {'fresh', 'fresh-software'})
     lanes = qualification['lanes']
     require(len(lanes) == len(expected) and {r['name'] for r in lanes} == expected,
             'missing or duplicate installed lane')
@@ -124,7 +137,7 @@ def installed_observations(z, package, source, target):
                 'failed or changed installed lane')
         report = member_json(z, name)
         bound(report, source, target)
-        case = 'fresh' if lane['name'].endswith('fresh') else 'upgraded'
+        case = 'fresh' if lane['name'].endswith('fresh') else 'fresh-software'
         session = lane['name'].split('-', 1)[0] if 'linux' in target else 'macOS'
         backend = 'winit-skia' if case == 'fresh' else 'winit-skia-software'
         require(qualified(report) and report['artifact'] == package['artifact']
@@ -223,6 +236,6 @@ def audit(input_path, output_path):
               'numerical_acceptance_verified': False, 'public_release_qualified': False,
               'limitations': ['Named cases and selected fields are observed, not a proof that every contract subcase is covered.',
                               'Review raw assertions, images, spoken audio, recovery and numerical traces independently.',
-                              'Unsigned observations cannot close final signed-byte or promotion gates.']}
+                              'Ad-hoc observations do not authorize promotion; optional paid signatures require their own final-byte checks.']}
     write_json(output_path, result)
     return result

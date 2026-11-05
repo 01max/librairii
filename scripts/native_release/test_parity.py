@@ -65,7 +65,7 @@ class ParityObservations(unittest.TestCase):
             self.mutate(row['reports']['quality'], 'quality/test-discovery.json', lambda _: fixtures.encoded(discovery))
             self.mutate(row['reports']['quality'], 'nextest/ci/junit.xml', lambda _: ET.tostring(junit))
             package = self.fixture.packages[target]
-            names = ['x11-fresh', 'x11-upgraded', 'wayland-fresh', 'wayland-upgraded'] if 'linux' in target else ['fresh', 'upgraded']
+            names = ['x11-fresh', 'x11-fresh-software', 'wayland-fresh', 'wayland-fresh-software'] if 'linux' in target else ['fresh', 'fresh-software']
             method = {'format': 'librairii.packaged-gui-method', 'schema': 1,
                       'source_commit': fixtures.SOURCE, 'files': {'observer.py': fixtures.facts(b'observer')}}
             processes = [{'name': name, 'retired': True} for name in
@@ -75,7 +75,7 @@ class ParityObservations(unittest.TestCase):
                 member = 'gui/' + name + ('/case/' if 'linux' in target else '/')
                 raw = b'inert raw observation'
                 self.mutate(row['reports']['installed'], member + 'observed.txt', lambda _: raw)
-                case = 'fresh' if name.endswith('fresh') else 'upgraded'
+                case = 'fresh' if name.endswith('fresh') else 'fresh-software'
                 report = {'format': 'librairii.packaged-gui', 'schema': 1,
                           'source_commit': fixtures.SOURCE, 'target': target, 'artifact': package['artifact'],
                           'host': 'synthetic', 'case': case,
@@ -168,7 +168,7 @@ class ParityObservations(unittest.TestCase):
                 ('gui/qualification.json', lambda raw: fixtures.encoded(dict(json.loads(raw), lanes=[]))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), checks={}))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), format='other'))),
-                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), case='upgraded'))),
+                ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), case='fresh-software'))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), session='wayland'))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), backend='winit-skia-software'))),
                 ('gui/fresh/report.json', lambda raw: fixtures.encoded(dict(json.loads(raw), method={}))),
@@ -182,7 +182,7 @@ class ParityObservations(unittest.TestCase):
                 record.update(fixtures.facts(original))
         with zipfile.ZipFile(path) as z:
             fresh = z.read('gui/fresh/report.json')
-        self.mutate(record, 'gui/upgraded/report.json', lambda _: fresh)
+        self.mutate(record, 'gui/fresh-software/report.json', lambda _: fresh)
         def reuse_fresh(raw):
             qualification = json.loads(raw)
             qualification['lanes'][1]['sha256'] = hashlib.sha256(fresh).hexdigest()
@@ -195,6 +195,12 @@ class ParityObservations(unittest.TestCase):
         for mutate in [lambda c: c['rows'].pop(),
                        lambda c: c['rows'][0].update(accountable_owner=''),
                        lambda c: c['rows'][0]['automated_cases'][0].update(source_sha256='0' * 64),
+                       lambda c: c['reviewed_source_updates'][
+                           'crates/librairii-storage/src/settings/startup.rs'].update(
+                               historical_sha256='0' * 64),
+                       lambda c: c['reviewed_source_updates'][
+                           'crates/librairii-storage/src/settings/startup.rs'].update(
+                               current_sha256='0' * 64),
                        lambda c: c['rows'][0]['scope_decisions'].append('unapproved-exclusion')]:
             mutate(self.contract)
             self.save_contract()

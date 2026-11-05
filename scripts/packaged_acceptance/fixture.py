@@ -17,7 +17,7 @@ from native_release.files import copy_tree, digest, inventory, write_json
 
 
 class Fixture:
-    def __init__(self, source, evidence, upgraded):
+    def __init__(self, source, evidence, legacy_present):
         # Explicit custody: unresolved product ownership must never trigger an
         # automatic TemporaryDirectory finalizer under a still-running child.
         self.root = Path(tempfile.mkdtemp(prefix='librairii-packaged-')).resolve()
@@ -62,19 +62,18 @@ class Fixture:
             self.native_profile = base/'librairii-native'
             legacy_profile = base/'librairii'
         self.legacy = None
-        if upgraded:
+        self.legacy_profile = legacy_profile
+        if legacy_present:
             self.legacy = self.library/'legacy-source'
             copy_tree(source/'preservation/corpus/libraries/schema018', self.legacy)
             self.legacy_before = inventory(self.legacy)
-            with closing(sqlite3.connect((self.legacy/'db/librairii.sqlite3').as_uri()+'?immutable=1',uri=True)) as connection:
-                for uuid,name,sha256,size in connection.execute(
-                        'SELECT s.uuid,a.original_filename,a.sha256,a.byte_size FROM stories s JOIN story_archives a ON a.story_id=s.id'):
-                    self.original_archives[uuid] = {(name,sha256,size)}
-                    self.initial_uuids.add(uuid)
             legacy_profile.mkdir(parents=True)
             write_json(legacy_profile/'settings.json', {
                 'version': 1, 'language': 'en', 'root': str(self.legacy),
                 'libraryId': (self.legacy/'.librairii-library').read_text().strip(), 'complete': True})
+        if legacy_present:
+            (legacy_profile/'relocation.json').write_bytes(b'unfinished old move')
+            self.legacy_profile_before = inventory(legacy_profile)
         self.requests, self.errors = [], []
         self.scale = '1'
         self.pause_catalog = False
@@ -125,10 +124,10 @@ class Fixture:
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.evidence = evidence
         try:
-            write_json(evidence/'fixture.json', {'owner': str(self.root), 'upgraded': upgraded,
+            write_json(evidence/'fixture.json', {'owner': str(self.root), 'legacy_present': legacy_present,
                        'profile': str(self.profile), 'library': str(self.library),
                        'expected_archive_inputs': {uuid:sorted(values) for uuid,values in self.original_archives.items()},
-                       'input_files': self.input_bytes, 'legacy_before': self.legacy_before if upgraded else None})
+                       'input_files': self.input_bytes, 'legacy_before': self.legacy_before if legacy_present else None})
         except Exception:
             self.server.server_close()
             raise
@@ -235,7 +234,9 @@ class Fixture:
         if inventory(self.review_inputs) != self.review_bytes:
             failures.append('generated review import fixtures changed')
         if self.legacy and inventory(self.legacy) != self.legacy_before:
-            failures.append('Go-era source changed during independent adoption')
+            failures.append('ignored Go-era source changed during fresh setup')
+        if self.legacy and inventory(self.legacy_profile) != self.legacy_profile_before:
+            failures.append('ignored Go-era profile changed during fresh setup')
         if self.graphics_cache is not None:
             try:
                 self.graphics_cache.retire(process_retired)

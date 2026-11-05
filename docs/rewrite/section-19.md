@@ -1,5 +1,11 @@
 # Task 19: native documentation and release readiness
 
+**Current owner scope (2026-11-03):** [fresh Rust state and free ad-hoc Mac
+packages](fresh-rust-contract.md) supersede this report's Go migration/rollback,
+retained-runtime and mandatory paid-signing requirements. Task 20 implements the
+retirement. The remaining content records earlier work and evidence; failed
+measurements and unfinished applicable package checks remain explicit.
+
 Integration base: `4b7cd37cc6cbafdcdd4d86f35661018c9c7dd027`, after
 [PR69](https://github.com/01max/librairii/pull/69). This section separates the
 completed product documentation from the remaining final release gates.

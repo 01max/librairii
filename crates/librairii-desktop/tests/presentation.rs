@@ -17,6 +17,8 @@ use std::{
     time::{Duration, Instant},
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+#[path = "support/import_gate.rs"]
+mod import_gate;
 struct Environment {
     home: OsString,
     config: OsString,
@@ -45,6 +47,352 @@ fn receive(worker: &Worker) -> Result<Snapshot, Box<dyn std::error::Error>> {
         }
         std::thread::sleep(Duration::from_millis(2));
     }
+}
+#[test]
+fn observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports() -> TestResult
+{
+    use librairii_core::{
+        OperationState,
+        operations::{ItemState, is_terminal},
+    };
+    use librairii_desktop::workflows::operations::{Action, HistoryAction};
+    use std::collections::BTreeSet;
+    use std::sync::Arc;
+    fn receive_revision(
+        worker: &Worker,
+        revision: u64,
+        action: &Action,
+        deadline: Instant,
+    ) -> Result<Snapshot, Box<dyn std::error::Error>> {
+        loop {
+            if worker.finished() || Instant::now() >= deadline {
+                return Err(format!(
+                    "native worker did not publish action {action:?}, revision {revision}"
+                )
+                .into());
+            }
+            if let Some(snapshot) = worker.take_snapshot()
+                && snapshot.revision == revision
+            {
+                assert!(
+                    Instant::now() < deadline,
+                    "late action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
+                );
+                assert!(
+                    !snapshot.workflows.operations.recovery_required,
+                    "action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
+                );
+                assert_eq!(
+                    snapshot.workflows.operations.revision, revision,
+                    "action {action:?}, revision {revision}: {:?}",
+                    snapshot.workflows.operations
+                );
+                return Ok(snapshot);
+            }
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    }
+    struct ObservedEnvironment {
+        base: Environment,
+        gate: Arc<import_gate::ImportGate>,
+    }
+    impl StartupEnvironment for ObservedEnvironment {
+        fn variable(&self, name: &str) -> Option<OsString> {
+            self.base.variable(name)
+        }
+        fn import_observer(&self) -> Option<librairii_desktop::imports::ImportObservation> {
+            Some(self.gate.clone())
+        }
+    }
+    let (roots, _locations, _id, mut seed) = library_worker()?;
+    receive(&seed)?;
+    seed.finish()?;
+    let gate = Arc::new(import_gate::ImportGate::default());
+    let environment = || ObservedEnvironment {
+        base: Environment {
+            home: roots.profile().join("home").into_os_string(),
+            config: roots.profile().join("config").into_os_string(),
+            data: roots.library().join("data").into_os_string(),
+        },
+        gate: gate.clone(),
+    };
+    let source = roots.profile().join("cancel.plain.pk");
+    let bytes = fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../preservation/corpus/archives/clockwork-forest.plain.pk"),
+    )?;
+    fs::write(&source, &bytes)?;
+    let mut worker = Worker::start_with(environment())?;
+    let generation = receive(&worker)?.generation.ok_or("generation")?;
+    let held = gate.hold();
+    let deadline = Instant::now() + Duration::from_secs(8);
+    let offer = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        assert!(
+            Instant::now() < deadline,
+            "action {action:?} missed deadline"
+        );
+        let revision = worker.offer(Command::Operations {
+            generation: generation.clone(),
+            action: action.clone(),
+        })?;
+        receive_revision(&worker, revision, &action, deadline)
+    };
+    let observe = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        assert!(matches!(action, Action::Refresh | Action::Inspect { .. }));
+        loop {
+            let snapshot = offer(action.clone())?;
+            let data = &snapshot.workflows.operations;
+            if data.error.is_none() {
+                return Ok(snapshot);
+            }
+            // Only read-only observations may be repeated without an admission
+            // receipt. Never treat an ambiguous mutation error as a refusal.
+            assert!(
+                data.error.as_deref() == Some("storage.queue_full") && Instant::now() < deadline,
+                "action {action:?}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            eprintln!(
+                "read-only Busy: {action:?}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    };
+    let mut ids = Vec::new();
+    for count in 1..=2 {
+        loop {
+            let snapshot = offer(Action::Import(vec![source.clone(); 32]))?;
+            let data = &snapshot.workflows.operations;
+            if data.error.is_none() {
+                break;
+            }
+            assert!(
+                data.error.as_deref() == Some("storage.queue_full")
+                    && data.import_refused
+                    && data.preparing.is_none()
+                    && data
+                        .cards
+                        .iter()
+                        .all(|card| ids.contains(&card.operation.identity.id))
+                    && Instant::now() < deadline,
+                "Import {count}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            eprintln!(
+                "explicitly refused Import {count}, revision {}: {data:?}",
+                snapshot.revision
+            );
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        loop {
+            let snapshot = observe(Action::Refresh)?;
+            let operations = &snapshot.workflows.operations;
+            if operations.preparing.is_none()
+                && operations.cards.len() == count
+                && gate.entered() > 0
+            {
+                assert!(
+                    operations
+                        .cards
+                        .iter()
+                        .all(|card| !is_terminal(card.operation.state))
+                );
+                ids = operations
+                    .cards
+                    .iter()
+                    .map(|card| card.operation.identity.id.clone())
+                    .collect();
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err("real import checkpoint was not reached".into());
+            }
+        }
+    }
+    // Exercise other commands while tiny archives remain active; no sleep or
+    // archive size is responsible for the cancellation window.
+    gate.advance_read();
+    loop {
+        let snapshot = observe(Action::Refresh)?;
+        if snapshot
+            .workflows
+            .operations
+            .progress
+            .iter()
+            .any(|progress| progress.completed > 0)
+        {
+            assert!(
+                snapshot
+                    .workflows
+                    .operations
+                    .cards
+                    .iter()
+                    .all(|card| !is_terminal(card.operation.state))
+            );
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("held imports did not publish real copy progress".into());
+        }
+    }
+    for id in &ids {
+        for page in [1, 0] {
+            let snapshot = observe(Action::Inspect {
+                id: id.clone(),
+                page,
+            })?;
+            let details = snapshot.workflows.operations.details.ok_or("report")?;
+            assert_eq!(details.card.operation.identity.id, *id);
+            assert!(!is_terminal(details.card.operation.state));
+            assert_eq!(details.items.len(), if page == 1 { 7 } else { 25 });
+        }
+    }
+    for id in &ids {
+        let mut may_offer = true;
+        loop {
+            let snapshot = observe(Action::Refresh)?;
+            let card = snapshot
+                .workflows
+                .operations
+                .cards
+                .iter()
+                .find(|card| card.operation.identity.id == *id)
+                .ok_or("cancellation target disappeared")?;
+            // This durable flag proves the coordinator consumed its single
+            // cancellation slot. Waiting for terminal here could deadlock a
+            // queued batch behind the other deliberately held import.
+            if card.operation.cancel_requested {
+                break;
+            }
+            assert!(
+                !is_terminal(card.operation.state) && Instant::now() < deadline,
+                "Cancel {id} did not become durable: {card:?}"
+            );
+            if may_offer {
+                let snapshot = offer(Action::Cancel(id.clone()))?;
+                let data = &snapshot.workflows.operations;
+                assert!(
+                    data.error.is_none()
+                        || (data.error.as_deref() == Some("storage.queue_full")
+                            && data.cancel_refused),
+                    "Cancel {id}, revision {}: {data:?}",
+                    snapshot.revision
+                );
+                // Only explicit pre-acceptance refusal permits another offer.
+                // Reobserve the same active target first; an accepted offer or
+                // an ambiguous observation failure never permits resubmission.
+                may_offer = data.error.is_some();
+                if may_offer {
+                    eprintln!(
+                        "Cancel Busy for {id}, revision {}: {data:?}",
+                        snapshot.revision
+                    );
+                }
+            }
+        }
+    }
+    loop {
+        let snapshot = observe(Action::Refresh)?;
+        if snapshot
+            .workflows
+            .operations
+            .cards
+            .iter()
+            .all(|card| is_terminal(card.operation.state))
+        {
+            assert!(
+                snapshot
+                    .workflows
+                    .operations
+                    .cards
+                    .iter()
+                    .all(|card| card.cancelled == 32)
+            );
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("held imports did not cancel".into());
+        }
+    }
+    assert!(gate.cancelled() > 0);
+    assert!(!gate.timed_out());
+    drop(held);
+    worker.finish()?;
+    assert_eq!(fs::read(&source)?, bytes);
+    let mut reopened = Worker::start_with(environment())?;
+    let snapshot = receive(&reopened)?;
+    // Recent notices are session-local; reopening offers only the latest import.
+    // History and both paged reports must retain all cancelled work.
+    assert_eq!(snapshot.workflows.operations.cards.len(), 1);
+    assert!(ids.contains(&snapshot.workflows.operations.cards[0].operation.identity.id));
+    assert_eq!(snapshot.workflows.operations.cards[0].cancelled, 32);
+    let generation = snapshot.generation.ok_or("reopened generation")?;
+    let inspect = |action: Action| -> Result<Snapshot, Box<dyn std::error::Error>> {
+        let revision = reopened.offer(Command::Operations {
+            generation: generation.clone(),
+            action: action.clone(),
+        })?;
+        let snapshot = receive_revision(
+            &reopened,
+            revision,
+            &action,
+            Instant::now() + Duration::from_secs(10),
+        )?;
+        assert!(
+            snapshot.workflows.operations.error.is_none(),
+            "reopened action {action:?}, revision {revision}: {:?}",
+            snapshot.workflows.operations
+        );
+        Ok(snapshot)
+    };
+    let snapshot = inspect(Action::History(HistoryAction::Open))?;
+    let history = snapshot.workflows.operations.history;
+    assert!(history.error.is_none(), "{:?}", history.error);
+    assert_eq!(history.cards.len(), 2);
+    assert_eq!(
+        history
+            .cards
+            .iter()
+            .map(|card| card.operation.identity.id.clone())
+            .collect::<BTreeSet<_>>(),
+        ids.iter().cloned().collect()
+    );
+    assert!(
+        history
+            .cards
+            .iter()
+            .all(|card| card.cancelled == 32 && card.operation.state == OperationState::Cancelled)
+    );
+    for id in &ids {
+        let mut item_ids = BTreeSet::new();
+        for page in [0, 1] {
+            let snapshot = inspect(Action::Inspect {
+                id: id.clone(),
+                page,
+            })?;
+            let details = snapshot
+                .workflows
+                .operations
+                .details
+                .ok_or("reopened report")?;
+            assert_eq!(details.card.operation.identity.id, *id);
+            assert_eq!(details.card.operation.state, OperationState::Cancelled);
+            assert_eq!(details.card.cancelled, 32);
+            assert_eq!((details.page, details.pages), (page, 2));
+            assert_eq!(details.items.len(), if page == 1 { 7 } else { 25 });
+            for item in details.items {
+                assert_eq!(item.operation_id, *id);
+                assert_eq!(item.state, ItemState::Cancelled);
+                assert!(item_ids.insert(item.identity.id));
+            }
+        }
+        assert_eq!(item_ids.len(), 32);
+    }
+    reopened.finish()?;
+    Ok(())
 }
 #[test]
 fn isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews()
@@ -190,100 +538,6 @@ fn library_worker() -> Result<
     })?;
     Ok((roots, locations, id, worker))
 }
-#[test]
-fn preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands()
--> TestResult {
-    use librairii_desktop::maintenance::{Action, Notice};
-    let (roots, locations, id, mut worker) = library_worker()?;
-    let initial = receive(&worker)?;
-    let generation = initial.generation.ok_or("generation")?;
-    let mut document: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../librairii-core/tests/fixtures/handover-v1.json"
-    ))?;
-    document["libraryId"] = id.to_string().into();
-    document["state"]["frames"] =
-        serde_json::json!([{"hash":"#/library?v=3&page=1","kind":"library"}]);
-    document["state"]["position"] = 0.into();
-    let selected = roots.profile().join("selected.json");
-    fs::write(&selected, serde_json::to_vec(&document)?)?;
-    worker.offer(Command::Maintenance {
-        generation: None,
-        action: Action::ImportPreferences(selected.clone()),
-    })?;
-    assert_eq!(
-        receive(&worker)?.workflows.settings.notice,
-        Some(Notice::PreferencesRejected)
-    );
-    assert!(!locations.native.join("handover.json").exists());
-    worker.offer(Command::Maintenance {
-        generation: Some(generation.clone()),
-        action: Action::ImportPreferences(selected.clone()),
-    })?;
-    let imported = receive(&worker)?;
-    assert_eq!(
-        imported.workflows.settings.notice,
-        Some(Notice::PreferencesImported)
-    );
-    assert_eq!(
-        imported.navigation.ok_or("navigation")?.presentation(),
-        Presentation::SmallCovers
-    );
-    assert!(imported.workflows.operations.sync_hidden);
-    let receipt = fs::read(locations.native.join("handover.json"))?;
-    worker.offer(Command::Presentation(Presentation::LargeCovers))?;
-    receive(&worker)?;
-    worker.offer(Command::Maintenance {
-        generation: Some(generation),
-        action: Action::ImportPreferences(selected.clone()),
-    })?;
-    let repeated = receive(&worker)?;
-    assert_eq!(
-        repeated.workflows.settings.notice,
-        Some(Notice::PreferencesAlreadyImported)
-    );
-    assert_eq!(
-        repeated.navigation.ok_or("navigation")?.presentation(),
-        Presentation::LargeCovers
-    );
-    assert_eq!(fs::read(locations.native.join("handover.json"))?, receipt);
-    worker.finish()?;
-    let store = NativeProfileStore::open_native(&locations.native)?;
-    assert_eq!(
-        store
-            .load_navigation(id, 2)?
-            .ok_or("navigation")?
-            .presentation(),
-        Presentation::LargeCovers
-    );
-    assert!(
-        store
-            .load_interface(id)?
-            .ok_or("interface")?
-            .sync_panel_hidden
-    );
-    drop(store);
-    let mut restarted = Worker::start_with(Environment {
-        home: roots.profile().join("home").into_os_string(),
-        config: roots.profile().join("config").into_os_string(),
-        data: roots.library().join("data").into_os_string(),
-    })?;
-    let snapshot = receive(&restarted)?;
-    assert_eq!(
-        snapshot.phase,
-        librairii_desktop::presentation::Phase::Library
-    );
-    assert_eq!(
-        snapshot
-            .navigation
-            .ok_or("restarted navigation")?
-            .presentation(),
-        Presentation::LargeCovers
-    );
-    assert!(snapshot.workflows.operations.sync_hidden);
-    restarted.finish()?;
-    Ok(())
-}
-
 #[test]
 fn real_native_library_restores_and_persists_each_mode_before_joined_shutdown() -> TestResult {
     let (_roots, locations, id, mut worker) = library_worker()?;

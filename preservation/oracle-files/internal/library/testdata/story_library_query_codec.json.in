@@ -1,0 +1,170 @@
+[
+  {
+    "name": "defaults",
+    "hash": "#/library?v=3",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "mixed filters and nondefault paging",
+    "hash": "#/library?bool=7%3Afalse&choice=9%3A11%2C12&name=dragon&page=2&size=12&sort=imported_desc&v=3",
+    "query": {
+      "name": "dragon",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 7,
+          "state": "false"
+        }
+      ],
+      "choiceFilters": [
+        {
+          "definitionId": 9,
+          "valueIds": [
+            11,
+            12
+          ]
+        }
+      ],
+      "page": 2,
+      "pageSize": 12,
+      "sort": "imported_desc"
+    }
+  },
+  {
+    "name": "unicode and literal wildcard semantics",
+    "hash": "#/library?name=ete+%25_&v=3",
+    "query": {
+      "name": "ete %_",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "canonical filter ordering",
+    "hash": "#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&choice=10%3A20&v=3",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 2,
+          "state": "true"
+        },
+        {
+          "definitionId": 8,
+          "state": "false"
+        }
+      ],
+      "choiceFilters": [
+        {
+          "definitionId": 4,
+          "valueIds": [
+            5,
+            6
+          ]
+        },
+        {
+          "definitionId": 10,
+          "valueIds": [
+            20
+          ]
+        }
+      ],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "official language and import status",
+    "hash": "#/library?compatibility=compatible&compatibility=missing&language=en-GB&language=fr-FR&v=3",
+    "query": {
+      "name": "",
+      "languages": [
+        "en-GB",
+        "fr-FR"
+      ],
+      "compatibilities": [
+        "compatible",
+        "missing"
+      ],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "include broken stories",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    },
+    "hash": "#/library?v=3"
+  },
+  {
+    "name": "broken stories only",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    },
+    "hash": "#/library?v=3"
+  },
+  {
+    "name": "explicit unflagged membership",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    },
+    "hash": "#/library?v=3"
+  },
+  {
+    "name": "contradictory flag criterion",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    },
+    "hash": "#/library?v=3"
+  }
+]

@@ -18,10 +18,9 @@ def frozen_module(root, prefix):
         for entry in json.loads(manifest_bytes)["files"]:
             path = entry["path"]
             if path.startswith("internal/") or path in ("go.mod", "go.sum"):
-                # The working bridge can evolve without changing oracle input.
-                # Retained bytes still require the ORIGINAL manifest checksum.
-                retained = root / 'preservation/oracle-files' / (path + '.in')
-                source = retained if retained.exists() else root / path
+                # Only archived bytes can supply the optional historical generator.
+                # No fallback to a maintained application checkout is permitted.
+                source = root / 'preservation/oracle-files' / (path + '.in')
                 for parent in (source, *source.parents):
                     if parent == root:
                         break

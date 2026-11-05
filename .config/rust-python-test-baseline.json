@@ -54,10 +54,6 @@
     "test_frozen_go.FrozenGoTests.test_changed_manifest_member_refuses_without_compiling",
     "test_frozen_go.FrozenGoTests.test_bridge_changes_use_original_manifest_verified_retained_bytes",
     "test_frozen_go.FrozenGoTests.test_retained_alias_cannot_supply_oracle_bytes",
-    "test_handover_runner.HandoverRunnerTests.test_cargo_hardlink_executes_exact_owned_single_link_copy",
-    "test_handover_runner.HandoverRunnerTests.test_compiler_symlink_and_fifo_refuse_without_execution",
-    "test_handover_runner.HandoverRunnerTests.test_compiler_output_change_during_execution_refuses_receipt",
-    "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
     "test_release.ReleaseFiles.test_actual_cargo_executable_requires_unique_production_profile",
     "test_release.ReleaseFiles.test_architecture_rejects_wrong_target_fat_and_foreign_executables",
     "test_release.ReleaseFiles.test_archive_is_deterministic_and_normalizes_all_metadata",
@@ -136,6 +132,16 @@
     "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
     "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
     "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
-    "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash"
+    "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
+    "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source",
+    "test_packaged_acceptance.PackagedAdmission.test_interruption_retries_only_explicit_unsubmitted_sync_once",
+    "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline",
+    "test_linux_input_admission.LinuxInputAdmission.test_captured_linux_delay_keeps_failed_wall_and_callback_bound_separate",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_refuses_incomplete_clocks_and_keeps_original_observations",
+    "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
+    "test_installed_x11_activation.InstalledX11Activation.test_absent_ambiguous_or_foreign_window_never_receives_activation",
+    "test_installed_x11_activation.InstalledX11Activation.test_background_owned_window_receives_one_native_activation",
+    "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed"
   ]
 }

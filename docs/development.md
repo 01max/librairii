@@ -1,10 +1,8 @@
 # Native Rust development
 
-These instructions describe `rewrite-in-rust-native-desktop`. The Rust candidate
-uses Slint/Winit/Skia and bundled SQLite. The retained Go/Wails application and
-its checks remain available until the release and cutover gates pass. Building
-Rust does not require Node, Wails or a browser. Installed native packages need
-neither Rust nor Go; see the [platform matrix](release-platforms.md).
+The maintained application is Rust with Slint/Winit/Skia and bundled SQLite.
+Builds and routine CI require no Go, Node, Wails or browser runtime. Installed
+packages require no compiler; see the [platform matrix](release-platforms.md).
 
 ## Build hosts and tools
 
@@ -19,7 +17,6 @@ are outside the current qualified matrix.
 | Python 3 | Requires the standard-library `tomllib` and `sqlite3` modules for source, preservation and packaging checks. |
 | Native compiler/linker | macOS: Xcode/Command Line Tools with the macOS SDK and Clang; native observer qualification also compiles Swift helpers. Linux: the compiler packages below. |
 | Routine Cargo helpers | `cargo xtask tools` installs the exact locked nextest/deny/audit versions in [.config/rust-tools.toml](../.config/rust-tools.toml). |
-| Go | **1.26.5** for the separate Go/native upgrade and storage-handover rehearsals in CI. It is not linked into the Rust application. |
 
 On macOS, use the deployment baseline when building from source:
 
@@ -103,8 +100,8 @@ set `rust-analyzer.check.command` to `clippy`, enable
 disabled. `cargo fmt` supplies formatting; no editor extension is required for
 the command-line build.
 
-The three native CI jobs add actual platform observations, isolated Go/native
-handover and crash/filesystem rehearsals. Passing a local host check does not
+The three native CI jobs add actual platform observations and native
+crash/filesystem rehearsals. Passing a local host check does not
 qualify another host, installed GUI, screen-reader output or public signing.
 See [CI policy](rewrite/ci.md), [scale evidence](rewrite/section-16.md) and
 [package qualification](rewrite/section-18.md).
@@ -113,7 +110,7 @@ See [CI policy](rewrite/ci.md), [scale evidence](rewrite/section-16.md) and
 
 The [manual build and signing guide](native-build-and-sign.md) provides a
 single-command package helper and a signing-command preview. You choose when
-to execute a build, provision signing credentials and approve signing.
+to execute a build. Free ad-hoc Mac packages are the default; paid signing is optional.
 
 Use a clean committed checkout on the matching native host. Each output must
 be a new directory below `target/native-release`; choose unused names for repeat
@@ -139,12 +136,12 @@ cargo xtask release package-macos --stage target/native-release/local-stage --ou
 cargo xtask release package-linux --stage target/native-release/local-stage --output target/native-release/local-package
 ```
 
-These commands create internal candidates. The Mac DMG is explicitly unsigned
-for public distribution despite its ad-hoc integrity signature. Final Developer
-ID signing, notarization, stapling and credentialless installed-byte checks use
-the [protected signing workflow](rewrite/section-18.md#protected-mac-signing).
-Artifact/checksum records identify exact package bytes; inspection and GUI
-qualification remain separate gates.
+These commands create packages for independent installed verification. Mac DMGs
+use a free ad-hoc integrity signature and retain the `-unsigned.dmg` filename
+because they are not Developer ID signed or Apple-notarized. A trusted download
+may need per-app first-launch approval; see the [build guide](native-build-and-sign.md).
+Artifact/checksum records identify exact bytes; inspection and GUI qualification
+remain separate gates. Paid signing is optional.
 
 `cargo xtask release inspect-package` checks installation, linkage and embedded
 identity without a GUI. `cargo xtask release qualify-gui` exercises the installed
@@ -152,20 +149,17 @@ product and is restricted to disposable native CI. The complete invocation and
 evidence contract are in [task 18](rewrite/section-18.md). Package installation
 requires no source checkout or developer toolchain.
 
-## Retained Go compatibility checks
+## Maintained commands and historical references
 
-`make check`, `make build`, `make dmg`, `make linux` and the old packaged
-acceptance commands still belong to the Go/Wails application. They do not build
-or qualify the Rust candidate. Retain them until the separately reviewed runtime
-retirement; Go is also the frozen behavioral oracle and handover source.
+`make setup`, `make check`, `make test`, `make build` and `make run` now target
+the Rust workspace. `make run` explicitly opens the application. For a package
+preview use `make package TARGET=aarch64-apple-darwin NAME=local-arm`, then run
+the helper with `--execute` when you want to build. All production package
+builds require a clean committed checkout and the matching native host.
 
-For changes covered by the legacy CI selector, use Go, the Node version in
-[.nvmrc](../.nvmrc), the Wails pin in [.wails-version](../.wails-version), and
-Chrome/Chromium for browser acceptance. `make setup` installs the retained build
-dependencies; `make check` runs the legacy checks. Linux legacy builds additionally
-use GTK 3/WebKitGTK 4.1 development packages and `GOFLAGS="-tags=webkit2_41"`.
-Those browser libraries are not dependencies of the native Rust package.
-
-The older frontend screenshot command captures the Go UI. Its retained images
-and [capture notes](assets/README.md) are historical visual references rather
-than screenshots of the native application.
+The Go/Wails runtime, Node frontend and their release jobs have been retired.
+Frozen fixtures, migration SQL, localization catalogs and reference source remain
+for regression checks. The optional historical reference generators use
+[the frozen Go module](../preservation/README.md); normal Rust checks never
+compile it. Earlier UI images and [capture notes](assets/README.md) remain
+historical references.

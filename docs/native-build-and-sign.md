@@ -1,15 +1,16 @@
-# Build a native package and choose when to sign it
+# Build a native package
 
-You can build and use an internal native package without Apple credentials.
-Developer ID signing and notarization are needed for the public Mac release
-and its final Gatekeeper checks. They can wait while development continues.
+The default Mac package is free to build: an ad-hoc signed application in a
+DMG, with no Apple membership or credentials. Developer ID signing and
+notarization are an optional future distribution channel. They are not required
+to finish the Rust rewrite.
 
 The helpers below keep those decisions separate. The package helper previews
 its work by default. The signing helper only prints a command. Neither helper
 provisions credentials, changes GitHub settings, publishes a release or merges
 code. Running the printed signing command is your explicit decision.
 
-## Build an internal package
+## Build the free package
 
 Use a clean, committed checkout and the prerequisites in
 [the development guide](development.md#build-hosts-and-tools). Builds require the
@@ -42,11 +43,14 @@ headless identity commands run during verification; the product GUI does not.
 No build dependencies are installed automatically.
 
 Mac candidates have an ad-hoc integrity signature and an `-unsigned.dmg` name.
-Building them does not establish public-release or installed-GUI acceptance.
+After copying the app to Applications, a trusted downloaded build may need
+**System Settings → Privacy & Security → Open Anyway** on first launch.
+The ad-hoc seal checks integrity; it is not Apple notarization. Building alone
+does not establish installed-GUI acceptance.
 The existing [native packages workflow](../.github/workflows/rust-packages.yml)
 builds all three targets and runs installed acceptance on disposable CI.
 
-## Prepare public Mac signing when you are ready
+## Optional: prepare Developer ID signing
 
 This is a one-time owner setup plus an approval for each selected candidate.
 You need an Apple Developer ID Application identity with its private key and
@@ -54,7 +58,7 @@ notarization credentials. Prepare a dedicated encrypted keychain containing
 only that identity and a `notarytool` profile named `librairii-notary`, following
 [Apple's notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
 Keep your ordinary login keychain separate. If you do not have the identity
-or want to defer public distribution, stop here; internal builds remain usable.
+or prefer the free distribution, stop here; the ad-hoc builds remain usable.
 
 In [repository settings](https://github.com/01max/librairii/settings/environments),
 create `native-macos-signing`. Configure a required reviewer and select only

@@ -32,7 +32,7 @@ class NativeGraphicsCache:
         self.root_identity = identity(self.root.stat())
         self.fd = os.open(self.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
         self.parent_identity = identity(os.fstat(self.fd))
-        self.target.mkdir()  # Empty for every fresh/upgraded lane; never reuse a cache.
+        self.target.mkdir()  # Empty for every fresh/fresh-software lane; never reuse a cache.
         self.target_fd = os.open(self.target, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
         self.target_identity = identity(os.fstat(self.target_fd))
         # symlink is exclusive even for a dangling pre-existing entry. Register

@@ -15,10 +15,13 @@ use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
+mod sync_submission;
+pub use sync_submission::RefusedSync;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Action {
     Sync,
+    RetrySync(RefusedSync),
     HideSync(bool),
     Import(Vec<PathBuf>),
     Cancel(String),
@@ -47,6 +50,7 @@ impl Action {
             Self::Cancel(id) | Self::Dismiss(id) | Self::Inspect { id, .. } => {
                 !id.is_empty() && id.len() <= 256
             }
+            Self::RetrySync(receipt) => !receipt.id.is_empty() && receipt.id.len() <= 256,
             Self::Refresh | Self::Sync | Self::HideSync(_) | Self::History(_) => true,
         }
     }
@@ -60,6 +64,7 @@ pub struct Snapshot {
     pub catalog_revision: Option<librairii_core::CatalogSnapshotId>,
     pub sync_hidden: bool,
     pub sync_preparing: bool,
+    pub sync_refused: Option<RefusedSync>,
     pub preference_error: bool,
     pub catalog: Option<librairii_core::metadata::CatalogStatus>,
     pub last_success_local: Option<librairii_adapters::datetime::LocalDateTime>,
@@ -74,6 +79,9 @@ pub struct Snapshot {
     /// This revision's import offer returned its owned input before admission.
     /// A later observation failure must never be interpreted as this receipt.
     pub import_refused: bool,
+    /// This revision's cancel offer was refused before scheduler acceptance.
+    /// A failed observation after an accepted cancellation never sets this.
+    pub cancel_refused: bool,
     pub status: Option<RuntimeStatus>,
     pub progress: Vec<ProgressUpdate>,
 }
@@ -87,6 +95,7 @@ pub struct History {
 }
 #[derive(Debug, Default)]
 pub struct Controller {
+    sync_submission: sync_submission::Submission,
     preferences: Option<librairii_storage::profile::InterfacePreferences>,
     pub snapshot: Snapshot,
     recent: VecDeque<String>,
@@ -105,6 +114,7 @@ impl Controller {
         self.recent.truncate(8);
         self.snapshot.revision = revision;
         self.snapshot.import_refused = false;
+        self.snapshot.cancel_refused = false;
         self.snapshot.preparing = Some(id.clone());
         self.snapshot.details = None;
         self.selected = Some((id, 0));
@@ -143,6 +153,7 @@ impl Controller {
         self.snapshot.revision = revision;
         self.snapshot.error = None;
         self.snapshot.import_refused = false;
+        self.snapshot.cancel_refused = false;
         // An Inspect receipt certifies only its newly read report. A failure,
         // including a same-ID page/refresh, must never reuse the prior details.
         if matches!(&action, Action::Inspect { .. }) {
@@ -159,7 +170,7 @@ impl Controller {
                 // Drain the previous admission receipt before offering another job.
                 effects |= self.poll(runtime, true)?.1;
                 match action {
-                    Action::Sync => {
+                    action @ (Action::Sync | Action::RetrySync(_)) => {
                         if self.snapshot.sync_preparing
                             || self.snapshot.cards.iter().any(|c| {
                                 c.operation.kind == OperationKind::MetadataSync
@@ -168,26 +179,36 @@ impl Controller {
                         {
                             return Err(StorageError::QueueFull);
                         }
-                        let id = librairii_adapters::identities::job_id()
-                            .map_err(|source| StorageError::Io {
-                                operation: "create metadata job identity",
-                                source,
-                            })?
-                            .to_string();
-                        let start = librairii_app::native_jobs::Start::new(
-                            librairii_app::ports::creation::NewOperation {
-                                id: id.clone(),
-                                kind: OperationKind::MetadataSync,
-                                source: None,
-                                destination: None,
-                                items: vec![librairii_app::ports::creation::NewItem {
-                                    source_name: "en-GB".into(),
-                                    ..Default::default()
-                                }],
-                            },
-                        )
-                        .map_err(|_| StorageError::CompatibilityInvariant)?;
-                        runtime.offer_metadata(start)?;
+                        let start = if let Action::RetrySync(receipt) = action {
+                            self.sync_submission.retry(&receipt, &generation)?
+                        } else {
+                            let id = librairii_adapters::identities::job_id()
+                                .map_err(|source| StorageError::Io {
+                                    operation: "create metadata job identity",
+                                    source,
+                                })?
+                                .to_string();
+                            librairii_app::native_jobs::Start::new(
+                                librairii_app::ports::creation::NewOperation {
+                                    id: id.clone(),
+                                    kind: OperationKind::MetadataSync,
+                                    source: None,
+                                    destination: None,
+                                    items: vec![librairii_app::ports::creation::NewItem {
+                                        source_name: "en-GB".into(),
+                                        ..Default::default()
+                                    }],
+                                },
+                            )
+                            .map_err(|_| StorageError::CompatibilityInvariant)?
+                        };
+                        let id = start.input().id.clone();
+                        self.sync_submission.offer(
+                            start,
+                            generation.clone(),
+                            revision,
+                            |start| runtime.offer_metadata(start),
+                        )?;
                         self.recent.push_front(id.clone());
                         self.recent.truncate(8);
                         self.snapshot.preparing = Some(id.clone());
@@ -241,7 +262,7 @@ impl Controller {
                         }) {
                             return Err(StorageError::SnapshotChanged);
                         }
-                        runtime.cancel_operation(id)?;
+                        self.offer_cancel(id, |id| runtime.cancel_operation(id))?;
                     }
                     Action::Inspect { id, page } => {
                         // Only an observed operation can be selected from the feed.
@@ -350,6 +371,7 @@ impl Controller {
                 effects |= self.poll(runtime, true)?.1;
                 Ok(())
             })();
+        self.snapshot.sync_refused = self.sync_submission.receipt();
         if let Err(error) = result {
             if dismissing {
                 self.snapshot.notice_error = Some(error.to_string());
@@ -363,6 +385,11 @@ impl Controller {
             self.snapshot.error = Some(error.to_string());
         }
         effects
+    }
+    fn offer_cancel(&mut self, id: String, offer: impl FnOnce(String) -> Result<()>) -> Result<()> {
+        let result = offer(id);
+        self.snapshot.cancel_refused = matches!(&result, Err(StorageError::QueueFull));
+        result
     }
     /// Returns (presentation changed, successful import effects changed).
     /// Progress never enters the command FIFO or creates another job runtime.
@@ -519,5 +546,35 @@ impl Controller {
         self.dirty = false;
         self.initialized = true;
         Ok((true, effects))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure() {
+        let mut controller = Controller::default();
+        let id = "cancelled-operation";
+        let result = controller.offer_cancel(id.into(), |received| {
+            assert_eq!(received, id);
+            Err(StorageError::QueueFull)
+        });
+        assert!(matches!(result, Err(StorageError::QueueFull)));
+        assert!(controller.snapshot.cancel_refused);
+
+        let result = controller.offer_cancel(id.into(), |_| Ok(()));
+        assert!(result.is_ok());
+        controller.snapshot.error = Some(StorageError::QueueFull.to_string());
+        assert!(!controller.snapshot.cancel_refused);
+
+        let result = controller.offer_cancel(id.into(), |_| Err(StorageError::IntakeClosed));
+        assert!(matches!(result, Err(StorageError::IntakeClosed)));
+        assert!(!controller.snapshot.cancel_refused);
+
+        controller.snapshot.cancel_refused = true;
+        controller.watch("different-import".into(), 2);
+        assert!(!controller.snapshot.cancel_refused);
     }
 }

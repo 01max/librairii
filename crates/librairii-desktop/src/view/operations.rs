@@ -673,7 +673,10 @@ pub(super) fn send(
     };
     if let Some(id) = &inspecting {
         state.borrow_mut().operations.requested_report = Some((id.clone(), None));
-    } else if matches!(&action, Action::Import(_) | Action::Sync) {
+    } else if matches!(
+        &action,
+        Action::Import(_) | Action::Sync | Action::RetrySync(_)
+    ) {
         state.borrow_mut().operations.requested_report = None;
     }
     if inspecting.is_some() {

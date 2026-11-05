@@ -34,6 +34,7 @@ def main():
         raise ValueError('matching native resource host required')
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resources.py')], check=True)
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_dispatch.py')], check=True)
+    subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_linux_dispatch.py')], check=True)
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resource_linux.py')], check=True)
     destination = ROOT / 'target/quality/native-scale/resources'
     if destination.exists():

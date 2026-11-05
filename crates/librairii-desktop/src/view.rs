@@ -414,7 +414,6 @@ impl View {
         ui.set_startup_phase(match self.snapshot.phase {
             librairii_desktop::presentation::Phase::Opening => 4,
             librairii_desktop::presentation::Phase::Setup => 0,
-            librairii_desktop::presentation::Phase::Adoption => 1,
             librairii_desktop::presentation::Phase::Recovery => 2,
             librairii_desktop::presentation::Phase::Library => 3,
         });
@@ -746,8 +745,7 @@ pub fn install(
     view.borrow_mut().project(ui);
     view.borrow_mut().shelf_reviews.restore_focus(ui);
     match view.borrow().snapshot.phase {
-        librairii_desktop::presentation::Phase::Setup
-        | librairii_desktop::presentation::Phase::Adoption => ui.invoke_open_dialog(4),
+        librairii_desktop::presentation::Phase::Setup => ui.invoke_open_dialog(4),
         librairii_desktop::presentation::Phase::Recovery => ui.invoke_open_dialog(5),
         _ => {}
     }

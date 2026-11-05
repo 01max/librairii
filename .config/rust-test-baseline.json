@@ -3549,7 +3549,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace",
+      "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_nonempty_target_never_initialize_or_replace",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -3576,7 +3576,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+      "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -3720,7 +3720,7 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "settings::startup::tests::preparation_preserves_invalid_and_legacy_state_before_creating_native_containers",
+      "name": "settings::startup::tests::invalid_native_profile_is_preserved_before_setup",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
@@ -4064,15 +4064,6 @@
       ]
     },
     {
-      "suite": "librairii-desktop::presentation",
-      "name": "preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands",
-      "targets": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu"
-      ]
-    },
-    {
       "suite": "librairii-desktop::release_identity",
       "name": "product_version_is_available_without_profile_or_display"
     },
@@ -4117,6 +4108,96 @@
     {
       "suite": "librairii-storage::shelf_incomplete",
       "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::dangling_old_namespace_links_do_not_block_independent_setup_or_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::dangling_old_links_still_exclude_future_native_profile_and_library_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::old_namespace_files_are_ignored_without_becoming_native_directories",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::previous_native_v2_canonical_exclusions_reopen_and_reserve_current_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "workflows::operations::tests::cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::marker_only_namespace_after_lost_binding_cannot_start_another_library",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",

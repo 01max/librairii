@@ -4,8 +4,9 @@ import ApplicationServices
 import Carbon
 import CoreGraphics
 import Foundation
+import Darwin
 
-enum Failure: Error { case invalid(String), staleSnapshot(String), unavailableRoot(String) }
+enum Failure: Error { case invalid(String), staleSnapshot(String), unavailableRoot(String), unavailableDocumentAttribute(String) }
 
 func inputSource() -> String {
     let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
@@ -75,6 +76,9 @@ func checkedWindows(_ app: AXUIElement) throws -> [AXUIElement]? {
 func checkedText(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> String {
     var value: CFTypeRef?
     let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    if status == .cannotComplete && [kAXTitleAttribute, kAXDocumentAttribute, kAXURLAttribute].contains(name) {
+        throw Failure.unavailableDocumentAttribute(name)
+    }
     if optional && (status == .attributeUnsupported || status == .noValue) { return "" }
     guard status == .success else {
         throw Failure.invalid("Finder " + name + " query failed: " + String(status.rawValue))
@@ -270,9 +274,18 @@ func unavailableSnapshotReply(_ error: Error, operation: String, pid: Int,
 func unavailableDocumentSnapshotReply(_ error: Error, operation: String, pid: Int,
                                       document: String?) -> [String: Any]? {
     guard operation == "snapshot", pid > 0, let document, !document.isEmpty,
-          let failure = error as? Failure, case .staleSnapshot = failure else { return nil }
-    return ["format": "librairii.native-document-snapshot-unavailable", "schema": 1,
-            "pid": pid, "document": document, "status": AXError.invalidUIElement.rawValue]
+          let failure = error as? Failure else { return nil }
+    switch failure {
+    case .staleSnapshot:
+        return ["format": "librairii.native-document-snapshot-unavailable", "schema": 1,
+                "pid": pid, "document": document, "status": AXError.invalidUIElement.rawValue]
+    case .unavailableDocumentAttribute(let attribute):
+        guard [kAXTitleAttribute, kAXDocumentAttribute, kAXURLAttribute].contains(attribute) else { return nil }
+        return ["format": "librairii.native-document-attribute-unavailable", "schema": 1,
+                "pid": pid, "document": document, "attribute": attribute,
+                "status": AXError.cannotComplete.rawValue]
+    default: return nil
+    }
 }
 
 func snapshotReadReply(operation: String, pid: Int, document: String?,
@@ -800,6 +813,16 @@ do {
         let element = try resolve(app, selector)
         var status: AXError
         if operation == "press" {
+            if let raw = request["action_deadline_monotonic"] {
+                guard let deadline = raw as? Double, deadline.isFinite, deadline > 0 else {
+                    throw Failure.invalid("invalid native action deadline")
+                }
+                var now = timespec()
+                guard clock_gettime(CLOCK_MONOTONIC, &now) == 0,
+                      Double(now.tv_sec) + Double(now.tv_nsec) / 1_000_000_000 < deadline else {
+                    throw Failure.invalid("native action deadline")
+                }
+            }
             status = AXUIElementPerformAction(element, kAXPressAction as CFString)
         } else if operation == "focus" {
             guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {

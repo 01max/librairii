@@ -82,18 +82,42 @@ func firstStoryPoint() throws -> PointerTarget {
     let app = AXUIElementCreateApplication(pid)
     let start = DispatchTime.now().uptimeNanoseconds
     var firstTitleRole: String? = nil
+    // Retain only observations already made by the lookup. No extra AX reads,
+    // input, retries or deadline changes; successful cohorts write no trace.
+    var scans = 0, nodes = 0, reads = 0, omittedCandidates = 0, omittedLabels = 0
+    var statuses: [String: Int] = [:]
+    var readErrors: [[String: Any]] = [], candidates: [[String: Any]] = [], labels: [[String: Any]] = []
     while DispatchTime.now().uptimeNanoseconds - start < 5_000_000_000 {
+        scans += 1
         var queue = [app]; var next = 0
         while next < queue.count && next < 4096 {
-            let item = queue[next]; next += 1
+            let item = queue[next]; next += 1; nodes += 1
             func attribute(_ name: String, of element: AXUIElement? = nil) -> CFTypeRef? {
                 var value: CFTypeRef?
-                return AXUIElementCopyAttributeValue(element ?? item, name as CFString, &value) == .success ? value : nil
+                let status = AXUIElementCopyAttributeValue(element ?? item, name as CFString, &value)
+                reads += 1
+                statuses[name + ":" + String(status.rawValue), default: 0] += 1
+                if status != .success {
+                    if readErrors.count == 64 { readErrors.removeFirst() }
+                    readErrors.append(["scan": scans, "node": next, "attribute": name,
+                                       "parent": element != nil, "status": status.rawValue])
+                }
+                return status == .success ? value : nil
             }
             let title = attribute(kAXTitleAttribute) as? String ?? ""
             let description = attribute(kAXDescriptionAttribute) as? String ?? ""
+            if !title.isEmpty || !description.isEmpty {
+                if labels.count < 128 { labels.append(["scan": scans, "node": next, "title": String(title.prefix(256)), "description": String(description.prefix(256))]) }
+                else { omittedLabels += 1 }
+            }
             if title.hasPrefix("Histoire 0001") || description.hasPrefix("Histoire 0001") {
                 let role = attribute(kAXRoleAttribute) as? String ?? ""
+                var candidate: [String: Any] = ["scan": scans, "node": next, "title": String(title.prefix(256)),
+                                                "description": String(description.prefix(256)), "role": String(role.prefix(256))]
+                defer {
+                    if candidates.count < 32 { candidates.append(candidate) }
+                    else { omittedCandidates += 1 }
+                }
                 if firstTitleRole == nil { firstTitleRole = role }
                 // Slint ListItem becomes AccessKit ListBoxOption/AXStaticText.
                 // The browser-list parent and default action distinguish the
@@ -104,20 +128,35 @@ func firstStoryPoint() throws -> PointerTarget {
                 let parentRole = attribute(kAXRoleAttribute, of: parent) as? String ?? ""
                 let parentName = attribute(kAXTitleAttribute, of: parent) as? String ?? ""
                 var rawActions: CFArray?
-                AXUIElementCopyActionNames(item, &rawActions)
+                let actionStatus = AXUIElementCopyActionNames(item, &rawActions)
                 let actions = rawActions as? [String] ?? []
+                candidate["parent_role"] = String(parentRole.prefix(256)); candidate["parent_name"] = String(parentName.prefix(256))
+                candidate["actions"] = actions.prefix(32).map { String($0.prefix(256)) }
+                candidate["action_status"] = actionStatus.rawValue
                 guard parentRole == kAXListRole as String, ["Toutes les histoires", "All stories"].contains(parentName), actions.contains(kAXPressAction as String) else { continue }
                 if let rawPosition = attribute(kAXPositionAttribute), let rawSize = attribute(kAXSizeAttribute), CFGetTypeID(rawPosition) == AXValueGetTypeID(), CFGetTypeID(rawSize) == AXValueGetTypeID() {
                     var position = CGPoint.zero; var size = CGSize.zero
                     if AXValueGetValue(rawPosition as! AXValue, .cgPoint, &position) && AXValueGetValue(rawSize as! AXValue, .cgSize, &size) && size.width > 8 && size.height > 8 {
                         return PointerTarget(point: CGPoint(x: position.x + size.width / 2, y: position.y + size.height / 2), role: role, name: title.isEmpty ? description : title, firstTitleRole: firstTitleRole!, parentRole: parentRole, parentName: parentName, actions: actions)
                     }
+                    candidate["position_after_decode"] = String(describing: position)
+                    candidate["size_after_decode"] = String(describing: size)
                 }
             }
             queue.append(contentsOf: (attribute(kAXChildrenAttribute) as? [AXUIElement] ?? []).prefix(max(0, 4096 - queue.count)))
         }
         Thread.sleep(forTimeInterval: 0.001)
     }
+    let failure: [String: Any] = ["format": "librairii.pointer-lookup-failure", "schema": 1,
+        "pid": pid, "start_ns": start, "end_ns": DispatchTime.now().uptimeNanoseconds,
+        "deadline_ns": 5_000_000_000, "scans": scans, "visited_nodes": nodes, "attribute_reads": reads,
+        "first_title_role": firstTitleRole.map { String($0.prefix(256)) } as Any? ?? NSNull(), "attribute_status_counts": statuses,
+        "last_read_errors": readErrors, "candidate_observations": candidates, "label_observations": labels,
+        "omitted_candidates": omittedCandidates, "omitted_labels": omittedLabels, "text_limit": 256]
+    do {
+        try JSONSerialization.data(withJSONObject: failure, options: [.sortedKeys]).write(
+            to: directory.appendingPathComponent("pointer-lookup-failure.json"), options: .atomic)
+    } catch { fputs("pointer lookup diagnostic retention failed: \(error)\n", stderr) }
     throw Refusal(message: "actual first story AX pointer bounds missing")
 }
 func coldFirstPage() throws -> Int {

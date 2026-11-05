@@ -7,14 +7,22 @@
   },
   "implementation_index": {
     "path": "docs/rewrite/section-19-parity.json",
-    "sha256": "cba02d24015bdfa8f39a469264d2c138ff245743954c715bb2cc47512e36e0e1"
+    "sha256": "1aefa22938dacf94246b69eb67cd8e97bb5b5a02d83b66b7bd258ca7f719d6ac"
   },
-  "scope": "Reviewed assertions and actual observed case execution. Coverage completeness, provider authentication, public signing and release approval remain independent review obligations.",
+  "reviewed_source_updates": {
+    "crates/librairii-storage/src/settings/startup.rs": {
+      "historical_sha256": "b45801a638bbe4e38abee4c7e1e7397ea9989188bedfb040d707d9eabf978c68",
+      "current_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa",
+      "reason": "PR76 review: distinguish interrupted first setup from a lost completed native binding."
+    }
+  },
+  "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
   "scope_decisions": {
     "voiceover-excluded": "Owner decision 2026-10-23: VoiceOver execution excluded; no spoken macOS accessibility claim.",
     "script-input-deferred": "Owner decision 2026-10-24: Japanese/Chinese/Arabic-specific input/IME/shaping deferred; valid UTF-8 data/filenames remain unrestricted.",
     "windows-deferred": "Owner decision 2026-10-21: Windows qualification deferred to a separate change; historical Windows evidence is not production support.",
-    "isolated-adoption": "In-place Go adoption is refused without lifetime exclusion. Supported route verifies an independent library/native profile/recovery clone; legacy authority stays source-directed."
+    "fresh-rust": "Owner decision: fresh Rust app with functional parity. Go data/profile adoption, browser preference transfer and compatible Go rollback are out of scope. Old personal files remain untouched; Rust-created state retains recovery.",
+    "free-mac": "Owner declined paid Apple membership. Ad-hoc signed Mac DMGs are the default; Developer ID signing/notarization is optional."
   },
   "release_holds": {
     "final-candidate-and-independent-review": {
@@ -23,7 +31,7 @@
         "19.7"
       ],
       "owner": "01max",
-      "condition": "Select exact final distributions, reconcile every mandatory subcase and independently approve the complete three-target clean/upgraded rehearsal before promotion."
+      "condition": "Select exact final distributions, reconcile mandatory functional subcases and independently review all three targets on both fresh renderer routes before release promotion."
     },
     "public-mac-final-bytes": {
       "tasks": [
@@ -33,7 +41,7 @@
         "18.11"
       ],
       "owner": "01max",
-      "condition": "Human-controlled Developer ID signing/notarization/stapling and independent installed final-byte verification on both matching Mac targets."
+      "condition": "Verify exact ad-hoc Mac package bytes on both matching native targets and document first-launch approval. Developer ID signing/notarization is optional, not a completion prerequisite."
     }
   },
   "rows": [
@@ -74,7 +82,7 @@
         "final-candidate-and-independent-review"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     },
     {
@@ -364,6 +372,12 @@
           "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
           "source": "crates/librairii-desktop/tests/imports.rs",
           "source_sha256": "8af5a4a565124fce6949362e1e1a4ef9ba5c1a9d365de9b9e4ef5d4846024fdb"
+        },
+        {
+          "suite": "librairii-desktop::presentation",
+          "name": "observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -549,13 +563,13 @@
           "suite": "librairii-desktop::presentation",
           "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-desktop::presentation",
           "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -675,7 +689,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-core::query_urls",
@@ -687,7 +701,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "manual_shelf_navigation_retains_sort_preference_across_history_and_reopen",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -769,7 +783,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -1368,7 +1382,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "saved_shelf_warning_preferences_are_recognized_as_native_state",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-storage::shelves",
@@ -1650,7 +1664,7 @@
       "id": "P43",
       "accountable_owner": "01max",
       "workstream": "UI",
-      "assertions_reviewed": "Native sync callbacks exercise first prompt, last-success/failure/progress/cancel/retry and persistent visibility; handover retains the supported preference.",
+      "assertions_reviewed": "Native sync callbacks exercise first prompt, last success/failure/progress/cancel/retry and persistent Rust visibility.",
       "automated_cases": [
         {
           "suite": "librairii-storage::handover",
@@ -1663,6 +1677,18 @@
           "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
           "source": "crates/librairii-storage/tests/native_library.rs",
           "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
+        },
+        {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+          "source": "crates/librairii-desktop/src/workflows/operations/sync_submission.rs",
+          "source_sha256": "6dbbd719ffa051bf1d788ee55bc0558ff7ff25000169e4f34d4bb7180411c0e1"
+        },
+        {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+          "source": "crates/librairii-desktop/src/workflows/operations/sync_submission.rs",
+          "source_sha256": "6dbbd719ffa051bf1d788ee55bc0558ff7ff25000169e4f34d4bb7180411c0e1"
         }
       ],
       "native_callbacks": [
@@ -1737,7 +1763,7 @@
           "suite": "librairii-desktop::presentation",
           "name": "isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -1947,31 +1973,25 @@
       "id": "P51",
       "accountable_owner": "01max",
       "workstream": "UI",
-      "assertions_reviewed": "Actual Go handover preserves typed history; bounded library-bound atomic receipt refuses aliases/wrong versions and never resets newer native preferences.",
+      "assertions_reviewed": "Real Rust navigation and view-mode preferences persist across joined shutdown/restart. Corrupt native navigation enters recovery while language remains independent.",
       "automated_cases": [
         {
-          "suite": "librairii-core::handover",
-          "name": "actual_go_handover_preserves_history_and_separates_overlapping_group_ids",
-          "source": "crates/librairii-core/tests/handover.rs",
-          "source_sha256": "473d1897ddee8cb6ce659dac5f8fd49d285f73880871edc9ef73b1c315b064ac"
+          "suite": "librairii-desktop::presentation",
+          "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
-          "suite": "librairii-core::handover",
-          "name": "handover_refuses_wrong_library_versions_unknown_fields_duplicates_and_bounds",
-          "source": "crates/librairii-core/tests/handover.rs",
-          "source_sha256": "473d1897ddee8cb6ce659dac5f8fd49d285f73880871edc9ef73b1c315b064ac"
+          "suite": "librairii-desktop::presentation",
+          "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
-          "suite": "librairii-storage::handover",
-          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
-          "source": "crates/librairii-storage/tests/handover.rs",
-          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
-        },
-        {
-          "suite": "librairii-storage::handover",
-          "name": "wrong_library_or_invalid_transfer_preserves_every_native_profile_byte",
-          "source": "crates/librairii-storage/tests/handover.rs",
-          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+          "suite": "librairii-desktop::presentation",
+          "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
+          "source": "crates/librairii-desktop/tests/presentation.rs",
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         }
       ],
       "native_callbacks": [
@@ -1984,44 +2004,62 @@
         "final-candidate-and-independent-review"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     },
     {
       "id": "P52",
       "accountable_owner": "01max",
       "workstream": "Storage",
-      "assertions_reviewed": "First-run inspection is read-only until explicit exact-root confirmation; existing adoption requires independent clone authority, and atomic profile writes retain language/root.",
+      "assertions_reviewed": "Read-only first-run inspection precedes exact-root confirmation. Fresh setup ignores old profiles, journals and database bytes and reopens its own native state; invalid native state remains recovery-only.",
       "automated_cases": [
         {
           "suite": "librairii-desktop::presentation",
           "name": "first_run_inspection_is_readonly_and_explicit_language_never_initializes_a_library",
           "source": "crates/librairii-desktop/tests/presentation.rs",
-          "source_sha256": "286070eee4521c6ce527a4dd99f1abb0975bebc0bda1e095749e1f134a7f1524"
+          "source_sha256": "37b099203fe18972bb572885dbbc65e6cbe87a35850930d7cce5117a16620aef"
         },
         {
           "suite": "librairii-storage",
           "name": "native::owned::fresh::tests::confirmed_setup_uses_exact_empty_or_missing_root_and_reopens_without_legacy_source",
           "source": "crates/librairii-storage/src/native/owned/fresh.rs",
-          "source_sha256": "a9d6914cf17b1fef30347c8cc1215a8160e7bd1a9a424f9ed6d2a1836735a28f"
+          "source_sha256": "14dc7124638883cf532224988323a3880f42b5beae02d24e9075569032ba52d9"
         },
         {
           "suite": "librairii-storage",
-          "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+          "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "source": "crates/librairii-storage/src/settings/startup.rs",
-          "source_sha256": "64304c316e591e0a08a4916494e422b2d52302c6eac63b38acb88bad0ba61bfb"
+          "source_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa"
         },
         {
           "suite": "librairii-storage::profiles",
           "name": "serialized_native_updates_keep_language_and_root_without_lost_snapshots",
           "source": "crates/librairii-storage/tests/profiles.rs",
-          "source_sha256": "9935fe917a0e7c29394bc36dd8822f3440eda2f437eeb852bc95f213f3535177"
+          "source_sha256": "f68a28330f1a2b6df8d5970ac372c6bbde1f3102c15edd002754d1f8138eb76e"
         },
         {
           "suite": "librairii-storage::library_locks",
           "name": "rust_lock_is_not_legacy_lifetime_exclusion_or_existing_adoption_authority",
           "source": "crates/librairii-storage/tests/library_locks.rs",
           "source_sha256": "5588b6a9950a099db0448550b6ebfea87ac066e8f02d950721672aaef1487568"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_namespace_links_do_not_block_independent_setup_or_reopen",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa"
+        },
+        {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_links_still_exclude_future_native_profile_and_library_aliases",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa"
         }
       ],
       "native_callbacks": [
@@ -2035,7 +2073,7 @@
         "final-candidate-and-independent-review"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     },
     {
@@ -2130,7 +2168,7 @@
         "final-candidate-and-independent-review"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     },
     {
@@ -2174,7 +2212,7 @@
         "final-candidate-and-independent-review"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     },
     {
@@ -2230,7 +2268,7 @@
           "suite": "librairii-desktop",
           "name": "acceptance::tests::intake_rejects_external_paths_and_rechecks_owned_picker_paths_off_ui_thread",
           "source": "crates/librairii-desktop/src/acceptance.rs",
-          "source_sha256": "a0454094df92a703e137e81b5d51d7ccc8d352ce7e038e27c8bce329a121d116"
+          "source_sha256": "af131dcda9269d9b297a7c030932f585503cd481f8163e7e5761096a60f45fe4"
         },
         {
           "suite": "librairii-desktop::lifecycle",
@@ -2297,7 +2335,7 @@
       "id": "P59",
       "accountable_owner": "01max",
       "workstream": "Release",
-      "assertions_reviewed": "Package identity and explicit-root refusal supplement exact archive/installed payload custody; public Mac signing and final-byte qualification remain release holds.",
+      "assertions_reviewed": "Package identity and explicit-root refusal supplement exact archive/installed payload verification. Ad-hoc Mac integrity and matching-host verification remain required; paid signing is optional.",
       "automated_cases": [
         {
           "suite": "librairii-desktop::release_identity",
@@ -2328,14 +2366,15 @@
         "public-mac-final-bytes"
       ],
       "scope_decisions": [
-        "windows-deferred"
+        "windows-deferred",
+        "free-mac"
       ]
     },
     {
       "id": "P60",
       "accountable_owner": "01max",
       "workstream": "Release",
-      "assertions_reviewed": "The upgraded curation workflow, real process recovery and one-time handover supplement fresh/upgraded installed workflows and separate legacy/rollback rehearsals.",
+      "assertions_reviewed": "Curation and real process recovery supplement fresh installed workflows on both renderers. Fresh setup with old Go files leaves them untouched and reopens only its own state.",
       "automated_cases": [
         {
           "suite": "librairii-storage::shelves",
@@ -2350,10 +2389,10 @@
           "source_sha256": "ccca9854b75826bab1013847ed4c54d3f002e0856c343c00b51bf1ad6306b76b"
         },
         {
-          "suite": "librairii-storage::handover",
-          "name": "one_atomic_import_receipt_survives_restart_and_never_resets_newer_choices",
-          "source": "crates/librairii-storage/tests/handover.rs",
-          "source_sha256": "d56f58cb596826ffdea0763709b1731b4e772f9dd4a99f606449df88386b1abf"
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
+          "source": "crates/librairii-storage/src/settings/startup.rs",
+          "source_sha256": "26fc71d7bb0e647341ea35754ae88a5d9d842abe8195c40c6cfa89d8411001aa"
         }
       ],
       "native_callbacks": [
@@ -2389,7 +2428,7 @@
         "public-mac-final-bytes"
       ],
       "scope_decisions": [
-        "isolated-adoption"
+        "fresh-rust"
       ]
     }
   ]

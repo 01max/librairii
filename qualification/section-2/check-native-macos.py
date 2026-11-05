@@ -270,7 +270,10 @@ class Observer:
                      'pid': self.pid, 'scope': 'unfiltered', 'status': -25202}]
             elif action == 'snapshot' and isinstance(request.get('document'), str) and request['document']:
                 expected = [{'format': 'librairii.native-document-snapshot-unavailable', 'schema': 1,
-                    'pid': self.pid, 'document': request['document'], 'status': -25202}]
+                    'pid': self.pid, 'document': request['document'], 'status': -25202},
+                    *({'format': 'librairii.native-document-attribute-unavailable', 'schema': 1,
+                       'pid': self.pid, 'document': request['document'], 'attribute': attribute,
+                       'status': -25204} for attribute in ('AXTitle', 'AXDocument', 'AXURL'))]
             if (expected
                     and type(self.pid) is int and self.pid > 0
                     and type(result['returncode']) is int and result['returncode'] == 75

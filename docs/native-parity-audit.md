@@ -17,6 +17,9 @@ cutover or retirement of the Go application.
   accountable owner, native callback/workflow links, scope decisions and release
   holds. Its 201 case links select 175 distinct Rust tests. A test can support
   several contracts without becoming several independently executed tests.
+  Later reviewed changes to an indexed implementation retain the original index
+  hash and record both historical and current file hashes in
+  `reviewed_source_updates`.
 
 The [semantic findings record](rewrite/section-19-parity-findings.md) describes
 the three omissions found by independent review and the dedicated regressions

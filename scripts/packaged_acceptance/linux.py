@@ -15,7 +15,102 @@ class Driver:
         self.picker_index = 0
         self.application = self.wait(lambda: desktop.find(
             lambda node: node.getRole() == desktop.a.ROLE_APPLICATION and node.get_process_id() == pid))
-        self.wait(lambda: desktop.active_pid() == pid)
+        if desktop.session == 'x11':
+            self.activate_x11()
+        else:
+            self.wait(lambda: desktop.active_pid() == pid)
+
+    def activate_x11(self):
+        """Request foreground once for the owned visible window, then observe it."""
+        deadline = time.monotonic()+15
+        receipt = {'pid': self.pid, 'deadline_seconds': 15, 'complete': False,
+                   'activation_attempts': 0, 'ownership_reads': []}
+        path = self.output/'initial-window-activation.json'
+
+        def remaining():
+            value = deadline-time.monotonic()
+            if value <= 0:
+                raise TimeoutError('installed GUI foreground deadline')
+            return value
+
+        def command(argv):
+            def retain(output, code, timed_out):
+                raw = output if isinstance(output, bytes) else (output or '').encode()
+                receipt['last_command'] = {'argv': argv, 'returncode': code, 'timed_out': timed_out,
+                    'output': raw[:65536].decode(errors='replace'), 'output_bytes': len(raw),
+                    'truncated': len(raw) > 65536}
+
+            try:
+                value = subprocess.check_output(argv, text=True, stderr=subprocess.STDOUT,
+                                                timeout=remaining())
+            except subprocess.CalledProcessError as error:
+                retain(error.output, error.returncode, False)
+                raise
+            except subprocess.TimeoutExpired as error:
+                retain(error.output, None, True)
+                raise
+            retain(value, 0, False)
+            if receipt['last_command']['truncated']:
+                raise ValueError('native foreground command output exceeds bound')
+            remaining()  # A late command result cannot satisfy admission.
+            return value
+
+        def visible():
+            try:
+                raw = command(['xdotool', 'search', '--onlyvisible', '--pid', str(self.pid)])
+            except subprocess.CalledProcessError as error:
+                if error.returncode == 1 and error.output == '':
+                    receipt['windows'] = ''
+                    return None
+                raise
+            receipt['windows'] = raw
+            windows = raw.split()
+            if not windows:
+                return None
+            if len(windows) != 1 or not windows[0].isdigit() or int(windows[0]) <= 0:
+                raise ValueError('owned foreground window is not unique')
+            return windows[0]
+
+        def ownership(window):
+            raw = command(['xprop', '-id', window, '_NET_WM_PID'])
+            receipt['ownership_reads'].append(raw)
+            match = re.fullmatch(r'_NET_WM_PID\(CARDINAL\) = (\d+)\s*', raw)
+            if match is None or int(match[1]) != self.pid:
+                raise ValueError('foreground window ownership differs from installed PID')
+
+        try:
+            window = self.wait(visible, timeout=remaining())
+            receipt['window_id'] = int(window)
+            ownership(window)
+            receipt['before'] = command(['xprop', '-root', '_NET_ACTIVE_WINDOW'])
+            ownership(window)
+            receipt['activation_attempts'] = 1
+            command(['xdotool', 'windowactivate', window])
+
+            def foreground():
+                raw = command(['xprop', '-root', '_NET_ACTIVE_WINDOW'])
+                receipt['after'] = raw
+                match = re.search(r'window id # (0x[0-9a-fA-F]+)', raw)
+                if match is None:
+                    if 'not found' in raw or 'no such atom' in raw:
+                        return False
+                    raise ValueError('unexpected native foreground property: '+raw)
+                if int(match[1], 16) != int(window):
+                    return False
+                ownership(window)
+                return True
+
+            self.wait(foreground, timeout=remaining())
+            remaining()
+            receipt['complete'] = True
+        except Exception as error:
+            receipt['error'] = str(error)
+            try:
+                path.write_text(json.dumps(receipt, indent=2)+'\n')
+            except Exception as capture:
+                error.add_note('foreground receipt failed: '+str(capture))
+            raise
+        path.write_text(json.dumps(receipt, indent=2)+'\n')
 
     def desktop_identity(self, installation):
         entries = list((installation/'share/applications').glob('*.desktop'))
@@ -98,9 +193,11 @@ class Driver:
             self.desktop.screenshot(self.output/(name+'.png'))
         return report
 
-    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None, actionable=False):
+    def find(self, name, *, prefix=False, enabled=True, root=None, roles=None, actionable=False, deadline=None):
         a = self.desktop.a
         for node in self.nodes(root):
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError('installed GUI observation deadline')
             try:
                 if ((node.name.startswith(name) if prefix else node.name == name)
                         and (not enabled or node.getState().contains(a.STATE_ENABLED))
@@ -113,25 +210,33 @@ class Driver:
                                 continue
                         except NotImplementedError:
                             continue
+                    if deadline is not None and time.monotonic() >= deadline:
+                        raise TimeoutError('installed GUI observation deadline')
                     return node
             except self.read_errors:
                 continue
         return None
 
-    def action(self, node):
+    def action(self, node, *, deadline=None):
         actions = node.queryAction()
         for index in range(actions.nActions):
             if actions.getName(index).lower() in ('click', 'press', 'activate', 'toggle'):
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('installed GUI action deadline')
                 if not actions.doAction(index):
                     raise ValueError('native accessibility action refused')
                 time.sleep(.08)
                 return
         raise ValueError('native control has no activation action: '+node.name)
 
-    def press(self, name, *, prefix=False):
-        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True))
+    def press(self, name, *, prefix=False, deadline=None):
+        options = {} if deadline is None else {'deadline': deadline}
+        wait_options = {} if deadline is None else {'timeout': max(0, deadline-time.monotonic())}
+        node = self.wait(lambda: self.find(name, prefix=prefix, actionable=True, **options), **wait_options)
         observed = {'name': node.name, 'role': node.getRoleName()}
-        self.action(node)
+        self.action(node, **options)
+        if deadline is not None and time.monotonic() >= deadline:
+            raise TimeoutError('installed GUI action deadline')
         return observed
 
     def focus(self, name, *, prefix=False, roles=None):

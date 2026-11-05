@@ -410,6 +410,7 @@ pub(crate) struct Context<'a> {
     pub mailbox: &'a Arc<Mutex<Option<Snapshot>>>,
     pub stop: &'a AtomicBool,
     pub catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    pub import_observer: Option<crate::imports::ImportObservation>,
     pub control: crate::maintenance::Control,
     pub initial_revision: u64,
     pub initial_settings: &'a crate::maintenance::Snapshot,
@@ -474,6 +475,7 @@ fn run_session<'p>(
         mailbox,
         stop,
         catalog_client,
+        import_observer,
         control,
         initial_revision,
         initial_settings,
@@ -523,6 +525,7 @@ fn run_session<'p>(
     let mut session = Some(
         initialize()?
             .with_catalog_client(catalog_client.clone())
+            .with_import_observer(import_observer.clone())
             .with_cleanup_notice(if initial_settings.cleanup_pending {
                 initial_settings.retained.clone()
             } else {
@@ -660,39 +663,10 @@ fn run_session<'p>(
                     let mut operation_effects=false;
                     match command {
                         Command::Maintenance{generation,action} => {
-                            if let crate::maintenance::Action::ImportPreferences(path)=&action {
-                                use crate::maintenance::Notice;
-                                use librairii_storage::profile::HandoverImport;
-                                maintenance_controller.snapshot.error=None;
-                                maintenance_controller.snapshot.revision=revision;
-                                maintenance_controller.snapshot.notice=Some(Notice::PreferencesRejected);
-                                if generation.as_ref().is_some_and(|g|runtime.accepts(g)) && production.is_some() && action.bounded() {
-                                    match store.import_handover_file(path,id) {
-                                        Ok(result)=>{
-                                            maintenance_controller.snapshot.notice=Some(match result {
-                                                HandoverImport::Imported=>Notice::PreferencesImported,
-                                                HandoverImport::ImportedPreservingNativeChoices=>Notice::PreferencesKept,
-                                                HandoverImport::AlreadyImported=>Notice::PreferencesAlreadyImported,
-                                            });
-                                            if result!=HandoverImport::AlreadyImported {
-                                                next=store.load_navigation(id,activation)?.unwrap_or(next);
-                                                operation_controller.restore_preferences(store,id)?;
-                                                workflows.operations=operation_controller.snapshot.clone();
-                                                restore_revision=revision;
-                                                check_entry=true;
-                                                invalidates_review=true;
-                                            }
-                                        }
-                                        Err(_)=>{store.require_alive()?;}
-                                    }
-                                }
-                                workflows.settings=maintenance_controller.snapshot.clone();
-                            } else {
                                 let action = maintenance_controller.handle(runtime,&control,generation,action,revision)?;
                                 workflows.settings = maintenance_controller.snapshot.clone();
                                 if workflows.settings.recovery_required { workflows.recovery_required=true; return Err(StorageError::RuntimeFenced); }
                                 if let Some(action) = action { return Ok(Some(action)); }
-                            }
                         }
                         Command::Exports{generation,action}=>{
                             operation_effects=export_command(runtime,&next,&mut operation_controller,&mut export_controller,generation,action,revision)?;
@@ -941,7 +915,7 @@ fn run_session<'p>(
             catalog: catalog_client.clone(),
         };
         match crate::maintenance::recovery::settle(failure, retained, &mut recovery)? {
-            Some(resumed) => session = Some(resumed),
+            Some(resumed) => session = Some(resumed.with_import_observer(import_observer.clone())),
             None => return Ok(()),
         }
     }

@@ -1,9 +1,9 @@
 # Rust native desktop architecture
 
-Status: implemented on `rewrite-in-rust-native-desktop`; signed release and
-runtime cutover remain gated. This records the implementation integrated through
-[PR 69](https://github.com/01max/librairii/pull/69), rather than the earlier
-Wails runtime described by [ADR 0001](0001-wails-rebuild-baseline.md).
+Status: implemented on `rewrite-in-rust-native-desktop`, with Task 20 retiring
+the Go/Wails runtime and adopting [fresh Rust state](../rewrite/fresh-rust-contract.md).
+Earlier architecture remains historical. Exact package qualification is required;
+paid Apple signing and Go data migration are outside the default delivery scope.
 
 ## Runtime and composition
 
@@ -62,13 +62,12 @@ results do not update a replacement view or library. Work queues, progress
 delivery, review/export preparations and visible models have explicit bounds;
 terminal operation results remain durable in SQLite.
 
-Startup inspects recovery state before ordinary mutation. The participating
-Go bridge and Rust retain OS-backed ownership through recovery and resource
-closure; a PID file is not authority. Native adoption uses a verified independent
-copy with a separate native profile/recovery workspace unless lifetime exclusion
-of unmodified legacy executables can be established. Go settings continue to
-select the source. The supported route and rollback limits are documented in
-the [transition guide](../native-transition.md).
+Startup inspects native recovery state before ordinary mutation. Rust retains
+OS-backed ownership through recovery and resource closure; a PID file is not
+authority. First setup creates a new library and independent native profile.
+Go settings, data and journals are ignored. Existing native state must reopen
+or enter recovery, with no silent replacement. See the
+[starting-fresh and recovery guide](../native-transition.md).
 
 The library retains its UUID, `db/librairii.sqlite3`, migrations 001–018,
 archives, catalogs, staging, trash, logs and durable operation records. The
@@ -122,14 +121,14 @@ The [platform matrix](../release-platforms.md) records the three tested native
 baselines and required OS libraries. Installed acceptance runs the production
 GUI with explicit isolated profiles/libraries and local fixtures. Its reports
 bind the actual package checksum and observer source; headless tests and package
-inspection do not substitute for the GUI or final signed bytes.
+inspection do not substitute for the GUI or final distributed bytes.
 
-Developer ID signing, notarization/stapling, final signed-byte verification and
-release promotion remain explicit gates. The retained Go/Wails/React code,
-frozen fixtures, source history and compatibility checks remain until the
-separate runtime-retirement review. Earlier architecture decisions and section
-reports describe their recorded revisions; they do not override this runtime
-description or turn an unverified candidate into a public release.
+Mac packages use free ad-hoc signing by default. Developer ID signing and
+notarization remain an optional, human-controlled channel. Exact installed-byte
+verification and release promotion remain explicit gates. The Go/Wails/React
+runtime and product checks are retired; frozen fixtures, original source
+provenance and Git history remain. Historical reports describe their recorded
+revisions and do not qualify later builds.
 
 See [development commands](../development.md),
 [CI policy](../rewrite/ci.md), [package orchestration](../rewrite/section-18.md),

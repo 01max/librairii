@@ -805,7 +805,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, false, cancellation)
+            Self::bind_with_profile(copy, store, locations, None, cancellation)
         }
         pub(crate) fn bind_rebound(
             copy: IndependentCopy,
@@ -814,22 +814,13 @@ mod owned {
             foreign: &crate::profile::Profile,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, Some(foreign), false, cancellation)
-        }
-        pub(crate) fn bind_selected_copy(
-            copy: IndependentCopy,
-            store: &'profile NativeProfileStore,
-            locations: &ProfileLocations,
-            cancellation: &WorkCancellation,
-        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, true, cancellation)
+            Self::bind_with_profile(copy, store, locations, Some(foreign), cancellation)
         }
         fn bind_with_profile(
             mut copy: IndependentCopy,
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             foreign: Option<&crate::profile::Profile>,
-            explicit: bool,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
             let mut record = None;
@@ -850,22 +841,7 @@ mod owned {
                 }
                 copy.identity().require_spelling(&proposed.library_id)?;
                 proposed.root = exact_path(copy.root())?;
-                let policy = if explicit {
-                    Some(RootPolicy::for_source(copy.source_root(), locations)?)
-                } else {
-                    None
-                };
-                if let Some(policy) = &policy {
-                    require_explicit_paths(
-                        copy.root(),
-                        copy.source_root(),
-                        policy,
-                        store,
-                        locations,
-                    )?;
-                } else {
-                    require_paths(copy.root(), copy.source_root(), store, locations)?;
-                }
+                require_paths(copy.root(), copy.source_root(), store, locations)?;
                 let layout = LibraryLayout::probe(copy.root())?;
                 let root = copy.retain_root()?;
                 let database = root.child(OsStr::new("db"))?;
@@ -875,7 +851,7 @@ mod owned {
                 )?;
                 let document = Document {
                     format: "librairii.native-library".into(),
-                    version: if explicit { 2 } else { 1 },
+                    version: 1,
                     state: Phase::ImportedClosed,
                     epoch: 0,
                     native_profile_root: exact_path(
@@ -889,7 +865,7 @@ mod owned {
                     library_marker_sha256: digest(copy.identity().original_bytes()),
                     profile_marker_sha256: store.marker_digest()?,
                     source_manifest_sha256: copy.manifest_digest(),
-                    root_policy: policy,
+                    root_policy: None,
                     temporaries: Vec::new(),
                 };
                 record = Some(match Record::create(&root, document) {
@@ -1826,25 +1802,9 @@ mod owned {
             }
             // Resolve a materialized legacy namespace too; do not let an alias
             // make the explicit native profile/data location legacy-discoverable.
-            let legacy = match fs::canonicalize(legacy) {
-                Ok(path) => path,
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => legacy.clone(),
-                Err(error) => {
-                    return Err(StorageError::io("inspect explicit legacy namespace", error));
-                }
-            };
+            let legacy = crate::settings::target::resolve_exclusion(legacy)?.0;
             if physical_overlap(&legacy, &native)? || physical_overlap(&legacy, &data)? {
                 return Err(StorageError::PathEscape);
-            }
-            match fs::symlink_metadata(legacy.join("relocation.json")) {
-                Ok(_) => return Err(StorageError::RecoveryBindingRequired),
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
-                Err(error) => {
-                    return Err(StorageError::io(
-                        "inspect explicit source recovery namespace",
-                        error,
-                    ));
-                }
             }
         }
         Ok((native, data))
@@ -1857,6 +1817,20 @@ mod owned {
     ) -> Result<()> {
         use crate::settings::target::physical_overlap;
         let (native, data) = namespace_roots(store, locations)?;
+        // This retained explicit-copy path still requires a closed source.
+        // Fresh native setup/reopening never treats old journals as authority.
+        if let Some(legacy) = &locations.legacy {
+            match fs::symlink_metadata(legacy.join("relocation.json")) {
+                Ok(_) => return Err(StorageError::RecoveryBindingRequired),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                Err(error) => {
+                    return Err(StorageError::io(
+                        "inspect explicit source recovery namespace",
+                        error,
+                    ));
+                }
+            }
+        }
         let source_actual = fs::canonicalize(source)
             .map_err(|e| StorageError::io("resolve original legacy source", e))?;
         if source_actual != source
@@ -1897,7 +1871,9 @@ mod owned {
             .parent()
             .ok_or(StorageError::PathEscape)?
             .join(name);
-        Ok(crate::settings::target::resolve(&root, false)?.0)
+        // Persist the fixed reservation name, not an old link's mutable target.
+        // Actual aliases are projected/revalidated at each effect boundary.
+        Ok(root)
     }
     impl RootPolicy {
         fn for_source(source: &Path, locations: &ProfileLocations) -> Result<Self> {
@@ -1920,24 +1896,28 @@ mod owned {
         store: &NativeProfileStore,
         locations: &ProfileLocations,
     ) -> Result<()> {
-        use crate::settings::target::{physical_contains, physical_overlap, resolve};
+        use crate::settings::target::{physical_contains, physical_overlap, resolve_exclusion};
         let (native, data) = namespace_roots(store, locations)?;
-        if !policy
-            .legacy_roots
-            .contains(&exact_path(&legacy_default_root(locations)?)?)
-            || !policy.legacy_roots.contains(&exact_path(source)?)
+        // Earlier v2 records stored the canonical old default; newer records
+        // retain its fixed name. Enforce today's exclusion independently of
+        // that spelling, while retaining every recorded source exclusion.
+        if !policy.legacy_roots.contains(&exact_path(source)?)
+            || physical_overlap(
+                root,
+                &resolve_exclusion(&legacy_default_root(locations)?)?.0,
+            )?
             || physical_overlap(root, &native)?
             || physical_contains(root, &data)?
         {
             return Err(StorageError::PathEscape);
         }
         if let Some(legacy) = &locations.legacy
-            && physical_overlap(root, &resolve(legacy, false)?.0)?
+            && physical_overlap(root, &resolve_exclusion(legacy)?.0)?
         {
             return Err(StorageError::PathEscape);
         }
         for legacy in &policy.legacy_roots {
-            if physical_overlap(root, &resolve(Path::new(legacy), false)?.0)? {
+            if physical_overlap(root, &resolve_exclusion(Path::new(legacy))?.0)? {
                 return Err(StorageError::PathEscape);
             }
         }

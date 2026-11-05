@@ -35,6 +35,45 @@ pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
 const SETTINGS: &str = "settings.json";
 pub(crate) const MARKER: &str = ".librairii-native-profile";
 pub(crate) const MARKER_BYTES: &[u8] = b"librairii-native-profile-v1\n";
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) const SETUP_INTENT: &str = ".librairii-setup-pending";
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+const SETUP_INTENT_BYTES: &[u8] = b"librairii-native-setup-v1\n";
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn has_setup_intent(namespace: &Directory) -> Result<bool> {
+    Ok(setup_intent_file(namespace)?.is_some())
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn setup_intent_file(namespace: &Directory) -> Result<Option<File>> {
+    let name = std::ffi::OsStr::new(SETUP_INTENT);
+    if !namespace.regular_entry(name)? {
+        return Ok(None);
+    }
+    let mut file = namespace.open_regular(name, rustix::fs::OFlags::RDONLY)?;
+    let mut bytes = Vec::new();
+    (&mut file)
+        .take((SETUP_INTENT_BYTES.len() + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| StorageError::io("read native setup intent", error))?;
+    if bytes != SETUP_INTENT_BYTES {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    Ok(Some(file))
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn create_setup_intent(namespace: &Directory) -> Result<()> {
+    let mut file = namespace.open_regular(
+        std::ffi::OsStr::new(SETUP_INTENT),
+        rustix::fs::OFlags::RDWR | rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL,
+    )?;
+    file.write_all(SETUP_INTENT_BYTES)
+        .map_err(|error| StorageError::io("write native setup intent", error))?;
+    durable_file_flush(&file)?;
+    namespace.flush()
+}
 
 /// Wire data, not a library lease, identity proof, or recovery permission.
 /// `library_id` retains the exact legacy spelling; it is deliberately not UUID
@@ -401,6 +440,10 @@ pub struct NativeProfileStore {
     // checks, including a retained relocation journal of at most 64 MiB.
     // No caller callback, SQL or filesystem copy runs under this mutex.
     state: Mutex<Option<State>>,
+    // Only this process's fresh constructor can prove a marker-only namespace
+    // has never held a completed library binding.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fresh_namespace: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -464,7 +507,8 @@ impl NativeProfileStore {
         durable_file_flush(&marker)?;
         namespace.flush()?;
         parent.flush()?;
-        namespace.entries(1, cancel)?;
+        create_setup_intent(&namespace)?;
+        namespace.entries(2, cancel)?;
         let marker_metadata = marker
             .metadata()
             .map_err(|e| StorageError::io("retain prepared marker", e))?;
@@ -476,6 +520,7 @@ impl NativeProfileStore {
             marker_metadata,
             namespace,
             state: Mutex::new(Some(State::default())),
+            fresh_namespace: AtomicBool::new(true),
         };
         store.revalidate_namespace()?;
         Ok(store)
@@ -581,11 +626,15 @@ impl NativeProfileStore {
         {
             durable_file_flush(&marker)?;
             namespace.flush()?;
+            create_setup_intent(&namespace)?;
         }
         if let Some(parent) = directory.parent() {
             backup::sync_directory(parent)?;
         }
-        Self::open_native(directory)
+        let store = Self::open_native(directory)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        store.fresh_namespace.store(true, Ordering::Release);
+        Ok(store)
     }
 
     /// Reopen only a previously initialized native namespace. Neither this
@@ -643,6 +692,8 @@ impl NativeProfileStore {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             namespace,
             state: Mutex::new(Some(State::default())),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            fresh_namespace: AtomicBool::new(false),
         };
         store.revalidate_namespace()?;
         Ok(store)
@@ -756,9 +807,16 @@ impl NativeProfileStore {
             return Err(StorageError::RecoveryBindingRequired);
         }
         let bytes = encode(&next)?;
+        if let Some(intent) = setup_intent_file(&self.namespace)? {
+            // Retire the pending proof before publishing a completed binding.
+            // A crash after this point leaves no fresh-setup authority.
+            self.namespace
+                .remove_file_matching(std::ffi::OsStr::new(SETUP_INTENT), &intent)?;
+        }
         if state.document.as_ref().map(ProfileDocument::profile) != Some(&next) {
             self.update_unix(state, next.clone(), bytes, |_| Ok(()), |_| Ok(()))?;
         }
+        self.fresh_namespace.store(false, Ordering::Release);
         let binding = Arc::new(BindingState {
             root: next.root,
             raw_id: next.library_id,
@@ -778,13 +836,25 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(7, &crate::database::WorkCancellation::default())
+            .entries(8, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
             })?;
+        // Preferences identify a previously bound library; missing settings
+        // cannot authorize a replacement identity through direct fresh setup.
+        let setup_intent = has_setup_intent(&self.namespace)?;
+        if !entries.iter().any(|entry| entry == SETTINGS)
+            && (entries
+                .iter()
+                .any(|entry| entry != MARKER && entry != SETUP_INTENT)
+                || (!setup_intent && !self.fresh_namespace.load(Ordering::Acquire)))
+        {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
         if entries.iter().any(|entry| {
             entry != MARKER
+                && entry != SETUP_INTENT
                 && entry != SETTINGS
                 && entry != "navigation.json"
                 && entry != "shelf-warnings.json"
@@ -837,6 +907,12 @@ impl NativeProfileStore {
                 state.poison();
             }
             return Err(error);
+        }
+        // Retry may retain this store after a lost-binding recovery attempt.
+        // Saving language must not synthesize fresh settings over that evidence.
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if state.document.is_none() {
+            self.require_unrecovered_namespace()?;
         }
         let mut next = state
             .document
@@ -1460,7 +1536,7 @@ mod tests {
         assert!(matches!(result, Err(StorageError::Io { .. })));
         assert_eq!(store.load()?.ok_or("missing profile")?.profile(), &before);
         assert_eq!(fs::read(directory.join(SETTINGS))?, bytes);
-        assert_eq!(fs::read_dir(&directory)?.count(), 2);
+        assert_eq!(fs::read_dir(&directory)?.count(), 3);
         Ok(())
     }
 
@@ -1490,7 +1566,7 @@ mod tests {
         assert!(matches!(result, Err(StorageError::PathEscape)));
         assert_eq!(fs::read(outside.join(SETTINGS))?, b"foreign untouched");
         assert_eq!(fs::read_dir(outside)?.count(), 1);
-        assert_eq!(fs::read_dir(&retained)?.count(), 2);
+        assert_eq!(fs::read_dir(&retained)?.count(), 3);
         fs::remove_file(&directory)?;
         fs::rename(&retained, &directory)?;
         assert_eq!(
@@ -1636,7 +1712,7 @@ mod tests {
                 .language,
             "en"
         );
-        assert_eq!(fs::read_dir(&directory)?.count(), 4);
+        assert_eq!(fs::read_dir(&directory)?.count(), 5);
         Ok(())
     }
 

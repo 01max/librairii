@@ -39,16 +39,23 @@ def perform(driver, fixture, result, french):
                 raise ValueError('multiple new terminal operations cannot identify the GUI action')
             return rows[0] if rows else None
         return driver.wait(completed, timeout=40)
-    # Both fresh setup and Go-era independent-copy adoption use the real native
-    # picker and explicit confirmation. The source fixture remains immutable.
+    # Both renderer lanes create a fresh library through the real picker.
+    # Old state present in the software lane must remain ignored and unchanged.
     driver.wait(lambda: driver.find('Choose library folder…') or driver.find('Set up…'))
     if not driver.find('Choose library folder…'):
         driver.press('Set up…')
     driver.press('Choose library folder…')
     driver.picker(fixture.candidate)
-    driver.press('Create an independent copy' if fixture.legacy else 'Create library in this folder')
+    driver.press('Create library in this folder')
     driver.wait(lambda: fixture.current_root() == fixture.candidate)
-    observe('setup', {'root': str(fixture.current_root()), 'independent_adoption': fixture.legacy is not None})
+    # Profile publication precedes the closed-library handoff. A read-only
+    # SQLite connection in that gap can recreate WAL/SHM files and prevent
+    # closure. This control appears only once the live library owns the DB.
+    driver.wait(lambda: driver.find('Change library folder…', actionable=True))
+    if fixture.rows('SELECT uuid FROM stories'):
+        raise ValueError('fresh setup imported pre-existing stories')
+    observe('setup', {'root': str(fixture.current_root()), 'fresh_library': True,
+                      'legacy_ignored': fixture.legacy is not None})
     if french:
         driver.press('Français')
         driver.wait(lambda: json.loads((fixture.native_profile/'settings.json').read_text())['language'] == 'fr')
@@ -63,8 +70,7 @@ def perform(driver, fixture, result, french):
     observe('import', {'terminal': imported, 'items': fixture.rows(
         'SELECT source_name,status,outcome_code FROM file_operation_items'), 'managed':fixture.archives(reviewed=False)})
     closed()
-    # The adopted library contains more rows than the viewport. Search through
-    # the public UI so the imported story is mounted before selecting it.
+    # Locate the imported story through the public search control.
     driver.text(words('Search stories', 'Rechercher des histoires'), 'Clockwork')
     driver.press(words('Sync optional official metadata', 'Synchroniser les métadonnées officielles · facultatif'))
     driver.wait(lambda: fixture.rows("SELECT id FROM catalog_syncs WHERE status='succeeded'"), timeout=40)

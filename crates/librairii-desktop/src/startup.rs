@@ -25,6 +25,10 @@ pub trait StartupEnvironment {
     fn catalog_client(&self) -> Option<librairii_adapters::lunii::CatalogClient> {
         None
     }
+    /// In-process fixture observation, never selected by environment variables.
+    fn import_observer(&self) -> Option<crate::imports::ImportObservation> {
+        None
+    }
 }
 #[derive(Debug, Default)]
 pub struct NativeEnvironment;

@@ -89,10 +89,7 @@ impl Scope {
         match command {
             Command::Maintenance {
                 action:
-                    Settings::Select(path)
-                    | Settings::Locate(path)
-                    | Settings::Diagnostics(path)
-                    | Settings::ImportPreferences(path),
+                    Settings::Select(path) | Settings::Locate(path) | Settings::Diagnostics(path),
                 ..
             }
             | Command::Exports {

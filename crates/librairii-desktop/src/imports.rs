@@ -12,7 +12,14 @@ use librairii_storage::{
     imports::{ImportObserver, ImportResources, ImportStorage},
     platform::unix::PickedSource,
 };
-use std::{collections::BTreeMap, fmt, path::PathBuf, sync::Mutex};
+use std::{
+    collections::BTreeMap,
+    fmt,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
+/// Explicit effect-boundary observation; ordinary application startup supplies none.
+pub type ImportObservation = Arc<dyn ImportObserver + Send>;
 const MAX_BATCHES: usize = 8;
 const SLOT_PREFIX: &str = "native-import/";
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

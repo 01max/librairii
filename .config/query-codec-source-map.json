@@ -4922,14 +4922,14 @@
         "position": 571,
         "identity": {
           "suite": "librairii-storage",
-          "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace",
+          "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_nonempty_target_never_initialize_or_replace",
           "targets": [
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task13.1 explicit setup and default-root independent adoption"
+        "reason": "Task20 owner decision: fresh Rust setup ignores old Go state; retain native recovery, cancellation and nonempty-folder refusal."
       },
       {
         "position": 572,
@@ -4961,14 +4961,14 @@
         "position": 574,
         "identity": {
           "suite": "librairii-storage",
-          "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+          "name": "settings::startup::tests::fresh_setup_ignores_old_profiles_journals_and_database_and_reopens_its_own_state",
           "targets": [
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task13.1 explicit setup and default-root independent adoption"
+        "reason": "Task20 owner decision: fresh Rust setup ignores old Go state; retain native recovery, cancellation and nonempty-folder refusal."
       },
       {
         "position": 575,
@@ -5169,14 +5169,14 @@
         "position": 590,
         "identity": {
           "suite": "librairii-storage",
-          "name": "settings::startup::tests::preparation_preserves_invalid_and_legacy_state_before_creating_native_containers",
+          "name": "settings::startup::tests::invalid_native_profile_is_preserved_before_setup",
           "targets": [
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 13.1 confirms the returned native default from a wholly absent account and rejects invalid/legacy preparation before effects."
+        "reason": "Task20 owner decision: fresh Rust setup ignores old Go state; retain native recovery, cancellation and nonempty-folder refusal."
       },
       {
         "position": 591,
@@ -5693,26 +5693,13 @@
       {
         "position": 635,
         "identity": {
-          "suite": "librairii-desktop::presentation",
-          "name": "preference_transfer_runs_on_the_native_worker_and_never_replays_or_accepts_stale_commands",
-          "targets": [
-            "aarch64-apple-darwin",
-            "x86_64-apple-darwin",
-            "x86_64-unknown-linux-gnu"
-          ]
-        },
-        "reason": "Task17 additive native preference transfer and frozen-original Go retention regressions; every admitted historical identity and original baseline hash remains unchanged."
-      },
-      {
-        "position": 636,
-        "identity": {
           "suite": "librairii-desktop::release_identity",
           "name": "product_version_is_available_without_profile_or_display"
         },
         "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
       },
       {
-        "position": 637,
+        "position": 636,
         "identity": {
           "suite": "librairii-desktop::release_identity",
           "name": "package_build_identity_is_available_without_profile_or_display"
@@ -5720,7 +5707,7 @@
         "reason": "Task18 additive product build identity checks; original source and admitted baseline identities remain unchanged."
       },
       {
-        "position": 638,
+        "position": 637,
         "identity": {
           "suite": "librairii-desktop",
           "name": "acceptance::tests::packaged_context_requires_owned_roots_and_loopback_before_profile_discovery"
@@ -5728,7 +5715,7 @@
         "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
       },
       {
-        "position": 639,
+        "position": 638,
         "identity": {
           "suite": "librairii-desktop",
           "name": "acceptance::tests::foreign_persisted_library_and_fixture_alias_refuse_without_external_access"
@@ -5736,7 +5723,7 @@
         "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
       },
       {
-        "position": 640,
+        "position": 639,
         "identity": {
           "suite": "librairii-desktop",
           "name": "acceptance::tests::intake_rejects_external_paths_and_rechecks_owned_picker_paths_off_ui_thread"
@@ -5744,7 +5731,7 @@
         "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
       },
       {
-        "position": 641,
+        "position": 640,
         "identity": {
           "suite": "librairii-desktop::release_identity",
           "name": "packaged_acceptance_without_explicit_roots_refuses_before_menu_or_profile_startup"
@@ -5752,7 +5739,7 @@
         "reason": "Task18 actual packaged production GUI admission requires owned isolated profile/library, loopback network and bounded path intake before ordinary startup."
       },
       {
-        "position": 642,
+        "position": 641,
         "identity": {
           "suite": "librairii-desktop::shelf_order",
           "name": "controller_reorders_beyond_one_hundred_gapped_members_across_pages_and_reopen",
@@ -5765,7 +5752,7 @@
         "reason": "Task19.1.3 independent Spec audit gap: real controller arrows beyond100 with145 approved members, gapped ranks and cross-page persistence. Preserve every previous identity, source pin and assertion."
       },
       {
-        "position": 643,
+        "position": 642,
         "identity": {
           "suite": "librairii-desktop::removal_reimport",
           "name": "actual_removed_archive_reimport_reconnects_shelf_state_without_manual_tags_after_reopen",
@@ -5778,7 +5765,7 @@
         "reason": "Task19.1.4 independent Spec audit gap: actual removal, manual copy-out and ImportExecutor reimport must reconnect UUID curation without resurrecting deleted manual tags. Preserve every previous identity, source pin and assertion."
       },
       {
-        "position": 644,
+        "position": 643,
         "identity": {
           "suite": "librairii-storage::shelf_incomplete",
           "name": "healthy_addition_commits_while_invalid_source_keeps_all_removals_suspended_after_reopen",
@@ -5789,6 +5776,136 @@
           ]
         },
         "reason": "Task19.1.5 independent Spec audit gap: actually commit a validated healthy addition while another source stays invalid, preserving existing unmatched/unavailable members and incomplete state. Preserve every previous identity, source pin and assertion."
+      },
+      {
+        "position": 644,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::missing_native_binding_with_saved_preferences_requires_recovery",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: distinguish missing native binding from pristine setup; retain existing preferences and library bytes."
+      },
+      {
+        "position": 645,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_namespace_links_do_not_block_independent_setup_or_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 646,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::dangling_old_links_still_exclude_future_native_profile_and_library_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 647,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::old_namespace_files_are_ignored_without_becoming_native_directories",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 648,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::previous_native_v2_canonical_exclusions_reopen_and_reserve_current_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 independent review: preserve native recovery and reserve old aliases while allowing independent fresh setup alongside unavailable old namespaces."
+      },
+      {
+        "position": 649,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "observed_native_imports_remain_active_until_cancel_and_reopen_with_durable_reports",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 CI correction: hold actual tiny-import read/copy boundaries through real controller cancellation, preserving concurrent reports, progress, original bytes and joined reopen."
+      },
+      {
+        "position": 650,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::retry_keeps_owned_input_and_requires_current_receipt_and_generation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 explicit same-input metadata retry after proven non-admission; reject stale, consumed, closed or fenced receipts."
+      },
+      {
+        "position": 651,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::sync_submission::tests::closed_or_fenced_offers_never_authorize_retry",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 explicit same-input metadata retry after proven non-admission; reject stale, consumed, closed or fenced receipts."
+      },
+      {
+        "position": 652,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "workflows::operations::tests::cancellation_refusal_is_distinct_from_closed_intake_and_later_observation_failure",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task20 cancellation Busy receipt distinguishes refused admission from closed intake and failed observation after acceptance; never replay ambiguous cancellation."
+      },
+      {
+        "position": 653,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::marker_only_namespace_after_lost_binding_cannot_start_another_library",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "PR76 review: preserve interrupted fresh setup while refusing a new binding after completed native settings are lost."
       }
     ],
     "python": [
@@ -5874,418 +5991,448 @@
       },
       {
         "position": 54,
-        "identity": "test_handover_runner.HandoverRunnerTests.test_cargo_hardlink_executes_exact_owned_single_link_copy",
-        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
-      },
-      {
-        "position": 55,
-        "identity": "test_handover_runner.HandoverRunnerTests.test_compiler_symlink_and_fifo_refuse_without_execution",
-        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
-      },
-      {
-        "position": 56,
-        "identity": "test_handover_runner.HandoverRunnerTests.test_compiler_output_change_during_execution_refuses_receipt",
-        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
-      },
-      {
-        "position": 57,
-        "identity": "test_handover_runner.HandoverRunnerTests.test_executed_copy_change_during_execution_refuses_receipt",
-        "reason": "Task17 compiler-output custody regressions: execute a verified private copy of legitimate Cargo hardlinks; refuse aliases, special files and changed source/executed bytes. All prior test identities remain unchanged."
-      },
-      {
-        "position": 58,
         "identity": "test_release.ReleaseFiles.test_actual_cargo_executable_requires_unique_production_profile",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 59,
+        "position": 55,
         "identity": "test_release.ReleaseFiles.test_architecture_rejects_wrong_target_fat_and_foreign_executables",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 60,
+        "position": 56,
         "identity": "test_release.ReleaseFiles.test_archive_is_deterministic_and_normalizes_all_metadata",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 61,
+        "position": 57,
         "identity": "test_release.ReleaseFiles.test_copy_preserves_bytes_but_never_follows_or_replaces_links",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 62,
+        "position": 58,
         "identity": "test_release.ReleaseFiles.test_embedded_identity_refuses_missing_or_foreign_source_graph_and_target",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 63,
+        "position": 59,
         "identity": "test_release.ReleaseFiles.test_final_artifact_checksum_binds_actual_bytes_and_never_claims_qualification",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 64,
+        "position": 60,
         "identity": "test_release.ReleaseFiles.test_json_records_are_no_clobber_and_payload_tampering_is_visible",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 65,
+        "position": 61,
         "identity": "test_release.ReleaseFiles.test_output_refuses_existing_external_parent_and_boundary_links",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 66,
+        "position": 62,
         "identity": "test_sbom.CompiledGraph.test_sbom_describes_actual_compiler_graph_and_excludes_unused_dev_metadata",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 67,
+        "position": 63,
         "identity": "test_sbom.CompiledGraph.test_sbom_refuses_missing_compiled_identity_and_changed_native_notices",
         "reason": "Task18 additive release custody, compiler identity, reproducibility, SPDX graph and artifact-byte regressions; no historical identities removed or renamed."
       },
       {
-        "position": 68,
+        "position": 64,
         "identity": "test_sbom.CompiledGraph.test_pinned_supplemental_license_satisfies_crates_without_packaged_license_files",
         "reason": "Task18 actual ARM release build exposed supplemental-only dependency notices; regression preserves the pinned license texts without weakening a missing-notice refusal."
       },
       {
-        "position": 69,
+        "position": 65,
         "identity": "test_release.ReleaseFiles.test_compiler_aliases_and_inherited_config_refuse_before_output_or_execution",
         "reason": "Task 18.1 refuses effective Cargo compiler aliases and inherited configuration before build or output creation."
       },
       {
-        "position": 70,
+        "position": 66,
         "identity": "test_packages.PlatformPackages.test_linkage_refuses_browser_foreign_paths_newer_glibc_and_wrong_deployment",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 71,
+        "position": 67,
         "identity": "test_packages.PlatformPackages.test_linux_archive_contains_desktop_icons_notices_and_exact_final_checksums",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 72,
+        "position": 68,
         "identity": "test_packages.PlatformPackages.test_macos_bundle_identity_has_native_version_baseline_and_embedded_catalogs",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 73,
+        "position": 69,
         "identity": "test_packages.PlatformPackages.test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 74,
+        "position": 70,
         "identity": "test_packages.PlatformPackages.test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 75,
+        "position": 71,
         "identity": "test_packages.PlatformPackages.test_failed_attach_receipt_and_timeout_retire_only_os_identified_owned_mount",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 76,
+        "position": 72,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_fixture_preserves_source_inputs_and_uses_only_explicit_roots_and_loopback",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 77,
+        "position": 73,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_admission_refuses_stale_source_or_changed_installed_resources_before_execution",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 78,
+        "position": 74,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_missing_ci_or_incomplete_gui_checkpoint_and_process_inventory_cannot_qualify",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 79,
+        "position": 75,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_container_retirement_requires_exact_creation_image_and_invocation_receipts",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 80,
+        "position": 76,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_gui_receipt_requires_matching_candidate_lane_and_unchanged_raw_files",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 81,
+        "position": 77,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_interruption_requires_exact_signal_and_retired_error_free_capture",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 82,
+        "position": 78,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_launch_receipt_failure_retains_child_and_cleanup_always_stops_fixture",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 83,
+        "position": 79,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_exports_require_exact_frozen_scope_items_outcomes_and_original_bytes",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 84,
+        "position": 80,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_press_selectors_exclude_duplicate_static_labels",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 85,
+        "position": 81,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_display_witness_requires_actual_requested_scale_and_consistent_native_geometry",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 86,
+        "position": 82,
         "identity": "test_signing.Signing.test_signing_requires_external_candidate_digest_and_clean_matching_source",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 87,
+        "position": 83,
         "identity": "test_signing.Signing.test_notarization_staples_actual_app_only_after_accepted_submission_and_retained_log",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 88,
+        "position": 84,
         "identity": "test_signing.Signing.test_signature_requires_external_team_certificate_timestamp_and_hardened_runtime",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 89,
+        "position": 85,
         "identity": "test_signing.Signing.test_dedicated_keychain_secrets_are_consumed_and_retired_on_success_or_failure",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 90,
+        "position": 86,
         "identity": "test_signing.Signing.test_credentialed_signing_never_executes_the_candidate_identity_or_gui",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 91,
+        "position": 87,
         "identity": "test_signing.Signing.test_manual_entry_removes_credentials_before_preflight_and_refuses_non_ci",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 92,
+        "position": 88,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_combo_keyboard_selection_clamps_from_any_prior_choice_and_closes_popup",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 93,
+        "position": 89,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_managed_imports_must_match_independent_original_identity_name_and_bytes",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 94,
+        "position": 90,
         "identity": "test_packages.PlatformPackages.test_independent_candidate_checksum_refuses_before_host_install_or_execution",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 95,
+        "position": 91,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_selects_exact_named_native_rows_and_rejects_ambiguous_or_refused_selection",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 96,
+        "position": 92,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_linux_press_keeps_observed_identity_when_action_replaces_native_node",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 97,
+        "position": 93,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_wait_retries_pending_profile_publication_without_hiding_other_errors",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 98,
+        "position": 94,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_root_uses_focused_native_list_row_and_refuses_failed_focus",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 99,
+        "position": 95,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_empty_native_text_replacement_deletes_selection_instead_of_typing_nothing",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 100,
+        "position": 96,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_reveal_traversal_observes_target_and_stops_at_its_input_bound",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 101,
+        "position": 97,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_picker_location_removes_only_selected_inline_filename_completion",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 102,
+        "position": 98,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_press_refreshes_only_a_proven_pre_action_stale_path_once",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 103,
+        "position": 99,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_runtime_requires_one_observed_renderer_matching_the_requested_route",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 104,
+        "position": 100,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_observer_closes_database_readers_before_product_relocation",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 105,
+        "position": 101,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_mac_activation_waits_for_the_exact_owned_visible_window",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 106,
+        "position": 102,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_failed_mac_session_samples_only_its_unreaped_child_before_retirement",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 107,
+        "position": 103,
         "identity": "test_native_toolkit.NativeToolkitTests.test_repeated_native_show_preserves_first_reveal_owner",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 108,
+        "position": 104,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_reserves_only_fresh_owned_aliases_and_retains_uncertainty",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 109,
+        "position": 105,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_native_graphics_cache_fixture_repeated_launch_and_retention_receipts_are_immutable",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 110,
+        "position": 106,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_headless_ax_fixture_receipt_binds_compiled_inputs_and_rejects_mutation",
         "reason": "Task 18 platform package byte custody, dependency policy and isolated qualification regression."
       },
       {
-        "position": 111,
+        "position": 107,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window",
         "reason": "Task 18 review regression: bind the owned X11 WM_CLASS to the installed desktop entry and reject missing, foreign or ambiguous window identities."
       },
       {
-        "position": 112,
+        "position": 108,
         "identity": "test_packaged_acceptance.PackagedAdmission.test_wayland_desktop_identity_rejects_missing_wrong_foreign_and_ambiguous_app_ids",
         "reason": "Task 18 review regression: bind the owned Wayland app_id to the installed desktop entry and reject missing, foreign or ambiguous surface identities."
       },
       {
-        "position": 113,
+        "position": 109,
         "identity": "test_manual_tools.ManualTools.test_package_preview_has_no_output_or_build_side_effect",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 114,
+        "position": 110,
         "identity": "test_manual_tools.ManualTools.test_package_execution_keeps_verified_order_for_each_target",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 115,
+        "position": 111,
         "identity": "test_manual_tools.ManualTools.test_existing_outputs_and_traversal_never_start_build",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 116,
+        "position": 112,
         "identity": "test_manual_tools.ManualTools.test_failure_stops_later_steps_and_retains_output",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 117,
+        "position": 113,
         "identity": "test_manual_tools.ManualTools.test_signing_preview_preserves_selection_without_dispatch",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 118,
+        "position": 114,
         "identity": "test_manual_tools.ManualTools.test_signing_refuses_invalid_selection_before_handoff",
         "reason": "Task19 owner-requested manual package/signing handoff controls; additive headless assertions preserve every previous discovery identity and historical baseline digest."
       },
       {
-        "position": 119,
+        "position": 115,
         "identity": "test_evidence.EvidenceManifest.test_all_three_targets_and_failed_history_are_indexed_without_release_approval",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 120,
+        "position": 116,
         "identity": "test_evidence.EvidenceManifest.test_outer_hash_mismatch_refuses_before_output",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 121,
+        "position": 117,
         "identity": "test_evidence.EvidenceManifest.test_inputs_changed_during_assembly_fail_without_output",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 122,
+        "position": 118,
         "identity": "test_evidence.EvidenceManifest.test_inner_distribution_and_actual_installed_byte_tampering_are_rejected",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 123,
+        "position": 119,
         "identity": "test_evidence.EvidenceManifest.test_cross_source_target_and_graph_reports_are_rejected",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 124,
+        "position": 120,
         "identity": "test_evidence.EvidenceManifest.test_missing_target_report_or_incomplete_gui_remains_incomplete",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 125,
+        "position": 121,
         "identity": "test_evidence.EvidenceManifest.test_wrong_compiler_profile_and_cross_target_package_graph_are_rejected",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 126,
+        "position": 122,
         "identity": "test_evidence.EvidenceManifest.test_duplicate_json_or_zip_identity_and_traversal_are_rejected",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 127,
+        "position": 123,
         "identity": "test_evidence.EvidenceManifest.test_existing_output_and_output_symlink_are_never_overwritten",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 128,
+        "position": 124,
         "identity": "test_evidence.EvidenceManifest.test_signed_distribution_requires_unsigned_lineage_and_exact_final_installed_bytes",
         "reason": "Task19.6.1 offline source-bound release evidence assembly regressions; preserve all119 prior discovery identities and every historical source/oracle pin."
       },
       {
-        "position": 129,
+        "position": 125,
         "identity": "test_parity.ParityObservations.test_all_sixty_rows_observe_exact_cases_without_claiming_parity_or_release",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 130,
+        "position": 126,
         "identity": "test_parity.ParityObservations.test_missing_failed_skipped_duplicate_or_foreign_native_execution_is_refused",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 131,
+        "position": 127,
         "identity": "test_parity.ParityObservations.test_missing_callback_or_changed_sealed_observation_cannot_pass",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 132,
+        "position": 128,
         "identity": "test_parity.ParityObservations.test_installed_lane_stage_payload_and_hash_changes_are_refused",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 133,
+        "position": 129,
         "identity": "test_parity.ParityObservations.test_contract_omission_owner_source_and_unknown_decision_are_refused",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 134,
+        "position": 130,
         "identity": "test_parity.ParityObservations.test_all_three_targets_and_each_mapped_case_are_required",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 135,
+        "position": 131,
         "identity": "test_parity.ParityObservations.test_incomplete_scale_and_unsigned_boundary_remain_explicit",
         "reason": "Task19.1 observed parity audit regressions; retain all129 prior identities and every historical source/oracle pin."
       },
       {
-        "position": 136,
+        "position": 132,
         "identity": "test_parity.ParityObservations.test_parsed_input_bytes_cannot_be_bound_to_another_plans_hash",
         "reason": "Task19.1 independent review regression: hash and parse one captured input, retain the final immutable-input recheck and all136 previous identities."
+      },
+      {
+        "position": 133,
+        "identity": "test_frozen_go.FrozenGoTests.test_missing_archive_never_falls_back_to_live_source",
+        "reason": "Task20 frozen reference generators must fail closed when archived source is absent, even when live checkout bytes exist."
+      },
+      {
+        "position": 134,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_interruption_retries_only_explicit_unsubmitted_sync_once",
+        "reason": "Task20 bounded explicit unsubmitted-sync retry preserves real request, exact interruption and cleanup; uncertain results never authorize replay."
+      },
+      {
+        "position": 135,
+        "identity": "test_packaged_acceptance.PackagedAdmission.test_native_retry_press_preserves_shared_deadline",
+        "reason": "Task20 retry native action readiness and completion share the unchanged request deadline; late input is refused."
+      },
+      {
+        "position": 136,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_captured_linux_delay_keeps_failed_wall_and_callback_bound_separate",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 137,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 138,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_refuses_incomplete_clocks_and_keeps_original_observations",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 139,
+        "identity": "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
+        "reason": "Task20 prospective Linux method3: retain failed walls, bound real callbacks with every clock round, reject missing evidence and require post-join log matching without native execution."
+      },
+      {
+        "position": 140,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_absent_ambiguous_or_foreign_window_never_receives_activation",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
+      },
+      {
+        "position": 141,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_background_owned_window_receives_one_native_activation",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
+      },
+      {
+        "position": 142,
+        "identity": "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed",
+        "reason": "Task20 owned X11 window activation preserves exact foreground ownership, one native action, original deadline and refusal evidence."
       }
     ]
   },

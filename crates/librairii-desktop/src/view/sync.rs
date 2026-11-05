@@ -95,7 +95,17 @@ pub fn project(ui: &DesktopWindow, snapshot: &Snapshot) {
     } else {
         String::new()
     };
-    if let Some(error) = &data.error {
+    let refused = data
+        .sync_refused
+        .as_ref()
+        .filter(|receipt| snapshot.generation.as_ref() == Some(&receipt.generation));
+    if refused.is_some() {
+        notice.push_str(&words(
+            language,
+            "The sync request was not submitted. You can retry it.",
+            "La demande de synchronisation n’a pas été envoyée. Vous pouvez réessayer.",
+        ));
+    } else if let Some(error) = &data.error {
         notice.push_str(&format!(
             "\n{} [{error}]",
             words(
@@ -124,15 +134,23 @@ pub fn project(ui: &DesktopWindow, snapshot: &Snapshot) {
         status: state.into(),
         notice: notice.into(),
         start_label: words(language,
-            if retry { "Retry metadata sync" } else { "Sync official metadata" },
-            if retry { "Réessayer la synchronisation" } else { "Synchroniser les métadonnées" }).into(),
+            if refused.is_some() { "Retry sync request" } else if retry { "Retry metadata sync" } else { "Sync official metadata" },
+            if refused.is_some() { "Réessayer la demande" } else if retry { "Réessayer la synchronisation" } else { "Synchroniser les métadonnées" }).into(),
     });
 }
 pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<Worker>>) {
     let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
     ui.on_start_sync(move || {
         if let Some(ui) = weak.upgrade() {
-            operations::send(&s, &w, &ui, Action::Sync);
+            let action = s
+                .borrow()
+                .snapshot
+                .workflows
+                .operations
+                .sync_refused
+                .clone()
+                .map_or(Action::Sync, Action::RetrySync);
+            operations::send(&s, &w, &ui, action);
         }
     });
     let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());

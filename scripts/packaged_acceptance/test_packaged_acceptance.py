@@ -24,6 +24,64 @@ from packaged_acceptance.workflow import REQUIRED
 
 
 class PackagedAdmission(unittest.TestCase):
+    def test_fresh_setup_observer_waits_for_library_before_opening_sqlite(self):
+        from packaged_acceptance.workflow import perform
+        class ReachedImport(Exception):
+            pass
+        # Replay the real publication/close/open boundary: a read-only WAL
+        # connection in the gap leaves sidecars even after its own close.
+        for french in (False, True):
+            with self.subTest(french=french), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                fixture = Fixture.__new__(Fixture)
+                fixture.library = root/'library'
+                fixture.candidate = fixture.library/'candidate'
+                fixture.native_profile = root/'profile'
+                fixture.legacy = None
+                fixture.candidate.mkdir(parents=True)
+                fixture.native_profile.mkdir()
+                database = fixture.candidate/'db/librairii.sqlite3'
+                database.parent.mkdir()
+                with closing(sqlite3.connect(database)) as writer:
+                    writer.execute('PRAGMA journal_mode=WAL')
+                    writer.execute('CREATE TABLE stories(uuid TEXT)')
+                    writer.execute('CREATE TABLE file_operations(id INTEGER)')
+                    writer.commit()
+                profile = fixture.native_profile/'settings.json'
+                profile.write_text(json.dumps({'root': str(fixture.candidate), 'language': 'en'}))
+                opened = []
+                def find(name, **options):
+                    if name == 'Change library folder…':
+                        self.assertTrue(options.get('actionable'))
+                        self.assertEqual(list(database.parent.iterdir()), [database],
+                                         'observer created sidecars before native close')
+                        writer = sqlite3.connect(database)
+                        writer.execute('SELECT * FROM stories').fetchall()
+                        opened.append(writer)
+                    return True
+                def press(name, **_):
+                    if name == 'Français':
+                        profile.write_text(json.dumps({'root': str(fixture.candidate), 'language': 'fr'}))
+                    if name in ('Import…', 'Importer…'):
+                        raise ReachedImport
+                def snapshot(*_):
+                    if not opened:
+                        sidecars = list(database.parent.glob('librairii.sqlite3-*'))
+                        self.fail('storage.closed_snapshot_required: observer left '+str(sidecars))
+                driver = SimpleNamespace(wait=lambda predicate, **_: predicate(),
+                                         find=find, press=press, picker=lambda _: None,
+                                         snapshot=snapshot)
+                result = {'checks': {}}
+                try:
+                    with self.assertRaises(ReachedImport):
+                        perform(driver, fixture, result, french)
+                    self.assertTrue(result['checks']['setup']['fresh_library'])
+                    self.assertEqual(result['checks']['language']['persisted'], 'fr' if french else 'en')
+                finally:
+                    for writer in opened:
+                        writer.close()
+                self.assertEqual(list(database.parent.iterdir()), [database])
+
     def test_x11_desktop_identity_requires_the_installed_entry_and_exact_owned_window(self):
         from packaged_acceptance.linux import Driver
         from subprocess import CalledProcessError, TimeoutExpired
@@ -944,6 +1002,102 @@ class PackagedAdmission(unittest.TestCase):
                     if exited is not None:
                         session.process.kill.assert_not_called()
 
+    def test_interruption_retries_only_explicit_unsubmitted_sync_once(self):
+        from packaged_acceptance.session import Session
+        import signal
+        for french in (False, True):
+            for outcome in ('accepted', 'refused-once', 'persistent-refusal', 'uncertain', 'late-event', 'late-retry'):
+                with self.subTest(french=french, outcome=outcome), tempfile.TemporaryDirectory() as temporary:
+                    session = Session.__new__(Session)
+                    session.output = Path(temporary)
+                    session.process, session.reader = Mock(), Mock()
+                    session.process.poll.return_value = None
+                    session.process.wait.return_value = -signal.SIGKILL
+                    session.reader.is_alive.return_value = False
+                    session.errors = []
+                    fixture = Mock()
+                    fixture.rows.return_value = [{'id':'real-sync','status':'running'}]
+                    label = 'Synchroniser les métadonnées' if french else 'Sync official metadata'
+                    retry = 'Réessayer la demande' if french else 'Retry sync request'
+                    presses = []
+                    driver = Mock()
+                    driver.press.side_effect = lambda name, **kwargs: presses.append(name)
+                    driver.find.side_effect = lambda name, **kw: (object() if name == label or (
+                        name == retry and outcome in ('refused-once','persistent-refusal','late-retry') and presses) else None)
+                    fixture.catalog_waiting.wait.side_effect = lambda seconds: outcome in ('accepted','late-event') or (
+                        outcome == 'refused-once' and retry in presses)
+                    # Advance only the observer clock. No sleep, product or GUI.
+                    clock = [0,1,11] if outcome == 'late-event' else [0,1,2,11] if outcome == 'late-retry' else range(100)
+                    with patch('packaged_acceptance.session.time.monotonic', side_effect=clock):
+                        if outcome in ('accepted','refused-once'):
+                            result = session.interrupt_catalog(driver, fixture, french)
+                            self.assertTrue(result['actual_local_request_in_flight'])
+                            self.assertTrue(result['retired'])
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'no actual in-flight'):
+                                session.interrupt_catalog(driver, fixture, french)
+                            session.process.kill.assert_not_called()
+                    self.assertEqual(presses, [label] + ([retry] if outcome in ('refused-once','persistent-refusal','late-retry') else []))
+                    fixture.catalog_release.set.assert_called_once()
+                    self.assertFalse(fixture.pause_catalog)
+                    receipt = json.loads((session.output/'interruption.json').read_text())
+                    self.assertEqual(receipt['unsubmitted_retries'], int(retry in presses))
+
+    def test_native_retry_press_preserves_shared_deadline(self):
+        from packaged_acceptance.macos import Driver as Mac
+        from packaged_acceptance.linux import Driver as Linux
+        for cls in (Mac, Linux):
+            for delayed in ('none', 'lookup', 'action-query', 'action-result', 'clock-sample'):
+                with self.subTest(platform=cls.__module__, delayed=delayed):
+                    driver = cls.__new__(cls)
+                    clock = [2.0]
+                    node = Mock()
+                    node.name = 'Retry sync request'
+                    node.getRoleName.return_value = 'push button'
+                    actions = Mock()
+                    actions.nActions = 1
+                    actions.getName.return_value = 'click'
+                    actions.doAction.return_value = True
+                    def lookup(predicate, timeout):
+                        self.assertEqual(timeout, 8)
+                        if delayed == 'lookup': clock[0] = 11
+                        return node
+                    driver.wait = lookup
+                    driver.module = SimpleNamespace(selector=lambda node: {})
+                    driver.observer = Mock()
+                    def native_call(*args, **kwargs):
+                        self.assertEqual(kwargs['command_timeout'], 8)
+                        self.assertEqual(kwargs['action_deadline_monotonic'], 108)
+                        if delayed == 'action-result': clock[0] = 11
+                    driver.observer.call.side_effect = native_call
+                    def query():
+                        if delayed == 'action-query': clock[0] = 11
+                        return actions
+                    node.queryAction.side_effect = query
+                    def activate(index):
+                        if delayed == 'action-result': clock[0] = 11
+                        return True
+                    actions.doAction.side_effect = activate
+                    def native_clock(_):
+                        if delayed == 'clock-sample': clock[0] = 11
+                        return 100
+                    with patch('time.monotonic', side_effect=lambda: clock[0]), \
+                         patch('time.clock_gettime', side_effect=native_clock), patch('time.sleep'):
+                        late = (delayed in ('lookup','action-result') or (cls is Linux and delayed == 'action-query')
+                                or (cls is Mac and delayed == 'clock-sample'))
+                        if late:
+                            with self.assertRaises(TimeoutError): driver.press('Retry sync request', deadline=10)
+                        else:
+                            driver.press('Retry sync request', deadline=10)
+                    if (delayed == 'lookup' or (cls is Linux and delayed == 'action-query')
+                            or (cls is Mac and delayed == 'clock-sample')):
+                        driver.observer.call.assert_not_called()
+                        actions.doAction.assert_not_called()
+                    elif cls is Mac:
+                        driver.observer.call.assert_called_once()
+                    else:
+                        actions.doAction.assert_called_once()
+
     def orchestration(self):
         spec = importlib.util.spec_from_file_location('packaged_orchestration',
                     Path(__file__).resolve().parents[1]/'verify-native-packages.py')
@@ -991,7 +1145,7 @@ class PackagedAdmission(unittest.TestCase):
             args = [path,'a'*40,report['target'],report['artifact'],report['backend'],'fresh','x11',report['method']]
             self.assertTrue(module.verify_report(*args)['passed'])
             for position, value in [(1,'c'*40),(2,'x86_64-apple-darwin'),
-                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'upgraded'),(6,'wayland'),
+                                    (3,dict(report['artifact'],sha256='c'*64)),(4,'winit-skia'),(5,'fresh-software'),(6,'wayland'),
                                     (7,dict(report['method'],source_commit='d'*40))]:
                 changed = list(args)
                 changed[position] = value
@@ -1015,6 +1169,9 @@ class PackagedAdmission(unittest.TestCase):
                       if path.read_bytes() == (source/'preservation/corpus/archives/clockwork-forest.plain.pk').read_bytes()]
                 self.assertEqual(len(pk), 1)
                 self.assertTrue(pk[0].name.endswith('.plain.pk'))
+                self.assertEqual(fixture.initial_uuids, {fixture.original_uuid})
+                self.assertEqual(list(fixture.candidate.iterdir()), [])
+                self.assertEqual((fixture.legacy_profile/'relocation.json').read_bytes(), b'unfinished old move')
                 self.assertEqual(len(list(fixture.review_inputs.iterdir())), 2)
                 self.assertTrue(all(path.name.endswith('.zip') for path in fixture.review_inputs.iterdir()))
                 environment = fixture.environment('winit-skia-software')

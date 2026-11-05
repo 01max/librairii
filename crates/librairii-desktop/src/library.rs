@@ -61,6 +61,7 @@ pub struct LibrarySession<'profile> {
     move_notice: Option<MoveNotice>,
     operation_generation: u64,
     catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    import_observer: Option<crate::imports::ImportObservation>,
 }
 #[derive(Debug)]
 enum Owner<'p> {
@@ -161,19 +162,28 @@ impl<'gate> Runtime<'gate, '_, '_> {
             .gate
             .enter_mutation()
             .map_err(|_| StorageError::RuntimeInUse)?;
-        self.jobs.cancel(id).map_err(|_| StorageError::QueueFull)
+        self.jobs.cancel(id).map_err(|(refusal, _)| match refusal {
+            native_jobs::Refusal::Busy => StorageError::QueueFull,
+            native_jobs::Refusal::Closed => StorageError::IntakeClosed,
+        })
     }
-    pub fn offer_metadata(&self, start: native_jobs::Start) -> Result<()> {
-        let _use = self
-            .gate
-            .enter_mutation()
-            .map_err(|_| StorageError::RuntimeInUse)?;
+    pub fn offer_metadata(
+        &self,
+        start: native_jobs::Start,
+    ) -> std::result::Result<(), (StorageError, native_jobs::Start)> {
+        let Ok(_use) = self.gate.enter_mutation() else {
+            return Err((StorageError::RuntimeInUse, start));
+        };
         if start.input().kind != librairii_core::OperationKind::MetadataSync {
-            return Err(StorageError::CompatibilityInvariant);
+            return Err((StorageError::CompatibilityInvariant, start));
         }
-        self.jobs
-            .try_start(start)
-            .map_err(|_| StorageError::QueueFull)
+        self.jobs.try_start(start).map_err(|(refusal, start)| {
+            let error = match refusal {
+                native_jobs::Refusal::Busy => StorageError::QueueFull,
+                native_jobs::Refusal::Closed => StorageError::IntakeClosed,
+            };
+            (error, start)
+        })
     }
     pub fn prepare_export(
         &self,
@@ -354,6 +364,7 @@ impl<'profile> LibrarySession<'profile> {
             move_notice: None,
             operation_generation: 1,
             catalog_client: None,
+            import_observer: None,
         }
     }
     pub fn isolated(library: IsolatedLibrary) -> Self {
@@ -365,6 +376,7 @@ impl<'profile> LibrarySession<'profile> {
             move_notice: None,
             operation_generation: 1,
             catalog_client: None,
+            import_observer: None,
         }
     }
     /// Presentation only. Cleanup itself still requires qualified storage
@@ -378,6 +390,13 @@ impl<'profile> LibrarySession<'profile> {
         client: Option<librairii_adapters::lunii::CatalogClient>,
     ) -> Self {
         self.catalog_client = client;
+        self
+    }
+    pub fn with_import_observer(
+        mut self,
+        observer: Option<crate::imports::ImportObservation>,
+    ) -> Self {
+        self.import_observer = observer;
         self
     }
     pub(crate) fn retryable(&self) -> bool {
@@ -472,7 +491,10 @@ impl<'profile> LibrarySession<'profile> {
                                     client,
                                 )
                             });
-                        let imports = ImportExecutor::new(&database);
+                        let imports = self.import_observer.as_deref().map_or_else(
+                            || ImportExecutor::new(&database),
+                            |observer| ImportExecutor::observed(&database, observer),
+                        );
                         let metadata = crate::metadata_jobs::MetadataExecutor::new(
                             &database,
                             self.catalog_client.clone(),

@@ -305,7 +305,7 @@ fn invalid_update_and_cancel_preserve_effective_profile_and_staged_cleanup() -> 
         fs::read(store.directory().join("settings.json"))?,
         prior_bytes
     );
-    assert_eq!(fs::read_dir(store.directory())?.count(), 2);
+    assert_eq!(fs::read_dir(store.directory())?.count(), 3);
     Ok(())
 }
 
@@ -331,7 +331,7 @@ fn invalid_native_settings_are_preserved_and_never_reinitialized() -> TestResult
             Err(StorageError::InvalidProfile)
         ));
         assert_eq!(fs::read(directory.join("settings.json"))?, bytes);
-        assert_eq!(fs::read_dir(&directory)?.count(), 2);
+        assert_eq!(fs::read_dir(&directory)?.count(), 3);
     }
     Ok(())
 }

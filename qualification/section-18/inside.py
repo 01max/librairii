@@ -15,7 +15,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--inspection', type=Path, required=True)
     parser.add_argument('--source', required=True)
-    parser.add_argument('--case', choices=('fresh', 'upgraded'), required=True)
+    parser.add_argument('--case', choices=('fresh', 'fresh-software'), required=True)
     parser.add_argument('--backend', choices=('winit-skia', 'winit-skia-software'), required=True)
     parser.add_argument('--session', choices=('x11', 'wayland'), required=True)
     args = parser.parse_args()

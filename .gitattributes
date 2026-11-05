@@ -1,5 +1,3 @@
-frontend/wailsjs/** -whitespace
-
 # Admitted oracle artifacts/checker/producers are hashed as exact bytes.
 # Preserve them even under Git for Windows core.autocrlf=true.
 preservation/** -text

@@ -1,21 +1,19 @@
 # Native platform matrix
 
-This page describes the Rust candidate on `rewrite-in-rust-native-desktop`.
-The three native targets have installed-package CI evidence. Public Mac signing,
-final signed-byte verification and release promotion remain open gates; an
-unsigned candidate is not a signed public release. The retained Go/Wails
-application and its build commands are described in
-[legacy compatibility checks](development.md#retained-go-compatibility-checks).
+This page describes the fresh Rust application. The default Mac distribution is
+a free ad-hoc signed DMG. Paid Developer ID signing/notarization is optional.
+Every candidate still requires exact-byte inspection and installed GUI checks
+on its matching target before release promotion.
 
 ## Tested targets and artifacts
 
 | Native target | Baseline | Candidate artifact | Qualification |
 | --- | --- | --- | --- |
-| `aarch64-apple-darwin` | macOS 15+, Apple silicon | Thin `Librairii.app` in `Librairii-<VERSION>-aarch64-apple-darwin-unsigned.dmg`, checksum | Matching ARM Mac runner; unsigned installed GUI passes. Developer ID/notarization/stapling and final signed-byte gates remain open. |
-| `x86_64-apple-darwin` | macOS 15+, Intel | Separate thin `Librairii.app` in `Librairii-<VERSION>-x86_64-apple-darwin-unsigned.dmg`, checksum | Native Intel hardware; unsigned installed GUI passes. Rosetta is supplemental evidence only; signed-byte gates remain open. |
+| `aarch64-apple-darwin` | macOS 15+, Apple silicon | Thin `Librairii.app` in `Librairii-<VERSION>-aarch64-apple-darwin-unsigned.dmg`, checksum | Matching ARM Mac runner; ad-hoc packages require matching-source installed GUI verification. |
+| `x86_64-apple-darwin` | macOS 15+, Intel | Separate thin `Librairii.app` in `Librairii-<VERSION>-x86_64-apple-darwin-unsigned.dmg`, checksum | Native Intel hardware; ad-hoc packages require matching-source installed GUI verification. Rosetta is supplemental only. |
 | `x86_64-unknown-linux-gnu` | Ubuntu 24.04 LTS x86-64, glibc 2.39 | `Librairii-<VERSION>-x86_64-unknown-linux-gnu.tar.gz`, executable, desktop entry/icons, checksum | Installed native GUI passes in X11 and Wayland, with GPU-API and software-rendering cases. |
 
-The latest integrated implementation was checked as PR 69 head
+Historical implementation evidence was recorded for PR 69 head
 `21f32ed968cd4e66bfde6817e0f77b4c93dac810`:
 [native packages/installed GUI](https://github.com/01max/librairii/actions/runs/41185064509),
 [quality/storage/handover](https://github.com/01max/librairii/actions/runs/41185064457),
@@ -42,9 +40,9 @@ file-manager services remain system dependencies. See the
 
 On macOS, AppKit, Foundation, CoreGraphics, Metal and the system graphics/font
 services come from macOS. Use the bundle for the machine's actual architecture.
-Public distribution must complete the
-[protected signing and verification workflow](rewrite/section-18.md#protected-mac-signing)
-before signed-installation support is claimed.
+A trusted downloaded app may need **System Settings → Privacy & Security →
+Open Anyway** at first launch. The [build guide](native-build-and-sign.md)
+describes the free default and optional Developer ID channel.
 
 ## Linux runtime prerequisites
 
@@ -95,10 +93,9 @@ UTF-8 data and filenames retain their lossless behavior.
 ## Install and retain data
 
 Verify the checksum belonging to the exact package before installation.
-The Mac artifact contains an application bundle in a read-only DMG. Signing
-records distinguish an internal ad-hoc candidate from a Developer ID-signed,
-notarized and stapled distribution; a build or ad-hoc integrity pass cannot
-stand in for those public-release checks.
+The Mac artifact contains an application bundle in a read-only DMG. Its
+ad-hoc signature checks integrity, without claiming Apple notarization.
+Verify the exact package checksum and use per-app first-launch approval if needed.
 
 For Linux, extract the versioned archive into a permanent application directory
 and launch `bin/librairii-desktop`. It contains `bin/`,
@@ -112,38 +109,12 @@ installation. See the archive's `INSTALL.txt`.
 Updates/uninstall replace or remove application files and their explicitly
 installed desktop/icon entries. Keep the independent native profile, library,
 backups and recovery journals. Reinstall can reopen the retained library;
-removing an app directory is not permission to remove user data. Existing Go
-libraries require the [verified transition procedure](native-transition.md)
-rather than manually directing an older executable at the native candidate.
+removing an app directory is not permission to remove user data. First launch
+creates a fresh Rust library; existing Go databases and preferences are not
+imported. See [starting fresh and recovery](native-transition.md).
 
-## Retained Go/Wails verification
-
-The Go application remains available for compatibility and rollback while the
-native release gates are open. Its platform verification is separate from the
-Rust matrix above. The retained historical verification families are:
-
-| Go/Wails distribution | Host and command | Evidence scope |
-| --- | --- | --- |
-| macOS 15, arm64 | Matching ARM Mac; `make verify-packaged-acceptance` | Historical local package acceptance; rerun for each Go release |
-| Linux x64 with WebKitGTK 4.1 | Ubuntu 24.04 x64; `make verify-platform-linux` | Retained Go Linux release CI gate |
-
-These commands independently build and launch the actual packaged Go/Wails
-executable, require a committed React render, create and reopen SQLite state,
-exercise host-native dialog and file-manager reveal services, and run the
-complete headless story-library smoke. They retain isolated fixture paths,
-shutdown/data-retention checks and distribution checksums. Failed or cancelled
-jobs publish no qualified artifact.
-
-The implementations are `scripts/verify-packaged-acceptance` and
-`scripts/verify-platform-linux`, orchestrated by `.github/workflows/ci.yml`.
-The Linux Go gate uses D-Bus/Xvfb, GTK 3/WebKitGTK 4.1 and an observed PCManFM
-handler. Those services qualify the retained Go product; the native Linux
-runtime prerequisites and portal/Thunar qualification are listed separately
-above. Both Go gates also run `scripts/verify-settings-acceptance` for first-run,
-language/menu, location and post-move export coverage; see
-[the retained settings evidence](verification/settings-and-library-location.md).
-Build prerequisites and the optional Docker-based `make linux` path remain in
-[development](development.md#retained-go-compatibility-checks).
+Go/Wails release commands and CI jobs are retired. Their historical source and
+reports remain in Git and the frozen reference corpus.
 
 ## Evidence for each candidate
 
@@ -155,7 +126,8 @@ bytes/modes, checks architecture/linkage and runs the installed identity command
 without opening a GUI.
 
 A separate disposable native CI job runs the actual installed production GUI.
-Both Mac targets cover fresh English and upgraded French fixtures; Linux repeats
+Both Mac targets cover fresh English and French fixtures on the two renderer
+routes. The French software route also verifies that old Go files are ignored. Linux repeats
 them under X11 and Wayland. Each lane requires:
 
 - Native picker, menu/accelerator and file-manager behavior, including exact
@@ -168,8 +140,8 @@ them under X11 and Wayland. Each lane requires:
 - Positive product/reader/container/cache retirement with raw observations,
   screenshots and source/method bindings retained against the package checksum.
 
-The final signed Mac bytes must repeat applicable inspection and GUI checks in
-a credentialless job after signing/notarization/stapling. Keep failed, skipped
+If the optional paid channel is used later, its final signed Mac bytes must
+repeat inspection and GUI checks in a credentialless job. Keep failed, skipped
 and unavailable gates visible. Build success, cross-compilation, a source-host
 launch or an earlier unsigned artifact cannot qualify that distribution.
 

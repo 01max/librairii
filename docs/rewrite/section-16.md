@@ -188,9 +188,11 @@ are retained; no frame/timer statistic substitutes for either wall gate.
 Task17 introduces macOS input method3 after a controlled trace reproduced the
 file-observation proxy failure. Its actual callback boundary, conservative
 clock mapping, retained observation walls and unchanged gates are documented in
-[section17](section-17.md#native-dispatch-observer-correction). Linux continues
-to use method2's stronger observation-wall upper bound. Historical method2
-failures retain their original verdicts.
+[section17](section-17.md#native-dispatch-observer-correction). Linux initially
+retained method2's observation-wall upper bound. Task20's retained Linux trace
+separately demonstrated a post-callback delay and extends the same method3
+protocol to Linux; see [section20](section-20.md#linux-dispatch-measurement).
+Historical method2 failures retain their original verdicts.
 
 Both default Skia GPU API and explicit software routes must identify their
 actually selected surface. A Linux Mesa GPU API route does not claim physical

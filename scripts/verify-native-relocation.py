@@ -11,6 +11,8 @@ import json
 import os
 from pathlib import Path
 import platform
+import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -34,34 +36,104 @@ def owned_workspace():
 
 def rehearse(binary, source, mount, work):
     result = None
+    failure = None
     try:
         result = run([str(binary), str(source), str(mount)], cwd=ROOT,
                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
         return result
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         result = error
+        failure = error
         raise
     finally:
         if result is not None:
+            errors = []
             for name in ("stdout", "stderr"):
                 value = getattr(result, name, None) or ""
-                (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
+                try:
+                    (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
+                except OSError as error:
+                    errors.append(f'child {name} retention failed: {error}')
+            if errors:
+                if failure is None:
+                    raise RuntimeError('; '.join(errors))
+                for note in errors:
+                    failure.add_note(note)
 
 
-def detach_owned_image(mount):
-    # macOS indexing/disk arbitration can retain the just-tested image after
-    # every rehearsal process has exited. Only our fresh image's mountpoint is
-    # accepted here; no ambient device/volume discovery or detach is performed.
-    for attempt in range(3):
-        result = subprocess.run(["hdiutil", "detach", str(mount)], text=True,
-                                capture_output=True, timeout=30)
-        if result.returncode == 0:
+def detach_owned_image(mount, image):
+    """Detach only the owned image, verifying disposal independently of exit status."""
+    observations = []
+    forced = False
+    failure = None
+
+    def inventory():
+        result = run(["hdiutil", "info", "-plist"], stdout=subprocess.PIPE, timeout=30)
+        data = plistlib.loads(result.stdout.encode())
+        if not isinstance(data, dict) or not isinstance(data.get('images'), list):
+            raise RuntimeError('invalid disk image inventory')
+        matches = []
+        for row in data['images']:
+            if not isinstance(row, dict) or not isinstance(row.get('image-path'), str):
+                raise RuntimeError('invalid disk image identity')
+            if Path(row['image-path']).resolve() == image.resolve():
+                matches.append(row)
+        if len(matches) > 1:
+            raise RuntimeError('ambiguous owned image attachment')
+        # Retain only our image's observation, never ambient image metadata.
+        record = None
+        if matches:
+            entities = matches[0].get('system-entities')
+            record = {'image-path': matches[0]['image-path'], 'system-entities': [
+                {key: entity[key] for key in ('dev-entry', 'content-hint', 'mount-point')
+                 if isinstance(entity.get(key), str)}
+                for entity in entities if isinstance(entity, dict)
+            ] if isinstance(entities, list) else None}
+        observations.append({'owned_image': record})
+        return matches[0] if matches else None
+
+    def disposed(row):
+        if row is not None:
             return False
-        if result.returncode != 16:
-            raise RuntimeError(f"owned image detach failed: {result.stderr.strip()}")
-        time.sleep(attempt + 1)
-    run(["hdiutil", "detach", "-force", str(mount)], stdout=subprocess.PIPE, timeout=30)
-    return True
+        if mount.is_symlink() or os.path.ismount(mount) or mount.stat().st_dev != mount.parent.stat().st_dev:
+            raise RuntimeError('image absent but owned mountpoint still uncertain')
+        return True
+
+    try:
+        for attempt in range(4):
+            row = inventory()
+            if disposed(row):
+                return forced
+            entities = row.get('system-entities')
+            # Our APFS image was created with the default GUID partition map.
+            # Never guess a disk from a mountpoint or reuse a stale device ID.
+            if not isinstance(entities, list):
+                raise RuntimeError('owned image device inventory missing')
+            disks = [e.get('dev-entry') for e in entities if isinstance(e, dict)
+                     and e.get('content-hint') == 'GUID_partition_scheme']
+            if len(disks) != 1 or not isinstance(disks[0], str) or not re.fullmatch(r'/dev/disk[0-9]+', disks[0]):
+                raise RuntimeError('unique owned image backing device required')
+            forced = attempt == 3
+            command = ['hdiutil', 'detach'] + (['-force'] if forced else []) + [disks[0]]
+            result = subprocess.run(command, text=True, capture_output=True, timeout=30)
+            observations.append({'command': command, 'returncode': result.returncode,
+                                 'stdout': result.stdout, 'stderr': result.stderr})
+            if disposed(inventory()):
+                return forced
+            if result.returncode != 16 or forced:
+                raise RuntimeError(f'owned image remains attached after detach: {result.stderr.strip()}')
+            time.sleep(attempt + 1)
+        raise RuntimeError('owned image disposal incomplete')
+    except Exception as error:
+        failure = error
+        raise
+    finally:
+        try:
+            (image.parent / 'disposal.json').write_text(json.dumps(observations, indent=2) + '\n')
+        except OSError as error:
+            if failure is None:
+                raise RuntimeError(f'owned image disposal receipt write failed: {error}') from error
+            failure.add_note(f'owned image disposal receipt write also failed: {error}')
 
 
 def main():
@@ -134,13 +206,24 @@ def main():
             if mounted:
                 try:
                     if system == "Darwin":
-                        forced = detach_owned_image(mount)
+                        forced = detach_owned_image(mount, image)
                     else:
                         run(["sudo", "-n", "umount", str(mount)])
                         forced = False
                     detached = True
                 except Exception as error:
                     cleanup = error
+            disposal = work / 'disposal.json'
+            if disposal.is_file():
+                output = ROOT / 'target/quality/native-relocation-disposal.json'
+                try:
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(disposal, output)
+                except OSError as error:
+                    if cleanup is None:
+                        cleanup = RuntimeError(f'disposal receipt copy failed: {error}')
+                    else:
+                        cleanup.add_note(f'disposal receipt copy also failed: {error}')
             if primary is not None or cleanup is not None:
                 try:
                     current_device = mount.stat().st_dev
@@ -150,18 +233,31 @@ def main():
                            "mount": str(mount), "source": str(source), "mount_attempted": mounted,
                            "mounted_device": mount_device, "current_mount_device": current_device,
                            "owned_volume_detached": detached, "primary_error": repr(primary) if primary else None,
-                           "cleanup_error": repr(cleanup) if cleanup else None}
+                           "cleanup_error": repr(cleanup) if cleanup else None,
+                           "primary_notes": getattr(primary, '__notes__', []),
+                           "cleanup_notes": getattr(cleanup, '__notes__', [])}
                 output = ROOT / "target/quality/native-relocation-failure.json"
-                output.parent.mkdir(parents=True, exist_ok=True)
+                diagnostic_errors = []
+                try:
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                except OSError as error:
+                    diagnostic_errors.append(f'failure receipt directory: {error}')
                 # These files are outside the mounted tree. Retain them in the
                 # CI artifact even though the disposable runner will disappear.
                 for name in ("stdout", "stderr"):
                     stream = work / ("rehearsal." + name)
                     if stream.is_file():
-                        shutil.copy2(stream, output.with_suffix("." + name))
-                output.write_text(json.dumps(failure, indent=2) + "\n")
-                (work / "failure.json").write_text(json.dumps(failure, indent=2) + "\n")
-                raise RuntimeError(f"Native relocation failed; owned evidence retained at {work}; primary={primary!r}; cleanup={cleanup!r}") from (primary if primary is not None else cleanup)
+                        try:
+                            shutil.copy2(stream, output.with_suffix("." + name))
+                        except OSError as error:
+                            diagnostic_errors.append(f'{name} retention: {error}')
+                failure['diagnostic_errors'] = diagnostic_errors
+                for receipt in (output, work / 'failure.json'):
+                    try:
+                        receipt.write_text(json.dumps(failure, indent=2) + '\n')
+                    except OSError as error:
+                        diagnostic_errors.append(f'{receipt.name} retention: {error}')
+                raise RuntimeError(f"Native relocation failed; owned workspace retained at {work}; primary={primary!r}; cleanup={cleanup!r}; diagnostics={diagnostic_errors!r}") from (primary if primary is not None else cleanup)
         evidence["owned_volume_detached"] = True
         evidence["owned_volume_detach_forced"] = forced
         output = ROOT / "target/quality/native-relocation.json"

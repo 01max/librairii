@@ -1,4 +1,4 @@
-"""Conservative actual-callback bounds for macOS native input method 3.
+"""Conservative actual-callback bounds for native input method 3.
 
 The helper's transport wall times remain diagnostics. All64 independent clock
 handshakes constrain one offset interval; no favorable offset is selected.
