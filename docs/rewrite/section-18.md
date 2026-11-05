@@ -2,19 +2,20 @@
 
 **Current owner scope (2026-11-03):** [fresh Rust state and free ad-hoc Mac
 packages](fresh-rust-contract.md) supersede this report's Go migration/rollback,
-retained-runtime and mandatory paid-signing requirements. Task 20 implements the
-retirement. The remaining content records earlier work and evidence; failed
-measurements and unfinished applicable package checks remain explicit.
+retained-runtime and mandatory paid-signing requirements. Task 20 completed the
+retirement in PR #76. Historical diagnostics below keep their original outcomes.
 
-Integration base: `0e3b67da0af8836af4b89e3079c38a9997d0e7d8`.
-Branch `codex/rewrite-18-platform-packages` targets
+Current integration base: `9b34e26298850cb6ced764e5c3e3e8a687aa30b2`.
+Branch `codex/rewrite-18-final-packages` targets
 `rewrite-in-rust-native-desktop`.
 
 Task 18 is in progress. A staged payload, unsigned application or successful
 build does not qualify an installed distribution. Package, GUI, clean-host,
 reopen/recovery, final-byte signature and independent review gates remain
-explicit until their actual reports pass. Existing Go release commands remain
-available during the rewrite.
+explicit until their actual reports pass. The remaining Task 18 work covers
+18.2, 18.3, 18.10 and 18.11 together. Task 19 release promotion and its historical
+performance hold remain separate; current passing measurements do not explain
+or relabel historical failures.
 
 ## Release entry point
 
@@ -93,11 +94,12 @@ against system paths. It builds and verifies a compressed read-only DMG with
 Apple's `hdiutil`. The final artifact inventory follows application assembly
 and the internal ad-hoc signature.
 
-The `-unsigned.dmg` suffix and signing record deliberately distinguish these
-internal candidates from Developer ID distribution. An ad-hoc integrity check
-does not establish notarization, stapling or Gatekeeper acceptance. Both macOS
-public-release gates remain incomplete until the final signed bytes pass those
-checks and installed clean-host GUI acceptance.
+The `-unsigned.dmg` suffix and signing record distinguish the default free
+ad-hoc channel from Developer ID distribution. Ad-hoc signing establishes
+integrity, not Apple notarization or automatic Gatekeeper acceptance. Both Mac
+targets require exact-byte integrity and installed clean-host GUI acceptance;
+paid signing is optional. See [build and installation instructions](../native-build-and-sign.md)
+for the human-operated build and first-launch approval steps.
 
 `cargo xtask release inspect-package --directory <artifact-directory>
 --expected-source <externally-selected-commit> --target <triple> --output
@@ -115,6 +117,13 @@ job. Installed-host validation needs no Rust toolchain and refuses an Intel
 result running through Rosetta. The installation job also runs the checksum-keyed
 production GUI workflow; byte inspection and GUI qualification remain separate
 receipts and gates.
+After detaching an owned Mac image, inspection reads a new OS image inventory
+and checks the mountpoint independently. `mount-retirement.json` must show no
+matching image, mount owner or mounted directory before `mount-cleanup.json`
+can report verified retirement. A successful detach command alone is insufficient.
+An uncertain inventory fails qualification without retrying a detach against
+potentially changed ownership. This applies to both Mac architectures and to
+cleanup after failed or timed-out attachment.
 The pinned official download-artifact6.0.0 commit
 `018cc2cf5baa6db3ef3c5f8a56943fffe632ef53` was checked against its official tag
 and GitHub's valid release-commit signature before use; existing checkout,

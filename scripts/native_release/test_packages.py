@@ -47,12 +47,17 @@ class PlatformPackages(unittest.TestCase):
                 destination.mkdir()
                 image = {'image-path': str(artifact), 'system-entities': [{'mount-point': str(destination/'mount')}]}
                 info = subprocess.CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b'')
-                with patch('native_release.install.subprocess.run', side_effect=[failure, info, subprocess.CompletedProcess([], 0)]) as run:
+                absent = subprocess.CompletedProcess([], 0, plistlib.dumps({'images': []}), b'')
+                with patch('native_release.install.subprocess.run', side_effect=[failure, info, subprocess.CompletedProcess([], 0), absent]) as run:
                     with self.assertRaises((ValueError, subprocess.TimeoutExpired, plistlib.InvalidFileException)):
                         with install.mounted(artifact, destination):
                             self.fail('invalid receipt cannot grant installation')
-                self.assertEqual(run.call_args_list[-1].args[0], ['/usr/bin/hdiutil', 'detach', str(destination/'mount')])
+                self.assertEqual(run.call_args_list[-2].args[0], ['/usr/bin/hdiutil', 'detach', str(destination/'mount')])
+                self.assertEqual(run.call_args_list[-1].args[0], ['/usr/bin/hdiutil', 'info', '-plist'])
                 self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'detached owned image')
+                self.assertTrue(json.loads((destination/'mount-cleanup.json').read_text())['absence_verified'])
+                self.assertEqual(json.loads((destination/'mount-retirement.json').read_text()),
+                                 {'matching_images': [], 'mount_owners': [], 'mount_present': False})
             destination = root / 'foreign'
             destination.mkdir()
             image = {'image-path': str(root/'unrelated.dmg'), 'system-entities': [{'mount-point': str(destination/'mount')}]}
@@ -74,6 +79,44 @@ class PlatformPackages(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
             self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'uncertain')
             self.assertEqual(json.loads((destination/'mount-reconciliation.json').read_text())['matching_images'], [image])
+
+    def test_successful_detach_requires_independent_device_and_mount_absence(self):
+        from subprocess import CompletedProcess, TimeoutExpired
+        with tempfile.TemporaryDirectory(prefix='librairii-mount-retirement-') as temporary:
+            root = Path(temporary).resolve()
+            artifact = root/'owned.dmg'
+            artifact.write_bytes(b'synthetic image')
+            for name in ('owned-device', 'foreign-mount', 'mount-only', 'missing-inventory', 'timeout', 'absent'):
+                with self.subTest(name=name):
+                    destination = root/name
+                    destination.mkdir()
+                    mount = destination/'mount'
+                    entity = {'mount-point': str(mount)}
+                    image = {'image-path': str(artifact), 'system-entities': [entity]}
+                    remaining = {
+                        'owned-device': [{'image-path': str(artifact), 'system-entities': [{'dev-entry': '/dev/disk123'}]}],
+                        'foreign-mount': [{'image-path': str(root/'unrelated.dmg'), 'system-entities': [entity]}],
+                    }.get(name, [])
+                    inventory = {} if name == 'missing-inventory' else {'images': remaining}
+                    final = (TimeoutExpired('hdiutil', 15) if name == 'timeout'
+                             else CompletedProcess([], 0, plistlib.dumps(inventory), b''))
+                    responses = [CompletedProcess([], 0, plistlib.dumps({'system-entities': [entity]}), b''),
+                                 CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b''),
+                                 CompletedProcess([], 0), final]
+                    with patch('native_release.install.subprocess.run', side_effect=responses) as run, \
+                         patch.object(Path, 'is_mount', side_effect=[True, name == 'mount-only']):
+                        if name == 'absent':
+                            with install.mounted(artifact, destination) as installed:
+                                self.assertEqual(installed, mount)
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'cleanup remains uncertain'):
+                                with install.mounted(artifact, destination):
+                                    pass
+                    cleanup = json.loads((destination/'mount-cleanup.json').read_text())
+                    self.assertEqual(cleanup['state'], 'detached owned image' if name == 'absent' else 'uncertain')
+                    self.assertEqual(cleanup.get('absence_verified', False), name == 'absent')
+                    # No repeat detach, especially when a foreign owner appears.
+                    self.assertEqual(sum(call.args[0][1] == 'detach' for call in run.call_args_list), 1)
 
     def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
         from subprocess import CompletedProcess
