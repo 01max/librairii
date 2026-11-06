@@ -4,8 +4,9 @@ The Task 19.1 Intel observation at source
 `3c24629d50b7a39297c9ed05c8e317f797d7e150` failed the retained 100 ms
 query budget: wall p95 was 131.736887 ms. One unchanged full-job repeat
 measured 73.812746 ms. Both observations remain retained; the passing repeat
-does not establish a cause or repair. P58 and the final Task 19.7 numerical
-qualification remain unresolved.
+does not establish a cause or repair. On 2026-11-06 the owner accepted only the
+exact source967f5fab candidate under the [recorded policy amendment](section-19-owner-decision.json).
+The historical run remains failed; final Task 19.7 PR checks remain required.
 
 The failing query plan sorts full story/archive records before returning the
 first 24 stories. The existing deep-page query instead materializes the chosen
@@ -136,3 +137,33 @@ command-error replies. No input is retried and no assertion or deadline is
 relaxed. This repairs observation handling; the original run stays failed,
 fresh installed-package evidence remains required, and no product-performance
 cause or fix is inferred.
+
+
+## Final-rehearsal disposition boundary — 2026-11-06
+
+Replaying the retained original `backend.json` through the unchanged
+`verify_queries` function in `scripts/verify-native-scale.py` still rejects
+`collectionQuery` at 131.736887 ms. This is a replay of measured evidence, not a
+new execution of the native application. The original 20 wall samples include
+135.599067, 131.736887 and 120.924527 ms; no sample was removed or rescored.
+
+The later corrected phase-diagnostic source
+`a533b1b50562b60465ca779de0e3ff56417dae56` recorded ordinary Intel
+median/p95 19.5467635/22.433303 ms. Observed request time was mostly count and
+cursor/row execution, with smaller summary and outside-worker intervals. Those
+phases were not captured in the original failing run. They cannot identify its
+hotspot or establish a historical fix. Process-wide CPU also cannot establish
+per-thread off-CPU time.
+
+No reliably reproducing live failure has been established by the retained
+unchanged repeat, paired page-plan experiment or complete-request phase
+experiment. Native execution remains on disposable CI hosts. Applying an
+unproven production optimization or repeating acceptance jobs until green
+would not resolve this evidence gap. On 2026-11-06 the owner explicitly approved
+accepting the exact source967f5fab candidate while keeping all limits and PR
+gates unchanged. Its Intel query p95 is 39.533841 ms. The
+[decision record](section-19-owner-decision.json) binds the three distribution
+hashes and resolves only that candidate's historical P58 release hold. It is a
+qualification-policy amendment, not a causal finding or repair. The original
+failure, diagnostics and samples remain unchanged, and the current documentation
+PR must still pass its required checks.

@@ -43,6 +43,11 @@ unmounted owned mountpoint. A successful command alone is insufficient, and a
 failed command is accepted only when those disposal checks independently pass.
 Filtered observations are retained as `native-relocation-disposal.json`; unknown
 identity or disposal preserves the workspace and fails the job.
+After all four permitted detach attempts fail with the busy status, the receipt
+also retains one ten-second, read-only `lsof` diagnostic limited to that image
+and the devices in its last matching inventory. Partial output, nonzero status,
+missing-tool errors and timeouts remain diagnostic observations. They never
+establish disposal or replace the original failure; no extra detach is attempted.
 
 The [development guide](../development.md) documents the Rust-only contributor
 commands. Frozen Go reference inputs are retained, but ordinary CI neither

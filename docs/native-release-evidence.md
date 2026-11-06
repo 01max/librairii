@@ -99,10 +99,15 @@ own source-file hash. Read the indexed raw assertions, logs and screenshots;
 the helper does not recompute behavioral/numerical gates, authenticate a
 signature or replace an independent release rehearsal.
 
-## Add final signed Mac bytes when ready
+## Optional: add paid-signed Mac bytes
 
-First follow [the manual build/signing guide](native-build-and-sign.md). Keep
-each original unsigned candidate. After you have signed and obtained the
+Default Mac delivery uses free ad-hoc signed DMGs. Those exact bytes can
+complete the release rehearsal without an Apple account, Developer ID or
+notarization. Follow [the build guide](native-build-and-sign.md) for the normal
+build and first-launch approval instructions.
+
+If the owner later chooses paid signing, follow the optional signing procedure
+in that guide. Keep each original ad-hoc candidate. After you have signed and obtained the
 separate matching-host installation/GUI evidence, add a `signed_candidate`
 archive record to that Mac target, using the same five fields as `candidate`.
 It selects the protected workflow's ZIP containing root `artifact.json` and
@@ -115,7 +120,42 @@ signed inventory. Earlier unsigned installation evidence is refused for the
 changed distribution. Recorded signing fields are indexed for review; the
 manifest still does not grant signature, notarization or release acceptance.
 
-Owner review of the final signatures/tickets, exact final-byte host evidence,
-every mandatory parity row and the complete rehearsal remains required by
-[Task 19](rewrite/section-19.md). Publication and runtime cutover are separate
-decisions. The Go runtime and frozen evidence remain available throughout.
+Review the actual integrity signatures, exact final-byte host evidence, every
+mandatory parity row and complete rehearsal required by
+[Task 19](rewrite/section-19.md). Apple tickets apply only to the optional paid
+route. Publication remains a separate owner action. The fresh Rust app ignores
+old Go libraries, profiles and browser state; the Go runtime has been retired.
+Frozen behavior/source evidence and external user files remain preserved.
+
+
+## Final Task 19 handoff
+
+The reviewed bundle must include the manifest input, its output, the parity
+audit, exact provider metadata, terminal required-check statuses and both
+independent review receipts. Select a single source and all three target
+packages. Record the inner distribution SHA-256 in the PR handoff alongside
+the provider archive digest; neither identifies the other.
+
+For each target, reviewers follow the index into the original quality, scale
+and installed archives. The installed matrix is fresh GPU-API/software on
+each Mac and fresh X11/Wayland × GPU-API/software on Linux. It must establish
+native reopen, forced-interruption recovery, original-file preservation and
+owned process/volume cleanup. Old Go files in the software fixtures are
+negative controls: their presence does not qualify data adoption.
+
+Retain failed attempts and measurement limitations with the passing selection.
+The original P58 Intel query failure remains failed. The owner authorized a
+one-candidate policy amendment on 2026-11-06 for the exact source967f5fab
+packages in [the decision record](rewrite/section-19-owner-decision.json).
+Keep that later decision alongside the immutable original proposal and reviews.
+It accepts only those bytes with the unknown historical cause retained. Every
+budget and blocking PR check remains unchanged; other sources or packages need
+their own evidence and disposition. The assembler's false approval flags remain
+unchanged, and publication remains a separate owner action.
+
+Store the final bundle alongside the selected CI evidence, outside the source
+that was built. A subsequent tracked index may reference that historical
+source explicitly, as [Task 18's index](rewrite/section-18-final-evidence.json)
+does. It must not imply that a later source inherits the older verdict.
+Keep provider archives before their expiry and avoid extracting duplicate
+package trees merely to build the index.

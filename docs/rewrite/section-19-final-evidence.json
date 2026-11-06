@@ -1,0 +1,1333 @@
+{
+  "format": "librairii.task19-evidence-index",
+  "schema": 1,
+  "actual_package_source_commit": "967f5fab7bb190646339333857f673d17793d342",
+  "source_tree": "152151fa3cce8ceda0ddb6a13cecb0dfcfee2f5b",
+  "selected_package_reviewed_head": "10c7900cde2623b6f8eba41d90380d8a271dd460",
+  "selected_package_integration_base": "9b34e26298850cb6ced764e5c3e3e8a687aa30b2",
+  "selection_documentation_head": "fde6fde033ee2bb37286611ceb201764363f39aa",
+  "task19_pr": "https://github.com/01max/librairii/pull/78",
+  "selection_reason": "The five intervening files are documentation only. Select the original exact source967f5fab distribution bytes and their own observations. No later source or package inherits their qualification.",
+  "task19_verdict": {
+    "19.6": "complete: assembled and independently reviewed with zero required findings on each axis",
+    "19.7": "selected-candidate release rehearsal and owner disposition reviewed; task completion still requires final current-PR checks, recorded after execution",
+    "public_release_qualified": false,
+    "publication_authorized": false
+  },
+  "selected_package_workflow_runs": [
+    {
+      "id": 42063552339,
+      "name": "Rust quality",
+      "conclusion": "success"
+    },
+    {
+      "id": 42063552433,
+      "name": "Rust scale and resilience",
+      "conclusion": "success"
+    },
+    {
+      "id": 42063552722,
+      "name": "Rust native packages",
+      "conclusion": "success"
+    }
+  ],
+  "selected_package_workflow_check_count": 14,
+  "documentation_pr_ci": {
+    "prior_attempt": {
+      "head": "c5737c958e727cb8e784b79f41ee637d0aeaed29",
+      "actual_source": "6fafb8159ec3e7a6f9b2a2dc630f16434bf66451",
+      "workflow_runs": [
+        42173620805,
+        42173620611,
+        42173620614
+      ],
+      "status": "terminal failure: Intel quality relocation disposal remained busy; all scale and package checks passed. Final documentation commits still need their own required checks."
+    },
+    "final_required_checks_url": "https://github.com/01max/librairii/pull/78/checks",
+    "requirement": "All required checks for the final published documentation head must finish successfully. Record its terminal statuses after execution outside the source that was checked; the selected-source package verdict and owner decision do not waive this gate."
+  },
+  "installed_observations": {
+    "lanes": 8,
+    "checkpoints": 176,
+    "product_process_lifecycles": 40
+  },
+  "parity_rows": 60,
+  "inner_distributions": [
+    {
+      "target": "aarch64-apple-darwin",
+      "bytes": 21234350,
+      "name": "Librairii-0.5.0-aarch64-apple-darwin-unsigned.dmg",
+      "sha256": "e1517932bcca2b0e26460d2437bcbb2a229820fc601d98bb717f483ccc0a56f3",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "bytes": 22441358,
+      "name": "Librairii-0.5.0-x86_64-apple-darwin-unsigned.dmg",
+      "sha256": "f43690d4358af78e4217f086c574826657b3fbba5e2674f69d0bbe834456d366",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "bytes": 24251688,
+      "name": "Librairii-0.5.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "694d44ef9e3f19b2996a463e6e91af6bec37893a05a2de368a7aef77ac920e84",
+      "signing": {
+        "state": "not applicable (Linux portable archive)"
+      }
+    }
+  ],
+  "provider_archives": [
+    {
+      "path": "final-candidate-arm.zip",
+      "artifact_id": 13435783191,
+      "run_id": 42063552722,
+      "bytes": 19957475,
+      "sha256": "11b0adc8bd6f6cb5d42969fdb8d16a3263031c975a44f640e85342ee99c7b7f9",
+      "target": "aarch64-apple-darwin",
+      "kind": "candidate",
+      "provider_name": "native-candidate-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-arm.zip",
+      "artifact_id": 13439574342,
+      "run_id": 42063552722,
+      "bytes": 99564885,
+      "sha256": "2534039fe2d4110d47c82e102ad0fc95fb12e3b16d38ba7ebfdf3c5b62d472de",
+      "target": "aarch64-apple-darwin",
+      "kind": "installed",
+      "provider_name": "native-installation-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-arm.zip",
+      "artifact_id": 13439629808,
+      "run_id": 42063552339,
+      "bytes": 43073237,
+      "sha256": "5bbc0f0d5452b6cd4199ab663462f5a7a4cb2ea27c21392676965773150b1396",
+      "target": "aarch64-apple-darwin",
+      "kind": "quality",
+      "provider_name": "rust-quality-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-arm.zip",
+      "artifact_id": 13440205582,
+      "run_id": 42063552433,
+      "bytes": 107782979,
+      "sha256": "630c854c43a44638016b9f734b59acbfce783cf0b8d815d52a48759b35b6815f",
+      "target": "aarch64-apple-darwin",
+      "kind": "scale",
+      "provider_name": "rust-scale-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-candidate-intel.zip",
+      "artifact_id": 13435923619,
+      "run_id": 42063552722,
+      "bytes": 21092411,
+      "sha256": "b90865a336a05e06ecbf2bf3eb134d51f78ad46a34d8dbd2fba82f876809d8c7",
+      "target": "x86_64-apple-darwin",
+      "kind": "candidate",
+      "provider_name": "native-candidate-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-intel.zip",
+      "artifact_id": 13441421332,
+      "run_id": 42063552722,
+      "bytes": 107213045,
+      "sha256": "41382273f239decc46d42df202f5980ad9459bf100cd53c7a4a83bd4285e6d36",
+      "target": "x86_64-apple-darwin",
+      "kind": "installed",
+      "provider_name": "native-installation-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-intel.zip",
+      "artifact_id": 13439896461,
+      "run_id": 42063552339,
+      "bytes": 43588549,
+      "sha256": "0eac5836e32be1696d605a7761245fe97350873c329af0cbde713deb51a13e22",
+      "target": "x86_64-apple-darwin",
+      "kind": "quality",
+      "provider_name": "rust-quality-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-intel.zip",
+      "artifact_id": 13441118344,
+      "run_id": 42063552433,
+      "bytes": 110624847,
+      "sha256": "2de0768d85689a77e10ad0afff9ce541e4b1ffae6047777748095af616bc3893",
+      "target": "x86_64-apple-darwin",
+      "kind": "scale",
+      "provider_name": "rust-scale-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-candidate-linux.zip",
+      "artifact_id": 13432644416,
+      "run_id": 42063552722,
+      "bytes": 24250663,
+      "sha256": "e183e0d74cf74a5fc6da66bf55854cd33bf013fd12217469290087486eb73d95",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "candidate",
+      "provider_name": "native-candidate-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-linux.zip",
+      "artifact_id": 13438211297,
+      "run_id": 42063552722,
+      "bytes": 137431747,
+      "sha256": "cf529157c87e5443b23dfa95a40d3c4012b0db0f48d0c30093d25bb71a45f2ab",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "installed",
+      "provider_name": "native-installation-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-linux.zip",
+      "artifact_id": 13435761487,
+      "run_id": 42063552339,
+      "bytes": 138653133,
+      "sha256": "c5572921f4fe3f5363cf8ec7bbc89350fb168508cce875d802bf56766dad63b5",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "quality",
+      "provider_name": "rust-quality-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-linux.zip",
+      "artifact_id": 13433738736,
+      "run_id": 42063552433,
+      "bytes": 132405344,
+      "sha256": "d842cd744ef8ae3db59372137dd0df12c38dc874d024d2e9bfcca2e4500f6ce3",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "scale",
+      "provider_name": "rust-scale-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    }
+  ],
+  "review_receipts": [
+    {
+      "name": "final-candidate-arm.standards.json",
+      "bytes": 4416,
+      "sha256": "40a902ec8eeb1bca03cb757cbaa9c3d8a62a10542ac5bae284600f2333f77033"
+    },
+    {
+      "name": "final-candidate-intel.standards.json",
+      "bytes": 4628,
+      "sha256": "111ea6500fe9c8cc6f8d5f55d111c8739f9475d3842e1cbda335a1871289115f"
+    },
+    {
+      "name": "final-candidate-linux.standards.json",
+      "bytes": 2996,
+      "sha256": "5849713deb8a8c7e74aeb7a53c2fc6f8c4be3971d018c89ba6c472325acc9325"
+    },
+    {
+      "name": "final-installed-arm.spec.json",
+      "bytes": 29495,
+      "sha256": "167584851e01cc1f5358617d1c0e2f6093b97947e3ecffd397761a2cb5dea305"
+    },
+    {
+      "name": "final-installed-arm.standards.json",
+      "bytes": 10103,
+      "sha256": "430325c0bfd1aa4a7996b690902eb5c5180f6b5578a545f59ece19600cf0917a"
+    },
+    {
+      "name": "final-installed-intel.spec.json",
+      "bytes": 30366,
+      "sha256": "3ff1474d4f3a1057f1a95e2ebe1801bda7b451d129d372030761283bdb09b6ce"
+    },
+    {
+      "name": "final-installed-intel.standards.json",
+      "bytes": 11754,
+      "sha256": "8d9b1a50ff213de99d8eee27a811045ccec01b82467579b31ca27eaff4a5ff5d"
+    },
+    {
+      "name": "final-installed-linux.spec.json",
+      "bytes": 41564,
+      "sha256": "565189b8cd68feebf5a53b0ecbfba1b2eb6b889dcae56480bbb0139c3e110f94"
+    },
+    {
+      "name": "final-installed-linux.standards.json",
+      "bytes": 15471,
+      "sha256": "a2cf96a87e4fd6486d801a5083f2905417bd84c95743ece56678e6ccd3623a66"
+    },
+    {
+      "name": "final-quality-arm.spec.json",
+      "bytes": 9659,
+      "sha256": "f6be7bb011ce652efc6f9868e644d89d12e12249be01806f39da6318abe01ae1"
+    },
+    {
+      "name": "final-quality-arm.standards.json",
+      "bytes": 3212,
+      "sha256": "fc6d78cf440d926193b4a89c1bb86458951716782e17b3cbb325a336d6fa3f62"
+    },
+    {
+      "name": "final-quality-intel.spec.json",
+      "bytes": 9570,
+      "sha256": "35ec8004e49a97ceae76ae68b87c8ce9af593200e0d14f28765b24434f3051a7"
+    },
+    {
+      "name": "final-quality-intel.standards.json",
+      "bytes": 3214,
+      "sha256": "b8d0ecb6e1d0ea2bd07f17559242f4feaeead1bfda63fce8b4c168114922072a"
+    },
+    {
+      "name": "final-quality-linux.spec.json",
+      "bytes": 14246,
+      "sha256": "da2a3139af45e4f9951f33d1e4222ff0cf37c3f9b400975f772211cf749ee878"
+    },
+    {
+      "name": "final-quality-linux.standards.json",
+      "bytes": 4510,
+      "sha256": "85c62cff99962edbecd65ca85fddac2de94ef90c94fc0dc9a5ebf96e16101e84"
+    },
+    {
+      "name": "final-scale-arm.spec.json",
+      "bytes": 4494,
+      "sha256": "198db1d64a18454841333360e05b9e870e390f62c55a2979b58ec1a841b41001"
+    },
+    {
+      "name": "final-scale-arm.standards.json",
+      "bytes": 13231,
+      "sha256": "36da14ac94a3000ff58882851639ae8bfc0d1e12f15c9587aa645c72f502b5fc"
+    },
+    {
+      "name": "final-scale-intel.spec.json",
+      "bytes": 9959,
+      "sha256": "7336e1e00cb8bf617c33a1710ea3b35b678f641ca9fa8380a2c98a9cf368e1cf"
+    },
+    {
+      "name": "final-scale-intel.standards.json",
+      "bytes": 13998,
+      "sha256": "f98157063bb1cb20c008190b96d52940ae195574547200ddef4446248788c813"
+    },
+    {
+      "name": "final-scale-linux.spec.json",
+      "bytes": 3896,
+      "sha256": "51587e838cbbb9f9b35b668001ea4d1f04fac9fddd86c8dd80e4e0d4377415b6"
+    },
+    {
+      "name": "final-scale-linux.standards.json",
+      "bytes": 12506,
+      "sha256": "4b6ede96a4df3eb505b305142767eef03ca6819957a81f3d1a7d8f661aa4b424"
+    },
+    {
+      "name": "source-10c7900-standards.json",
+      "bytes": 9505,
+      "sha256": "bac32aef2821443eb8857b0981887b057d29f22ab3e993343a7637ab26447fc0"
+    },
+    {
+      "name": "source-spec-final-10c7900.json",
+      "bytes": 6448,
+      "sha256": "ebf4d7e8d32269f7aded9218ce41a854f2e06415b2a8654b0a13c4d15c036354"
+    }
+  ],
+  "manifest_bundle": {
+    "relative_local_directory": "target/task19-release-rehearsal/selected-967f5fab",
+    "records": [
+      {
+        "path": "task19-input.json",
+        "bytes": 26285,
+        "sha256": "2947e0d7c3bc4dc3c19819bf7fa3008ba092be56cb6b86c66b653cff517ca883"
+      },
+      {
+        "path": "task19-manifest.json",
+        "bytes": 38225,
+        "sha256": "f3eafe236606745a6410ed114145f1e920a1ef4d14ea2e8cb60a240e6550da9f"
+      },
+      {
+        "path": "task19-p58-decision-proposal.json",
+        "bytes": 3183,
+        "sha256": "70f2a5959845e47d54e2aa6b3abf4bbfb3df373ff244e961811954f210798841"
+      },
+      {
+        "path": "selection-spec.json",
+        "bytes": 29262,
+        "sha256": "f23a2c5b3ddcbac9a21a2250affc9dd44baaea155b7f843ca7756878f0fb66c0"
+      },
+      {
+        "path": "selection-standards.json",
+        "bytes": 26447,
+        "sha256": "106e9c07ac6dbe2780928c2559eda686bde0d5393526c5f7dce05a6429abed10"
+      },
+      {
+        "path": "task19-parity.json",
+        "bytes": 472182,
+        "sha256": "a65e1e75cbd05d9f9eed06cbfcd2e507ec9dbc3ebb1767dbf0f67e28c3eaae6e"
+      }
+    ],
+    "retained_records": [
+      {
+        "kind": "workflow",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-terminal-ci.json",
+          "bytes": 66336,
+          "sha256": "4b41a06a0c11b10bc3a6e92193410cedeff296469aa6bc80808686eb3e472713"
+        }
+      },
+      {
+        "kind": "workflow",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-checks.json",
+          "bytes": 6787,
+          "sha256": "51af1a08d25984e09cb74944a5fa2c0e3a13fc505c927d68c6f7a86a3dbecae8"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "source-binding.json",
+          "bytes": 508,
+          "sha256": "b2ee6d90800bce8fb83a38a429ff9ea83979143af4b0d6284b3c67f74e05bc68"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "final-archive-inventory.json",
+          "bytes": 5159,
+          "sha256": "bef31a5d9ebcaae7e0f752f3327afaf752f322d606fb38eca59c3d80376f8033"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "provider-capacity-notice.json",
+          "bytes": 530,
+          "sha256": "7b5a632a66114a59dd44610b7910145687344412ac376cf2cff0493d575df344"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "local-validation.json",
+          "bytes": 1225,
+          "sha256": "4aee5719bc70a099619e387763cb0a4ff346f6e6cda663a779852083cfbc0141"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "source-10c7900-standards.json",
+          "bytes": 9505,
+          "sha256": "bac32aef2821443eb8857b0981887b057d29f22ab3e993343a7637ab26447fc0"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "source-spec-final-10c7900.json",
+          "bytes": 6448,
+          "sha256": "ebf4d7e8d32269f7aded9218ce41a854f2e06415b2a8654b0a13c4d15c036354"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-candidate-arm.standards.json",
+          "bytes": 4416,
+          "sha256": "40a902ec8eeb1bca03cb757cbaa9c3d8a62a10542ac5bae284600f2333f77033"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-arm.standards.json",
+          "bytes": 3212,
+          "sha256": "fc6d78cf440d926193b4a89c1bb86458951716782e17b3cbb325a336d6fa3f62"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-arm.spec.json",
+          "bytes": 9659,
+          "sha256": "f6be7bb011ce652efc6f9868e644d89d12e12249be01806f39da6318abe01ae1"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-arm.standards.json",
+          "bytes": 13231,
+          "sha256": "36da14ac94a3000ff58882851639ae8bfc0d1e12f15c9587aa645c72f502b5fc"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-arm.spec.json",
+          "bytes": 4494,
+          "sha256": "198db1d64a18454841333360e05b9e870e390f62c55a2979b58ec1a841b41001"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-arm.standards.json",
+          "bytes": 10103,
+          "sha256": "430325c0bfd1aa4a7996b690902eb5c5180f6b5578a545f59ece19600cf0917a"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-arm.spec.json",
+          "bytes": 29495,
+          "sha256": "167584851e01cc1f5358617d1c0e2f6093b97947e3ecffd397761a2cb5dea305"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-arm.input-audit.json",
+          "bytes": 16300,
+          "sha256": "e9dabfed75df9ef7ae159325cba6404cb2b667e3044ae85313d07affb777f518"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-candidate-intel.standards.json",
+          "bytes": 4628,
+          "sha256": "111ea6500fe9c8cc6f8d5f55d111c8739f9475d3842e1cbda335a1871289115f"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-intel.standards.json",
+          "bytes": 3214,
+          "sha256": "b8d0ecb6e1d0ea2bd07f17559242f4feaeead1bfda63fce8b4c168114922072a"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-intel.spec.json",
+          "bytes": 9570,
+          "sha256": "35ec8004e49a97ceae76ae68b87c8ce9af593200e0d14f28765b24434f3051a7"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-intel.standards.json",
+          "bytes": 13998,
+          "sha256": "f98157063bb1cb20c008190b96d52940ae195574547200ddef4446248788c813"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-intel.spec.json",
+          "bytes": 9959,
+          "sha256": "7336e1e00cb8bf617c33a1710ea3b35b678f641ca9fa8380a2c98a9cf368e1cf"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-intel.standards.json",
+          "bytes": 11754,
+          "sha256": "8d9b1a50ff213de99d8eee27a811045ccec01b82467579b31ca27eaff4a5ff5d"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-intel.spec.json",
+          "bytes": 30366,
+          "sha256": "3ff1474d4f3a1057f1a95e2ebe1801bda7b451d129d372030761283bdb09b6ce"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-intel.input-audit.json",
+          "bytes": 17925,
+          "sha256": "6fb9588393274275bd4c90de1f45359489360c0780e5013856db2b877ce054eb"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-candidate-linux.standards.json",
+          "bytes": 2996,
+          "sha256": "5849713deb8a8c7e74aeb7a53c2fc6f8c4be3971d018c89ba6c472325acc9325"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-linux.standards.json",
+          "bytes": 4510,
+          "sha256": "85c62cff99962edbecd65ca85fddac2de94ef90c94fc0dc9a5ebf96e16101e84"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-quality-linux.spec.json",
+          "bytes": 14246,
+          "sha256": "da2a3139af45e4f9951f33d1e4222ff0cf37c3f9b400975f772211cf749ee878"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-linux.standards.json",
+          "bytes": 12506,
+          "sha256": "4b6ede96a4df3eb505b305142767eef03ca6819957a81f3d1a7d8f661aa4b424"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-linux.spec.json",
+          "bytes": 3896,
+          "sha256": "51587e838cbbb9f9b35b668001ea4d1f04fac9fddd86c8dd80e4e0d4377415b6"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-linux.standards.json",
+          "bytes": 15471,
+          "sha256": "a2cf96a87e4fd6486d801a5083f2905417bd84c95743ece56678e6ccd3623a66"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-installed-linux.spec.json",
+          "bytes": 41564,
+          "sha256": "565189b8cd68feebf5a53b0ecbfba1b2eb6b889dcae56480bbb0139c3e110f94"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-scale-linux.input-audit.json",
+          "bytes": 16406,
+          "sha256": "48aafe2b77be419f4efbe0d0e048fd169273d6fa785e66cc4336082b32fcbe5f"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "installed-intel-reader-correction.json",
+          "bytes": 819,
+          "sha256": "e727393a7d6211574bc9f9bbf589a1b0c0f49b98889c4cdf70f649c9e76dba11"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "quality-intel-reader-correction.json",
+          "bytes": 659,
+          "sha256": "818053e4377fc9712c3c17fb369ea5ae49b878404918e98d0dba047dafd06647"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "spec-helper-installed-export-fk-correction.json",
+          "bytes": 1107,
+          "sha256": "2d4084e813ed10d5af0d9a616325528e22a2739730a15b61dee4c41dc30b2363"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "spec-helper-installed-inspection-correction.json",
+          "bytes": 826,
+          "sha256": "c8680057cd5e6d0516c92e5a7c449fd5beee1658f8c58addf2b9ad1c17de6dde"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "spec-helper-installed-recovery-phase-correction.json",
+          "bytes": 1303,
+          "sha256": "03fcb6e44b608d7b73d2406c860138a895711ce912d1f636d4adb0332bb7e82d"
+        }
+      },
+      {
+        "kind": "failure",
+        "conclusion": "failed",
+        "file": {
+          "path": "headless-checks.log",
+          "bytes": 43007,
+          "sha256": "9ea8034b09247d698140518b14486e4c90602538c90648f4ff54b9ccc4b179f7"
+        }
+      },
+      {
+        "kind": "failure",
+        "conclusion": "failed",
+        "file": {
+          "path": "headless-checks-v2.log",
+          "bytes": 29308,
+          "sha256": "bb7c936f885cd7cea65ce138827b6d8a920a3b5782d7ce1ffd3bc6b5c47e54f1"
+        }
+      },
+      {
+        "kind": "failure",
+        "conclusion": "failed",
+        "file": {
+          "path": "headless-checks-v3.log",
+          "bytes": 29326,
+          "sha256": "03520a5fe867aa3a052115381664e88321e0e2ebd7b845c4ccaa15eef76777ff"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "passed",
+        "file": {
+          "path": "headless-checks-v4.log",
+          "bytes": 25998,
+          "sha256": "c731d09fb435310a7f2b6cf1d9e4385312a55298440d8d691440a935a3b12fd8"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "passed",
+        "file": {
+          "path": "observer-protocol.log",
+          "bytes": 130,
+          "sha256": "eecaaf805fcc5a33bc360786cbb05cb1c2f89ef918e6b177ca4e9aa1b0316860"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "passed",
+        "file": {
+          "path": "source-check.json",
+          "bytes": 396814,
+          "sha256": "edfc3219a4ece926b02e2082de339e3270afeb431482c9691ea13da84aca092e"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "package-plan.json",
+          "bytes": 705,
+          "sha256": "147e860de490c190451ad94f15de347d5308915c4e1e6fbd659351efa1936520"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "selection-spec.json",
+          "bytes": 29262,
+          "sha256": "f23a2c5b3ddcbac9a21a2250affc9dd44baaea155b7f843ca7756878f0fb66c0"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "selection-standards.json",
+          "bytes": 26447,
+          "sha256": "106e9c07ac6dbe2780928c2559eda686bde0d5393526c5f7dce05a6429abed10"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "selection-custody.json",
+          "bytes": 18577,
+          "sha256": "1eb76d6c899c757c0964940522b3e3935e90f43443231997c243b9440cd8ac37"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical-hold-custody.json",
+          "bytes": 1110,
+          "sha256": "3c8936e9e7b04f523256c68661ab98dfffcf168f67ac40b6b8963a51b2a7dc68"
+        }
+      },
+      {
+        "kind": "failure",
+        "conclusion": "failed",
+        "file": {
+          "path": "historical-query-failure-replay.json",
+          "bytes": 1946,
+          "sha256": "03bece8e8da78bea60f24eb3fbd98973a1b7aa25fcd8ed9be841ef85f2c5bf65"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical-retained-inventory.json",
+          "bytes": 6196,
+          "sha256": "80105dbfd3992762d2b61a4c0d0134888b6eb1be9a745f03ccd6dec9f5aaae32"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "task18-retained-release-provider.json",
+          "bytes": 16117,
+          "sha256": "610566694d1d86a80dc636220f2d55ac7d44301ce7530ed30a572f5c1b0d1067"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "incomplete",
+        "file": {
+          "path": "task19-p58-decision-proposal.json",
+          "bytes": 3183,
+          "sha256": "70f2a5959845e47d54e2aa6b3abf4bbfb3df373ff244e961811954f210798841"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-cumulative-spec.json",
+          "bytes": 18499,
+          "sha256": "5fc54a0a754e0fda28c785c78ee14964593605cef16ac4cb7c5bfed63e93ea49"
+        }
+      },
+      {
+        "kind": "review",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-cumulative-standards.json",
+          "bytes": 25682,
+          "sha256": "fa3d8dd33900c68bf2d1b4bec9d01ee25caa4657249c7bb74d48f985d9ef66c2"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "final-evidence-input.json",
+          "bytes": 17807,
+          "sha256": "45e832940c1e96ab5e4e0cd21cc6be77d0ccc11b03942616c69bc368a685f803"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "final-evidence.json",
+          "bytes": 29755,
+          "sha256": "fd4c8290640fa262c39191e575832ac42820569a83ba5e93e2367615f4f7886e"
+        }
+      },
+      {
+        "kind": "parity",
+        "conclusion": "passed",
+        "file": {
+          "path": "final-parity.json",
+          "bytes": 472182,
+          "sha256": "443dcce6ccf1c0b85a35300f2699b228c6a41b12503b076426e0f65d1e9d3f23"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-arm-dual-review.json",
+          "bytes": 11171,
+          "sha256": "4e892882052baf721102ed5cc9b1b3f7ffe6ca905d986c57cda85f3faef512ce"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-arm.zip",
+          "bytes": 19329,
+          "sha256": "b14414478d6eddecd1e0a985ece9bbc5c499b07c69ab932abe7a787e4f892e20"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-intel-dual-review.json",
+          "bytes": 11227,
+          "sha256": "27e7c12a216332aa9d6427290558f19a026e766d3c65ee10e0e18b82915e2ec0"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-intel.zip",
+          "bytes": 20255,
+          "sha256": "9caac4d460afde269298af9c26cbf03c84be6db867760f1d60fa1af8f9268296"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-linux-dual-review.json",
+          "bytes": 11095,
+          "sha256": "3c16fd08653de1af94853e91304f411a2320ec4c0ad6b631bd93b3e566ddf2b7"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/phase-linux.zip",
+          "bytes": 22173,
+          "sha256": "c244c30f884e88a5569179467f5d13fdc9d9dd579d851ba8cb3865ed5cb46c06"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/complete-request-phases/three-target-phase-diagnostic-reviewed.json",
+          "bytes": 37673,
+          "sha256": "5e7e31c2dc05d846225d693f09293554af7b1488dd897cc8c1e64bcc9a465e0d"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/p58-original/final-parity-audit-dual-review-3c24629.json",
+          "bytes": 4486,
+          "sha256": "60eb2e7507408eeb10c03a5db2003be4bbfc4f9e31ab71e0e2151ac5482f6f5b"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/p58-original/quality-intel-failed-scale-3c24629-dual-review.json",
+          "bytes": 2640,
+          "sha256": "953c368dc2929e632bb0f671f9d81922438639d6859372eeffc7b18df446899e"
+        }
+      },
+      {
+        "kind": "failure",
+        "conclusion": "failed",
+        "file": {
+          "path": "historical/p58-original/scale-3c24629-intel-failed.zip",
+          "bytes": 110903894,
+          "sha256": "19dc8b809b9b37698733febbacf17a1a41ec8fd7f96ecf86149aa5cf5641018c"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/p58-original/scale-3c24629-intel-repro.zip",
+          "bytes": 110997140,
+          "sha256": "2a93c5c13e14482928f6f1cf7ec027c4aaec37d7b060a321bcf0b53019e706fd"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/p58-original/scale-intel-repro-3c24629-dual-review.json",
+          "bytes": 2475,
+          "sha256": "e5ddc2deeb1f0b079c326950d3a4ff3064e2ef2549042fd0a651d5407c75f6f8"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-arm-dual-review.json",
+          "bytes": 740,
+          "sha256": "1c5acaa0e923bd63aeb5db0240aac2e652463de4b4b22ed1fdce9e678dcc2797"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-arm.zip",
+          "bytes": 5541,
+          "sha256": "a784671e2691f64129ce9dd3066c91ef592c8734937e59ef5aa8f73c35a6f9b9"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-intel-dual-review.json",
+          "bytes": 2086,
+          "sha256": "c33ba7414b10156b2ab9d1fbedef15175e740234355cee689ae44ca5ead5ea34"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-intel.zip",
+          "bytes": 5558,
+          "sha256": "b39d007fa5fdcf66f56b1d04be4db1604ba7c09c3403f85a66b29892cafa4c61"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-linux-dual-review.json",
+          "bytes": 715,
+          "sha256": "a593317d7f54bbcdd60e9ce917e1f78b5b3ee8c88d5887e5f5316a53128eceb4"
+        }
+      },
+      {
+        "kind": "diagnostic",
+        "conclusion": "diagnostic",
+        "file": {
+          "path": "historical/paired-plans/query-plan-linux.zip",
+          "bytes": 5559,
+          "sha256": "7102eaf103438da15697140feb94351749a25b33512f4cc82953e896bd667117"
+        }
+      }
+    ]
+  },
+  "raw_evidence": {
+    "release_id": 435830089,
+    "release_tag": "task18-pr77-evidence",
+    "draft": true,
+    "provider_api_url": "https://api.github.com/repos/01max/librairii/releases/435830089",
+    "observed_browser_url": "https://github.com/01max/librairii/releases/tag/untagged-c32108bd830cd6f2fa40",
+    "observed_date": "2026-11-06",
+    "retention_note": "Existing owner-retained draft evidence; not published or modified for this task. Draft browser slugs can change; use provider release/asset IDs. Workflow artifact and release asset IDs identify different objects.",
+    "assets": [
+      {
+        "asset_id": 715042954,
+        "name": "final-candidate-arm.zip",
+        "bytes": 19957475,
+        "sha256": "11b0adc8bd6f6cb5d42969fdb8d16a3263031c975a44f640e85342ee99c7b7f9"
+      },
+      {
+        "asset_id": 715042953,
+        "name": "final-installed-arm.zip",
+        "bytes": 99564885,
+        "sha256": "2534039fe2d4110d47c82e102ad0fc95fb12e3b16d38ba7ebfdf3c5b62d472de"
+      },
+      {
+        "asset_id": 715043250,
+        "name": "final-quality-arm.zip",
+        "bytes": 43073237,
+        "sha256": "5bbc0f0d5452b6cd4199ab663462f5a7a4cb2ea27c21392676965773150b1396"
+      },
+      {
+        "asset_id": 715043585,
+        "name": "final-scale-arm.zip",
+        "bytes": 107782979,
+        "sha256": "630c854c43a44638016b9f734b59acbfce783cf0b8d815d52a48759b35b6815f"
+      },
+      {
+        "asset_id": 715042949,
+        "name": "final-candidate-intel.zip",
+        "bytes": 21092411,
+        "sha256": "b90865a336a05e06ecbf2bf3eb134d51f78ad46a34d8dbd2fba82f876809d8c7"
+      },
+      {
+        "asset_id": 715042955,
+        "name": "final-installed-intel.zip",
+        "bytes": 107213045,
+        "sha256": "41382273f239decc46d42df202f5980ad9459bf100cd53c7a4a83bd4285e6d36"
+      },
+      {
+        "asset_id": 715043265,
+        "name": "final-quality-intel.zip",
+        "bytes": 43588549,
+        "sha256": "0eac5836e32be1696d605a7761245fe97350873c329af0cbde713deb51a13e22"
+      },
+      {
+        "asset_id": 715044107,
+        "name": "final-scale-intel.zip",
+        "bytes": 110624847,
+        "sha256": "2de0768d85689a77e10ad0afff9ce541e4b1ffae6047777748095af616bc3893"
+      },
+      {
+        "asset_id": 715042948,
+        "name": "final-candidate-linux.zip",
+        "bytes": 24250663,
+        "sha256": "e183e0d74cf74a5fc6da66bf55854cd33bf013fd12217469290087486eb73d95"
+      },
+      {
+        "asset_id": 715043233,
+        "name": "final-installed-linux.zip",
+        "bytes": 137431747,
+        "sha256": "cf529157c87e5443b23dfa95a40d3c4012b0db0f48d0c30093d25bb71a45f2ab"
+      },
+      {
+        "asset_id": 715043574,
+        "name": "final-quality-linux.zip",
+        "bytes": 138653133,
+        "sha256": "c5572921f4fe3f5363cf8ec7bbc89350fb168508cce875d802bf56766dad63b5"
+      },
+      {
+        "asset_id": 715044299,
+        "name": "final-scale-linux.zip",
+        "bytes": 132405344,
+        "sha256": "d842cd744ef8ae3db59372137dd0df12c38dc874d024d2e9bfcca2e4500f6ce3"
+      }
+    ],
+    "review_bundle": {
+      "asset_id": 715044365,
+      "name": "task18-review-records.zip",
+      "bytes": 566100,
+      "sha256": "794c69b2762567e4fcbe56b02ec7ecb0ea411ee2cd1aba0a4282cfff142d6522"
+    }
+  },
+  "limits": [
+    "Task19 selects the exact source967f5fab distributions. The owner accepted this candidate with historical P58 failure/unknown cause retained on2026-11-06. This index does not qualify another build. Final current-documentation-PR CI and decision review remain required; publication remains a separate owner action.",
+    "Free ad-hoc Mac integrity signatures are selected. No Developer ID, notarization, automatic Gatekeeper acceptance or public-release authorization is claimed.",
+    "The Rust app starts fresh; prior Go/browser data is not adopted. Original external fixture bytes remain preserved.",
+    "Native matching-architecture hosted runners exercised these exact candidates. Product sandbox/container restrictions establish runtime isolation; the hosted Mac itself is not claimed to lack development tools.",
+    "All unchanged p95 and resource limits pass. Three Intel individual callback upper bounds exceed100ms; two lower bounds also exceed100ms, and one pointer interval crosses100ms. No sample is trimmed and no historical cause, repair or waiver is inferred.",
+    "The startup gate is first UI timer delivery; later loaded-story accessibility readiness is retained separately. Successful Mac pointer receipts lack an independent complete accessibility geometry tree; exact positive callbacks/effects and joined events remain verified.",
+    "Linux speech evidence retains three partial after-action trees with four unavailable-object observations corroborated by positive product state. Targeted Shelf diagnostics do not claim full-matrix speech coverage.",
+    "Named workflow frames can precede terminal completion. Per-lane receipts preserve actual export/relocation/recovery presentation and rely on later positive History, durable data and reopen observations where required.",
+    "Thunar exact exported folders and owned foreground identities are observed; individual-file selection and independent post-close trees are not claimed. Mac Finder owned-window absence is distinguished from unrelated unresolved title windows.",
+    "Owned Linux container removal is proven by the checked source-bound operation, without a separately retained post-removal inventory. Cache and cleanup proofs remain bounded to recorded owned identities, not a global absence claim.",
+    "Both Mac image-retirement records independently observe empty matching-image/owner inventories and an unmounted owned directory after exact non-forced detach. Intel translation probes return0 with empty stdout/stderr; native architecture and actual Intel CPU are separately verified, and the empty output is not relabeled as a positive0 observation.",
+    "SQLite compatibility adaptation occurred only in memory after actual source-bound checkpoint/join/successful-exit proof; retained database and archive bytes remain unchanged.",
+    "Offline reader assumptions corrected during review are preserved with their prior bytes and correction receipts. Per-archive boundaries remain scoped; source-only or candidate-only receipts do not alone certify later installed behavior.",
+    "No native product execution, package mounting, full archive extraction or full Rust suite ran locally. Raw native observations came from the retained disposable CI jobs."
+  ],
+  "P58": {
+    "selected_source": "967f5fab7bb190646339333857f673d17793d342",
+    "historical_hold": "P58",
+    "original_source": "3c24629d50b7a39297c9ed05c8e317f797d7e150",
+    "original_p95_ms": 131.736887,
+    "budget_ms": 100,
+    "unchanged_repeat_p95_ms": 73.812746,
+    "selected_backend_metrics": {
+      "arm": {
+        "artworkLoad": {
+          "budget_ms": 50.0,
+          "p95_ms": 26.915875,
+          "passed": true
+        },
+        "collectionCounts": {
+          "budget_ms": 250.0,
+          "p95_ms": 25.167292,
+          "passed": true
+        },
+        "collectionQuery": {
+          "budget_ms": 100.0,
+          "p95_ms": 21.551750000000002,
+          "passed": true
+        },
+        "combinedFilters": {
+          "budget_ms": 150.0,
+          "p95_ms": 26.06675,
+          "passed": true
+        },
+        "deepPagination": {
+          "budget_ms": 120.0,
+          "p95_ms": 19.894916,
+          "passed": true
+        },
+        "substringSearch": {
+          "budget_ms": 120.0,
+          "p95_ms": 36.688916,
+          "passed": true
+        }
+      },
+      "intel": {
+        "artworkLoad": {
+          "budget_ms": 50.0,
+          "p95_ms": 23.376567,
+          "passed": true
+        },
+        "collectionCounts": {
+          "budget_ms": 250.0,
+          "p95_ms": 44.649106,
+          "passed": true
+        },
+        "collectionQuery": {
+          "budget_ms": 100.0,
+          "p95_ms": 39.533841,
+          "passed": true
+        },
+        "combinedFilters": {
+          "budget_ms": 150.0,
+          "p95_ms": 40.428357999999996,
+          "passed": true
+        },
+        "deepPagination": {
+          "budget_ms": 120.0,
+          "p95_ms": 31.50447,
+          "passed": true
+        },
+        "substringSearch": {
+          "budget_ms": 120.0,
+          "p95_ms": 62.710167,
+          "passed": true
+        }
+      },
+      "linux": {
+        "artworkLoad": {
+          "budget_ms": 50.0,
+          "p95_ms": 12.854199,
+          "passed": true
+        },
+        "collectionCounts": {
+          "budget_ms": 250.0,
+          "p95_ms": 15.286019,
+          "passed": true
+        },
+        "collectionQuery": {
+          "budget_ms": 100.0,
+          "p95_ms": 15.631979000000001,
+          "passed": true
+        },
+        "combinedFilters": {
+          "budget_ms": 150.0,
+          "p95_ms": 13.869213,
+          "passed": true
+        },
+        "deepPagination": {
+          "budget_ms": 120.0,
+          "p95_ms": 11.757983,
+          "passed": true
+        },
+        "substringSearch": {
+          "budget_ms": 120.0,
+          "p95_ms": 24.689947,
+          "passed": true
+        }
+      }
+    },
+    "cause_established": false,
+    "repair_established": false,
+    "policy_amendment_authorized": true,
+    "release_hold_resolved": true,
+    "original_failure_verdict": "failed",
+    "proposal": "Permit an explicit one-candidate owner decision to accept these exact passing independently reviewed distributions with the historical failure and unknown cause retained. Keep every budget and blocking PR check unchanged; do not qualify another source, alter samples or permit retry-until-green.",
+    "current_requirement": "Qualification fails until a regression is fixed or an explicit evidence-backed product decision changes the budget. This proposed unchanged-budget acceptance needs an explicitly authorized policy amendment before use.",
+    "current_disposition": "Resolved only for the exact selected source967f5fab distributions by explicit owner decision on2026-11-06. Historical verdict stays failed; cause and repair remain unproven; all budgets and PR gates unchanged."
+  },
+  "source_binding_rule": "This index selects source967f5fab only. Passing documentation PR checks do not qualify different package bytes, and selected-package checks do not waive current PR checks.",
+  "independent_release_reviews": {
+    "records": [
+      {
+        "path": "task19-manifest-spec.json",
+        "bytes": 16432,
+        "sha256": "2a5a18e4b7a7f9916176e7705c45eaf961369c27a8d7b1f90b2bd6d7c02e3b2d"
+      },
+      {
+        "path": "task19-manifest-standards.json",
+        "bytes": 12343,
+        "sha256": "da1ad94c6fe2770911ab63e64804ca734c61f9dd5dff2a79b428a6b296526c8d"
+      },
+      {
+        "path": "selection-dependency-standards.json",
+        "bytes": 40259,
+        "sha256": "7780a82874bf4aa2925ffb464d916c0c2e88ac0172467f110bcbcc4f220d107c"
+      },
+      {
+        "path": "task19-manifest-local-validation.json",
+        "bytes": 1371,
+        "sha256": "c582f446ba7fccc6018765de2289a9aeb3f3339ea09dfd91a6e833ff4a6ac449"
+      }
+    ],
+    "standards_required_findings": 0,
+    "spec_required_findings": 0,
+    "19.6": "complete",
+    "19.7": "owner-decision integration reviewed with zero required findings on each axis; final current-PR checks remain required",
+    "dependency_policy_as_of": "2026-11-06",
+    "earliest_exception_expiry": "2027-01-21",
+    "dependency_policy_scope": "Current repository policy and exact selected compiled graph/notice/expiry assessment, with retained passing root/fuzz scans. No new network advisory database scan is claimed.",
+    "attachment_rule": "These receipts review the assembled index before their attachment. Attachments and completion status are recorded after review; immutable input/output and original raw bytes remain unchanged.",
+    "relative_local_directory": "target/task19-release-rehearsal/selected-967f5fab"
+  },
+  "owner_decision": {
+    "path": "section-19-owner-decision.json",
+    "bytes": 6306,
+    "sha256": "f3ff506848392c58e37048ba362d0a0061d1d8e24b34047b92be4494d4d875c3"
+  },
+  "post_assembly_records": [
+    {
+      "path": "owner-decision-spec.json",
+      "bytes": 6770,
+      "sha256": "504895a243ebb587fadde83dee269217d9b70293b5d113957043c5269a6403ce"
+    },
+    {
+      "path": "owner-decision-standards.json",
+      "bytes": 5332,
+      "sha256": "5155eca4a63faf28eca8d46d7e115a6bfab519d09f0610318fccf7ec60f942da"
+    },
+    {
+      "path": "interim-terminal-ci.json",
+      "bytes": 40862,
+      "sha256": "2a17edca956593384b00b2008690e78416296bdacbbac3069e5c41d7adfd761b"
+    },
+    {
+      "path": "interim-relocation-failure.json",
+      "bytes": 2312,
+      "sha256": "3a4f025e97baa98ed178cb30ca3be883ce10a5b306d0606ff2b0721e6ae3be07"
+    },
+    {
+      "path": "interim-quality-intel-failed.provider.json",
+      "bytes": 205,
+      "sha256": "0955ceb9ad0da3e69fc3bfe77e1bc693e96e46d5d6157ba4ca032c59e00ca475"
+    },
+    {
+      "path": "interim-quality-intel-failed.zip",
+      "bytes": 43599806,
+      "sha256": "75de3f575b3598a4255cc001ecf224f2737499dcf9f14d9978a118c7cc31f91d"
+    }
+  ],
+  "post_assembly_records_base_directory": "target/task19-release-rehearsal/selected-967f5fab",
+  "owner_decision_base_directory": "docs/rewrite"
+}
