@@ -52,6 +52,27 @@ The maintained feature combinations are the three native defaults in
 [.config/rust-checks.toml](../.config/rust-checks.toml). Do not substitute
 `--all-features`: renderer and graph changes require their own qualification.
 
+## Dependency updates
+
+Root and fuzz path dependencies share workspace version pins but have separate
+lockfiles. Update both lockfiles when a shared dependency changes. Dependabot
+uses [grouping by dependency name across directories](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#group-by-groups)
+to keep those changes in one PR. Before the native checks, verify locked
+resolution for both graphs:
+
+```sh
+cargo metadata --locked --format-version 1 > /dev/null
+cargo metadata --manifest-path fuzz/Cargo.toml --locked --format-version 1 > /dev/null
+```
+
+Keep the direct macOS `muda` dependency compatible with the selected Slint
+backend. That backend currently requires `muda` 0.19; independently updating
+the direct dependency to 0.21 adds a second menu implementation and keyboard
+type version. Coordinate that upgrade with toolkit qualification rather than
+adding duplicate-version policy exceptions solely to admit a version bump.
+Existing source-bound release evidence continues to describe its original
+dependencies; new dependency graphs must pass their own CI checks.
+
 ## Run a disposable development library
 
 This command opens the native GUI. Run it only on a desktop intended for manual
