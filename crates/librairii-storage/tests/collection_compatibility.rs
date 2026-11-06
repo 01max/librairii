@@ -43,7 +43,6 @@ fn rows(connection: &Connection, sql: &str) -> librairii_storage::Result<Vec<Val
     let mut statement = connection.prepare(sql)?;
     let columns = statement
         .column_names()
-        .into_iter()
         .map(str::to_owned)
         .collect::<Vec<_>>();
     let mut cursor = statement.query([])?;

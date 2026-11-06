@@ -110,7 +110,6 @@ fn rows(c: &Connection, sql: &str) -> librairii_storage::Result<Vec<Value>> {
     let mut s = c.prepare(sql)?;
     let names = s
         .column_names()
-        .into_iter()
         .map(str::to_owned)
         .collect::<Vec<_>>();
     let mut cursor = s.query([])?;
