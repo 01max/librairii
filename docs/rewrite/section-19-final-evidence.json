@@ -10,7 +10,7 @@
   "selection_reason": "The five intervening files are documentation only. Select the original exact source967f5fab distribution bytes and their own observations. No later source or package inherits their qualification.",
   "task19_verdict": {
     "19.6": "complete: assembled and independently reviewed with zero required findings on each axis",
-    "19.7": "held: historical P58 unresolved and documentation PR checks pending",
+    "19.7": "pending final decision review and final current-documentation-PR CI; historical P58 disposition authorized for exact selected bytes",
     "public_release_qualified": false,
     "publication_authorized": false
   },
@@ -40,7 +40,7 @@
       42173620611,
       42173620614
     ],
-    "status": "in progress; unpublished final documentation commits need their own terminal required checks"
+    "status": "terminal failure: Intel quality relocation disposal remained busy; all scale and package checks passed. Final documentation commits still need their own required checks."
   },
   "installed_observations": {
     "lanes": 8,
@@ -1124,7 +1124,7 @@
     }
   },
   "limits": [
-    "Task19 selects the exact previously qualified source967f5fab distributions. This new index does not qualify another build. Final release approval remains held by unresolved historical P58 and the documentation PR checks; publication remains a separate owner action.",
+    "Task19 selects the exact source967f5fab distributions. The owner accepted this candidate with historical P58 failure/unknown cause retained on2026-11-06. This index does not qualify another build. Final current-documentation-PR CI and decision review remain required; publication remains a separate owner action.",
     "Free ad-hoc Mac integrity signatures are selected. No Developer ID, notarization, automatic Gatekeeper acceptance or public-release authorization is claimed.",
     "The Rust app starts fresh; prior Go/browser data is not adopted. Original external fixture bytes remain preserved.",
     "Native matching-architecture hosted runners exercised these exact candidates. Product sandbox/container restrictions establish runtime isolation; the hosted Mac itself is not claimed to lack development tools.",
@@ -1246,11 +1246,12 @@
     },
     "cause_established": false,
     "repair_established": false,
-    "policy_amendment_authorized": false,
-    "release_hold_resolved": false,
+    "policy_amendment_authorized": true,
+    "release_hold_resolved": true,
     "original_failure_verdict": "failed",
     "proposal": "Permit an explicit one-candidate owner decision to accept these exact passing independently reviewed distributions with the historical failure and unknown cause retained. Keep every budget and blocking PR check unchanged; do not qualify another source, alter samples or permit retry-until-green.",
-    "current_requirement": "Qualification fails until a regression is fixed or an explicit evidence-backed product decision changes the budget. This proposed unchanged-budget acceptance needs an explicitly authorized policy amendment before use."
+    "current_requirement": "Qualification fails until a regression is fixed or an explicit evidence-backed product decision changes the budget. This proposed unchanged-budget acceptance needs an explicitly authorized policy amendment before use.",
+    "current_disposition": "Resolved only for the exact selected source967f5fab distributions by explicit owner decision on2026-11-06. Historical verdict stays failed; cause and repair remain unproven; all budgets and PR gates unchanged."
   },
   "source_binding_rule": "This index selects source967f5fab only. Passing documentation PR checks do not qualify different package bytes, and selected-package checks do not waive current PR checks.",
   "independent_release_reviews": {
@@ -1279,10 +1280,15 @@
     "standards_required_findings": 0,
     "spec_required_findings": 0,
     "19.6": "complete",
-    "19.7": "held; no approval inferred",
+    "19.7": "owner decision recorded after these pre-decision reviews; final review and current PR CI pending",
     "dependency_policy_as_of": "2026-11-06",
     "earliest_exception_expiry": "2027-01-21",
     "dependency_policy_scope": "Current repository policy and exact selected compiled graph/notice/expiry assessment, with retained passing root/fuzz scans. No new network advisory database scan is claimed.",
     "attachment_rule": "These receipts review the assembled index before their attachment. Attachments and completion status are recorded after review; immutable input/output and original raw bytes remain unchanged."
+  },
+  "owner_decision": {
+    "path": "section-19-owner-decision.json",
+    "bytes": 6306,
+    "sha256": "f3ff506848392c58e37048ba362d0a0061d1d8e24b34047b92be4494d4d875c3"
   }
 }

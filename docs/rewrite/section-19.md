@@ -1,8 +1,8 @@
 # Task 19: final Rust release rehearsal
 
 **19.6 (final evidence manifests) is complete.** The remaining work is
-**19.7 (independent release rehearsal)**, held by the P58 decision and current
-documentation PR checks. Earlier implementation and diagnostic subtasks are complete. The selected release candidate is the exact previously tested source
+**19.7 (independent release rehearsal)**, pending the final documentation PR
+checks and final decision review. Earlier implementation and diagnostic subtasks are complete. The selected release candidate is the exact previously tested source
 `967f5fab7bb190646339333857f673d17793d342`, not this later documentation revision.
 Its new [Task 19 evidence index](section-19-final-evidence.json) records the
 assembled manifest, original artifacts, independent reviews and open holds.
@@ -116,20 +116,22 @@ limits. There is no evidence-backed production fix to adopt from those
 experiments. In particular, the tested first-page materialization alternative
 was slower in 18 of 20 Intel pairs; it is not a justified repair.
 
-The current parity specification requires a demonstrated fix or an explicit
-evidence-backed product decision changing the budget. The owner has required
-the **100 ms blocking gate on every PR**, so no budget change is proposed.
-The existing policy therefore keeps this hold open while the cause is unknown.
+On **2026-11-06**, after reviewing the exact candidate, measurements and both
+independent review results, the owner explicitly approved:
 
-If final rehearsal passes, an alternative would be an explicit owner-approved
-amendment of the qualification policy: retain the historical failure and unknown
-cause, while accepting only the independently reviewed current candidate under
-the unchanged limits. This is a proposed policy change, not an existing Spec86
-closure route. Present the exact candidate, original failure, current measurements
-and independent reviews before requesting that decision. Until authorized and
-recorded in the specification, it cannot close 19.7. A passing rerun is not
-consent. Any such amendment must preserve the original failed verdict and must
-not raise thresholds, trim samples, retry until green or move gates out of PRs.
+> Approve this exact candidate; keep all limits and PR gates unchanged
+
+The [recorded owner decision](section-19-owner-decision.json) amends the
+qualification policy for only source `967f5fab7bb190646339333857f673d17793d342`
+and the three exact distribution hashes in that record. It resolves the
+historical P58 release hold for that candidate while retaining the original
+failed verdict, all samples and the unknown cause. It establishes no repair.
+
+All performance budgets and blocking checks on every PR remain unchanged.
+The decision does not authorize another source/package, sample trimming,
+retry-until-green, publication, merge or archival. The original proposal and
+pre-decision review receipts remain unchanged in the portable evidence bundle;
+the later decision is attached separately. Current PR checks remain required.
 
 Release publication, merging this task PR and OpenSpec archival are separate
 actions. Completing the review does not perform them.

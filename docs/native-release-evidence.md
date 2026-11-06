@@ -144,11 +144,14 @@ owned process/volume cleanup. Old Go files in the software fixtures are
 negative controls: their presence does not qualify data adoption.
 
 Retain failed attempts and measurement limitations with the passing selection.
-In particular, the original P58 Intel query failure remains failed; a green
-current matrix alone cannot close its separate qualification hold. An unchanged-budget
-owner disposition would first require the explicit qualification-policy amendment
-described in Task 19. It is not already authorized. Retain any decision separately,
-without changing old samples, thresholds or the PR-blocking checks.
+The original P58 Intel query failure remains failed. The owner authorized a
+one-candidate policy amendment on 2026-11-06 for the exact source967f5fab
+packages in [the decision record](rewrite/section-19-owner-decision.json).
+Keep that later decision alongside the immutable original proposal and reviews.
+It accepts only those bytes with the unknown historical cause retained. Every
+budget and blocking PR check remains unchanged; other sources or packages need
+their own evidence and disposition. The assembler's false approval flags remain
+unchanged, and publication remains a separate owner action.
 
 Store the final bundle alongside the selected CI evidence, outside the source
 that was built. A subsequent tracked index may reference that historical

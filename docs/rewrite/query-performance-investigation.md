@@ -4,8 +4,9 @@ The Task 19.1 Intel observation at source
 `3c24629d50b7a39297c9ed05c8e317f797d7e150` failed the retained 100 ms
 query budget: wall p95 was 131.736887 ms. One unchanged full-job repeat
 measured 73.812746 ms. Both observations remain retained; the passing repeat
-does not establish a cause or repair. P58 and the final Task 19.7 numerical
-qualification remain unresolved.
+does not establish a cause or repair. On 2026-11-06 the owner accepted only the
+exact source967f5fab candidate under the [recorded policy amendment](section-19-owner-decision.json).
+The historical run remains failed; final Task 19.7 PR checks remain required.
 
 The failing query plan sorts full story/archive records before returning the
 first 24 stories. The existing deep-page query instead materializes the chosen
@@ -158,8 +159,11 @@ No reliably reproducing live failure has been established by the retained
 unchanged repeat, paired page-plan experiment or complete-request phase
 experiment. Native execution remains on disposable CI hosts. Applying an
 unproven production optimization or repeating acceptance jobs until green
-would not resolve this evidence gap. Final rehearsal may record a new passing
-candidate, but the separate P58 hold remains open. Accepting it without a demonstrated
-fix or changed budget would require the explicit owner-approved policy amendment
-proposed in [Task 19](section-19.md#p58-performance-hold). The original failure, diagnostics
-and all PR-blocking performance limits remain intact.
+would not resolve this evidence gap. On 2026-11-06 the owner explicitly approved
+accepting the exact source967f5fab candidate while keeping all limits and PR
+gates unchanged. Its Intel query p95 is 39.533841 ms. The
+[decision record](section-19-owner-decision.json) binds the three distribution
+hashes and resolves only that candidate's historical P58 release hold. It is a
+qualification-policy amendment, not a causal finding or repair. The original
+failure, diagnostics and samples remain unchanged, and the current documentation
+PR must still pass its required checks.
