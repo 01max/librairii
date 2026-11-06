@@ -5,11 +5,15 @@ updates:
     schedule:
       interval: weekly
 
+    reviewers:
+      - "01max"
   - package-ecosystem: cargo
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    reviewers:
+      - "01max"
     labels: [dependencies, rust]
 
   - package-ecosystem: cargo
@@ -17,4 +21,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 2
+    reviewers:
+      - "01max"
     labels: [dependencies, rust]
