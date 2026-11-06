@@ -10,7 +10,7 @@
   "selection_reason": "The five intervening files are documentation only. Select the original exact source967f5fab distribution bytes and their own observations. No later source or package inherits their qualification.",
   "task19_verdict": {
     "19.6": "complete: assembled and independently reviewed with zero required findings on each axis",
-    "19.7": "pending final decision review and final current-documentation-PR CI; historical P58 disposition authorized for exact selected bytes",
+    "19.7": "selected-candidate release rehearsal and owner disposition reviewed; task completion still requires final current-PR checks, recorded after execution",
     "public_release_qualified": false,
     "publication_authorized": false
   },
@@ -33,14 +33,18 @@
   ],
   "selected_package_workflow_check_count": 14,
   "documentation_pr_ci": {
-    "head": "c5737c958e727cb8e784b79f41ee637d0aeaed29",
-    "actual_source": "6fafb8159ec3e7a6f9b2a2dc630f16434bf66451",
-    "workflow_runs": [
-      42173620805,
-      42173620611,
-      42173620614
-    ],
-    "status": "terminal failure: Intel quality relocation disposal remained busy; all scale and package checks passed. Final documentation commits still need their own required checks."
+    "prior_attempt": {
+      "head": "c5737c958e727cb8e784b79f41ee637d0aeaed29",
+      "actual_source": "6fafb8159ec3e7a6f9b2a2dc630f16434bf66451",
+      "workflow_runs": [
+        42173620805,
+        42173620611,
+        42173620614
+      ],
+      "status": "terminal failure: Intel quality relocation disposal remained busy; all scale and package checks passed. Final documentation commits still need their own required checks."
+    },
+    "final_required_checks_url": "https://github.com/01max/librairii/pull/78/checks",
+    "requirement": "All required checks for the final published documentation head must finish successfully. Record its terminal statuses after execution outside the source that was checked; the selected-source package verdict and owner decision do not waive this gate."
   },
   "installed_observations": {
     "lanes": 8,
@@ -1280,15 +1284,50 @@
     "standards_required_findings": 0,
     "spec_required_findings": 0,
     "19.6": "complete",
-    "19.7": "owner decision recorded after these pre-decision reviews; final review and current PR CI pending",
+    "19.7": "owner-decision integration reviewed with zero required findings on each axis; final current-PR checks remain required",
     "dependency_policy_as_of": "2026-11-06",
     "earliest_exception_expiry": "2027-01-21",
     "dependency_policy_scope": "Current repository policy and exact selected compiled graph/notice/expiry assessment, with retained passing root/fuzz scans. No new network advisory database scan is claimed.",
-    "attachment_rule": "These receipts review the assembled index before their attachment. Attachments and completion status are recorded after review; immutable input/output and original raw bytes remain unchanged."
+    "attachment_rule": "These receipts review the assembled index before their attachment. Attachments and completion status are recorded after review; immutable input/output and original raw bytes remain unchanged.",
+    "relative_local_directory": "target/task19-release-rehearsal/selected-967f5fab"
   },
   "owner_decision": {
     "path": "section-19-owner-decision.json",
     "bytes": 6306,
     "sha256": "f3ff506848392c58e37048ba362d0a0061d1d8e24b34047b92be4494d4d875c3"
-  }
+  },
+  "post_assembly_records": [
+    {
+      "path": "owner-decision-spec.json",
+      "bytes": 6770,
+      "sha256": "504895a243ebb587fadde83dee269217d9b70293b5d113957043c5269a6403ce"
+    },
+    {
+      "path": "owner-decision-standards.json",
+      "bytes": 5332,
+      "sha256": "5155eca4a63faf28eca8d46d7e115a6bfab519d09f0610318fccf7ec60f942da"
+    },
+    {
+      "path": "interim-terminal-ci.json",
+      "bytes": 40862,
+      "sha256": "2a17edca956593384b00b2008690e78416296bdacbbac3069e5c41d7adfd761b"
+    },
+    {
+      "path": "interim-relocation-failure.json",
+      "bytes": 2312,
+      "sha256": "3a4f025e97baa98ed178cb30ca3be883ce10a5b306d0606ff2b0721e6ae3be07"
+    },
+    {
+      "path": "interim-quality-intel-failed.provider.json",
+      "bytes": 205,
+      "sha256": "0955ceb9ad0da3e69fc3bfe77e1bc693e96e46d5d6157ba4ca032c59e00ca475"
+    },
+    {
+      "path": "interim-quality-intel-failed.zip",
+      "bytes": 43599806,
+      "sha256": "75de3f575b3598a4255cc001ecf224f2737499dcf9f14d9978a118c7cc31f91d"
+    }
+  ],
+  "post_assembly_records_base_directory": "target/task19-release-rehearsal/selected-967f5fab",
+  "owner_decision_base_directory": "docs/rewrite"
 }

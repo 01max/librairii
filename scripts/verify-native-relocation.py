@@ -99,6 +99,34 @@ def detach_owned_image(mount, image):
             raise RuntimeError('image absent but owned mountpoint still uncertain')
         return True
 
+    def record_open_files(row):
+        # Read only the image and devices from the immediately preceding owned
+        # inventory. This is diagnostic visibility, never proof of disposal.
+        diagnostic = {}
+        try:
+            entities = row.get('system-entities')
+            if not isinstance(entities, list):
+                raise RuntimeError('owned image device inventory missing for diagnostics')
+            devices = sorted({entity['dev-entry'] for entity in entities
+                              if isinstance(entity, dict)
+                              and isinstance(entity.get('dev-entry'), str)
+                              and re.fullmatch(r'/dev/disk[0-9]+(?:s[0-9]+)*', entity['dev-entry'])})
+            command = ['lsof', '-nP', '-Fpcfn', '--', str(image), *devices]
+            diagnostic['command'] = command
+            result = subprocess.run(command, text=True, capture_output=True, timeout=10)
+            diagnostic.update(returncode=result.returncode, stdout=result.stdout, stderr=result.stderr)
+        except Exception as error:
+            # A missing tool, timeout or diagnostic error cannot replace the
+            # original cleanup failure or turn unknown disposal into success.
+            diagnostic['error'] = repr(error)
+            for name in ('stdout', 'stderr'):
+                value = getattr(error, name, None)
+                if isinstance(value, bytes):
+                    diagnostic[name + '_hex'] = value.hex()
+                elif isinstance(value, str):
+                    diagnostic[name] = value
+        observations.append({'open_files_diagnostic': diagnostic})
+
     try:
         for attempt in range(4):
             row = inventory()
@@ -118,9 +146,12 @@ def detach_owned_image(mount, image):
             result = subprocess.run(command, text=True, capture_output=True, timeout=30)
             observations.append({'command': command, 'returncode': result.returncode,
                                  'stdout': result.stdout, 'stderr': result.stderr})
-            if disposed(inventory()):
+            remaining = inventory()
+            if disposed(remaining):
                 return forced
             if result.returncode != 16 or forced:
+                if result.returncode == 16 and forced:
+                    record_open_files(remaining)
                 raise RuntimeError(f'owned image remains attached after detach: {result.stderr.strip()}')
             time.sleep(attempt + 1)
         raise RuntimeError('owned image disposal incomplete')

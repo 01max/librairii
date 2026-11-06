@@ -125,6 +125,63 @@ class RelocationCustody(unittest.TestCase):
 
 
 class ImageDisposal(unittest.TestCase):
+    def test_busy_failure_retains_scoped_open_file_diagnostics_without_acceptance(self):
+        self.exercise_busy_failure()
+
+    def test_diagnostic_errors_preserve_original_busy_failure(self):
+        for error in [FileNotFoundError('lsof unavailable'),
+                      subprocess.TimeoutExpired(['lsof'], 10, output=b'partial', stderr=b'unavailable')]:
+            with self.subTest(error=type(error).__name__):
+                self.exercise_busy_failure(diagnostic_error=error)
+
+    def test_changed_device_inventory_cannot_mask_original_busy_failure(self):
+        self.exercise_busy_failure(malformed_inventory=True)
+
+    def exercise_busy_failure(self, *, diagnostic_error=None, malformed_inventory=False):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            mount, image = work / 'mounted', work / 'owned.sparseimage'
+            mount.mkdir()
+            image.touch()
+            devices = [{'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk2'},
+                       {'dev-entry': '/dev/disk3s1'}]
+            calls = []
+
+            def command(argv, **kwargs):
+                calls.append(argv)
+                if argv == ['hdiutil', 'info', '-plist']:
+                    final_inventory = len([call for call in calls if call == argv]) == 8
+                    rows = [{'image-path': str(image), 'system-entities': 'invalid' if malformed_inventory and final_inventory else devices},
+                            {'image-path': '/foreign/image', 'system-entities': [{'dev-entry': '/dev/disk99'}]}]
+                    return subprocess.CompletedProcess(argv, 0, plistlib.dumps({'images': rows}).decode(), '')
+                if argv[0] == 'lsof':
+                    self.assertEqual(argv, ['lsof', '-nP', '-Fpcfn', '--', str(image), '/dev/disk2', '/dev/disk3s1'])
+                    self.assertEqual(kwargs['timeout'], 10)
+                    if diagnostic_error:
+                        raise diagnostic_error
+                    return subprocess.CompletedProcess(argv, 1, 'p123\ncdiskimages-help\nn' + str(image) + '\n', 'partial visibility')
+                return subprocess.CompletedProcess(argv, 16, '', 'hdiutil: couldn\'t eject "disk2" - Resource busy\n')
+
+            with patch.object(relocation.subprocess, 'run', side_effect=command), patch.object(relocation.time, 'sleep'):
+                with self.assertRaisesRegex(RuntimeError, 'remains attached'):
+                    relocation.detach_owned_image(mount, image)
+            receipt = json.loads((work / 'disposal.json').read_text())
+            diagnostics = [row['open_files_diagnostic'] for row in receipt if 'open_files_diagnostic' in row]
+            self.assertEqual(len(diagnostics), 1)
+            if diagnostic_error or malformed_inventory:
+                self.assertIn('error', diagnostics[0])
+                if isinstance(diagnostic_error, subprocess.TimeoutExpired):
+                    self.assertEqual(bytes.fromhex(diagnostics[0]['stdout_hex']), b'partial')
+                    self.assertEqual(bytes.fromhex(diagnostics[0]['stderr_hex']), b'unavailable')
+                if malformed_inventory:
+                    self.assertFalse(any(argv[0] == 'lsof' for argv in calls))
+            else:
+                self.assertEqual(diagnostics[0]['returncode'], 1)
+                self.assertIn('p123', diagnostics[0]['stdout'])
+                self.assertEqual(diagnostics[0]['stderr'], 'partial visibility')
+            self.assertEqual(len([argv for argv in calls if argv[:2] == ['hdiutil', 'detach']]), 4)
+            self.assertNotIn('/dev/disk99', str(calls))
+
     def exercise(self, snapshots, exits, *, mounted=False, error=None):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)

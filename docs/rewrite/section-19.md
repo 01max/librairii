@@ -136,6 +136,27 @@ the later decision is attached separately. Current PR checks remain required.
 Release publication, merging this task PR and OpenSpec archival are separate
 actions. Completing the review does not perform them.
 
+### Documentation PR validation
+
+The first PR 78 source, `6fafb8159ec3e7a6f9b2a2dc630f16434bf66451`, passed all
+three scale checks and all seven package checks. Intel quality passed its 642
+tests and native relocation/recovery assertions, then failed temporary APFS
+image disposal: all four detach attempts returned busy, including the final
+forced attempt. The mountpoint was no longer mounted, but the owned image
+remained attached, so the job correctly failed. Its original archive
+`13485700182` (run `42173620805`, SHA-256
+`75de3f575b3598a4255cc001ecf224f2737499dcf9f14d9978a118c7cc31f91d`)
+and disposal observations remain retained.
+
+The report does not identify the holder or prove a cleanup repair. A failure-only
+read-only diagnostic now records open-file observations for the exact owned image
+and current devices if the four attempts fail again. Headless regression checks
+verify that failed disposal still fails, diagnostics stay scoped, and missing
+tools, timeouts or malformed inventories preserve the original error. Detach
+attempts, ownership checks, assertions and budgets are unchanged. The final PR
+source must pass its own full required checks; the P58 owner decision does not
+waive this separate failure or qualify another package source.
+
 ## Historical Task 19 audit through PR 75
 
 The following records describe the earlier source and owner scope. Legacy
