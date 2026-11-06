@@ -1,0 +1,18 @@
+[package]
+name = "qualification-decoder-budget"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99.1"
+publish = false
+
+[workspace]
+resolver = "3"
+exclude = ["upstream/sevenz-rust2-0.24.1"]
+
+[dependencies]
+sevenz-rust2 = { version = "=0.24.1", default-features = false, features = ["bzip2", "ppmd", "deflate", "zstd", "lz4", "brotli"] }
+serde_json = "=1.0.154"
+
+# Qualification-only authenticated derivative; never enters the product graph.
+[patch.crates-io]
+sevenz-rust2 = { path = "upstream/sevenz-rust2-0.24.1" }

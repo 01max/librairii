@@ -1,0 +1,201 @@
+{
+  "format": "librairii.task19-owner-decision",
+  "schema": 1,
+  "decision_date": "2026-11-06",
+  "authorization_source": "Explicit user response in the Task19 conversation",
+  "question_id": "call_553856421cd84713a6bca707942b17df:0",
+  "owner_answer": "Approve this exact candidate; keep all limits and PR gates unchanged",
+  "decision": "Accept only the three exact reviewed source967f5fab distributions under a one-candidate qualification-policy amendment, retaining the historical P58 failure and unknown cause.",
+  "source_commit": "967f5fab7bb190646339333857f673d17793d342",
+  "source_tree": "152151fa3cce8ceda0ddb6a13cecb0dfcfee2f5b",
+  "inner_distributions": [
+    {
+      "target": "aarch64-apple-darwin",
+      "bytes": 21234350,
+      "name": "Librairii-0.5.0-aarch64-apple-darwin-unsigned.dmg",
+      "sha256": "e1517932bcca2b0e26460d2437bcbb2a229820fc601d98bb717f483ccc0a56f3",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "bytes": 22441358,
+      "name": "Librairii-0.5.0-x86_64-apple-darwin-unsigned.dmg",
+      "sha256": "f43690d4358af78e4217f086c574826657b3fbba5e2674f69d0bbe834456d366",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "bytes": 24251688,
+      "name": "Librairii-0.5.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "694d44ef9e3f19b2996a463e6e91af6bec37893a05a2de368a7aef77ac920e84",
+      "signing": {
+        "state": "not applicable (Linux portable archive)"
+      }
+    }
+  ],
+  "original_failure": {
+    "source_commit": "3c24629d50b7a39297c9ed05c8e317f797d7e150",
+    "Intel_collectionQuery_p95_ms": 131.736887,
+    "budget_ms": 100,
+    "verdict": "failed",
+    "cause_established": false,
+    "repair_established": false,
+    "archive_sha256": "19dc8b809b9b37698733febbacf17a1a41ec8fd7f96ecf86149aa5cf5641018c"
+  },
+  "selected_backend_metrics": {
+    "arm": {
+      "artworkLoad": {
+        "budget_ms": 50.0,
+        "p95_ms": 26.915875,
+        "passed": true
+      },
+      "collectionCounts": {
+        "budget_ms": 250.0,
+        "p95_ms": 25.167292,
+        "passed": true
+      },
+      "collectionQuery": {
+        "budget_ms": 100.0,
+        "p95_ms": 21.551750000000002,
+        "passed": true
+      },
+      "combinedFilters": {
+        "budget_ms": 150.0,
+        "p95_ms": 26.06675,
+        "passed": true
+      },
+      "deepPagination": {
+        "budget_ms": 120.0,
+        "p95_ms": 19.894916,
+        "passed": true
+      },
+      "substringSearch": {
+        "budget_ms": 120.0,
+        "p95_ms": 36.688916,
+        "passed": true
+      }
+    },
+    "intel": {
+      "artworkLoad": {
+        "budget_ms": 50.0,
+        "p95_ms": 23.376567,
+        "passed": true
+      },
+      "collectionCounts": {
+        "budget_ms": 250.0,
+        "p95_ms": 44.649106,
+        "passed": true
+      },
+      "collectionQuery": {
+        "budget_ms": 100.0,
+        "p95_ms": 39.533841,
+        "passed": true
+      },
+      "combinedFilters": {
+        "budget_ms": 150.0,
+        "p95_ms": 40.428357999999996,
+        "passed": true
+      },
+      "deepPagination": {
+        "budget_ms": 120.0,
+        "p95_ms": 31.50447,
+        "passed": true
+      },
+      "substringSearch": {
+        "budget_ms": 120.0,
+        "p95_ms": 62.710167,
+        "passed": true
+      }
+    },
+    "linux": {
+      "artworkLoad": {
+        "budget_ms": 50.0,
+        "p95_ms": 12.854199,
+        "passed": true
+      },
+      "collectionCounts": {
+        "budget_ms": 250.0,
+        "p95_ms": 15.286019,
+        "passed": true
+      },
+      "collectionQuery": {
+        "budget_ms": 100.0,
+        "p95_ms": 15.631979000000001,
+        "passed": true
+      },
+      "combinedFilters": {
+        "budget_ms": 150.0,
+        "p95_ms": 13.869213,
+        "passed": true
+      },
+      "deepPagination": {
+        "budget_ms": 120.0,
+        "p95_ms": 11.757983,
+        "passed": true
+      },
+      "substringSearch": {
+        "budget_ms": 120.0,
+        "p95_ms": 24.689947,
+        "passed": true
+      }
+    }
+  },
+  "constraints": {
+    "budgets_unchanged": true,
+    "blocking_checks_on_every_PR": true,
+    "original_samples_and_failed_verdict_preserved": true,
+    "retry_until_green_authorized": false,
+    "newer_sources_or_different_packages_qualified": false,
+    "current_documentation_PR_checks_waived": false,
+    "publication_authorized": false,
+    "PR_merge_authorized": false,
+    "OpenSpec_archival_authorized": false
+  },
+  "prior_proposal": {
+    "path": "task19-p58-decision-proposal.json",
+    "bytes": 3183,
+    "sha256": "70f2a5959845e47d54e2aa6b3abf4bbfb3df373ff244e961811954f210798841"
+  },
+  "basis": {
+    "records": [
+      {
+        "path": "task19-manifest-spec.json",
+        "bytes": 16432,
+        "sha256": "2a5a18e4b7a7f9916176e7705c45eaf961369c27a8d7b1f90b2bd6d7c02e3b2d"
+      },
+      {
+        "path": "task19-manifest-standards.json",
+        "bytes": 12343,
+        "sha256": "da1ad94c6fe2770911ab63e64804ca734c61f9dd5dff2a79b428a6b296526c8d"
+      },
+      {
+        "path": "selection-dependency-standards.json",
+        "bytes": 40259,
+        "sha256": "7780a82874bf4aa2925ffb464d916c0c2e88ac0172467f110bcbcc4f220d107c"
+      },
+      {
+        "path": "task19-manifest-local-validation.json",
+        "bytes": 1371,
+        "sha256": "c582f446ba7fccc6018765de2289a9aeb3f3339ea09dfd91a6e833ff4a6ac449"
+      }
+    ],
+    "standards_required_findings": 0,
+    "spec_required_findings": 0,
+    "19.6": "complete",
+    "19.7": "held; no approval inferred",
+    "dependency_policy_as_of": "2026-11-06",
+    "earliest_exception_expiry": "2027-01-21",
+    "dependency_policy_scope": "Current repository policy and exact selected compiled graph/notice/expiry assessment, with retained passing root/fuzz scans. No new network advisory database scan is claimed.",
+    "attachment_rule": "These receipts review the assembled index before their attachment. Attachments and completion status are recorded after review; immutable input/output and original raw bytes remain unchanged."
+  }
+}

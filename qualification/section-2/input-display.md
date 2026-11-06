@@ -1,0 +1,233 @@
+# Input / display gate (2.5, P14/P53/P56)
+
+Task2.5 is complete: native French dead keys, full selection/Delete, NFC/NFD
+caret/Undo/Redo, long clipboard text and source restoration pass. Native resizing,
+localized modals, compact Review reachability, contrast and reduced-motion checks
+pass; exact-source ARM2× frames and Linux2×/1×/2×/1× same-window movement supply
+Retina/mixed-scale coverage. See [selection-gate.md](selection-gate.md) and completion-evidence/.
+The owner language/VoiceOver/Windows scope below remains unchanged.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
+## Active owner scope, 2026-10-24
+
+The owner prioritizes correct UTF-8 data handling and French/Latin desktop input.
+Japanese, Chinese and Arabic-specific input, composition and shaping
+qualification are deferred and do not gate this Task2 PR. Valid UTF-8 strings,
+filenames and clipboard data remain lossless; no character restrictions or
+normalization/storage changes follow from this qualification scope decision.
+
+The default native Mac method v4 requires exact French dead-key/AZERTY `êé az`,
+actual owned full AX selection and Delete clearing, complete source restoration
+and normal worker/fixture retirement. Japanese installation, selection and
+composition are not prerequisites. The earlier diagnostic remains explicitly
+available with `--include-japanese`; it must satisfy its original assertions
+when requested. The uncommitted native reference experiment was withdrawn.
+Historical Japanese failures below stay failed under their original methods;
+they are not reclassified as passes. Broader display and Linux input coverage
+remain separate. Fresh native v4 execution is required.
+
+The Linux native early-Settings case now has an additional French/Latin input
+route in each private X11/Wayland desktop. It sends native keysyms
+`dead_circumflex`, `e`, `eacute`, space, `a`, `z` in one command sequence and
+requires exact `êé az` in the real Search callback. This is XTest/Wayland virtual
+keyboard input, not physical AZERTY hardware or an injected Unicode string.
+XTest may temporarily map missing keysyms in the private X11 server and restore
+that scratch mapping; Wayland uploads one virtual-keyboard keymap.
+Native Select All/Copy/Cut/Paste must empty and restore that exact UTF-8 text.
+Copy is proved first by physical deletion and Paste before a separate Cut/Paste
+round-trip; Cut cannot overwrite the clipboard and mask a broken Copy command.
+The report retains actual typed/cut/pasted states and screenshots; both new
+checks are mandatory for fresh native-session success. The same driver runs
+in the offline VM. Earlier sixteen-case reports retain their original scope.
+Fresh native execution is required for this additional input/clipboard evidence.
+
+Remaining active checks include composed/decomposed Latin text, whitespace,
+undo/redo, caret and selection behavior; long French labels and reachable actions
+at compact/intermediate/wide sizes; supported display scales and mixed-monitor
+transitions; contrast, visible focus and OS reduced-motion behavior. Current
+input checks alone do not qualify these display and editing cases.
+
+## Automated macOS composition continuation (2026-10-24)
+
+`check-input-macos.py` is restricted to the disposable hosted native macOS CI
+account, with an additional explicit step environment flag. The local observer
+cannot mutate input sources without that route. The matching archive and every
+payload are verified before launching. Public Carbon TIS APIs select the exact
+installed French layout and Japanese Roman-input family; public CGEvents post
+physical key codes without Unicode payloads or programmatic field values.
+Native foreground PID is required for every key command.
+
+French requires actual `^` + `e` dead-key composition plus accented/AZERTY
+positions to produce exact `êé az`. Japanese requires real nonempty preedit,
+candidate conversion and exact `日本` commit, followed by a second preedit which
+is cancelled without any commit. A versioned public Winit event hook records
+the actual IME events and always propagates them unchanged. The feature is
+explicitly named `unstable-winit-030`; it is pinned with Slint1.18.1 and must be
+rechecked on upgrade. No private toolkit API or commercial test tool is used.
+Native screenshots retain composition/candidate/committed states for review.
+
+The driver records original source/enable states before any mutation, restores
+the original selection and every newly enabled mode/parent in a `finally` block,
+and verifies the effective inventory afterward. Restoration failure is fatal,
+including when input itself failed. All source changes remain in the existing
+ephemeral CI account; the owner's keyboard/IME/privacy settings are untouched.
+Normal worker shutdown, fixture retirement, evidence/command bounds and the
+existing45-second app deadline remain required. First actual native execution
+and independent evidence review are pending; this method alone is not a pass.
+Linux composition and the broader display/contrast/scaling gates remain open.
+
+First execution at `3cef8c1` in
+[run40100102140](https://github.com/01max/librairii/actions/runs/40100102140)
+retains the same observer setup failure on ARM and Intel, before source mutation
+or text input. The optional legacy Kotoeri bundle has no matches, and Carbon
+returns nil rather than an empty array. Both existing eight-case native-adapter
+runs pass; ARM's failed input run still exits0 and retires its fixture. ARM
+artifact12562189090 has ZIP SHA256
+`a9d14f40ec6490d12f504f4e5147af46a2e57b23364f4e5b93f38f1455968ef6`;
+Intel artifact12562706182 has published ZIP SHA256
+`2b619a34ac18b9359368e53cf04ad892340254d3a60b9c27a1b0d220cf3b9191`.
+
+The separate `0ad3f29` correction treats nil as an empty inventory, while exact
+French/Japanese identity and availability remain mandatory. A real read-only
+Carbon regression exercises an absent family, the installed French layout and
+unchanged original selection. All91 recorder tests pass on macOS; the one Carbon
+test is explicitly native-only on other platforms. Independent review approves
+the correction; fresh native input execution remains required. No failed run is
+retried into a pass or treated as a toolkit failure.
+
+## Native editing diagnostic method v2
+
+At0c6c073/run40100937198 both Mac input runs progress past inventory and fail
+clearing the French text after native Select All/Delete. The inspected ARM raw
+record proves exact `êé az`, real Winit `Preedit("^")` / `Commit("ê")`, then
+`êé a` after Delete. All original source/enable bits restore and the app exits0
+with its fixture gone. ARM artifact12563420242 ZIP SHA256 is
+`a3e3bfa15f997e322bf02b34b7a1f20528678fa191f920bbde226a35e6a508b9`.
+Intel's same-stage failure is retained in artifact12563016813, published ZIP SHA256
+`d0dee38fd4e6311f3fae221155eba477293dce15a92b958d9788ad45bbfcb158`.
+Linux's full lane passes. The failed Mac runs do not establish Japanese input.
+
+The v2 method records native menu enabled metadata, Muda event receipt/enqueue/
+execution, the actual widget edit guard, and propagated native focus/key/IME
+transitions. Before posting Delete it reads the owned app's focused AX text,
+selected text and UTF-16 selection range, requiring one complete selection from
+one Select All command. Wrong/partial text, range, focus PID or missing selection
+cannot pass. It never sets selection through AX, retries the action, changes
+focus to satisfy a check or bypasses the edit guard. This distinguishes missing
+command delivery, a guarded no-op and later selection loss before changing app
+behavior. Existing deadlines, output bounds and restoration remain required.
+Atf462e38/run40102132125, ARM proves native Muda receipt, enqueue, execution
+and an allowed Search edit guard after exact French input. The first app-root
+AX focused-element query returns no element, and the observer aborts before
+Delete. This does not establish a Slint selection defect. The raw31 ARM input
+file hashes and29 Intel input file hashes verify against their reports.
+ARM artifact12563427274 ZIP SHA256 is
+`ff8a293a3becdf13c61101adcf83ec5c19c0db570ded9d290bf425f4f394cffd`;
+Intel artifact12562987657 ZIP SHA256 is
+`1b3d70b7e46c5056bf450a4d025e13805946a8fa8cdb312edc71908bc60870af`.
+Both input runs restore original source states, exit0 and retire their fixtures.
+Intel separately fails Select All lookup, and its adapter run retains a Finder
+AXWindows `cannotComplete` failure; neither result is relabelled a pass. Linux's
+full lane and both quality workflows pass at this head.
+
+The focused-element reader now preserves exact native status and a bounded,
+read-only owned-window tree snapshot when initial focus is absent. AccessKit's
+pinned macOS adapter can request its initial tree asynchronously on first
+access. The existing bounded poll may observe the later tree; it never treats
+absence as selection, changes focus, sets selection or repeats Select All.
+Actual `AXFocused=true` is required in addition to the full text/range/PID checks.
+This observer correction still requires fresh native execution; the original
+failed runs and the earlier partial-delete symptom retain their verdicts.
+
+The separate Intel menu-reader correction explicitly opens the one native Edit
+menu before looking for its Select All child, allowing AppKit to expose lazy
+submenu children. It performs the item action once and records whether the
+submenu opened before lookup; an absent/ambiguous menu or missing item still
+fails. General adapter-menu behavior is unchanged. Fresh ARM/Intel execution
+must establish delivery and selection; the f462e38 Intel failure remains.
+
+At5f1606d/run40103474086 the ARM reader first records native `noValue`, then
+the actual focused Search field with exact selected `êé az` and UTF-16 range
+0+5; one physical Delete clears the query. Japanese input now reaches real
+Winit preedit `n` → `に` → `にh` → `にほ` → `にほn`, but the driver incorrectly
+waits for `にほん` before finishing the pending final Roman n. It times out,
+restores every original source/enable bit and exits0 with its fixture removed.
+All retained input file hashes verify. Artifact12562714907 ZIP SHA256 is
+`39c94122d498169a76d61148c4e36b43eb770c24c3459d10a54dfa6c8d4c83c8`.
+This is actual Japanese preedit evidence, not a completed conversion/cancel pass.
+
+The separate sequence correction types `nihonn` in both Japanese phases so
+the input method completes the final kana before the exact `にほん` assertion.
+No Unicode payload, application text setter, IME API shortcut or weakened
+expected text replaces physical key input. Candidate `日本` commit, a fresh
+cancelled composition, full restoration and normal retirement remain required.
+
+## Input method service readiness (method v3)
+
+The5f1606d Intel run also verifies exact French full selection and clearing,
+then records TIS Japanese selection but native Winit `Disabled` followed by
+ordinary Latin `nihon` input, without Japanese preedit. This is distinct from
+ARM's pending final Roman n. Intel artifact12564410621 ZIP SHA256 is
+`5368681dc1517cee901825ed6bbdea3bb842f325b0f9ec8db0979d41fddc7165`.
+It retains the same-stage timeout, restoration and normal retirement.
+
+The v3 observer separately records public NSRunningApplication state for the
+exact Japanese Roman-input service identities in a two-second read-only launch
+observation window before typing. It records selected TIS mode plus any actual
+live application which has posted its launch notification. Apple's source
+family identifier and application bundle identifier differ; both exact known
+identities are read, and no process is launched or killed through this check.
+Some applications never post that notification. Its absence is recorded as an
+incomplete optional observation and does not veto or qualify IME capability.
+Every actual preedit/candidate/commit/cancel assertion still runs afterward.
+This setup diagnostic requires fresh native execution and does not claim that
+service startup caused Intel's failure. No additional capability gate is added.
+
+At199c440/run40105190455 both Mac lanes still fail Japanese input; native
+adapter checks pass and Linux's full lane passes. Inspected ARM evidence records
+no application launch notice and ordinary Latin `nihonn`, with every original
+source restored and normal fixture retirement. All retained ARM input hashes
+verify. Artifact12564064382 ZIP SHA256 is
+`2949ca7c350a46b1a168e21050f2b40397caf27ad9182121fd4a1fe5adc5588a`.
+NSRunningApplication's empty list does not establish that no IME service exists.
+
+## Native editing and responsiveness continuation
+
+The matching ARM/Intel and Linux X11/Wayland runs now require exact composed/
+decomposed Latin clipboard text, a native caret move/deletion and Undo, plus
+long French Paste/Undo/Redo. No normalization or text setter supplies expected
+values. Input measurement posts64 native e/Delete pairs while the actual
+synthetic worker and bounded thumbnail loader run. Every sample starts before
+native posting and ends after the edited query/model reaches the20ms recorder;
+observer overhead is included. Nearest-rankp95 must be≤100ms, without rejected
+samples or retries. Actual worker state must span the measurement. Native
+Tab/End navigation selects row999 of1000 within≤3000ms, including keyboard/
+observer overhead. Raw samples, states and screenshot endpoints are retained.
+These additions require fresh native execution; earlier input passes do not
+supply the new evidence. The bounded Winit trace cap is256KiB for64 key pairs.
+
+## Native display continuation
+
+The new display observers resize the actual owned OS window through AX or the
+private native window manager at560×400,900×760 and1280-wide sizes. They require
+matching actual physical/logical geometry and compact/wide UI states, localized
+Settings focus/dismissal, keyboard access to compact Review and rendered frames.
+Long inspector/detail text scrolls inside its bounded pane; compact Review scales
+to available height. Contrast is computed from the actual public Palette values
+with alpha compositing for body/control/selection text, requiring≥4.5:1 in every
+observed size. Native and public-rendered images remain available for visual QA.
+
+The Wayland observer creates two owned headless outputs at native scales1 and2,
+then moves the same app between them four times. Actual Winit physical/logical
+geometry and scale must change consistently while1000 rows remain present.
+Static scale requests or screenshots from separate launches cannot pass.
+Private Linux settings request HighContrast and disable decorative animation.
+The library has no decorative spatial animation/indeterminate progress; two
+settled frames without a text caret must be identical. Built-in focus/hover color
+transitions may settle. Mac records the actual public OS accessibility preference
+and screen scales; it does not change the owner's settings. Local actual ARM
+Retina observation additionally renders1800×1520 pixels for900×760 logical units
+at2×, exits0 and preserves legible French text; exact final-source evidence will
+be retained before qualification closes. No CJK/Arabic shaping claim follows.
+Native CI and independent evidence review remain required for the new method.

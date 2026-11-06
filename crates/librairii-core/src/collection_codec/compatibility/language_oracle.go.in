@@ -1,0 +1,98 @@
+// Authored qualification-only glue, never compiled into the product. Executed
+// only in disposable independent frozen inputs by verify_language.py.
+package main
+
+import (
+    "crypto/sha256"
+    "encoding/binary"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "hash"
+    "os"
+    "runtime"
+    "strconv"
+    "strings"
+    "golang.org/x/text/language"
+)
+
+type seeds struct {
+    CompactCores []string `json:"compactCores"`
+    Variants []string `json:"variants"`
+    Suffixes []string `json:"suffixes"`
+    Selected []string `json:"selected"`
+    RandomTokens []string `json:"randomTokens"`
+}
+func frame(h hash.Hash, id uint32, value string) {
+    var b [8]byte
+    binary.LittleEndian.PutUint32(b[:4],id)
+    binary.LittleEndian.PutUint32(b[4:],uint32(len(value)))
+    h.Write(b[:]); h.Write([]byte(value))
+}
+func outcome(input string) (canonical, raw, failure string, und bool) {
+    normalized := strings.ReplaceAll(strings.TrimSpace(input),"_","-")
+    tag, err := language.Parse(normalized)
+    raw = tag.String(); und = tag == language.Und
+    if err != nil { failure = err.Error() }
+    if len(normalized) > 0 && len(normalized) <= 35 && err == nil && !und { canonical = raw }
+    return
+}
+type group struct {
+    Count uint32 `json:"count"`
+    Accepted uint32 `json:"accepted"`
+    Inputs string `json:"inputs"`
+    Canonical string `json:"canonical"`
+    RawDefault string `json:"rawDefault"`
+    input, canonical, raw hash.Hash
+}
+func makeGroup() *group { return &group{input:sha256.New(),canonical:sha256.New(),raw:sha256.New()} }
+func (g *group) add(input string) {
+    canonical, raw, failure, und := outcome(input)
+    frame(g.input,g.Count,input)
+    frame(g.canonical,g.Count,canonical)
+    frame(g.raw,g.Count,raw); frame(g.raw,g.Count,failure); frame(g.raw,g.Count,strconv.FormatBool(und))
+    if canonical != "" { g.Accepted++ }; g.Count++
+}
+func (g *group) finish() {
+    g.Inputs = hex.EncodeToString(g.input.Sum(nil)); g.Canonical = hex.EncodeToString(g.canonical.Sum(nil)); g.RawDefault = hex.EncodeToString(g.raw.Sum(nil))
+}
+func letters(size int, add func(string)) {
+    count := 1; for i:=0;i<size;i++ {count*=26}
+    for i:=0;i<count;i++ {
+        n:=i; b:=make([]byte,size)
+        for p:=size-1;p>=0;p-- {b[p]=byte(n%26)+'a'; n/=26}
+        add(string(b))
+    }
+}
+func main() {
+    if len(os.Args)==3 && os.Args[1]=="--query" {
+        c,r,e,u:=outcome(os.Args[2]); json.NewEncoder(os.Stdout).Encode(map[string]any{"canonical":c,"raw":r,"error":e,"und":u}); return
+    }
+    if len(os.Args)!=2 { panic("seed file required") }
+    b,err:=os.ReadFile(os.Args[1]); if err!=nil {panic(err)}
+    var s seeds; if err:=json.Unmarshal(b,&s);err!=nil{panic(err)}
+    groups:=make(map[string]*group)
+    for _, name:=range []string{"bases","scripts","regions","compact-rg","variants","random","selected"} {groups[name]=makeGroup()}
+    for _, size:=range []int{2,3} {letters(size,func(base string){for _,suffix:=range s.Suffixes{groups["bases"].add(base+suffix)}})}
+    letters(4,func(script string){groups["scripts"].add("en-"+script)})
+    for _,size:=range []int{2,3} {letters(size,func(region string){groups["regions"].add("en-Latn-"+region)})}
+    for i:=0;i<1000;i++ {groups["regions"].add(fmt.Sprintf("en-Latn-%03d",i))}
+    for _,core:=range s.CompactCores {letters(2,func(region string){groups["compact-rg"].add(core+"-u-rg-"+region+"zzzz")})}
+    for _,a:=range s.Variants {for _,b:=range s.Variants {groups["variants"].add("sl-"+a+"-"+b)}}
+    random:=uint32(0x7155ac31)
+    next:=func()uint32{random=random*1664525+1013904223;return random}
+    for i:=0;i<10000;i++ {
+        n:=int(next()%8)+1; parts:=make([]string,n)
+        for p:=range parts {parts[p]=s.RandomTokens[int(next()%uint32(len(s.RandomTokens)))]}
+        groups["random"].add(strings.Join(parts,"-"))
+    }
+    var selected []map[string]any
+    for _,input:=range s.Selected {
+        c,r,e,u:=outcome(input); groups["selected"].add(input)
+        selected=append(selected,map[string]any{"input":input,"canonical":c,"raw":r,"error":e,"und":u})
+    }
+    for _,g:=range groups {g.finish()}
+    if err:=json.NewEncoder(os.Stdout).Encode(map[string]any{"go":runtime.Version(),"cldr":language.CLDRVersion,"groups":groups,"selected":selected,
+        "scope":"required35-byte product canonicalLanguage boundary; raw Default/String/Und/errors retained for DNS-omission counterfactual only",
+        "framing":"u32LE index,u32LE byte length,exact UTF8; rawDefault has three frames per input: Tag.String,err.Error or empty,FormatBool(tag==Und)"});err!=nil{panic(err)}
+}

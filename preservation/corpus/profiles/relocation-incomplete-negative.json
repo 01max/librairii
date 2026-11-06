@@ -1,0 +1,14 @@
+{
+  "id": "b0000000-0000-4000-8000-000000000001",
+  "libraryId": "a0000000-0000-4000-8000-000000000001",
+  "source": "/fixture/source",
+  "destination": "/fixture/destination",
+  "phase": "published",
+  "entries": [
+    {
+      "path": ".librairii-library",
+      "size": 37,
+      "sha256": "757b719cee4ba6b983cb34050a87201e01018ff4d13fca4aecb81d800e1f1753"
+    }
+  ]
+}

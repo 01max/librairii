@@ -1,0 +1,76 @@
+{
+  "format": "librairii.documentation-screenshots",
+  "schema": 1,
+  "capture_scope": "Actual packaged native macOS CI windows with synthetic, isolated fresh-library fixtures. Unmodified PNG bytes; no local native execution.",
+  "workflow_run": "https://github.com/01max/librairii/actions/runs/41185064509",
+  "pull_request_head": "21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+  "source_commit": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+  "source_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+  "target": "aarch64-apple-darwin",
+  "provider_artifact": {
+    "id": 13037242032,
+    "bytes": 99953824,
+    "sha256": "f0a27ad32b28ca6c6c5053269cf01f599b25ff1c3e7f65692dad1b1d54cf6c4d"
+  },
+  "candidate_artifact": {
+    "id": 13035889514,
+    "bytes": 20030867,
+    "sha256": "a597b64deb1f79e3401aec7c47c45c94fed08bf48726685f3889a6ebf18f9292"
+  },
+  "package": {
+    "name": "Librairii-0.5.0-aarch64-apple-darwin-unsigned.dmg",
+    "bytes": 21338361,
+    "sha256": "13994141820cb2fec600837a7a734c2e9280d18239c959407cbcca4b0d850287",
+    "public_release_qualified": false
+  },
+  "images": [
+    {
+      "file": "library.png",
+      "archive_member": "gui/fresh/workflow/metadata-artwork.png",
+      "bytes": 164307,
+      "sha256": "f2de22f10dc64bb9924e172dab5b01fdefc9d5c6a38d5dbfb5dfb5ced0bb9827"
+    },
+    {
+      "file": "story-details.png",
+      "archive_member": "gui/fresh/workflow/inspection.png",
+      "bytes": 190978,
+      "sha256": "bd1d197b71848a04f9796525bccd64c9c2135496735d4421207cb3c491c4fddb"
+    },
+    {
+      "file": "tags-search.png",
+      "archive_member": "gui/fresh/workflow/tags-search.png",
+      "bytes": 166241,
+      "sha256": "d9ea1308c63d429bbdd8983ee716a686cabd908a1b3994654281a1ed84b001c4"
+    },
+    {
+      "file": "collections.png",
+      "archive_member": "gui/fresh/workflow/collections.png",
+      "bytes": 185668,
+      "sha256": "3a7a10e98fefb0d496a936215eac5e33f0c7510827b40eac6ea745ab555f48ab"
+    },
+    {
+      "file": "shelf-review.png",
+      "archive_member": "gui/fresh/workflow/shelf-review.png",
+      "bytes": 192194,
+      "sha256": "1b481543ec02dc99c2d5d8454cdea27e8d9d1c42eb7d16491f0104f2a1d4f40e"
+    },
+    {
+      "file": "export.png",
+      "archive_member": "gui/fresh/workflow/export-results.png",
+      "bytes": 203221,
+      "sha256": "e90c6f9fb6e0a04d9f1cb92ac04a2b563528b0a05fe5d386656eacacf26bdb4a"
+    },
+    {
+      "file": "settings.png",
+      "archive_member": "gui/fresh/workflow/language.png",
+      "bytes": 193435,
+      "sha256": "3111944f3eeeeeebbc92e8b081d7b2fc0b47039986805b641496ee7ee83f7099"
+    },
+    {
+      "file": "history.png",
+      "archive_member": "gui/fresh/workflow/history.png",
+      "bytes": 207687,
+      "sha256": "335c32f679389daba2575f73fb4522070d348a5bdbd0525cda7ce9bb8359c1df"
+    }
+  ]
+}

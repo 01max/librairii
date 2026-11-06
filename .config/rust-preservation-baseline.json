@@ -1,0 +1,9 @@
+{
+  "admitted_pr": "https://github.com/01max/librairii/pull/39",
+  "reviewed_head": "1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c",
+  "integration_merge": "9a6c1c116d9df726a061ad6aac3955df4ed41263",
+  "oracle_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "hashed_files": 146,
+  "manifest_sha256": "a59f2194cf5c1ad317485a8714e703c12fe161bfad0190a67ba5816ea7f46e53",
+  "checker_sha256": "08bb1f0b17608e2663549cc1edb635626640a6c07aa89355faf25db5e0d0cccf"
+}

@@ -1,0 +1,624 @@
+{
+  "producer": "generate.py; original synthetic_7z.py from qualification branch41e8854; independent official7-Zip26.05 for codec streams",
+  "tool_url": "https://github.com/ip7z/7zip/releases/download/26.05/7z2605-mac.tar.xz",
+  "tool_archive_sha256": "12ef6830317743cfd3f0ab1724bde43fcc270d8b6d8564f8c12c2a2b7f993570",
+  "fixtures": [
+    {
+      "file": "brotli.7z",
+      "sha256": "276f9aed8242e529543b9bcfdc7da9ec8b9343dd63e8f31d4ec5bc378e92b148",
+      "bytes": 630,
+      "category": "codec",
+      "go": {
+        "file": "brotli.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "lz4.7z",
+      "sha256": "222a3a67dd68efcb41c49a7f1c64858b67e54c991b2bc4c091f1b3dc71754db3",
+      "bytes": 648,
+      "category": "codec",
+      "go": {
+        "file": "lz4.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "zstd.7z",
+      "sha256": "9f3071e550b7132ede95636bd2441dbe382fdd67efa0c4df56a0c35820e64cf1",
+      "bytes": 624,
+      "category": "codec",
+      "go": {
+        "file": "zstd.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "copy.7z",
+      "sha256": "0d8fb8501a8c2b6afb501af6446ead18ee4e29e5eff4a21f834f59d928282e64",
+      "bytes": 2409,
+      "category": "codec",
+      "go": {
+        "file": "copy.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "lzma.7z",
+      "sha256": "f595a9d6c74da29700f384944f5f3c9033ed7ce8d4191e737ee5673c465daee5",
+      "bytes": 584,
+      "category": "codec",
+      "go": {
+        "file": "lzma.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "lzma2.7z",
+      "sha256": "c5331679d3be9a741a0a070f14e187ef9a8df18b9d9be14699b7860e54c769b7",
+      "bytes": 591,
+      "category": "codec",
+      "go": {
+        "file": "lzma2.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "ppmd.7z",
+      "sha256": "68a00325d7fd07fd364370c49ce4dfe56c31d2aaf06305925ccb353dafda17cc",
+      "bytes": 674,
+      "category": "codec",
+      "go": {
+        "file": "ppmd.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "bzip2.7z",
+      "sha256": "41e8180e0e76abeefe91c82d896221f3e08ec01612a2c4459d227e2b966e7560",
+      "bytes": 970,
+      "category": "codec",
+      "go": {
+        "file": "bzip2.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "deflate.7z",
+      "sha256": "93a41b231d92ea60a952049834a63c93a57eff984eeecb1e12520ba14aab4d9f",
+      "bytes": 681,
+      "category": "codec",
+      "go": {
+        "file": "deflate.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "bcj.7z",
+      "sha256": "90ae93448961ad1d84261506b27a8f09b5ec74030a1f51c367e5a2db328f88d8",
+      "bytes": 591,
+      "category": "codec",
+      "go": {
+        "file": "bcj.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "ppc.7z",
+      "sha256": "79a879e754af318618522ca7a82e53fdf3b5293f24aa00432890ecd129208d8a",
+      "bytes": 591,
+      "category": "codec",
+      "go": {
+        "file": "ppc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "arm.7z",
+      "sha256": "53154cd3c189f3c7ff9bdf68a843aad6e9389f602a21a5b1f916328e19227b06",
+      "bytes": 603,
+      "category": "codec",
+      "go": {
+        "file": "arm.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "arm64.7z",
+      "sha256": "428931196600fd1f2a8838c2da69313aca4da3dac032df5546a2dac0fb841087",
+      "bytes": 604,
+      "category": "codec",
+      "go": {
+        "file": "arm64.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "sparc.7z",
+      "sha256": "3bfe3be746a512b9691e61a7dee87c52b88a38e31b07c2254b2cff2ad95e959d",
+      "bytes": 591,
+      "category": "codec",
+      "go": {
+        "file": "sparc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "delta.7z",
+      "sha256": "f52694dfce2cac0e9b2da53f282c5aee7fe8c95fa4d6df1dac8c53d1ab24e8e6",
+      "bytes": 375,
+      "category": "codec",
+      "go": {
+        "file": "delta.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "bcj2.7z",
+      "sha256": "bd1ff4309201a5ee603b2092f027c0004da2f514d5eca8a9b4763a5f000e18c7",
+      "bytes": 613,
+      "category": "codec",
+      "go": {
+        "file": "bcj2.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "unsupported-ia64.7z",
+      "sha256": "cf97f1426b301d5f4c73fe44ddf1601582df34a9953549691078062a0fc83d2b",
+      "bytes": 591,
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed for \"story.json\": sevenzip: read error: sevenzip: unsupported compression algorithm",
+        "file": "unsupported-ia64.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "unsupported-thumb.7z",
+      "sha256": "9c0823f50a40fa5a038b34feb13854dc38cce6c2447517ac01acba549a506830",
+      "bytes": 604,
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed for \"story.json\": sevenzip: read error: sevenzip: unsupported compression algorithm",
+        "file": "unsupported-thumb.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "unsupported-riscv.7z",
+      "sha256": "98dd339d506407a08b5d8b236b30a718304e80821e5c766ac57ad5d0321f51cc",
+      "bytes": 591,
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed for \"story.json\": sevenzip: read error: sevenzip: unsupported compression algorithm",
+        "file": "unsupported-riscv.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "non-solid-unused-corrupt.7z",
+      "sha256": "df8562e980cce04c2dddd474d11d223951ac030686857f1ad0e75b54d923fd94",
+      "bytes": 2409,
+      "category": "parity",
+      "go": {
+        "file": "non-solid-unused-corrupt.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "solid-copy.7z",
+      "sha256": "9d6b44c5ef7c460e85852f328fd133017eca4df6fcce3efe9554e0541fe9f880",
+      "bytes": 10653,
+      "category": "parity",
+      "go": {
+        "file": "solid-copy.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "selected-crc.7z",
+      "sha256": "81c55559bf53183189df7013e8ac1c99b210b24387d6b84c0b054e2db8e1a882",
+      "bytes": 10653,
+      "category": "hardening",
+      "go": {
+        "file": "selected-crc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "preceding-crc.7z",
+      "sha256": "f8aa7c3c61996f529f983475325e086c6d62533171861e041275ea72cdec953e",
+      "bytes": 10653,
+      "category": "hardening",
+      "go": {
+        "file": "preceding-crc.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "path-512.7z",
+      "sha256": "b2bd156d6f6fad00acdd0262baa4ac4dca5c4cf763e6ad786f0b1b982a3c3cff",
+      "bytes": 1102,
+      "category": "parity",
+      "go": {
+        "not_run": "malformed constructor declaration never submitted to unbounded oracle"
+      },
+      "rust": "index accepted; identity intentionally absent"
+    },
+    {
+      "file": "dictionary-512m.7z",
+      "sha256": "ebeaf3ff5dd6411ea70d2ca4cec01dd20f38ef3b82d93dc912982aaccd0310ac",
+      "bytes": 644,
+      "category": "hardening",
+      "go": {
+        "file": "dictionary-512m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "encoded-header-lzma2.7z",
+      "sha256": "c87f2c570ccc5a2aa0661d46feeb3cbb75ecd44bd421a304e8082ec80c250502",
+      "bytes": 185,
+      "category": "codec",
+      "go": {
+        "file": "encoded-header-lzma2.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "encoded-header-bcj2.7z",
+      "sha256": "0396acc7ca31ac467780d07b112f139033bfdbac25c234deade0e17fd715f718",
+      "bytes": 208,
+      "category": "codec",
+      "go": {
+        "file": "encoded-header-bcj2.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "encoded-header-ia64.7z",
+      "sha256": "435a892570941083fb4f5f009f5f328c10b513a22117b4fb349faac1f7ebfba5",
+      "bytes": 194,
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed: sevenzip: read error: sevenzip: unsupported compression algorithm",
+        "file": "encoded-header-ia64.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "header-16m.7z",
+      "sha256": "1676a984e10f647ad1f40ad387ea2a7f93c69df2a62c54f609ecbc5b33dfa23b",
+      "bytes": 16777853,
+      "category": "hardening",
+      "go": {
+        "file": "header-16m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "decoded-header-16m.7z",
+      "sha256": "09c24110e4785c60c72d54585edc17106807b9d6efa73e7f56fee836370ebf59",
+      "bytes": 2703,
+      "category": "hardening",
+      "go": {
+        "file": "decoded-header-16m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "coders-nine.7z",
+      "sha256": "403233a161f7b00442ece5b201b8e29091e6236c99d59f7d824ab71fa1fb075f",
+      "bytes": 671,
+      "category": "hardening",
+      "go": {
+        "file": "coders-nine.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "streams-nine.7z",
+      "sha256": "0d536e30dd25adc3e38f6ff1d675f50f01e89a27eb8b69d9763e4983a5ec2379",
+      "bytes": 608,
+      "category": "hardening",
+      "go": {
+        "file": "streams-nine.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "total-coders-10002.7z",
+      "sha256": "35a93ff83cd51bb5d9b87ce55d79ae056a32a3a08a0f73dd500bcb6906983f80",
+      "bytes": 183205,
+      "category": "hardening",
+      "go": {
+        "file": "total-coders-10002.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "unknown-unused-coder.7z",
+      "sha256": "8e55093fdf1f7a5ce1b52e39e773a748e11554c4ca8d60997521d308af69eeee",
+      "bytes": 631,
+      "category": "hardening",
+      "go": {
+        "file": "unknown-unused-coder.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "zip-unused-corrupt.zip",
+      "sha256": "ec2a0147a8bb85643b022c607d5107e65512505613c84667341fca51bd74c082",
+      "bytes": 2539,
+      "category": "parity",
+      "go": {
+        "error": "invalid_container validation failed for \"assets/track\": zip: checksum error",
+        "file": "zip-unused-corrupt.zip",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "files-u64max.7z",
+      "sha256": "2322878238b0b012df27c301e60d7525b149c58f54f42d670841f7c5fea6f866",
+      "bytes": 45,
+      "category": "malformed",
+      "go": {
+        "not_run": "malformed constructor declaration never submitted to unbounded oracle"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "coders-u64max.7z",
+      "sha256": "3677e82df88186c5b4cdaaf35124f8aac21b0fe6d48e18337ca620c4a4c5ceed",
+      "bytes": 47,
+      "category": "malformed",
+      "go": {
+        "not_run": "malformed constructor declaration never submitted to unbounded oracle"
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "png-header-only.zip",
+      "sha256": "0c4a99074d0b57b301af2d383069af871778a72908b09ae506010c7fcaf8b9ed",
+      "bytes": 2488,
+      "category": "hardening",
+      "go": {
+        "file": "png-header-only.zip",
+        "format": "studio_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "artwork_limit"
+    },
+    {
+      "file": "png-ancillary-crc.zip",
+      "sha256": "e90b42d4d8125b0051b8157a8eb2e1d926320dadb2dedc1b807b309b4ff29826",
+      "bytes": 2552,
+      "category": "parity",
+      "go": {
+        "file": "png-ancillary-crc.zip",
+        "format": "studio_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "large-window-brotli.7z",
+      "bytes": 187,
+      "sha256": "23fcbe57f4f9278e3218563fa60468595e402ac2cddf93b295b35a0d6d9a3d36",
+      "category": "rejected codec",
+      "go": {
+        "error": "metadata_limit validation failed for \"story.json\": sevenzip: read error: brotli: error reading: brotli: WINDOW_BITS",
+        "file": "large-window-brotli.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "brotli-envelope.7z",
+      "bytes": 646,
+      "sha256": "2550229a4dfc13d4b3b2c6812e0106230dbe177e0a6b0509859a195d1a58beb9",
+      "category": "codec",
+      "go": {
+        "file": "brotli-envelope.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "brotli-concatenated.7z",
+      "bytes": 623,
+      "sha256": "3988567d134a6714f8550204e561c31b08182a239af409bc8f0f01c7d0bc79f7",
+      "category": "rejected codec",
+      "go": {
+        "error": "metadata_limit validation failed for \"story.json\": sevenzip: read error: brotli: error reading: brotli: excessive input",
+        "file": "brotli-concatenated.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "encoded-header-brotli.7z",
+      "bytes": 205,
+      "sha256": "509352a01c38555022a9bf7256cdf886658a44c35b56d6fb2a8716c51364e6de",
+      "category": "codec",
+      "go": {
+        "file": "encoded-header-brotli.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "large-window-encoded-brotli.7z",
+      "bytes": 89,
+      "sha256": "d6bd8c69bf73614dd60bac3d4b96d2d97e539f90e76551e64ff14ddc0cf80350",
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed: sevenzip: read error: readEncodedHeader: ReadByte error: brotli: error reading: brotli: WINDOW_BITS",
+        "file": "large-window-encoded-brotli.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "zstd-window-256m.7z",
+      "bytes": 2402,
+      "sha256": "6b1a77103e5a9b720a6d925b267cbb32881cdb7497926b7f8e2e9810ebc4fc83",
+      "category": "hardening",
+      "go": {
+        "file": "zstd-window-256m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "pack-streams-12000.7z",
+      "bytes": 169947,
+      "sha256": "55d2a63022cd47207550bea5583bfb2bdd5509fef67e58adf7be5a624ffa1577",
+      "category": "hardening",
+      "go": {
+        "file": "pack-streams-12000.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "entry_limit"
+    },
+    {
+      "file": "encoded-header-pack-mismatch.7z",
+      "bytes": 60,
+      "sha256": "f3b133a6b8d51485d06915ec373843f0741ccd07597c058690e79533c5d77360",
+      "category": "patch constructor regression",
+      "rust": "invalid_container",
+      "go_probe": "not executed: malformed constructor precondition; original Go outcomes are not asserted"
+    },
+    {
+      "file": "encoded-header-memory-chain.7z",
+      "bytes": 62,
+      "sha256": "3ea2b027c1faf4f1b485808889f1989b9a797c7eda7010c1aa6b2d47dc0cb588",
+      "category": "patch constructor regression",
+      "rust": "invalid_container",
+      "go_probe": "not executed: malformed constructor precondition; original Go outcomes are not asserted"
+    }
+  ],
+  "go_version": "go1.26.5 darwin/arm64",
+  "sources": [
+    {
+      "path": "codec-producer.go.txt",
+      "sha256": "19e7d409a2d2beab102a1953ecbaba5025b4243026e53e543370f4f64a688dc3"
+    },
+    {
+      "path": "generate.py",
+      "sha256": "5f2837e734244dc42527692ee9c475b6076e54e6649cdc0fe82cb33019be3766"
+    },
+    {
+      "path": "synthetic_7z.py",
+      "sha256": "1e495ac53ea5a9f0c22c9f5d80375217f11d55cdd02057a61b9e690e10da138f"
+    },
+    {
+      "path": "internal/inspection/sevenzip_reader.go",
+      "sha256": "4c4a007c11fe1f9787d1de881596c29e9d0bd7ab8dc0cef4fb63aae5f2cb7c8d"
+    },
+    {
+      "path": "internal/inspection/zip_reader.go",
+      "sha256": "d0f4b17c1799a704642652e23e39372d3c72994b9b72f12a8d6f406860fcfb42"
+    },
+    {
+      "path": "internal/inspection/studio_zip.go",
+      "sha256": "14349c0b72c0bdadb2d43ae5e9ca24c34dc8d7453dda870e88d808888ea705fa"
+    },
+    {
+      "path": "target/task5-go-probe/main.go",
+      "sha256": "a8fca3c3016cbe51ea4ab9560950715c2ab9ddc4558aa5194f4e19e934838356"
+    },
+    {
+      "path": "extend.py",
+      "sha256": "3e310f655611160e1010000967b1f97dde4bd408a385ab74f3a74fd29a387356"
+    },
+    {
+      "path": "patch-regressions.py",
+      "sha256": "93d39fc307fcd678af53685686026bc987c0dcc0782b365bd50c9a9a30bcf05f"
+    }
+  ],
+  "patch_observations": {
+    "go": "go1.26.5 darwin/arm64",
+    "probe_source": "../import-hardening/probe.go.txt",
+    "env": {
+      "GOMAXPROCS": "1"
+    },
+    "scope": "Seven new patch/limit cases observed through unchanged actual Go inspector. Known tiny Zstd frame has one bounded 256MiB window; official7zz independently validates all 3000 files in the 12000-stream case. Malformed memory/count constructor regressions are never sent to Go."
+  }
+}

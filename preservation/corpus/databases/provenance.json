@@ -1,0 +1,230 @@
+{
+  "driver": "modernc.org/sqlite v1.60.1",
+  "go": "go1.26.5",
+  "migrations": [
+    {
+      "path": "migrations/001_foundation.sql",
+      "sha256": "c7b805d0452d9a45eb2074cd89939e6b7a9b21eaeb5218d7ee679d88d7059357"
+    },
+    {
+      "path": "migrations/002_story_catalog.sql",
+      "sha256": "8447b4f021e0f80492498b962ec5f8f93efd32c03e20d86bd2d8e8050029867b"
+    },
+    {
+      "path": "migrations/003_removal_intents.sql",
+      "sha256": "62eefcca5f66ca5629de2f9d01f1d2097ae7990612356d9921ce4503be54a084"
+    },
+    {
+      "path": "migrations/004_story_tags.sql",
+      "sha256": "dee888d9bd9e149edaf6588d72547dd3ae835f67ded1a8a8d50428637dbf6769"
+    },
+    {
+      "path": "migrations/005_protected_broken_tag.sql",
+      "sha256": "3c299453bd1d32eb248f2714e3d19b5ce37825961207e6d2f094a34a09de07c2"
+    },
+    {
+      "path": "migrations/006_normalized_story_names.sql",
+      "sha256": "ad009dba2d657541ff04400b66e02f173aaacd8f8d53d48e4e180900934931e9"
+    },
+    {
+      "path": "migrations/007_official_metadata.sql",
+      "sha256": "372a557d9e5a35ddb945caac91e440edb71002235906078deeb5b81d108c7d37"
+    },
+    {
+      "path": "migrations/008_catalog_artwork.sql",
+      "sha256": "69a85d95449375568f32818e09f6478ca7e5e4547bd745e51cc2459b604993d1"
+    },
+    {
+      "path": "migrations/009_metadata_operation.sql",
+      "sha256": "e542123aa4e89eb00ff4979e9bd9b898ea489deeab3b4b4538cfae9b2ab25cae"
+    },
+    {
+      "path": "migrations/010_official_metadata_query.sql",
+      "sha256": "c200e796ef94c359abd1b4ca1bd5fba0812b703252abbfee0b208ef7a680e70b"
+    },
+    {
+      "path": "migrations/011_saved_shelves.sql",
+      "sha256": "b4093786969f13f10179f51874f5f76b179983ecc2c6ba7ec9763920d9bf7c18"
+    },
+    {
+      "path": "migrations/012_export_operations.sql",
+      "sha256": "0727d52cff76a623f58f156dd02e5b1c96992b4d12b13c69d27b90c8f5fb377b"
+    },
+    {
+      "path": "migrations/013_collection_scale.sql",
+      "sha256": "46a0f1d53ae36f8835dee4aa737a11b80bf1ebc5184c5bf4d7f949016451c19f"
+    },
+    {
+      "path": "migrations/014_tag_colors.sql",
+      "sha256": "0df8ea4a401f998263dcf04f5442ef20e7a39b1e9f3337fa99028adf495fb5db"
+    },
+    {
+      "path": "migrations/015_story_broken_flag.sql",
+      "sha256": "493ae8d41730119310efe5172cba8201934facde49cc4a1c3a83ea7aab9a9abc"
+    },
+    {
+      "path": "migrations/016_saved_collections.sql",
+      "sha256": "ead466dfa14df4a27e46aa2dfcc01c4b41fb130fdadd678f33dfbc570f00f35f"
+    },
+    {
+      "path": "migrations/017_curated_shelves.sql",
+      "sha256": "141336d726d6d43c539b6321d1f4c55f3d74ab840279dfd086f022cac33b50a8"
+    },
+    {
+      "path": "migrations/018_collection_shelf_exports.sql",
+      "sha256": "72910429d598b42932b172b490857559f25ff62cecaf017af32888fde19af048"
+    }
+  ],
+  "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "prefixes": [
+    {
+      "expected": "databases/prefix-001.json",
+      "file": "databases/prefix-001.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 1,
+      "sha256": "8c3e213771e74fcf0d0767da202ef4da2bd7574692af3b795595dcd706128e5c",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-002.json",
+      "file": "databases/prefix-002.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 2,
+      "sha256": "7513fbd7ab90e665edf71cc38e2ef3b5d53292238e9c40bc1fdf5ff9c284cffe",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-003.json",
+      "file": "databases/prefix-003.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 3,
+      "sha256": "2920cf7ee6bcaeeaa577d7e00483dd89e8c62a5d2df82b0d4f08aa106ac90e9a",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-004.json",
+      "file": "databases/prefix-004.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 4,
+      "sha256": "d0c7f306775ba7f8d3bf32e190f6b0245ecb7086ba54577b69eaead017d62944",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-005.json",
+      "file": "databases/prefix-005.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 5,
+      "sha256": "bffaa8468baf599a51b0ed9552710af03dd98472168601cc3804c79cb067eb6e",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-006.json",
+      "file": "databases/prefix-006.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 6,
+      "sha256": "c121d90fe74f6d5ef1fa69b60268791f62845289eaeb5a5e2c26de9863f70088",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-007.json",
+      "file": "databases/prefix-007.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 7,
+      "sha256": "10129974aad3d76f5dff5077321cf106332057c8c94e39f3c9bb6d235dbdb485",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-008.json",
+      "file": "databases/prefix-008.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 8,
+      "sha256": "facf7a4545570333413337cafa45eb6586a14a7559d2e8ad80534bc4b09fcfa6",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-009.json",
+      "file": "databases/prefix-009.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 9,
+      "sha256": "f9a41348dc2311b2aac875861131ef64bb0d76783135939cb61cf2aecc4cc8c6",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-010.json",
+      "file": "databases/prefix-010.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 10,
+      "sha256": "4b28d4b602e5f4c13976ff6a7ac0025702c4e633a69ce57ba548416a27388262",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-011.json",
+      "file": "databases/prefix-011.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 11,
+      "sha256": "69204540d6133c0c3fb3383e478312f7b5fbfb9031e0ab0f4783eff237cb70f9",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-012.json",
+      "file": "databases/prefix-012.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 12,
+      "sha256": "739328e1803d9ba36c024731f2ba3f8e32ddfbe6065ef550a1b737e3539d3c56",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-013.json",
+      "file": "databases/prefix-013.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 13,
+      "sha256": "1a042debb3f6b0562ae2884bfcf8d18d39475faac46a90246233156bc430f669",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-014.json",
+      "file": "databases/prefix-014.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 14,
+      "sha256": "0d795ef8190820be0461fbfbae01cd2a1836a1b071411d161aa5fe9e4a35cf78",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-015.json",
+      "file": "databases/prefix-015.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 15,
+      "sha256": "eeb7becfa5ef40090b59e42465cd9d4f3ad57f1b9952373ab3c4a72ba85d24d1",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-016.json",
+      "file": "databases/prefix-016.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 16,
+      "sha256": "cc9c566a1cf90250d8763e3da741c4d911fe7adf38a11cd91a68f6e561d23e44",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-017.json",
+      "file": "databases/prefix-017.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 17,
+      "sha256": "b3e1fa7db1c155f1324c4385b85b9b7e644af3dc33b6fac3d4a97c6c306b364f",
+      "syntheticSeedSteps": "database-contract.md"
+    },
+    {
+      "expected": "databases/prefix-018.json",
+      "file": "databases/prefix-018.sqlite3",
+      "goOpen": "passed to schema018",
+      "prefix": 18,
+      "sha256": "2b370ec2373d30d2ce42ab85cbf97292146461c970fe2baf36425ac7c0ce4f93",
+      "syntheticSeedSteps": "database-contract.md"
+    }
+  ],
+  "productionData": false,
+  "representation": "SQLite VACUUM INTO creates complete consistent standalone snapshots, no omitted WAL/SHM; never raw-copy a live DB",
+  "synthetic": true,
+  "timestamps": "2000-01-01 00:00:00",
+  "version": 1
+}

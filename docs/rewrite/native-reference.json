@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "approved_on": "2026-10-20",
+  "approval_scope": "Both concepts are approved visual direction; complete feature parity and toolkit/platform qualification remain required.",
+  "variants": [
+    "Story shelves",
+    "Desktop workspace"
+  ],
+  "editable_source": "native-desktop.fragment.html",
+  "standalone_preview": "native-desktop.html",
+  "renderer": {
+    "name": "visualize",
+    "version": "1.0.46"
+  },
+  "files": [
+    {
+      "path": "native-desktop.fragment.html",
+      "sha256": "44cd023b9e09e9bd2b411e76e58f5bef70e18b72508e03f25c8aba6343083460"
+    },
+    {
+      "path": "native-desktop.html",
+      "sha256": "4df3afb9a27c780657f3c4bf0f2b691f346bd00e589468516a5bc655230d2cb1"
+    }
+  ],
+  "manifest_sha256": "7358506ab4c2b14af2bde95a2cc1230ac4bc16fa0f110429cb90b59482773cde",
+  "scope": "Approved visual references only. Native fixtures are synthetic directly rendered components; complete workflow and package acceptance remain tasks 15 and 18."
+}

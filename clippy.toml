@@ -1,0 +1,2 @@
+# Keep diagnostics aligned with the tested workspace MSRV.
+msrv = "1.99.1"

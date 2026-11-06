@@ -1,0 +1,2181 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "path": "app.go",
+      "line": 89,
+      "kind": "application-command",
+      "name": "ApplicationStatus",
+      "declaration": "// ApplicationStatus returns a stable lifecycle snapshot for the frontend.\nfunc (a *App) ApplicationStatus() coreapp.StatusResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 97,
+      "kind": "application-command",
+      "name": "RecoverStorage",
+      "declaration": "func (a *App) RecoverStorage() coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 107,
+      "kind": "application-command",
+      "name": "FrontendRendered",
+      "declaration": "// FrontendRendered acknowledges that React completed its first paint. The\n// optional callback is configured only by packaged acceptance.\nfunc (a *App) FrontendRendered()",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ],
+      "contract_note": "Shell/acceptance instrumentation; replace with native evidence rather than preserve Wails API shape."
+    },
+    {
+      "path": "app.go",
+      "line": 113,
+      "kind": "application-command",
+      "name": "PackagedAcceptanceMode",
+      "declaration": "func (a *App) PackagedAcceptanceMode() bool",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ],
+      "contract_note": "Shell/acceptance instrumentation; replace with native evidence rather than preserve Wails API shape."
+    },
+    {
+      "path": "app.go",
+      "line": 117,
+      "kind": "application-command",
+      "name": "RecordPackagedAcceptance",
+      "declaration": "func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ],
+      "contract_note": "Shell/acceptance instrumentation; replace with native evidence rather than preserve Wails API shape."
+    },
+    {
+      "path": "app.go",
+      "line": 151,
+      "kind": "application-command",
+      "name": "SelectAndExportDiagnostics",
+      "declaration": "func (a *App) SelectAndExportDiagnostics() coreapp.DiagnosticExportResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 161,
+      "kind": "application-command",
+      "name": "SelectAndImportStories",
+      "declaration": "// SelectAndImportStories opens the native picker and starts one durable import\n// operation without exposing selected filesystem paths to the frontend.\nfunc (a *App) SelectAndImportStories() coreapp.OperationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 171,
+      "kind": "application-command",
+      "name": "SelectAndPreflightExport",
+      "declaration": "// SelectAndPreflightExport keeps the chosen absolute destination in Go while\n// returning only a display label and eligibility report to the frontend.\nfunc (a *App) SelectAndPreflightExport(\n\trequest exporter.PreflightRequest,\n) coreapp.ExportPreflightResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 181,
+      "kind": "application-command",
+      "name": "StartPreparedExport",
+      "declaration": "func (a *App) StartPreparedExport(preparationID string) coreapp.OperationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 189,
+      "kind": "application-command",
+      "name": "RevealExportDestination",
+      "declaration": "func (a *App) RevealExportDestination(operationID string) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 197,
+      "kind": "application-command",
+      "name": "RefreshOfficialMetadata",
+      "declaration": "func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P39",
+        "P40",
+        "P41",
+        "P43",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 205,
+      "kind": "application-command",
+      "name": "OfficialMetadataStatus",
+      "declaration": "func (a *App) OfficialMetadataStatus() coreapp.MetadataStatusResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P39",
+        "P40",
+        "P41",
+        "P43",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 213,
+      "kind": "application-command",
+      "name": "CancelOperation",
+      "declaration": "func (a *App) CancelOperation(operationID string) coreapp.OperationResponse",
+      "parity_ids": [
+        "P09",
+        "P10",
+        "P11",
+        "P50",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P10",
+        "parity::P11",
+        "parity::P50",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 221,
+      "kind": "application-command",
+      "name": "OperationSnapshot",
+      "declaration": "func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse",
+      "parity_ids": [
+        "P09",
+        "P10",
+        "P11",
+        "P50",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P10",
+        "parity::P11",
+        "parity::P50",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 229,
+      "kind": "application-command",
+      "name": "OperationHistory",
+      "declaration": "func (a *App) OperationHistory(before string) coreapp.OperationHistoryResponse",
+      "parity_ids": [
+        "P09",
+        "P10",
+        "P11",
+        "P50",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P10",
+        "parity::P11",
+        "parity::P50",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 237,
+      "kind": "application-command",
+      "name": "ActiveOperations",
+      "declaration": "func (a *App) ActiveOperations() coreapp.OperationListResponse",
+      "parity_ids": [
+        "P09",
+        "P10",
+        "P11",
+        "P50",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P10",
+        "parity::P11",
+        "parity::P50",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 245,
+      "kind": "application-command",
+      "name": "ListStories",
+      "declaration": "func (a *App) ListStories(request library.ListRequest) coreapp.LibraryPageResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 253,
+      "kind": "application-command",
+      "name": "QueryStories",
+      "declaration": "func (a *App) QueryStories(request library.StoryLibraryQuery) coreapp.LibraryPageResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 261,
+      "kind": "application-command",
+      "name": "StoryDetail",
+      "declaration": "func (a *App) StoryDetail(storyID int64) coreapp.StoryDetailResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 269,
+      "kind": "application-command",
+      "name": "RemoveStory",
+      "declaration": "func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 277,
+      "kind": "application-command",
+      "name": "ListCollections",
+      "declaration": "func (a *App) ListCollections() coreapp.CollectionListResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 285,
+      "kind": "application-command",
+      "name": "CreateCollection",
+      "declaration": "func (a *App) CreateCollection(\n\tname string,\n\tquery library.StoryLibraryQuery,\n) coreapp.CollectionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 296,
+      "kind": "application-command",
+      "name": "OpenCollection",
+      "declaration": "func (a *App) OpenCollection(\n\tshelfID int64,\n\trequest library.ListRequest,\n) coreapp.CollectionEvaluationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 307,
+      "kind": "application-command",
+      "name": "RenameCollection",
+      "declaration": "func (a *App) RenameCollection(shelfID int64, name string) coreapp.CollectionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 315,
+      "kind": "application-command",
+      "name": "DuplicateCollection",
+      "declaration": "func (a *App) DuplicateCollection(shelfID int64, name string) coreapp.CollectionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 323,
+      "kind": "application-command",
+      "name": "ReplaceCollectionQuery",
+      "declaration": "func (a *App) ReplaceCollectionQuery(\n\tshelfID int64,\n\tquery library.StoryLibraryQuery,\n) coreapp.CollectionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 334,
+      "kind": "application-command",
+      "name": "ReorderCollections",
+      "declaration": "func (a *App) ReorderCollections(orderedIDs []int64) coreapp.CollectionListResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 342,
+      "kind": "application-command",
+      "name": "DeleteCollection",
+      "declaration": "func (a *App) DeleteCollection(shelfID int64) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 350,
+      "kind": "application-command",
+      "name": "PreviewCollections",
+      "declaration": "func (a *App) PreviewCollections(\n\tshelfIDs []int64,\n) coreapp.CollectionSelectionPreviewResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P25",
+        "P26",
+        "P37",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P25",
+        "parity::P26",
+        "parity::P37",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 360,
+      "kind": "application-command",
+      "name": "TagCatalog",
+      "declaration": "func (a *App) TagCatalog() coreapp.TagCatalogResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 368,
+      "kind": "application-command",
+      "name": "CreateTagDefinition",
+      "declaration": "func (a *App) CreateTagDefinition(\n\tinput tagging.CreateDefinition,\n) coreapp.TagDefinitionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 378,
+      "kind": "application-command",
+      "name": "RenameTagDefinition",
+      "declaration": "func (a *App) RenameTagDefinition(\n\tdefinitionID int64,\n\tlabel string,\n) coreapp.TagDefinitionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 389,
+      "kind": "application-command",
+      "name": "RecolorTagDefinition",
+      "declaration": "func (a *App) RecolorTagDefinition(\n\tdefinitionID int64,\n\tcolor string,\n) coreapp.TagDefinitionResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 400,
+      "kind": "application-command",
+      "name": "ReorderTagDefinitions",
+      "declaration": "func (a *App) ReorderTagDefinitions(orderedIDs []int64) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 408,
+      "kind": "application-command",
+      "name": "PlanTagDefinitionDeletion",
+      "declaration": "func (a *App) PlanTagDefinitionDeletion(\n\tdefinitionID int64,\n) coreapp.TagDefinitionDeletionPlanResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 418,
+      "kind": "application-command",
+      "name": "DeleteTagDefinition",
+      "declaration": "func (a *App) DeleteTagDefinition(\n\tplan tagging.DefinitionDeletionPlan,\n) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 428,
+      "kind": "application-command",
+      "name": "CreateTagValue",
+      "declaration": "func (a *App) CreateTagValue(input tagging.CreateValue) coreapp.TagValueResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 436,
+      "kind": "application-command",
+      "name": "RenameTagValue",
+      "declaration": "func (a *App) RenameTagValue(\n\tvalueID int64,\n\tlabel string,\n) coreapp.TagValueResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 447,
+      "kind": "application-command",
+      "name": "ReorderTagValues",
+      "declaration": "func (a *App) ReorderTagValues(\n\tdefinitionID int64,\n\torderedIDs []int64,\n) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 458,
+      "kind": "application-command",
+      "name": "PlanTagValueDeletion",
+      "declaration": "func (a *App) PlanTagValueDeletion(\n\tvalueID int64,\n) coreapp.TagValueDeletionPlanResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 468,
+      "kind": "application-command",
+      "name": "DeleteTagValue",
+      "declaration": "func (a *App) DeleteTagValue(plan tagging.ValueDeletionPlan) coreapp.MutationResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 476,
+      "kind": "application-command",
+      "name": "TagAssignmentWorkspace",
+      "declaration": "func (a *App) TagAssignmentWorkspace(\n\tstoryIDs []int64,\n) coreapp.TagAssignmentWorkspaceResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 486,
+      "kind": "application-command",
+      "name": "SetBooleanTag",
+      "declaration": "func (a *App) SetBooleanTag(\n\tstoryIDs []int64,\n\tdefinitionID int64,\n\tassigned bool,\n) coreapp.TagAssignmentResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 498,
+      "kind": "application-command",
+      "name": "SetChoiceTagValues",
+      "declaration": "func (a *App) SetChoiceTagValues(\n\tstoryIDs []int64,\n\tdefinitionID int64,\n\tvalueIDs []int64,\n) coreapp.TagAssignmentResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 515,
+      "kind": "application-command",
+      "name": "SetChoiceTagValue",
+      "declaration": "func (a *App) SetChoiceTagValue(\n\tstoryIDs []int64,\n\tdefinitionID int64,\n\tvalueID int64,\n\tassigned bool,\n) coreapp.TagAssignmentResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 543,
+      "kind": "application-command",
+      "name": "LibraryCompatibility",
+      "declaration": "func (a *App) LibraryCompatibility() coreapp.LibraryCompatibilityResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 551,
+      "kind": "application-command",
+      "name": "SetStoriesBroken",
+      "declaration": "func (a *App) SetStoriesBroken(storyIDs []int64, broken bool) coreapp.StoryFlagsResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P24",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P24",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "app.go",
+      "line": 559,
+      "kind": "application-command",
+      "name": "RestoreStoryFlags",
+      "declaration": "func (a *App) RestoreStoryFlags(changes []library.FlagChange) coreapp.StoryFlagsResponse",
+      "parity_ids": [
+        "P09",
+        "P11",
+        "P24",
+        "P57",
+        "P60"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P09",
+        "parity::P11",
+        "parity::P24",
+        "parity::P57",
+        "parity::P60"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 56,
+      "kind": "application-command",
+      "name": "Settings",
+      "declaration": "func (a *App) Settings() SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 82,
+      "kind": "application-command",
+      "name": "SetUILanguage",
+      "declaration": "func (a *App) SetUILanguage(language string) SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 100,
+      "kind": "application-command",
+      "name": "SelectLibraryLocation",
+      "declaration": "func (a *App) SelectLibraryLocation() SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 162,
+      "kind": "application-command",
+      "name": "ConfirmLibrarySetup",
+      "declaration": "func (a *App) ConfirmLibrarySetup() coreapp.MutationResponse",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 178,
+      "kind": "application-command",
+      "name": "RetryLibrary",
+      "declaration": "func (a *App) RetryLibrary() SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 195,
+      "kind": "application-command",
+      "name": "LocateLibrary",
+      "declaration": "func (a *App) LocateLibrary() SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings.go",
+      "line": 219,
+      "kind": "application-command",
+      "name": "DismissSettings",
+      "declaration": "func (a *App) DismissSettings()",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings_move.go",
+      "line": 10,
+      "kind": "application-command",
+      "name": "StartLibraryMove",
+      "declaration": "func (a *App) StartLibraryMove(preparationID string) SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "settings_move.go",
+      "line": 39,
+      "kind": "application-command",
+      "name": "CancelLibraryMove",
+      "declaration": "func (a *App) CancelLibraryMove() SettingsSnapshot",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 9,
+      "kind": "application-command",
+      "name": "ListShelves",
+      "declaration": "func (a *App) ListShelves() coreapp.ShelfListResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 17,
+      "kind": "application-command",
+      "name": "CreateShelf",
+      "declaration": "func (a *App) CreateShelf(name string, storyUUIDs []string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 25,
+      "kind": "application-command",
+      "name": "OpenShelf",
+      "declaration": "func (a *App) OpenShelf(shelfID int64, query library.StoryLibraryQuery) coreapp.ShelfEvaluationResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 33,
+      "kind": "application-command",
+      "name": "RenameShelf",
+      "declaration": "func (a *App) RenameShelf(shelfID int64, name string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 41,
+      "kind": "application-command",
+      "name": "DuplicateShelf",
+      "declaration": "func (a *App) DuplicateShelf(shelfID int64, name string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 49,
+      "kind": "application-command",
+      "name": "DeleteShelf",
+      "declaration": "func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 57,
+      "kind": "application-command",
+      "name": "ReorderShelves",
+      "declaration": "func (a *App) ReorderShelves(orderedIDs []int64) coreapp.MutationResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 65,
+      "kind": "application-command",
+      "name": "AddStoriesToShelf",
+      "declaration": "func (a *App) AddStoriesToShelf(shelfID int64, storyUUIDs []string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 73,
+      "kind": "application-command",
+      "name": "RemoveStoriesFromShelf",
+      "declaration": "func (a *App) RemoveStoriesFromShelf(shelfID int64, storyUUIDs []string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 81,
+      "kind": "application-command",
+      "name": "SetShelfStoryProtected",
+      "declaration": "func (a *App) SetShelfStoryProtected(shelfID int64, storyUUID string, protected bool) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ],
+      "contract_note": "Retained compatibility bridge/internal historical field; current UI exposes no protection toggle. Do not revive a public control."
+    },
+    {
+      "path": "shelves.go",
+      "line": 89,
+      "kind": "application-command",
+      "name": "ReorderShelfStories",
+      "declaration": "func (a *App) ReorderShelfStories(shelfID int64, orderedUUIDs []string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 97,
+      "kind": "application-command",
+      "name": "ListShelfExclusions",
+      "declaration": "func (a *App) ListShelfExclusions(shelfID int64) coreapp.ShelfExclusionsResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 105,
+      "kind": "application-command",
+      "name": "ClearShelfExclusion",
+      "declaration": "func (a *App) ClearShelfExclusion(shelfID int64, storyUUID string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 113,
+      "kind": "application-command",
+      "name": "AttachShelfSources",
+      "declaration": "func (a *App) AttachShelfSources(shelfID int64, collectionIDs []int64) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 120,
+      "kind": "application-command",
+      "name": "PreviewShelfUpdate",
+      "declaration": "func (a *App) PreviewShelfUpdate(shelfID int64) coreapp.ShelfReviewResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 127,
+      "kind": "application-command",
+      "name": "ApplyShelfUpdate",
+      "declaration": "func (a *App) ApplyShelfUpdate(shelfID int64, token string, decisions []shelves.Decision) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 135,
+      "kind": "application-command",
+      "name": "PreviewShelfCreation",
+      "declaration": "func (a *App) PreviewShelfCreation(request shelves.CreationRequest) coreapp.ShelfReviewResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 142,
+      "kind": "application-command",
+      "name": "CreateShelfFromReview",
+      "declaration": "func (a *App) CreateShelfFromReview(token string, selectedUUIDs []string) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 150,
+      "kind": "application-command",
+      "name": "PreviewShelfSources",
+      "declaration": "func (a *App) PreviewShelfSources(shelfID int64, collectionIDs []int64) coreapp.ShelfSourceReviewResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 157,
+      "kind": "application-command",
+      "name": "ApplyShelfSources",
+      "declaration": "func (a *App) ApplyShelfSources(shelfID int64, token string, keepAll bool, decisions []shelves.Decision) coreapp.ShelfResponse",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 164,
+      "kind": "application-command",
+      "name": "PreviewCollectionDeletion",
+      "declaration": "func (a *App) PreviewCollectionDeletion(collectionID int64) coreapp.CollectionDeletionReviewResponse",
+      "parity_ids": [
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P25",
+        "parity::P26",
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "shelves.go",
+      "line": 171,
+      "kind": "application-command",
+      "name": "ApplyCollectionDeletion",
+      "declaration": "func (a *App) ApplyCollectionDeletion(token string, keepAll bool, decisions []shelves.ShelfDecisions) coreapp.MutationResponse",
+      "parity_ids": [
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P25",
+        "parity::P26",
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    }
+  ]
+}

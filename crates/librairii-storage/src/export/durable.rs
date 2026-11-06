@@ -1,0 +1,487 @@
+//! Prepared native export composition over the admitted Task 6 job session.
+use super::{preparation::Prepared, *};
+use crate::{
+    StorageError,
+    database::WorkCancellation,
+    operations_repository::TerminalRepository,
+    platform::unix::{
+        Custody, ExportTemporaryFailure, LibraryFiles, OwnedExportTemporary,
+        transfer::ArchiveSource,
+    },
+};
+use librairii_app::{
+    native_jobs::*,
+    ports::{
+        creation::{NewItem, NewOperation, PlannedItem},
+        jobs::WorkItem,
+    },
+};
+use librairii_core::{
+    OperationKind,
+    operations::{ExportSource, ExportSourceType, ItemState, RawOutcome},
+};
+use std::{thread, time::Duration};
+#[derive(Debug, thiserror::Error)]
+pub enum DurableExportError {
+    #[error(transparent)]
+    Storage(#[from] StorageError),
+    #[error(transparent)]
+    Session(#[from] SessionError),
+}
+impl Exports<'_, '_> {
+    /// The event-loop callback receives the one move-only validated Start. It
+    /// submits with try_start, observes admission and requests cancellation using
+    /// Task 6's bounded handle. All actual file/SQL owners outlive its worker joins.
+    pub fn run_prepared<T>(
+        &mut self,
+        id: &librairii_core::export::PreparationId,
+        operation: String,
+        configuration: Configuration,
+        event_loop: impl FnOnce(Handle, Start) -> T,
+    ) -> std::result::Result<T, DurableExportError> {
+        self.database.native_file_owner()?;
+        let running = self.start(id, &WorkCancellation::default())?;
+        let input = operation_input(&running.plan, operation)?;
+        let operation = input.id.clone();
+        let start =
+            Start::new(input).map_err(|_| StorageError::Export(ExportError::ResourceLimit))?;
+        let database = running.owner.database;
+        let files = LibraryFiles::open_native(database)?;
+        let store = TerminalRepository::new(database, 1);
+        let executor = CopyExecutor {
+            plan: &running.plan,
+            database,
+            files: &files,
+            operation,
+        };
+        Ok(with_runtime(&store, &executor, configuration, |handle| {
+            event_loop(handle, start)
+        })?)
+    }
+}
+pub(super) fn operation_input(plan: &Prepared, id: String) -> Result<NewOperation> {
+    let source = &plan.scope.source;
+    let source_type = match source.kind {
+        ExportScopeKind::CurrentQuery => ExportSourceType::CurrentQuery,
+        ExportScopeKind::Selection => ExportSourceType::Selection,
+        ExportScopeKind::CollectionUnion => {
+            if source.ids.len() == 1 {
+                ExportSourceType::Collection
+            } else {
+                ExportSourceType::Collections
+            }
+        }
+        ExportScopeKind::ShelfUnion | ExportScopeKind::RefinedShelf => {
+            if source.ids.len() == 1 {
+                ExportSourceType::CuratedShelf
+            } else {
+                ExportSourceType::CuratedShelves
+            }
+        }
+    };
+    // Go's JSON encoder replaces invalid UTF-8 in display names. Raw
+    // names remain in the retained plan; numeric IDs remain identity.
+    let names = source
+        .names
+        .iter()
+        .map(|n| go_display_name(n))
+        .collect::<Vec<_>>();
+    let collections =
+        source_type.group_kind() == Some(librairii_core::operations::ExportGroupKind::Collection);
+    let grouped = source_type.group_kind().is_some();
+    let input = NewOperation {
+        id,
+        kind: OperationKind::Export,
+        source: Some(ExportSource {
+            source_type,
+            collection_ids: if collections {
+                source.ids.clone()
+            } else {
+                Vec::new()
+            },
+            collection_names: if collections {
+                names.clone()
+            } else {
+                Vec::new()
+            },
+            shelf_ids: if grouped && !collections {
+                source.ids.clone()
+            } else {
+                Vec::new()
+            },
+            shelf_names: if grouped && !collections {
+                names
+            } else {
+                Vec::new()
+            },
+        }),
+        destination: Some(plan.destination.path().to_owned().into()),
+        items: plan
+            .scope
+            .stories
+            .iter()
+            .zip(plan.preview.items.iter())
+            .map(|(s, p)| -> Result<NewItem> {
+                let skip = match p.disposition {
+                    librairii_core::export::Disposition::Skipped(
+                        librairii_core::export::Issue::StoryMarkedBroken,
+                    ) => "story_marked_broken",
+                    librairii_core::export::Disposition::Skipped(
+                        librairii_core::export::Issue::StoryUnavailable,
+                    ) => "story_unavailable",
+                    _ => "",
+                };
+                Ok(NewItem {
+                    story_id: s.id,
+                    story_uuid: s.uuid.clone(),
+                    story_title: s.title.clone(),
+                    source_name: if s.original_filename_bytes.is_empty() {
+                        s.title.clone()
+                    } else {
+                        original_name(s)?.display_name()
+                    },
+                    output_name: original_name(s)?,
+                    archive_relative_path: managed_path(s)?,
+                    archive_sha256: s.sha256.clone(),
+                    export_skip_code: skip.into(),
+                    total_bytes: if p.disposition == librairii_core::export::Disposition::Ready {
+                        s.byte_size
+                    } else {
+                        0
+                    },
+                    planned: match p.disposition {
+                        librairii_core::export::Disposition::Ready => None,
+                        librairii_core::export::Disposition::Skipped(issue) => Some(PlannedItem {
+                            state: ItemState::Skipped,
+                            outcome: RawOutcome {
+                                code: Some(issue.code().into()),
+                                message: Some(issue_message(issue).into()),
+                            },
+                        }),
+                        librairii_core::export::Disposition::Conflicted => Some(PlannedItem {
+                            state: ItemState::Conflicted,
+                            outcome: RawOutcome {
+                                code: Some("filename_conflict".into()),
+                                message: Some(
+                                    "A file with this name already exists in the destination."
+                                        .into(),
+                                ),
+                            },
+                        }),
+                    },
+                })
+            })
+            .collect::<Result<Vec<_>>>()?,
+    };
+    input.validate()?;
+    Ok(input)
+}
+pub(super) struct CopyExecutor<'plan, 'files, 'library> {
+    pub(super) database: &'files Database<'library>,
+    pub(super) plan: &'plan Prepared,
+    pub(super) files: &'files LibraryFiles<'library>,
+    pub(super) operation: String,
+}
+#[derive(Debug)]
+enum Temporary<'a, 'library> {
+    Ready(Box<OwnedExportTemporary<'a, 'library>>),
+    Acquisition(Box<ExportTemporaryFailure<'a, 'library>>),
+}
+#[derive(Debug)]
+pub struct ExportResources<'a, 'library> {
+    temporary: Temporary<'a, 'library>,
+    _source: Option<ArchiveSource<'a, 'library>>,
+    custody: Custody<'library>,
+    retired: bool,
+}
+impl ExportResources<'_, '_> {
+    pub(super) fn retire(&mut self) -> bool {
+        if self.retired {
+            return true;
+        }
+        let result = match &mut self.temporary {
+            Temporary::Ready(t) => t.retire_in_place(&self.custody),
+            Temporary::Acquisition(t) => t.retire_in_place(&self.custody),
+        };
+        self.retired = result.is_ok();
+        self.retired
+    }
+}
+fn pause() {
+    thread::sleep(Duration::from_millis(10));
+}
+fn transient(error: &StorageError) -> bool {
+    matches!(
+        error,
+        StorageError::ProfileBusy | StorageError::QueueFull | StorageError::CustodyBusy
+    )
+}
+fn report(work: &WorkItem, state: ItemState, code: &str, message: &str, bytes: i64) -> Report {
+    Report {
+        state,
+        story_id: work.item.identity.historical_story_id(),
+        completed_bytes: bytes,
+        outcome: RawOutcome {
+            code: Some(code.into()),
+            message: Some(message.into()),
+        },
+    }
+}
+fn failed(work: &WorkItem, error: &StorageError) -> Report {
+    match error {
+        StorageError::Cancelled => report(
+            work,
+            ItemState::Cancelled,
+            "cancelled",
+            "Story export cancelled.",
+            0,
+        ),
+        StorageError::DestinationCollision => report(
+            work,
+            ItemState::Conflicted,
+            "filename_conflict",
+            "A file with this name already exists in the destination.",
+            0,
+        ),
+        StorageError::SnapshotChanged => report(
+            work,
+            ItemState::Failed,
+            "checksum_mismatch",
+            "The copied archive failed checksum verification.",
+            0,
+        ),
+        _ => report(
+            work,
+            ItemState::Failed,
+            "export_failed",
+            "The story archive could not be exported.",
+            0,
+        ),
+    }
+}
+impl CopyExecutor<'_, '_, '_> {
+    fn eligibility(
+        &self,
+        index: usize,
+        work: &WorkItem,
+        cancel: &Cancellation,
+    ) -> std::result::Result<(), Report> {
+        let disposition = loop {
+            if cancel.is_cancelled() {
+                return Err(failed(work, &StorageError::Cancelled));
+            }
+            match super::preparation::check_item(self.database, self.plan, index) {
+                Ok(d) => break d,
+                Err(e) if transient(&e) => pause(),
+                Err(e) => return Err(failed(work, &e)),
+            }
+        };
+        match disposition {
+            librairii_core::export::Disposition::Ready => Ok(()),
+            librairii_core::export::Disposition::Skipped(issue) => Err(report(
+                work,
+                ItemState::Skipped,
+                issue.code(),
+                issue_message(issue),
+                0,
+            )),
+            librairii_core::export::Disposition::Conflicted => {
+                Err(failed(work, &StorageError::DestinationCollision))
+            }
+        }
+    }
+}
+impl<'files, 'library> Executor for CopyExecutor<'_, 'files, 'library> {
+    type Resources = ExportResources<'files, 'library>;
+    fn execute(
+        &self,
+        work: &WorkItem,
+        cancel: &Cancellation,
+        progress: &ProgressSink,
+    ) -> Execution<Self::Resources> {
+        let before = |report| Execution {
+            boundary: Boundary::BeforeCommit,
+            report,
+            resources: None,
+        };
+        if work.operation.identity.id != self.operation
+            || work.operation.kind != OperationKind::Export
+        {
+            return before(failed(work, &StorageError::SnapshotChanged));
+        }
+        let Some(index) = self
+            .plan
+            .scope
+            .stories
+            .iter()
+            .position(|s| Some(&s.uuid) == work.item.identity.story_uuid.as_ref())
+        else {
+            return before(failed(work, &StorageError::SnapshotChanged));
+        };
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return before(report);
+        }
+        let story = &self.plan.scope.stories[index];
+        let path = match managed_path(story) {
+            Ok(path) => path,
+            Err(e) => return before(failed(work, &e)),
+        };
+        let mut source = loop {
+            match ArchiveSource::open(self.files, &path) {
+                Ok(v) => break v,
+                Err(e) if transient(&e) && !cancel.is_cancelled() => pause(),
+                Err(e) => return before(failed(work, &e)),
+            }
+        };
+        let custody = loop {
+            match self.files.try_custody() {
+                Ok(v) => break v,
+                Err(e) if transient(&e) && !cancel.is_cancelled() => pause(),
+                Err(e) => return before(failed(work, &e)),
+            }
+        };
+        if cancel.is_cancelled() {
+            return before(failed(work, &StorageError::Cancelled));
+        }
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return before(report);
+        }
+        let mut output = loop {
+            match self.files.create_export_temporary(
+                &custody,
+                self.operation.clone(),
+                work.item.identity.id,
+            ) {
+                Ok(output) => break output,
+                Err(failure)
+                    if failure.unacquired()
+                        && transient(&failure.cause)
+                        && !cancel.is_cancelled() =>
+                {
+                    pause();
+                    continue;
+                }
+                Err(failure) => {
+                    let result = failed(work, &failure.cause);
+                    return Execution {
+                        boundary: Boundary::Compensating,
+                        report: result,
+                        resources: Some(ExportResources {
+                            temporary: Temporary::Acquisition(failure),
+                            _source: Some(source),
+                            custody,
+                            retired: false,
+                        }),
+                    };
+                }
+            }
+        };
+        // Registration itself can wait on SQL/profile transitions. Revalidate
+        // once more at the actual byte-copy boundary, keeping any skip terminal.
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return Execution {
+                boundary: Boundary::Compensating,
+                report,
+                resources: Some(ExportResources {
+                    temporary: Temporary::Ready(Box::new(output)),
+                    _source: Some(source),
+                    custody,
+                    retired: false,
+                }),
+            };
+        }
+        let copied = (|| {
+            output.matches_destination(&self.plan.destination)?;
+            let hash = story
+                .sha256
+                .parse()
+                .map_err(|_| StorageError::SnapshotChanged)?;
+            let bytes =
+                u64::try_from(story.byte_size).map_err(|_| StorageError::SnapshotChanged)?;
+            if source.bytes() != bytes {
+                return Err(StorageError::SnapshotChanged);
+            }
+            output.copy_verified(
+                &mut source,
+                hash,
+                bytes,
+                || cancel.is_cancelled(),
+                |v| {
+                    progress.advance(v as i64);
+                },
+            )?;
+            if cancel.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            progress.phase(Phase::Committing);
+            loop {
+                match output.publish_registered(&custody, &original_name(story)?) {
+                    Ok(()) => break Ok(()),
+                    Err(e)
+                        if !output.publication_pending()
+                            && transient(&e)
+                            && !cancel.is_cancelled() =>
+                    {
+                        pause();
+                    }
+                    Err(_) if output.publication_pending() => {
+                        pause();
+                    }
+                    Err(e) => break Err(e),
+                }
+            }
+        })();
+        let (boundary, result) = match copied {
+            Ok(()) => (
+                Boundary::Committed,
+                report(
+                    work,
+                    ItemState::Succeeded,
+                    "exported",
+                    "Story archive exported.",
+                    story.byte_size,
+                ),
+            ),
+            Err(e) => (Boundary::Compensating, failed(work, &e)),
+        };
+        Execution {
+            boundary,
+            report: result,
+            resources: Some(ExportResources {
+                temporary: Temporary::Ready(Box::new(output)),
+                _source: Some(source),
+                custody,
+                retired: false,
+            }),
+        }
+    }
+    fn compensate(&self, r: &mut Self::Resources) -> bool {
+        r.retire()
+    }
+    fn settle(
+        &self,
+        mut r: Self::Resources,
+        _: &DurableReport<'_>,
+    ) -> std::result::Result<(), Self::Resources> {
+        if r.retire() { Ok(()) } else { Err(r) }
+    }
+}
+
+fn issue_message(issue: librairii_core::export::Issue) -> &'static str {
+    use librairii_core::export::Issue;
+    match issue {
+        Issue::StoryMarkedBroken => "This story is marked as broken.",
+        Issue::StoryUnavailable => "This approved story is unavailable in the library.",
+        Issue::ArchiveMissing => "Managed archive bytes are missing.",
+        Issue::ArchiveInvalid => "Managed archive verification failed.",
+        Issue::ArchiveChanged => "Managed archive bytes no longer match the imported archive.",
+        Issue::UnsupportedExtension => {
+            "The stored archive does not have a supported Lunii.QT extension."
+        }
+        _ => "Story is not eligible for export.",
+    }
+}
+
+fn go_display_name(bytes: &[u8]) -> String {
+    librairii_app::ports::operations::display_native_text(bytes)
+}

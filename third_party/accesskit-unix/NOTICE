@@ -1,0 +1,27 @@
+Librairii native qualification: local AccessKit Unix cache-signal correction
+
+Original: accesskit_unix0.22.1, MIT OR Apache-2.0.
+Registry archive SHA256:
+03e156ed3802e35eefe894ef2671bc6c889303d8a7e110b5e1b48f504b91362f
+Original source commit: c88605b96d04431f9c3c792464a0f2f253480e94
+Original source directory: platforms/unix
+
+The AccessKit Authors and named contributors retain their copyrights and
+licensing. Original MIT and Apache license texts from the same source revision
+are included unchanged beside this notice. Original source-specific notices:
+Copyright 2022 The AccessKit Authors. All rights reserved.
+Copyright 2023 The AccessKit Authors. All rights reserved.
+Copyright 2024 The AccessKit Authors. All rights reserved.
+Copyright 2024 Zeeshan Ali Khan.
+Copyright 2026 The AccessKit Authors. All rights reserved.
+
+Local modification (not an upstream backport): src/atspi/bus.rs preserves the
+single structured D-Bus argument for AddAccessible/RemoveAccessible. Its two
+regressions inspect actual serialized message headers and round-trip payloads.
+Cargo.toml removes the package resolver because the enclosing workspace owns it.
+The distribution Cargo.lock is omitted; the application retains its pinned lock.
+clippy.toml retains the upstream Rust1.85 MSRV for style suggestions.
+No dependency version, feature, original source hash or license text is upgraded.
+UPSTREAM.json records original archive/source hashes and this correction
+separately. Fresh three-target native and actual Linux Orca qualification is
+required; historical section2 qualification sources remain preserved.

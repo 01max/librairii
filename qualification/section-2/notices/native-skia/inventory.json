@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "retrieved_on": "2026-10-24",
+  "skia_bindings_version": "0.153.3",
+  "skia_source_ref": "m153-0.101.2",
+  "skia_source_tree": "61e7ca4e99062cdd0ab69445d5963fb3365778f6",
+  "deps_source": "https://github.com/rust-skia/skia/blob/m153-0.101.2/DEPS",
+  "deps_git_blob": "236024f322ab610860c6c15643482d832db54613",
+  "scope": "Conservative notice union for the pinned Skia native build graph; archive membership does not assert final executable linkage. Per-target final native distribution audit remains open.",
+  "toolkit_selected": false,
+  "components": [
+    {
+      "name": "Skia",
+      "revision": "m153-0.101.2",
+      "source": "https://github.com/rust-skia/skia/tree/m153-0.101.2",
+      "upstream_paths": [
+        "LICENSE"
+      ],
+      "notices": [
+        "LICENSE_SKIA"
+      ],
+      "license_git_blob": "e32636d5668d51ca7a938ae6cef93c795c656d7c"
+    },
+    {
+      "name": "skcms",
+      "revision": "6010f3583977f651726b24228f7e6a377e47c58d",
+      "source": "https://skia.googlesource.com/skcms/+/6010f3583977f651726b24228f7e6a377e47c58d",
+      "upstream_paths": [
+        "skcms.cc",
+        "LICENSE"
+      ],
+      "notices": [
+        "skcms-LICENSE",
+        "ATTRIBUTIONS.md"
+      ],
+      "license_git_blob": "6c7c5be360194ef93331dfb2b0c01114ad9c263f"
+    },
+    {
+      "name": "libpng",
+      "revision": "d5515b5b8be3901aac04e5bd8bd5c89f287bcd33",
+      "source": "https://skia.googlesource.com/third_party/libpng/+/d5515b5b8be3901aac04e5bd8bd5c89f287bcd33",
+      "upstream_paths": [
+        "LICENSE"
+      ],
+      "notices": [
+        "libpng-LICENSE"
+      ],
+      "license_git_blob": "1b765ae9f96abea77d3d9a88c543e3b5f4725813"
+    },
+    {
+      "name": "libjpeg-turbo",
+      "revision": "e14cbfaa85529d47f9f55b0f104a579c1061f9ad",
+      "source": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo/+/e14cbfaa85529d47f9f55b0f104a579c1061f9ad",
+      "upstream_paths": [
+        "LICENSE.md",
+        "README.ijg"
+      ],
+      "notices": [
+        "libjpeg-turbo-LICENSE.md",
+        "libjpeg-turbo-README.ijg",
+        "ATTRIBUTIONS.md"
+      ],
+      "license_git_blobs": {
+        "libjpeg-turbo-LICENSE.md": "a785258bcdaeb20de639c6a060a7e3d5df17ae8f",
+        "libjpeg-turbo-README.ijg": "dbf8070cac812bcfd7eb4d407062919f69c777c8"
+      }
+    },
+    {
+      "name": "zlib",
+      "revision": "646b7f569718921d7d4b5b8e22572ff6c76f2596",
+      "source": "https://chromium.googlesource.com/chromium/src/third_party/zlib/+/646b7f569718921d7d4b5b8e22572ff6c76f2596",
+      "upstream_paths": [
+        "LICENSE"
+      ],
+      "notices": [
+        "zlib-LICENSE"
+      ],
+      "license_git_blob": "8aca25d8c7a1336c991a2bc84bc2aa341a920885"
+    },
+    {
+      "name": "Chromium zlib extensions",
+      "revision": "646b7f569718921d7d4b5b8e22572ff6c76f2596",
+      "source": "https://chromium.googlesource.com/chromium/src/third_party/zlib/+/646b7f569718921d7d4b5b8e22572ff6c76f2596",
+      "upstream_paths": [
+        "adler32_simd.c",
+        "crc32_simd.c",
+        "contrib/optimizations/inffast_chunk.c",
+        "contrib/optimizations/chunkcopy.h",
+        "slide_hash_simd.h",
+        "crc_folding.c",
+        "cpu_features.c",
+        "contrib/optimizations/insert_string.h"
+      ],
+      "notices": [
+        "Chromium-LICENSE",
+        "zlib-LICENSE",
+        "ATTRIBUTIONS.md",
+        "Chromium-zlib-source-notices.txt"
+      ],
+      "bsd_text_source": "https://api.github.com/repos/chromium/chromium/git/blobs/2249a28657f86c645f8978b75babc1bd52aca318",
+      "bsd_text_git_blob": "2249a28657f86c645f8978b75babc1bd52aca318",
+      "source_note": "The generic Chromium BSD text is retained by immutable blob identity. It is not asserted to come from the zlib revision. Per-file Chromium/ARM/Intel copyrights are preserved in ATTRIBUTIONS.md.",
+      "source_git_blobs": {
+        "cpu_features.c": "64e0428cd2fc2d965cf18c2af9212df68d2ea8c8",
+        "contrib/optimizations/insert_string.h": "260b8268029a8c0bc03055ba2ac2dcb19c277c9d"
+      }
+    },
+    {
+      "name": "Expat",
+      "revision": "6154446fccefbf3ca644894f598969113b0c7bcd",
+      "source": "https://chromium.googlesource.com/external/github.com/libexpat/libexpat/+/6154446fccefbf3ca644894f598969113b0c7bcd",
+      "upstream_paths": [
+        "expat/COPYING"
+      ],
+      "notices": [
+        "Expat-COPYING"
+      ],
+      "license_git_blob": "c6d184a8aae845ce7bf4d195b214d8244d457f8f"
+    },
+    {
+      "name": "Wuffs",
+      "revision": "e3f919ccfe3ef542cfc983a82146070258fb57f8",
+      "source": "https://skia.googlesource.com/external/github.com/google/wuffs-mirror-release-c/+/e3f919ccfe3ef542cfc983a82146070258fb57f8",
+      "upstream_paths": [
+        "LICENSE",
+        "release/c/wuffs-v0.3.c"
+      ],
+      "notices": [
+        "Apache-2.0",
+        "ATTRIBUTIONS.md"
+      ],
+      "license_git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "generated_source_sha256": "ca10c422ebd4bf9f2cc469bafec4d5606eed3db0db7cbe21cb5232249ac0fe68",
+      "notice_file": "No NOTICE file exists in the pinned complete root/release tree; no upstream NOTICE requirement is invented."
+    },
+    {
+      "name": "Vulkan Memory Allocator",
+      "revision": "eb744ea7a2b17040121b4bbb4d6f9e8a77e3cae7",
+      "source": "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/tree/eb744ea7a2b17040121b4bbb4d6f9e8a77e3cae7",
+      "upstream_paths": [
+        "LICENSE.txt"
+      ],
+      "notices": [
+        "VMA-LICENSE"
+      ],
+      "license_git_blob": "be95175d6a296d066ed17617c094422d27174ad5"
+    },
+    {
+      "name": "Khronos Vulkan headers",
+      "revision": "m153-0.101.2",
+      "source": "https://github.com/rust-skia/skia/tree/m153-0.101.2",
+      "upstream_paths": [
+        "include/third_party/vulkan/vulkan/vk_platform.h",
+        "include/third_party/vulkan/vulkan/vulkan_core.h"
+      ],
+      "notices": [
+        "Apache-2.0",
+        "ATTRIBUTIONS.md"
+      ],
+      "source_git_blobs": {
+        "vk_platform.h": "e431c7631db6743278f7a116edfeb2e6b859d2cc",
+        "vulkan_core.h": "e57cd25a9fb72417b3de4056ca5e0e464f9b67ee"
+      },
+      "source_note": "Header SPDX Apache-2.0 and Khronos copyright determine these terms. The neighboring Google BSD wrapper LICENSE is not substituted for the header license."
+    },
+    {
+      "name": "Khronos SPIR-V headers",
+      "revision": "m153-0.101.2",
+      "source": "https://github.com/rust-skia/skia/tree/m153-0.101.2/src/sksl",
+      "upstream_paths": [
+        "src/sksl/spirv.h",
+        "src/sksl/GLSL.std.450.h"
+      ],
+      "notices": [
+        "Khronos-SPIRV-NOTICE",
+        "ATTRIBUTIONS.md"
+      ],
+      "source_git_blobs": {
+        "spirv.h": "22821ed862adcf952af7b7b0acf1cf41e761ff9a",
+        "GLSL.std.450.h": "943fd8650f850e93b68cddef386eef8c3e8cf1e7"
+      },
+      "source_note": "Exact common first comment in both pinned headers, included by compiled SkSLSPIRVCodeGenerator.cpp. Not the unrelated Vulkan Apache notice."
+    }
+  ],
+  "files": {
+    "ATTRIBUTIONS.md": "5226899d58076b6a22d09cc59f1ca80060aeb8b44e53f02ea0497175841b12be",
+    "Apache-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "Chromium-LICENSE": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "Chromium-zlib-source-notices.txt": "6cb6643a391e8dbe40c75cefb91720040802365cb35598401a99891d16100fb3",
+    "Expat-COPYING": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
+    "LICENSE_SKIA": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
+    "VMA-LICENSE": "52df2c03d6cfc9ffec13c9d3626c530fc9ce0cbe41d5ea3d10cd46edeb1aeb38",
+    "libjpeg-turbo-LICENSE.md": "96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430",
+    "libjpeg-turbo-README.ijg": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
+    "libpng-LICENSE": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+    "skcms-LICENSE": "e59bb5c5c6ba426a9ac4ba9fe667ad14c5166b12aa25be8af1d122b14fbe2e36",
+    "zlib-LICENSE": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
+    "Khronos-SPIRV-NOTICE": "44eef8282899b0998ab8374e4bd2f69fd5aacd4707b05998175d286f5672ee6c"
+  }
+}

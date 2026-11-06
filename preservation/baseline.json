@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "oracle_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "date": "2026-10-20",
+  "host": "macOS 15.7.7 24G720 arm64",
+  "tools": "oracle.json",
+  "checkout": "disposable independent clone; tracked source clean after checks",
+  "commands": [
+    {
+      "command": "make check",
+      "result": "failed: pre-existing cleanup retry timing under suite load",
+      "exit_code": 1,
+      "log_sha256": "f4ab6e04f278345e5e754ed6c228541b7c739331a34975d29b284cc661fd13d6",
+      "retained_log": "librairii-baseline-check.log"
+    },
+    {
+      "command": "go test . -run '^TestSettingsAcceptanceCleanup$' -count=1 -v",
+      "result": "passed: all four subcases",
+      "exit_code": 0,
+      "log_sha256": "88c3274e8506d7cf727de81c2e43dcf0eccc2e4c026891e619569f01adcc4ddc",
+      "retained_log": "librairii-baseline-cleanup-recheck.log"
+    },
+    {
+      "command": "make typecheck lint-frontend test-frontend-release test-frontend-performance",
+      "result": "passed: remaining full-check components independently",
+      "exit_code": 0,
+      "log_sha256": "26058e59c08a1f0fb2b6e8a22e67a310cccfc3e8e1b4efcdd5a370c65aa35ca6",
+      "retained_log": "librairii-baseline-frontend.log"
+    },
+    {
+      "command": "make check",
+      "result": "passed: complete unchanged rerun",
+      "exit_code": 0,
+      "log_sha256": "dd09387d522f437135225bb613accc9497f6af23c4446a318da8ec1e0e9ed4af",
+      "retained_log": "librairii-baseline-check-rerun.log"
+    },
+    {
+      "command": "make build",
+      "result": "passed: actual Wails ARM64 app",
+      "exit_code": 0,
+      "log_sha256": "d2949da8081316518c2c6c5bc95c309bf3fcc3e3abb5855097e887b24cb70610",
+      "retained_log": "librairii-baseline-build.log"
+    },
+    {
+      "command": "LIBRAIRII_DATA_ROOT=<temp> LIBRAIRII_SMOKE_EXIT=1 LIBRAIRII_ACCEPTANCE_LOG=1 <actual .app executable>",
+      "result": "passed: rendered, SQLite initialized, automatic close",
+      "exit_code": 0,
+      "log_sha256": "dccefa71d4c07df65f837cbe28b2768b1b635f8b2921f431156c38a2b4ee74b8",
+      "retained_log": "librairii-go-app-smoke.log"
+    },
+    {
+      "command": "LIBRAIRII_DATA_ROOT=<temp> LIBRAIRII_PACKAGED_ACCEPTANCE=1 LIBRAIRII_ACCEPTANCE_SOURCE=<synthetic generic.7z> LIBRAIRII_ACCEPTANCE_DESTINATION=<temp> LIBRAIRII_ACCEPTANCE_CHECKPOINTS=<temp> <actual .app executable>",
+      "result": "passed: actual native picker, import, export, file-manager reveal, close",
+      "exit_code": 0,
+      "log_sha256": "82c0099cc07d521bdc03c84bb5ca8d6855c50a3297278c33afcba239ed082411",
+      "retained_log": "launch.log"
+    },
+    {
+      "command": "go run ./cmd/release-smoke -root <temp>",
+      "result": "passed: imported=2 export_scopes=4 recovery=true offline_restart=true",
+      "exit_code": 0,
+      "log_sha256": "7f377f0717b37cb7449d615ca9b9cc12b744e3002670c4a9fc83b9c3baaa1476",
+      "retained_log": "librairii-baseline-release-smoke.log"
+    }
+  ],
+  "baseline_issues": [
+    {
+      "id": "GO-BASELINE-001",
+      "tests": [
+        "TestSettingsAcceptanceCleanup/persistent_cleanup_failure",
+        "TestSettingsAcceptanceCleanup/acceptance_failure_survives_cleanup_retry"
+      ],
+      "observed": "5-second context expired with 1 cleanup attempt instead of 5/2 under full initial suite; focused rerun and full unchanged rerun passed",
+      "attribution": "existing Go test/host timing; no Rust implementation exists; no product source modified",
+      "status": "intermittent; retained, not silently waived"
+    }
+  ],
+  "frontend": {
+    "test_files": 26,
+    "tests": 207,
+    "responsive": "passed",
+    "visual": "passed all four widths within 0.1%",
+    "accessibility": "zero axe violations at 1181x900 and 560x900",
+    "performance": {
+      "stories": 1000,
+      "samples": 5,
+      "expansion_p95_ms": 387.8,
+      "input_p95_ms": 3.5,
+      "within_budget": true
+    }
+  },
+  "app_smoke": {
+    "actual_executable_sha256": "872fffa5f95ba6d1eb362da7721e90c433920a6093dfe494476205a8e6655189",
+    "mode": "locally built self-signed Wails application, real macOS desktop",
+    "checkpoints": [
+      "scenario_started",
+      "native_import_dialog_selected",
+      "import_queued",
+      "import_succeeded",
+      "collection_loaded",
+      "native_destination_dialog_selected",
+      "export_prepared",
+      "export_queued",
+      "export_succeeded",
+      "native_reveal_succeeded",
+      "reveal_succeeded",
+      "complete"
+    ],
+    "checkpoint_sha256": "11f262018106be0f3169f3ab483c7493c4952bf498e90c93af2857f3d9c154c9",
+    "source_sha256": "ff024242bcbdd735b5a50c781448bff7b4d05b04af14f89bdd2511998ba5ec1b",
+    "export_sha256": "ff024242bcbdd735b5a50c781448bff7b4d05b04af14f89bdd2511998ba5ec1b",
+    "database_integrity": "ok",
+    "foreign_key_violations": 0,
+    "production_profile_access": "none: explicit LIBRAIRII_DATA_ROOT override",
+    "production_requests": "none requested: no catalog refresh or official artwork in synthetic story",
+    "limits": "Not a DMG install/signing/notarization/clean-host test, not Intel/Linux/Windows qualification; no screen-reader claim"
+  },
+  "missing_resources": [
+    "Real Intel Mac execution host",
+    "Linux x64 X11/Wayland desktop execution host",
+    "Windows x64 desktop execution host",
+    "Full Xcode/signing/notarization credentials not needed for this local baseline smoke"
+  ]
+}

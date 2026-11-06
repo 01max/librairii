@@ -1,0 +1,27 @@
+{
+  "oracle": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "go": "go version go1.26.5 darwin/arm64",
+  "source_manifest_sha256": "e547c7f66f0d7fc32b4ee41eeecf063c0047be6deaf73c51c7610908f65b5e6e",
+  "query_source_sha256": "569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763",
+  "scope": "Actual frozen Go Decode/Migrate/Encode outputs; no SQL/profile operations",
+  "cases": {
+    "original": {
+      "decodeMigratedPayload": "{\"name\":\"[a*����꽽������而������2 � [��@�*������꽽����Ꭽ�꽽����\"}",
+      "decodePayload": "{\"name\":\"[A*����꽽������而������2 � [��@�*������꽽����Ꭽ�꽽����\"}",
+      "encodeDecodedMigratedPayload": "{\"name\":\"[a*����꽽������而������2 � [��@�*������꽽����ꭽ�꽽����\"}",
+      "encodeMigratedQuery": "{\"name\":\"[a*����꽽������而������2 � [��@�*������꽽����Ꭽ�꽽����\"}",
+      "inputHex": "0c7b226e616d65223a22205bf09d95ac2affffffbdeabdbdbdbdbdbdbdbde2bdbdbdbdbdbdbdbd3220ff205bf09d40ac2affffffffffbdeabdbdbdbdbdbdeaadbdbdeabdbdbdbdbdff227d",
+      "migratePayload": "{\"name\":\"[a*����꽽������而������2 � [��@�*������꽽����ꭽ�꽽����\"}",
+      "version": 5
+    },
+    "minimal": {
+      "decodeMigratedPayload": "{\"name\":\"Ꭽ\"}",
+      "decodePayload": "{\"name\":\"Ꭽ\"}",
+      "encodeDecodedMigratedPayload": "{\"name\":\"ꭽ\"}",
+      "encodeMigratedQuery": "{\"name\":\"Ꭽ\"}",
+      "inputHex": "0c7b226e616d65223a22eaadbd227d",
+      "migratePayload": "{\"name\":\"ꭽ\"}",
+      "version": 5
+    }
+  }
+}

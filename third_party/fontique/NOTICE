@@ -1,0 +1,18 @@
+Librairii native qualification: bounded macOS system font metadata indexing
+
+Original: fontique0.11.1, Apache-2.0 OR MIT.
+Registry archive SHA256: 6688bc1294fe7117d788937b6c53480169b29c566954af490830d4c09da9516a
+Original source commit: eea3503dd6cf17130cbb07348e0ff2c918300e94
+Original source directory: fontique
+
+Copyright 2024 the Parley Authors. Original license texts remain unchanged.
+Local correction (not an upstream backport): discovered macOS font files are
+indexed on at most two scoped workers, then aggregated in the original order.
+All worker lifetimes join before the resulting collection is used. No font
+paths, aliases, face metadata or fallback policy are removed. Thread creation
+failure uses the original synchronous scanning for that chunk. Other platform
+discovery is unchanged. Tests compare complete system metadata with the retained
+serial implementation, including aliases, PostScript names and faces.
+The distribution Cargo.lock is omitted; the application retains its pinned lock.
+UPSTREAM.json records the exact original archive/file hashes and local changes.
+Fresh native startup/resource and full three-target quality gates are required.

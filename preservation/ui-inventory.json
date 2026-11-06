@@ -1,0 +1,7346 @@
+{
+  "version": 1,
+  "scope": "Every JSX onX event binding, bridge import and explicit browser-state call parsed with TypeScript 6.0.3; delegated/component-level handlers retained verbatim. Full frontend source/test inventory covers helpers, keyboard listeners, accessibility and CSS that have no JSX handler.",
+  "entries": [
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 23,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {\n    ActiveOperations,\n    ApplicationStatus,\n    LibraryCompatibility,\n    CancelOperation,\n    CreateCollection,\n    DuplicateCollection,\n    ListCollections,\n    ListShelves,\n    ReorderShelves,\n    AddStoriesToShelf,\n    OfficialMetadataStatus,\n    OpenCollection,\n    OperationSnapshot,\n    PreviewCollections,\n    QueryStories,\n    RecoverStorage,\n    RevealExportDestination,\n    RenameCollection,\n    ReorderCollections,\n    ReplaceCollectionQuery,\n    RefreshOfficialMetadata,\n    RemoveStory,\n    SelectAndImportStories,\n    SelectAndPreflightExport,\n    StartPreparedExport,\n    StoryDetail as LoadStoryDetail,\n    TagAssignmentWorkspace as LoadTagAssignmentWorkspace,\n    TagCatalog as LoadTagCatalog,\n} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 53,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/runtime/runtime'",
+      "expression": "import {EventsOn} from '../wailsjs/runtime/runtime';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 54,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {\n    exporter,\n    library,\n    metadata,\n    operations,\n    collections,\n    shelves,\n    tagging,\n} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1772,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setCollapsedTagFacets((current) => {\n                    const next = new Set(current);\n                    if (next.has(definition.id)) next.delete(definition.id);\n                    else next.add(definition.id);\n                    return next;\n                })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1793,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setBooleanFilter(\n                                    definition.id,\n                                    event.currentTarget.checked ? 'true' : 'ignored',\n                                )}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1810,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setBooleanFilter(\n                                    definition.id,\n                                    event.currentTarget.checked ? 'false' : 'ignored',\n                                )}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1832,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => toggleChoiceFilter(\n                                        definition.id,\n                                        value.id,\n                                    )}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1852,
+      "kind": "ui-action",
+      "name": "onLocation",
+      "expression": "onLocation={setLibraryRoot}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1852,
+      "kind": "ui-action",
+      "name": "onReady",
+      "expression": "onReady={() => setSettingsRevision((value) => value + 1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1865,
+      "kind": "ui-action",
+      "name": "onLibrary",
+      "expression": "onLibrary={openAllStories}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1866,
+      "kind": "ui-action",
+      "name": "onTags",
+      "expression": "onTags={() => setTagManagerOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1867,
+      "kind": "ui-action",
+      "name": "onImport",
+      "expression": "onImport={() => void startImport()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1868,
+      "kind": "ui-action",
+      "name": "onExport",
+      "expression": "onExport={() => curatedShelfID === null ? void prepareExport('current_query') : void preflightExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: curatedShelfID, query: collectionQuery}))}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1872,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={closeSidebar}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1884,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={openAllStories}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1905,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => toggleCollectionSelection(collection.id)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1925,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => collection.validity === 'needs_attention'\n                                        ? setRepairCollectionID(collection.id)\n                                        : void openSavedCollection(collection.id)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1948,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveCollection(collection.id, -1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1956,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveCollection(collection.id, 1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1964,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => showCollectionDialog('rename')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1972,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => showCollectionDialog('duplicate')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 1980,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                            setCollectionDialogError(null);\n                                            setDeleteCollectionID(collection.id);\n                                        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2035,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void prepareExport(\n                                        selectedCollectionIDs.length === 1\n                                            ? 'collection'\n                                            : 'collections',\n                                    )}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2057,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => showCollectionDialog('save')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2066,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void updateActiveCollection()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2078,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2081,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => openCuratedShelf(shelf.id)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2089,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                        const ids = curatedShelves.map((entry) => entry.id);\n                                        [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]];\n                                        setCollectionBusy(true);\n                                        void ReorderShelves(ids).then((response) => {if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);})\n                                            .catch(() => setRequestError(t('Shelves could not be reordered.'))).finally(() => setCollectionBusy(false));\n                                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2099,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preflightExport(new exporter.PreflightRequest({sourceType: selectedCuratedIDs.length === 1 ? 'curated_shelf' : 'curated_shelves', shelfIds: selectedCuratedIDs, query: {}}))}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2100,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setCreateShelfUUIDs([])}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2109,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setLanguageFacetOpen((open) => !open)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2118,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => toggleLanguage(locale)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2130,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setImportFacetOpen((open) => !open)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2139,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => toggleCompatibility(option.value)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2150,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setTagManagerOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2156,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setSidebarOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2157,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={setLibraryView}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2160,
+      "kind": "ui-action",
+      "name": "onManualOrder",
+      "expression": "onManualOrder={(manual) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, collectionQuery, manual))}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2160,
+      "kind": "ui-action",
+      "name": "onQuery",
+      "expression": "onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2161,
+      "kind": "ui-action",
+      "name": "onChanged",
+      "expression": "onChanged={() => setShelfRevision((value) => value + 1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2161,
+      "kind": "ui-action",
+      "name": "onDeleted",
+      "expression": "onDeleted={openAllStories}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2162,
+      "kind": "ui-action",
+      "name": "onExport",
+      "expression": "onExport={(request) => void preflightExport(request)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P44",
+        "P45",
+        "P46",
+        "P48",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P48",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2162,
+      "kind": "ui-action",
+      "name": "onInspect",
+      "expression": "onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2174,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(name) => updateQuery({\n                                ...collectionQuery,\n                                name,\n                                page: 1,\n                            })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2181,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={updateQuery}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2201,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void prepareExport('current_query')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2210,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void prepareExport('collection')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2218,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => updateQuery({\n                                    ...collectionQuery,\n                                    sort: event.currentTarget.value as CollectionQuery['sort'],\n                                    page: 1,\n                                })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2234,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setSidebarOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2236,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={setLibraryView}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2238,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setHistoryOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2242,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                setLuniiSyncDismissed(false);\n                                searchInput.current?.focus();\n                            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2253,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void flags.undo()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2265,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                    filter.remove();\n                                    searchInput.current?.focus();\n                                }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2275,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                updateQuery({\n                                    ...collectionQuery,\n                                    name: '',\n                                    anyOf: undefined,\n                                    brokenState: undefined,\n                                    languages: [],\n                                    compatibilities: [],\n                                    booleanFilters: [],\n                                    choiceFilters: [],\n                                    page: 1,\n                                });\n                                searchInput.current?.focus();\n                            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2298,
+      "kind": "ui-action",
+      "name": "onSync",
+      "expression": "onSync={() => void startMetadataRefresh()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2299,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={() => setLuniiSyncDismissed(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2339,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void recoverStorage()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2357,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                setRequestError(null);\n                                searchInput.current?.focus();\n                            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2374,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                setRemovalNotice(null);\n                                searchInput.current?.focus();\n                            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2413,
+      "kind": "ui-action",
+      "name": "onReveal",
+      "expression": "onReveal={(operationID) => {\n                                            void revealExportDestination(operationID);\n                                        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2459,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                        dismissOperation(operation.id);\n                                        searchInput.current?.focus();\n                                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2469,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void cancelOperation(operation)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2500,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => updateQuery({\n                                    ...collectionQuery,\n                                    name: '',\n                                    anyOf: undefined,\n                                    brokenState: undefined,\n                                    languages: [],\n                                    compatibilities: [],\n                                    booleanFilters: [],\n                                    choiceFilters: [],\n                                    page: 1,\n                                })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2517,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void startImport()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2541,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => row.collectionID === undefined\n                                    ? void loadAllStories()\n                                    : void openSavedCollection(row.collectionID)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2569,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={(event) => {\n                                            if (event.ctrlKey || event.metaKey || event.shiftKey) {\n                                                const next = selectedIDs.includes(story.id)\n                                                    ? selectedIDs.length === 1\n                                                        ? selectedIDs\n                                                        : selectedIDs.filter((storyID) => storyID !== story.id)\n                                                    : [...selectedIDs, story.id];\n                                                setSelectedIDs(next);\n                                                setSelectedID(next.includes(story.id) ? story.id : next[0]);\n                                            } else {\n                                                setSelectedIDs([story.id]);\n                                                setSelectedID(story.id);\n                                            }\n                                        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2612,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => updateQuery({\n                                ...collectionQuery,\n                                page: collectionQuery.page - 1,\n                            })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2624,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => updateQuery({\n                                ...collectionQuery,\n                                page: collectionQuery.page + 1,\n                            })}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2696,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setAddShelfOpen(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2700,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(broken) => void flags.set(selectedIDs, broken)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2704,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                setRemovalError(null);\n                                setInspectedStory(selected);\n                                setInspectedArchive(detail?.story.id === selected.id ? detail.archive : undefined);\n                                setDetailsOpen(true);\n                            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2717,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void prepareExport('selection')}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2729,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={() => setExportPreflight(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2814,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                    setExportPreflight(null);\n                                    setExportStartError(null);\n                                }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2824,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preflightExport(exportPreflightRequest)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2838,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void startPreparedExport()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2865,
+      "kind": "ui-action",
+      "name": "onFlagChange",
+      "expression": "onFlagChange={(broken) => void flags.set([inspected.id], broken)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2866,
+      "kind": "ui-action",
+      "name": "onUndoFlag",
+      "expression": "onUndoFlag={() => void flags.undo()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2868,
+      "kind": "ui-action",
+      "name": "onEditTags",
+      "expression": "onEditTags={() => {\n                        setTagAssignmentStoryIDs(selectedIDs.includes(inspected.id) ? [...selectedIDs] : [inspected.id]);\n                        setTagAssignmentOpen(true);\n                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2872,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => {\n                        flags.dismissFeedback();\n                        setDetailsOpen(false);\n                        setInspectedStory(null);\n                        setInspectedArchive(undefined);\n                        openDetailsButton.current?.focus({preventScroll: true});\n                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2879,
+      "kind": "ui-action",
+      "name": "onRemove",
+      "expression": "onRemove={() => void confirmRemoval()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2884,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setHistoryOpen(false)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2885,
+      "kind": "ui-action",
+      "name": "onReveal",
+      "expression": "onReveal={revealExportDestination}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2888,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setAddShelfOpen(false)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2889,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setAddShelfID(event.target.value)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2891,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                            setCollectionBusy(true);\n                            void AddStoriesToShelf(Number(addShelfID), renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid)).then((response) => {\n                                if (response.error) setRequestError(response.error.message); else {setShelfRevision((value) => value + 1); setAddShelfOpen(false);}\n                            }).catch(() => setRequestError(t('Shelf could not be changed.'))).finally(() => setCollectionBusy(false));\n                        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2897,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setAddShelfOpen(false); setCreateShelfUUIDs(renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid));}}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2901,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setCreateShelfUUIDs(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2901,
+      "kind": "ui-action",
+      "name": "onCreated",
+      "expression": "onCreated={(id) => {setCreateShelfUUIDs(null); setShelfRevision((value) => value + 1); openCuratedShelf(id);}}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2903,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={() => setCollectionDialogMode(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2910,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => {\n                            event.preventDefault();\n                            void submitCollectionDialog();\n                        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2934,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setCollectionDialogName(\n                                    event.currentTarget.value,\n                                )}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2946,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setCollectionDialogMode(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2967,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={() => setRepairCollectionID(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2992,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setRepairCollectionID(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 2999,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n                                    setRepairCollectionID(null);\n                                    setDeleteCollectionID(repairCollection.id);\n                                }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3009,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={removeUnavailableCriteria}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3017,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void repairCollectionWithCurrentQuery()}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3025,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setDeleteCollectionID(null)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3026,
+      "kind": "ui-action",
+      "name": "onDeleted",
+      "expression": "onDeleted={() => {setDeleteCollectionID(null); if (activeCollectionID === deleteCollection.id) {activateCollection(null, 'custom'); setCollectionQuery(queryHistory.replace(collectionQuery, null, 'custom'));} setShelfRevision((value) => value + 1); void loadSavedCollections();}}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3029,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setTagManagerOpen(false)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3030,
+      "kind": "ui-action",
+      "name": "onCatalogChange",
+      "expression": "onCatalogChange={reconcileTagCatalog}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3036,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => {\n                        if (selectedID === null || !tagAssignmentStoryIDs.includes(selectedID)) {\n                            setDetailsOpen(false);\n                            openDetailsButton.current?.focus({preventScroll: true});\n                        }\n                        setTagAssignmentOpen(false);\n                        setTagAssignmentStoryIDs([]);\n                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3044,
+      "kind": "ui-action",
+      "name": "onWorkspaceChange",
+      "expression": "onWorkspaceChange={acceptEditorWorkspace}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "line": 3045,
+      "kind": "ui-action",
+      "name": "onAssignmentsChange",
+      "expression": "onAssignmentsChange={async () => {\n                        await invalidateCollection();\n                    }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/BrokenToggle.tsx",
+      "line": 9,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onChange(!broken)}",
+      "parity_ids": [
+        "P24"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P24"
+      ]
+    },
+    {
+      "path": "frontend/src/ExportReport.tsx",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P47",
+        "parity::P48"
+      ]
+    },
+    {
+      "path": "frontend/src/ExportReport.tsx",
+      "line": 69,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onReveal(operation.id)}",
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P47",
+        "parity::P48"
+      ]
+    },
+    {
+      "path": "frontend/src/LibraryNavigation.tsx",
+      "line": 24,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onLibrary}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibraryNavigation.tsx",
+      "line": 32,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onTags}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibraryNavigation.tsx",
+      "line": 40,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onImport}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibraryNavigation.tsx",
+      "line": 50,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onExport}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibrarySidebar.tsx",
+      "line": 36,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibrarySidebar.tsx",
+      "line": 43,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LibraryViewPicker.tsx",
+      "line": 18,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onChange(value)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/LuniiSync.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {metadata} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P43"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43"
+      ]
+    },
+    {
+      "path": "frontend/src/LuniiSync.tsx",
+      "line": 39,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onSync}",
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P43"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43"
+      ]
+    },
+    {
+      "path": "frontend/src/LuniiSync.tsx",
+      "line": 43,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onDismiss}",
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P43"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43"
+      ]
+    },
+    {
+      "path": "frontend/src/ModalBackdrop.tsx",
+      "line": 10,
+      "kind": "ui-action",
+      "name": "onPointerDown",
+      "expression": "onPointerDown={(event) => {\n                startedOutside.current = event.target === event.currentTarget;\n            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/ModalBackdrop.tsx",
+      "line": 13,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={(event) => {\n                if (event.target === event.currentTarget && startedOutside.current && !disabled) {\n                    event.stopPropagation();\n                    onDismiss();\n                }\n            }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 4,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {OperationHistory} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 5,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 86,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onClose}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 94,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 99,
+      "kind": "browser-state",
+      "name": "history.map",
+      "expression": "history.map((operation) => (\n                        <details className=\"history-entry\" key={operation.id}>\n                            <summary>\n                                <span className=\"history-kind\">{t(kindLabels[operation.kind] ?? operation.kind)}</span>\n                                <span className={`history-status ${operation.status}`}>\n                                    {t(statusLabels[operation.status] ?? operation.status)}\n                                </span>\n                                <time dateTime={operation.createdAt}>\n                                    {new Date(operation.createdAt).toLocaleString(currentLanguage())}\n                                </time>\n                            </summary>\n                            <div className=\"history-detail\">\n                                <p>{operation.completedItems} {' ' + t(\"of\") + ' '}{operation.totalItems} {' ' + t(\"items finished.\")}</p>\n                                {operation.errorMessage && <p>{<OutcomeText text={operation.errorMessage} status={operation.status}/>}</p>}\n                                {operation.kind === 'export' && operationIsTerminal(operation) ? (\n                                    <ExportReport operation={operation} onReveal={(operationID) => {\n                                        setRevealError(null);\n                                        void onReveal(operationID).then(setRevealError);\n                                    }}/>\n                                ) : (\n                                    <ul className=\"operation-items\">\n                                        {operation.items.map((item) => (\n                                            <li key={item.id}>\n                                                <b>{item.storyTitle || item.sourceName}</b>\n                                                <span>{<OutcomeText text={item.outcomeMessage || statusLabels[item.status] || item.status} status={item.status}/>}</span>\n                                            </li>\n                                        ))}\n                                    </ul>\n                                )}\n                            </div>\n                        </details>\n                    ))",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 114,
+      "kind": "ui-action",
+      "name": "onReveal",
+      "expression": "onReveal={(operationID) => {\n                                        setRevealError(null);\n                                        void onReveal(operationID).then(setRevealError);\n                                    }}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 140,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => loadPage('')}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 144,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => loadPage(request.before)}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OperationHistoryDialog.tsx",
+      "line": 148,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => loadPage(nextBefore)}",
+      "parity_ids": [
+        "P48",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P48",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/OutcomeText.tsx",
+      "line": 11,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setDetails(!details)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/ReviewWarnings.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {shelves} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/ReviewWarnings.tsx",
+      "line": 14,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(current - 1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/ReviewWarnings.tsx",
+      "line": 15,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(current + 1)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/SearchInput.tsx",
+      "line": 13,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => {\n            const text = event.currentTarget.value;\n            setDraft({text, canonical: normalizeSearchText(text)});\n            onChange(text);\n        }}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove, RetryLibrary, LocateLibrary, DismissSettings} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import type {main} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 4,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/runtime/runtime'",
+      "expression": "import {EventsOn} from '../wailsjs/runtime/runtime';",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 79,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => { setOpen(true); if (nativeSettingsAvailable()) void update(Settings); }}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 80,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={dismiss}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 86,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => { const next = event.currentTarget.value as Language; void update(() => SetUILanguage(next)); }}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 93,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void update(SelectLibraryLocation)}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 96,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void update(async () => { const result=await RetryLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 97,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void update(async () => { const result=await LocateLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 103,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void update(() => StartLibraryMove(snapshot.preparation!.id))}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 110,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void update(CancelLibraryMove)}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 114,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {\n  setWorking(true); setError('');\n  void ConfirmLibrarySetup().then(async (result) => {\n   if (result.error) { setError(result.error.message); return; }\n   if (!result.success) { setError('settings.invalid'); return; }\n   accept(await Settings()); setOpen(false); onReady();\n  }).catch(() => setError('settings.invalid')).finally(() => setWorking(false));\n }}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/SettingsPanel.tsx",
+      "line": 122,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={dismiss}",
+      "parity_ids": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P52",
+        "parity::P53",
+        "parity::P54",
+        "parity::P55"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {PreviewShelfCreation, CreateShelfFromReview} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {collections, shelves} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 38,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 39,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setName(event.target.value)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 43,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => setIDs(ids.includes(source.id) ? ids.filter((id) => id !== source.id) : [...ids, source.id])}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 46,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 51,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setSelected(review.additions.map((item) => item.uuid))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 52,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setSelected([])}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 54,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => setSelected(selected.includes(item.uuid) ? selected.filter((id) => id !== item.uuid) : [...selected, item.uuid])}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 58,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page - 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 60,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page + 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 61,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setReview(null); setSelected([]);}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 62,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfCreation.tsx",
+      "line": 63,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void create()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfDialog.tsx",
+      "line": 30,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfDialog.tsx",
+      "line": 34,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {PreviewShelfUpdate, ApplyShelfUpdate} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {shelves} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 39,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 47,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onManageExclusions}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 50,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => bulk('addition', 'add')}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 51,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => bulk('addition', 'exclude')}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 52,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => bulk('removal', 'keep')}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 53,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => bulk('removal', 'remove')}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 54,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setChoices({})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 57,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setChoices({...choices, [candidate.uuid]: event.target.value})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 66,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page - 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 67,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page + 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 69,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void apply()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfReview.tsx",
+      "line": 73,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {PreviewShelfSources, ApplyShelfSources, PreviewCollectionDeletion, ApplyCollectionDeletion} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {collections, shelves} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 18,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => onChange({...choices, [item.uuid]: event.target.value})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 24,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page - 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 25,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPage(page + 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 48,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 50,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => setIDs(ids.includes(source.id) ? ids.filter((id) => id !== source.id) : [...ids, source.id])}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 51,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 53,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={setChoices}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 54,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setPlan(null)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 55,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 56,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void apply(true)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 57,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void apply(false)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 79,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={onClose}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 81,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(value) => setChoices({...choices, [shelf.shelfId]: value})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 82,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setShelfPage(shelfPage - 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 82,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setShelfPage(shelfPage + 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 84,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void preview()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 85,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void apply(true)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfSources.tsx",
+      "line": 86,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void apply(false)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 4,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories, PreviewShelfUpdate, ClearShelfExclusion} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 5,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {collections, exporter, library, shelves, tagging} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 110,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void load()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 118,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setError(''); setInitialReview(null); setReviewOpen(true);}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 119,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setManageSources(true)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 120,
+      "kind": "ui-action",
+      "name": "onKeyDown",
+      "expression": "onKeyDown={(event) => {\n                    if (event.key === 'Escape' && shelfActions.current?.open) {closeShelfActions();}\n                }}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 122,
+      "kind": "ui-action",
+      "name": "onBlur",
+      "expression": "onBlur={(event) => {if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 126,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action); closeShelfActions();}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 127,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setExclusionsOpen(true); closeShelfActions();}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 132,
+      "kind": "ui-action",
+      "name": "onManageExclusions",
+      "expression": "onManageExclusions={() => {setReviewOpen(false); setInitialReview(null); setExclusionsOpen(true);}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 132,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => {setReviewOpen(false); setInitialReview(null);}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 132,
+      "kind": "ui-action",
+      "name": "onApplied",
+      "expression": "onApplied={onMembershipChanged}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 133,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setManageSources(false)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 133,
+      "kind": "ui-action",
+      "name": "onChanged",
+      "expression": "onChanged={onMembershipChanged}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 136,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 137,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 139,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 142,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(name) => onQuery({...query, name, page: 1})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 142,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={onQuery}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 145,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void flags.undo()}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 148,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'selection', queryShelfId: id, shelfSelectionUuids: selected, query: {}}))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 151,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(broken) => void flags.set(selectedStoryIDs, broken)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 153,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 157,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => setSelected(selected.includes(member.uuid) ? selected.filter((uuid) => uuid !== member.uuid) : [...selected, member.uuid])}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 161,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onInspect(member.story!)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 162,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void act(() => reorder(member.uuid, -1))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 163,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void act(() => reorder(member.uuid, 1))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 166,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onQuery({...query, page: view.page - 1})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 167,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onQuery({...query, page: view.page + 1})}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 168,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setExclusionsOpen(false)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 171,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void act(() => ClearShelfExclusion(id, item.uuid))}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 172,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setExclusionPage(exclusionPage - 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 172,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setExclusionPage(exclusionPage + 1)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 174,
+      "kind": "ui-action",
+      "name": "onClose",
+      "expression": "onClose={() => setDialog(null)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 175,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setName(event.target.value)}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/ShelfWorkspace.tsx",
+      "line": 176,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void act(async () => {\n                const result = dialog === 'rename' ? await RenameShelf(id, name) : dialog === 'duplicate' ? await DuplicateShelf(id, name) : await DeleteShelf(id);\n                if (!result.error) {setDialog(null); if (dialog === 'delete') onDeleted();} return result;\n            })}",
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P27",
+        "parity::P28",
+        "parity::P29",
+        "parity::P30",
+        "parity::P31",
+        "parity::P32",
+        "parity::P33",
+        "parity::P34",
+        "parity::P35",
+        "parity::P36",
+        "parity::P37",
+        "parity::P38"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryCover.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {library} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P42",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P42",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryCover.tsx",
+      "line": 15,
+      "kind": "ui-action",
+      "name": "onError",
+      "expression": "onError={() => setFailedArtworkID(story.artworkId)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P42",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P42",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 7,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {library, tagging} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 8,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {TagAssignmentWorkspace} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 101,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onClose}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 120,
+      "kind": "ui-action",
+      "name": "onError",
+      "expression": "onError={() => setFailedArtworkURL(artworkURL)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 137,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={onFlagChange}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 142,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onUndoFlag}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 147,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onEditTags}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 167,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setTechnicalOpen(!technicalOpen)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 199,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setConfirming(false)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 206,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onRemove}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 218,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => setConfirming(true)}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/StoryDetailsDialog.tsx",
+      "line": 221,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 13,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {\n    SetBooleanTag,\n    SetChoiceTagValue,\n    TagAssignmentWorkspace,\n} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 18,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {tagging} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 57,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event: ChangeEvent<HTMLInputElement>) => (\n                    onChange(event.currentTarget.checked)\n                )}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 139,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onClose}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 160,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 231,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(checked) => void apply(() => (\n                                            SetBooleanTag(storyIDs, definition.id, checked)\n                                        ))}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 250,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(checked) => void apply(() => (\n                                                        SetChoiceTagValue(\n                                                            storyIDs,\n                                                            definition.id,\n                                                            value.id,\n                                                            checked,\n                                                        )\n                                                    ))}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagAssignmentEditor.tsx",
+      "line": 268,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 13,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {\n    CreateTagDefinition,\n    CreateTagValue,\n    DeleteTagDefinition,\n    DeleteTagValue,\n    PlanTagDefinitionDeletion,\n    PlanTagValueDeletion,\n    RecolorTagDefinition,\n    RenameTagDefinition,\n    RenameTagValue,\n    ReorderTagDefinitions,\n    ReorderTagValues,\n    TagCatalog,\n} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 27,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {tagging} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 72,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onCancel}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 95,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onCancel}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 101,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onConfirm}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 286,
+      "kind": "ui-action",
+      "name": "onDismiss",
+      "expression": "onDismiss={onClose}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 300,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={onClose}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 305,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => void createDefinition(event)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 349,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => {\n                                        event.preventDefault();\n                                        const color = String(new FormData(event.currentTarget).get('color'));\n                                        if (color.toUpperCase() !== definition.color.toUpperCase()) {\n                                            void run(() => RecolorTagDefinition(definition.id, color));\n                                        }\n                                    }}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 366,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => void saveDefinition(event, definition)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 383,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveDefinition(userIndex, -1)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 391,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveDefinition(userIndex, 1)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 400,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void planDefinitionDeletion(definition.id)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 412,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => void renameValue(event, value.id)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 426,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveValue(definition, index, -1)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 434,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void moveValue(definition, index, 1)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 443,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => void planValueDeletion(value.id)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 450,
+      "kind": "ui-action",
+      "name": "onSubmit",
+      "expression": "onSubmit={(event) => void createValue(event, definition.id)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 470,
+      "kind": "ui-action",
+      "name": "onCancel",
+      "expression": "onCancel={() => setDeletion(null)}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagManager.tsx",
+      "line": 471,
+      "kind": "ui-action",
+      "name": "onConfirm",
+      "expression": "onConfirm={() => void confirmDeletion()}",
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import type {tagging} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 38,
+      "kind": "ui-action",
+      "name": "onKeyDown",
+      "expression": "onKeyDown={(event) => {\n        if (event.key === 'Escape' && open) {event.stopPropagation(); close();}\n    }}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 42,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => {setSearch(''); setOpen(!open);}}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 44,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => setSearch(event.currentTarget.value)}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 51,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={(event) => boolean(definition.id, event.currentTarget.value as BooleanFilterState)}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 54,
+      "kind": "ui-action",
+      "name": "onChange",
+      "expression": "onChange={() => choice(definition.id, value.id)}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 58,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={() => onChange({...query, booleanFilters: [], choiceFilters: [], page: 1})}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/TagSearchFilters.tsx",
+      "line": 59,
+      "kind": "ui-action",
+      "name": "onClick",
+      "expression": "onClick={close}",
+      "parity_ids": [
+        "P15",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P15",
+        "parity::P20",
+        "parity::P21",
+        "parity::P22",
+        "parity::P23"
+      ]
+    },
+    {
+      "path": "frontend/src/dev-fixture.ts",
+      "line": 232,
+      "kind": "browser-state",
+      "name": "window.history.replaceState",
+      "expression": "window.history.replaceState({\n            collectionQuery: {\n                hash,\n                collectionId: null,\n                scope: 'all',\n            },\n        }, '', `${window.location.pathname}${window.location.search}${hash}`)",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/export-state.ts",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P44",
+        "parity::P45",
+        "parity::P46",
+        "parity::P47",
+        "parity::P48"
+      ]
+    },
+    {
+      "path": "frontend/src/import-state.ts",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/library-view.ts",
+      "line": 10,
+      "kind": "browser-state",
+      "name": "window.localStorage.getItem",
+      "expression": "window.localStorage.getItem(storageKey)",
+      "parity_ids": [
+        "P13",
+        "P43",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P43",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/library-view.ts",
+      "line": 20,
+      "kind": "browser-state",
+      "name": "window.localStorage.setItem",
+      "expression": "window.localStorage.setItem(storageKey, view)",
+      "parity_ids": [
+        "P13",
+        "P43",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P43",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/metadata-state.ts",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {metadata, operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P43"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P39",
+        "parity::P40",
+        "parity::P41",
+        "parity::P43"
+      ]
+    },
+    {
+      "path": "frontend/src/notice-preferences.ts",
+      "line": 12,
+      "kind": "browser-state",
+      "name": "window.localStorage.getItem",
+      "expression": "window.localStorage.getItem(storageKey)",
+      "parity_ids": [
+        "P13",
+        "P43",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P43",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/notice-preferences.ts",
+      "line": 32,
+      "kind": "browser-state",
+      "name": "window.localStorage.setItem",
+      "expression": "window.localStorage.setItem(storageKey, JSON.stringify(preferences))",
+      "parity_ids": [
+        "P13",
+        "P43",
+        "P50",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P43",
+        "parity::P50",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/packaged-acceptance.ts",
+      "line": 1,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {\n    Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove,\n    OperationSnapshot,\n    PackagedAcceptanceMode,\n    QueryStories,\n    RecordPackagedAcceptance,\n    RevealExportDestination,\n    SelectAndImportStories,\n    SelectAndPreflightExport,\n    StartPreparedExport,\n} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/packaged-acceptance.ts",
+      "line": 12,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {exporter, library, type operations} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P13",
+        "P18",
+        "P19",
+        "P56"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P13",
+        "parity::P18",
+        "parity::P19",
+        "parity::P56"
+      ]
+    },
+    {
+      "path": "frontend/src/query-history.ts",
+      "line": 107,
+      "kind": "browser-state",
+      "name": "this.#target.history.pushState",
+      "expression": "this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id, manualOrder: manualOrder ?? (this.currentCuratedShelfID() === id ? this.currentShelfManualOrder() : true)}, scope: 'shelf'}}, '',\n            `${this.#target.location.pathname}${this.#target.location.search}${hash}`)",
+      "parity_ids": [
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P51"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P14",
+        "parity::P15",
+        "parity::P16",
+        "parity::P17",
+        "parity::P51"
+      ]
+    },
+    {
+      "path": "frontend/src/use-story-flags.ts",
+      "line": 2,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/main/App'",
+      "expression": "import {RestoreStoryFlags, SetStoriesBroken} from '../wailsjs/go/main/App';",
+      "parity_ids": [
+        "P24"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P24"
+      ]
+    },
+    {
+      "path": "frontend/src/use-story-flags.ts",
+      "line": 3,
+      "kind": "bridge-import",
+      "name": "'../wailsjs/go/models'",
+      "expression": "import {library} from '../wailsjs/go/models';",
+      "parity_ids": [
+        "P24"
+      ],
+      "owner": "librairii-3 (baseline contract)",
+      "rust_evidence": [
+        "parity::P24"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+import { Button, ComboBox, CheckBox, ListView, VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+import { FormField } from "form-field.slint";
+import { EditAction } from "states.slint";
+export struct CollectionChoice { index:int, label:string, selected:bool, available:bool }
+component Label inherits Text { vertical-stretch: 0; color: Palette.foreground; wrap: word-wrap; }
+export component CollectionManager inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> creating;
+    in property <bool> openable;
+    in property <bool> move-up;
+    in property <bool> move-down;
+    in property <bool> union-available;
+    in property <bool> union-active;
+    in property <bool> union-selected;
+    in property <[string]> definitions;
+    in property <[CollectionChoice]> choices;
+    in-out property <int> selected;
+    in-out property <string> name;
+    in property <string> notice;
+    in property <string> status;
+    in property <string> criteria;
+    in property <string> union-summary;
+    out property <bool> first-focused: selector.has-focus;
+    out property <bool> editing: name-field.has-focus;
+    out property <bool> replace-focused: replace.has-focus;
+    out property <bool> delete-focused: delete.has-focus;
+    public function activate() { selector.focus(); }
+    public function focus-name() { name-field.focus(); }
+    public function focus-union() { open-union.focus(); }
+    out property <bool> union-focused: save-union.has-focus;
+    out property <length> union-window-y: save-union.absolute-position.y;
+    out property <length> union-height: save-union.height;
+    public function focus-invoker(replacing:bool) { if replacing { replace.focus(); } else { delete.focus(); } }
+    public function edit(action:EditAction) { name-field.edit(action); }
+    callback select(int);
+    callback save();
+    callback duplicate();
+    callback move(int);
+    callback open();
+    callback replace();
+    callback delete();
+    callback edit-query();
+    callback edit-saved-query();
+    callback toggle(int);
+    callback toggle-selected();
+    callback open-union();
+    callback save-union();
+    callback reveal(length,length);
+    function reveal-choice(y:length,h:length) {
+        let top=choice-list.absolute-position.y;
+        choice-list.content-y=max(min(0px,choice-list.visible-height - choice-list.content-height),min(0px,choice-list.content-y + (y<top ? top - y : y+h>top+choice-list.visible-height ? top+choice-list.visible-height - y - h : 0px)));
+        root.reveal(max(top,min(y,top+choice-list.visible-height - h)),h);
+    }
+    padding: 0px; spacing: 8px;
+    Label { text: root.notice; accessible-live-region: polite; }
+    selector := ComboBox { enabled: root.active; model: root.definitions; current-index <=> root.selected; accessible-label: root.french ? "Collection à gérer" : "Collection to manage"; selected(_) => { root.select(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    Label { text: root.status; }
+    name-field := FormField { enabled: root.active; text <=> root.name; accessible-label: root.french ? "Nom de la Collection" : "Collection name"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    Button { enabled: root.active && (!root.creating || !root.union-active || root.union-available); text: root.creating ? (root.union-active ? (root.french ? "Enregistrer une copie de l’union comme Collection" : "Save a copy of the union as Collection") : (root.french ? "Enregistrer les filtres actuels comme Collection" : "Save current filters as Collection")) : (root.french ? "Renommer la Collection" : "Rename Collection"); clicked => { root.save(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    Label { text: (root.french ? "Filtres actuels : " : "Current filters: ") + root.criteria; }
+    Button { enabled: root.active; text: root.french ? "Modifier les filtres actuels…" : "Edit current filters…"; clicked => { root.edit-query(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    replace := Button { visible: !root.creating; height: self.visible ? 32px : 0px; enabled: root.active && !root.creating; text: root.french ? "Remplacer la requête enregistrée par ces filtres…" : "Replace saved query with these filters…"; clicked => { root.replace(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    Button { visible: !root.creating; height: self.visible ? 32px : 0px; enabled: root.active && !root.creating; text: root.french ? "Modifier les critères enregistrés…" : "Edit saved criteria…"; clicked => { root.edit-saved-query(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    HorizontalBox { visible: !root.creating; height: self.visible ? 32px : 0px; padding: 0px;
+        Button { enabled: root.active && !root.creating && root.openable; text: root.french ? "Ouvrir" : "Open"; clicked => { root.open(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        Button { enabled: root.active && !root.creating && root.openable; text: root.french ? "Dupliquer avec ce nom" : "Duplicate with this name"; clicked => { root.duplicate(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    }
+    Label { visible: !root.creating; height: self.visible ? self.preferred-height : 0px; text: root.french ? "Pour dupliquer, saisissez d’abord un nom différent." : "To duplicate, enter a different name first."; }
+    HorizontalBox { visible: !root.creating; height: self.visible ? 32px : 0px; padding: 0px;
+        Button { enabled: root.active && root.move-up; text: root.french ? "Monter" : "Move up"; clicked => { root.move(-1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        Button { enabled: root.active && root.move-down; text: root.french ? "Descendre" : "Move down"; clicked => { root.move(1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        delete := Button { enabled: root.active && !root.creating; text: root.french ? "Supprimer…" : "Delete…"; clicked => { root.delete(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    }
+    Label { text: root.french ? "Combiner des Collections · union des correspondances actuelles" : "Combine Collections · union of current matches"; font-weight: 600; }
+    Label { text: root.french ? "Une histoire correspondant à n’importe quelle Collection sélectionnée suffit. Les correspondances communes sont dédupliquées." : "Matching any selected Collection is sufficient. Shared matches are counted once."; }
+    Button { enabled: root.active && !root.creating && (root.openable || root.union-selected); text: root.union-selected ? (root.french ? "Retirer cette Collection de l’union" : "Remove this Collection from union") : (root.french ? "Ajouter cette Collection à l’union" : "Add this Collection to union"); clicked => {root.toggle-selected();} changed has-focus => {if self.has-focus {root.reveal(self.absolute-position.y,self.height);}} }
+    choice-list := ListView { height: min(160px,max(36px,root.choices.length * 36px));
+        for entry in root.choices: HorizontalBox { height: 36px; padding: 0px;
+            CheckBox { width: 30px; text: ""; accessible-label: entry.label; enabled: root.active && (entry.available || entry.selected); checked: entry.selected; toggled => { root.toggle(entry.index); } changed has-focus => { if self.has-focus { root.reveal-choice(self.absolute-position.y,self.height); } } }
+            Text { text: entry.label; color: Palette.foreground; overflow: elide; min-width: 0px; horizontal-stretch: 1; }
+        }
+    }
+    Label { text: root.union-summary; }
+    HorizontalBox { padding: 0px;
+        open-union := Button { enabled: root.active && root.union-available; text: root.french ? "Ouvrir l’union" : "Open union"; clicked => { root.open-union(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        save-union := Button { enabled: root.active && root.union-available; text: root.french ? "Enregistrer une copie de l’union avec ce nom" : "Save a copy of the union with this name"; clicked => { root.save-union(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    }
+}

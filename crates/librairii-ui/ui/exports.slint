@@ -1,0 +1,46 @@
+import {Button,CheckBox,ComboBox,VerticalBox,HorizontalBox,Palette} from "std-widgets.slint";
+import {CollectionChoice} from "collections.slint";
+export struct ExportData {summary:string,notice:string,preparing:bool,scope-summary:string,has-destination:bool,can-start:bool,previous:bool,next:bool,group-previous:bool,group-next:bool}
+component Label inherits Text {wrap:word-wrap;color:Palette.foreground;vertical-stretch:0;}
+component Command inherits Button {callback reveal(length,length);changed has-focus=>{if self.has-focus{root.reveal(self.absolute-position.y,self.height);}}}
+component GroupChoice inherits CheckBox {
+    in property <CollectionChoice> entry;in property <int> epoch;changed epoch=>{self.checked=root.entry.selected;}callback toggle(int);callback reveal(length,length);
+    text:root.entry.label;checked:root.entry.selected;
+    changed entry=>{self.checked=root.entry.selected;}
+    toggled=>{root.toggle(root.entry.index);}
+    changed has-focus=>{if self.has-focus{root.reveal(self.absolute-position.y,self.height);}}
+}
+export component ExportPanel inherits VerticalBox {
+    in property <bool> french;in property <bool> active;in property <bool> picking;
+    in property <ExportData> data;in property <[string]> modes;in-out property <int> mode;
+    in property <int> selection-epoch;
+    in property <[CollectionChoice]> groups;in property <[string]> items;
+    callback select(int);callback toggle(int);callback group-page(int);callback pick();callback refresh();callback start();callback page(int);callback reveal(length,length);
+    public function activate(){scope.focus();}
+    public function sync-choice(){scope.current-index=root.mode;scope.current-value=root.modes[root.mode];}
+    out property <bool> first-focused:scope.has-focus;
+    out property <bool> picker-focused:choose.has-focus;
+    out property <bool> start-focused:copy.has-focus;
+    public function focus-picker(){choose.focus();}
+    public function focus-start(){if copy.enabled{copy.focus();}else{choose.focus();}}
+    changed data=>{if !root.data.can-start && copy.has-focus && root.active {choose.focus();}}
+    padding:0px;spacing:10px;
+    Label {text:root.french ? "Les archives éligibles sont copiées à l’identique, sans remplacer les fichiers existants. Les histoires défectueuses restent dans la bibliothèque et sont exclues de tous les exports." : "Eligible archives are copied byte for byte without replacing existing files. Broken stories stay in the library and are excluded from every export.";}
+    scope:=ComboBox {enabled:root.active && !root.picking;model:root.modes;current-index <=> root.mode;accessible-label:root.french ? "Portée de l’export" : "Export scope";selected(_)=>{root.select(self.current-index);}changed has-focus=>{if self.has-focus{root.reveal(self.absolute-position.y,self.height);}}}
+    Label {text:root.data.scope-summary;}
+    for choice in root.groups: GroupChoice {entry:choice;epoch:root.selection-epoch;enabled:root.active && !root.picking && choice.available;toggle(i)=>{root.toggle(i);}reveal(y,h)=>{root.reveal(y,h);}}
+    if root.mode>=2: HorizontalBox {padding:0px;spacing:8px;
+        Command {enabled:root.active && root.data.group-previous;text:root.french ? "Groupes précédents" : "Previous groups";clicked=>{root.group-page(-1);}reveal(y,h)=>{root.reveal(y,h);}}
+        Command {enabled:root.active && root.data.group-next;text:root.french ? "Groupes suivants" : "Next groups";clicked=>{root.group-page(1);}reveal(y,h)=>{root.reveal(y,h);}}
+    }
+    choose:=Command {enabled:root.active && !root.picking;text:root.picking ? (root.french ? "Sélection du dossier…" : "Choosing folder…") : root.data.has-destination ? (root.french ? "Choisir une autre destination…" : "Choose another destination…") : (root.french ? "Choisir la destination…" : "Choose destination…");clicked=>{root.pick();}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {text:root.data.notice;accessible-live-region:polite;}
+    Label {text:root.data.summary;}
+    Command {enabled:root.active && !root.picking && root.data.has-destination;text:root.french ? "Actualiser l’aperçu" : "Refresh preview";clicked=>{root.refresh();}reveal(y,h)=>{root.reveal(y,h);}}
+    copy:=Command {enabled:root.active && !root.picking && root.data.can-start;text:root.french ? "Exporter les archives éligibles" : "Export eligible archives";clicked=>{root.start();}reveal(y,h)=>{root.reveal(y,h);}}
+    for item in root.items: Label {text:item;}
+    HorizontalBox {padding:0px;spacing:8px;
+        Command {enabled:root.active && root.data.previous;text:root.french ? "Membres précédents" : "Previous members";clicked=>{root.page(-1);}reveal(y,h)=>{root.reveal(y,h);}}
+        Command {enabled:root.active && root.data.next;text:root.french ? "Membres suivants" : "Next members";clicked=>{root.page(1);}reveal(y,h)=>{root.reveal(y,h);}}
+    }
+}

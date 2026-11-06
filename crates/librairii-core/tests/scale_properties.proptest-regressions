@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc c97391ed7dc0a33b97fc20fb68949288a92809f7c023833570aaa69d21b66d10 # shrinks to name = "𝕬"
+# Task16 retained diagnostic: this minimized input disproved an overstrong
+# Unicode idempotence assumption, not the frozen codec. Its exact value executes
+# in retained_unicode_seed_preserves_observable_frozen_canonical_passes.

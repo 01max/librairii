@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "oracle_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "approval_date": "2026-10-20",
+  "concepts": [
+    "Story shelves",
+    "Desktop workspace"
+  ],
+  "approved_reference": {
+    "version": 1,
+    "approved_on": "2026-10-20",
+    "approval_scope": "Both concepts are approved visual direction; complete feature parity and toolkit/platform qualification remain required.",
+    "variants": [
+      "Story shelves",
+      "Desktop workspace"
+    ],
+    "editable_source": "native-desktop.fragment.html",
+    "standalone_preview": "native-desktop.html",
+    "renderer": {
+      "name": "visualize",
+      "version": "1.0.46"
+    },
+    "files": [
+      {
+        "path": "native-desktop.fragment.html",
+        "sha256": "44cd023b9e09e9bd2b411e76e58f5bef70e18b72508e03f25c8aba6343083460"
+      },
+      {
+        "path": "native-desktop.html",
+        "sha256": "4df3afb9a27c780657f3c4bf0f2b691f346bd00e589468516a5bc655230d2cb1"
+      }
+    ]
+  },
+  "historical_and_current_browser_evidence": [
+    {
+      "path": "testdata/ui-prototypes/05-archive-shelves.html",
+      "sha256": "1b6bb40b2ca411726d90e942d4ea0b3620a5a0ec77b0976093a20be0a625f75a",
+      "bytes": 73986
+    },
+    {
+      "path": "prototype_contract_test.go",
+      "sha256": "149d68d5298cfaa1a9a404d187a9eb9dfb52629c03590c4fe18b1846c33351e8",
+      "bytes": 884
+    },
+    {
+      "path": "frontend/src/parity-fixture.ts",
+      "sha256": "dcbe193d0d0c0dcf413873ce4cba88ad53a18ec3df03f449ae1419f908aa6253",
+      "bytes": 4342
+    },
+    {
+      "path": "frontend/src/parity-fixture.test.ts",
+      "sha256": "c15c951387c11fce54ce7243342c18477663db62ea27bfcb56e1c459d5747c9a",
+      "bytes": 1920
+    },
+    {
+      "path": "frontend/scripts/frontend-visual-parity.mjs",
+      "sha256": "bab4ec81b7788d62fa38bf3669b6aadb42d57371a2f1e3e2dd378972d3a175b3",
+      "bytes": 7084
+    },
+    {
+      "path": "frontend/scripts/documentation-screenshots.mjs",
+      "sha256": "980e0a3bfd8e6e9e2c41ab7f92c33ab92ac924066692f152676e14fb3d6cfb6b",
+      "bytes": 5124
+    },
+    {
+      "path": "docs/assets/README.md",
+      "sha256": "76ab95fe62e2f8d059881a5e23fa0b18601aba3e053df1d76340b93c9534f23d",
+      "bytes": 1817
+    },
+    {
+      "path": "docs/assets/curated-shelf.png",
+      "sha256": "d226a3696f9c0a9746ce882d1d63b68b4602f8c09fe91c5218d7efdedcd731c6",
+      "bytes": 81625,
+      "width": 1181,
+      "height": 800
+    },
+    {
+      "path": "docs/assets/library.png",
+      "sha256": "22847b0b4544ce66c189fbabf902369b1324f495922c5b6ff28a3e26ec19e7d6",
+      "bytes": 179142,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "path": "docs/assets/settings.png",
+      "sha256": "b92330c9da80e134993c73331ffb4023d83df6bec82f4525561869e2014f94b8",
+      "bytes": 16532,
+      "width": 540,
+      "height": 426
+    },
+    {
+      "path": "docs/assets/shelf-review.png",
+      "sha256": "f9f1cd2886b504e75b0ae50d813eee62f5b9d441b9cbcbf0367a52ff37da6d9a",
+      "bytes": 44195,
+      "width": 521,
+      "height": 526
+    },
+    {
+      "path": "docs/assets/story-details.png",
+      "sha256": "70eebcae3feb6e57a42cf9473687ce604044ad0ab5473067f22d2bb097996dd7",
+      "bytes": 34513,
+      "width": 720,
+      "height": 582
+    },
+    {
+      "path": "docs/assets/tag-manager.png",
+      "sha256": "0a94e07a93e89c91bdefd21ce4ae0ecb043164ea0691f970202f139675741810",
+      "bytes": 51197,
+      "width": 850,
+      "height": 782
+    }
+  ],
+  "native_evidence": "pending; neither HTML concept nor React screenshot qualifies native rendering",
+  "parity_ids": [
+    "P13",
+    "P18",
+    "P19",
+    "P27",
+    "P28",
+    "P29",
+    "P30",
+    "P31",
+    "P32",
+    "P33",
+    "P34",
+    "P35",
+    "P36",
+    "P37",
+    "P38",
+    "P56"
+  ],
+  "permitted_adaptations": [
+    "OS window chrome and menu conventions",
+    "qualified native control typography and scaling",
+    "accessibility semantics/focus and responsive layout adjustments preserving capabilities"
+  ],
+  "demo_omissions": "native-rendering-contract.md"
+}

@@ -1,0 +1,4 @@
+/* crccomb.c -- generalized combination of CRCs
+ * Copyright (C) 2015 Mark Adler
+ * Version 1.1  29 Apr 2015  Mark Adler
+ */

@@ -1,0 +1,64 @@
+{
+  "brokenStoryIds": [
+    4
+  ],
+  "collections": [
+    {
+      "id": 1,
+      "name": "Moon",
+      "query": {
+        "name": "moon"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Forest",
+      "query": {
+        "name": "forest"
+      }
+    }
+  ],
+  "excluded": [
+    "523e4567-e89b-42d3-a456-426614174000"
+  ],
+  "initialMembers": [
+    "123e4567-e89b-42d3-a456-426614174000",
+    "223e4567-e89b-42d3-a456-426614174000",
+    "323e4567-e89b-42d3-a456-426614174000",
+    "623e4567-e89b-42d3-a456-426614174000"
+  ],
+  "manualRetention": [
+    "323e4567-e89b-42d3-a456-426614174000"
+  ],
+  "sourceDerived": [
+    "123e4567-e89b-42d3-a456-426614174000",
+    "223e4567-e89b-42d3-a456-426614174000"
+  ],
+  "steps": [
+    "review-complete (read only)",
+    "flag story1 without changing review eligibility",
+    "explicit Keep story1 + Add story4",
+    "replay consumed ticket must fail",
+    "ordinary Remove story4 without exclusion",
+    "explicit Exclude story4",
+    "unexclude story4 without membership insertion",
+    "mark Forest source needs_attention; additions allowed, removals suspended",
+    "restore healthy source; export with existing story-2.zip destination conflict"
+  ],
+  "storyUUIDs": [
+    "123e4567-e89b-42d3-a456-426614174000",
+    "223e4567-e89b-42d3-a456-426614174000",
+    "323e4567-e89b-42d3-a456-426614174000",
+    "423e4567-e89b-42d3-a456-426614174000",
+    "523e4567-e89b-42d3-a456-426614174000",
+    "623e4567-e89b-42d3-a456-426614174000"
+  ],
+  "titles": [
+    "Old ocean",
+    "Moon still",
+    "Manual ocean",
+    "Moon forest",
+    "Moon excluded",
+    "Unavailable"
+  ]
+}

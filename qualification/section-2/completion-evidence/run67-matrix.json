@@ -1,0 +1,1846 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+  "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+  "workflows": [
+    {
+      "id": 40123986515,
+      "name": "CI",
+      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 363
+    },
+    {
+      "id": 40123986730,
+      "name": "Rust quality",
+      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 227
+    },
+    {
+      "id": 40123986713,
+      "name": "Task 2 native qualification",
+      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 67
+    }
+  ],
+  "jobs": [
+    {
+      "id": 120961364552,
+      "name": "Task 2 spike x86_64-apple-darwin",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40123986713
+    },
+    {
+      "id": 120961364709,
+      "name": "Task 2 spike x86_64-unknown-linux-gnu",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40123986713
+    },
+    {
+      "id": 120961364772,
+      "name": "Task 2 spike aarch64-apple-darwin",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40123986713
+    }
+  ],
+  "all_native_lanes_pass": true,
+  "independent_review_complete": true,
+  "gui_lock_sha256": "613fcd9b99a9debd0fe125eea159fd63c3e075d77bb322b8b001ec7bb41bd2a3",
+  "targets": {
+    "aarch64-apple-darwin": {
+      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
+      "binary_sha256": "9c8255e31659e4af328d91adff93789d2660601d75afbfc5b119dd3f3ab16c39",
+      "artifact_sha256": "30a11b6eb45d45f8025aaf60d527133dc2421a7b09dc018cb2e4a5535aca0b25",
+      "package_payloads_verified": 1301,
+      "tar_members_verified": 1302,
+      "native_notice_copies_verified": 28,
+      "hashes_verified": 433,
+      "artwork_p95_ms": 12.483292,
+      "artwork_method": "read-full-decode-v2-fixed100",
+      "artwork_samples": 100,
+      "artwork_wall_samples_ms": [
+        11.6975,
+        11.697291,
+        11.765042,
+        11.686375,
+        11.591916000000001,
+        11.67725,
+        11.855042,
+        11.839709000000001,
+        11.883625,
+        12.174624999999999,
+        12.153208000000001,
+        12.250791000000001,
+        12.483292,
+        12.19725,
+        12.384375,
+        12.130833,
+        12.003290999999999,
+        11.88575,
+        12.203958,
+        11.914667,
+        11.850917,
+        12.01075,
+        11.848875,
+        11.849917,
+        13.258667,
+        11.937,
+        12.330583,
+        11.799958,
+        12.369959,
+        11.848917,
+        12.072750000000001,
+        12.1175,
+        12.007708000000001,
+        11.884625,
+        11.977791,
+        12.128625000000001,
+        12.120709,
+        12.102375,
+        11.921917,
+        11.990459,
+        11.975917,
+        12.057791,
+        13.258167,
+        12.206916,
+        12.085749999999999,
+        11.781125,
+        11.971125,
+        12.639459,
+        13.596499999999999,
+        12.068458000000001,
+        12.055541,
+        11.819292,
+        11.809417,
+        12.120042,
+        11.822291,
+        12.137084,
+        12.22375,
+        12.273709,
+        11.958208999999998,
+        12.050042000000001,
+        12.081542,
+        12.002792,
+        11.753375,
+        11.717458,
+        11.703667,
+        11.932625,
+        11.76675,
+        11.859542000000001,
+        11.742167,
+        11.886167,
+        11.701167,
+        11.799208,
+        11.673,
+        11.750083,
+        11.702833,
+        11.596334,
+        11.562584000000001,
+        11.525292,
+        11.628958,
+        11.779708,
+        11.827041,
+        11.854750000000001,
+        11.838125,
+        11.813625,
+        11.797500000000001,
+        11.928167,
+        12.062375,
+        11.646458,
+        11.6855,
+        11.729042,
+        11.77775,
+        11.587667,
+        11.945625,
+        11.773125,
+        11.812209000000001,
+        11.805916,
+        11.8285,
+        11.759583000000001,
+        11.732875,
+        22.74775
+      ],
+      "artwork_cpu_samples_ms": [
+        11.698,
+        11.697,
+        11.764999999999997,
+        11.687000000000003,
+        11.591999999999992,
+        11.655999999999999,
+        11.856000000000005,
+        11.83999999999999,
+        11.884999999999993,
+        12.084000000000012,
+        12.153999999999998,
+        12.241000000000001,
+        12.382000000000005,
+        12.198999999999987,
+        12.369999999999992,
+        12.131000000000004,
+        11.995000000000006,
+        11.886999999999981,
+        12.175000000000018,
+        11.906,
+        11.841999999999963,
+        12.010999999999994,
+        11.850000000000026,
+        11.834999999999985,
+        12.942999999999982,
+        11.938000000000004,
+        12.284000000000017,
+        11.801000000000005,
+        12.370999999999965,
+        11.849999999999971,
+        12.006000000000016,
+        12.077999999999978,
+        12.008000000000019,
+        11.885999999999953,
+        11.977999999999989,
+        12.122999999999994,
+        12.102000000000002,
+        12.073,
+        11.911000000000005,
+        11.966000000000033,
+        11.94400000000001,
+        12.054999999999927,
+        12.917999999999985,
+        12.156999999999973,
+        12.083999999999984,
+        11.772000000000006,
+        11.95999999999997,
+        12.60300000000003,
+        12.641000000000012,
+        12.047999999999949,
+        11.940000000000062,
+        11.807000000000013,
+        11.74900000000001,
+        11.854000000000031,
+        11.822,
+        12.136999999999954,
+        12.224000000000013,
+        12.257999999999992,
+        11.941000000000091,
+        12.050000000000004,
+        11.964000000000086,
+        12.002000000000068,
+        11.753000000000014,
+        11.712000000000057,
+        11.704999999999966,
+        11.934000000000001,
+        11.768,
+        11.859000000000064,
+        11.744000000000089,
+        11.870000000000047,
+        11.697999999999986,
+        11.746000000000034,
+        11.672999999999934,
+        11.750999999999955,
+        11.703000000000019,
+        11.59699999999997,
+        11.561999999999962,
+        11.525999999999925,
+        11.61599999999996,
+        11.753000000000014,
+        11.823999999999945,
+        11.841999999999908,
+        11.834000000000122,
+        11.781000000000041,
+        11.797999999999975,
+        11.928999999999856,
+        11.956999999999995,
+        11.646999999999963,
+        11.682999999999888,
+        11.728999999999878,
+        11.778000000000066,
+        11.588000000000154,
+        11.737000000000108,
+        11.773999999999951,
+        11.789999999999967,
+        11.806999999999901,
+        11.82900000000009,
+        11.75399999999982,
+        11.714000000000002,
+        12.202999999999964
+      ],
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572243518",
+      "host": {
+        "platform": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "logical_cpus": 3,
+        "cpu": "Apple M1 (Virtual)",
+        "memory_bytes": 7516192768
+      },
+      "distribution": {
+        "executable_bytes": 25672864,
+        "manifest_payload_bytes": 32893646,
+        "archive": {
+          "file": "task2-aarch64-apple-darwin.tar.gz",
+          "bytes": 10897443,
+          "sha256": "416c71b711abc66d1fd46f10147383143462ae2002e111bb51a847761f41622c"
+        },
+        "disk_image": null,
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "resource_runs": 8,
+      "resource_warmups": 2,
+      "resource_measurements": 6,
+      "resource_summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 171.19833399999607,
+            "median": 183.73933300000544,
+            "max": 260.47087500001
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.8789554346653078,
+            "median": 0.8844546205801452,
+            "max": 1.047931929568841
+          },
+          "peak_rss_bytes": {
+            "min": 247922688,
+            "median": 250183680,
+            "max": 250544128
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 102.83079199996337,
+            "median": 134.84375000001592,
+            "max": 211.88808399995196
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.8871785609671392,
+            "median": 0.8894634583483305,
+            "max": 0.971583106926641
+          },
+          "peak_rss_bytes": {
+            "min": 240484352,
+            "median": 240680960,
+            "max": 240730112
+          }
+        }
+      },
+      "all_resource_quality_and_ceiling_checks_pass": true,
+      "reports": {
+        "clean-macos/clean-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "positive_system_read": true,
+            "source_read_denied": true,
+            "developer_execution_denied": true,
+            "actual_network_denied": true,
+            "winit-skia-0": true,
+            "winit-skia-1": true,
+            "winit-skia-software-0": true,
+            "winit-skia-software-1": true,
+            "no_remaining_fixture": true,
+            "fresh_home_no_development_cache": true,
+            "isolation_root_retired": true
+          }
+        },
+        "display-macos/display-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "compact_review_keyboard_reachable": true,
+            "native_compact_intermediate": true,
+            "localized_modal_focus_and_dismiss": true,
+            "actual_text_control_selection_contrast": true,
+            "idle_without_nonessential_motion": true,
+            "normal_shutdown": true,
+            "fixture_retired": true
+          }
+        },
+        "input-macos/input-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "french_dead_key_and_azerty": true,
+            "native_select_all_and_clear": true,
+            "native_composed_decomposed_editing": true,
+            "native_long_french_clipboard_undo_redo": true,
+            "native_input_under_load_budget": true,
+            "native_thousand_navigation_budget": true,
+            "input_sources_restored": true,
+            "normal_shutdown": true,
+            "fixture_removed": true
+          }
+        },
+        "resources/resource-measurements.json": {
+          "automated_resource_measurement": "pass",
+          "summary": {
+            "winit-skia": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 171.19833399999607,
+                "median": 183.73933300000544,
+                "max": 260.47087500001
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.8789554346653078,
+                "median": 0.8844546205801452,
+                "max": 1.047931929568841
+              },
+              "peak_rss_bytes": {
+                "min": 247922688,
+                "median": 250183680,
+                "max": 250544128
+              }
+            },
+            "winit-skia-software": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 102.83079199996337,
+                "median": 134.84375000001592,
+                "max": 211.88808399995196
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.8871785609671392,
+                "median": 0.8894634583483305,
+                "max": 0.971583106926641
+              },
+              "peak_rss_bytes": {
+                "min": 240484352,
+                "median": 240680960,
+                "max": 240730112
+              }
+            }
+          }
+        }
+      },
+      "native_performance": {
+        "native_input_performance": 31.087791,
+        "thousand_navigation": 303.063875
+      },
+      "report_sha256": {
+        "runtime-requirements.json": "3ea3562443b563a8c019d97956f79bb5649a9bf3e63098d2af5b486eb60da19a",
+        "resources/resource-measurements.json": "480fd460bb62a2b6ca229e49f746496f05626587a8509701fdb1722d9b0e94ea",
+        "native-macos/native-macos.json": "ef6af1b9be00532017cfc855e4145c6a1e05dcccf77c711a77859bc7333ab9ae",
+        "input-macos/input-macos.json": "07cb5b957d4df9ecde8b8e71f58e5419f393eb814cc72aeb66c05897ed8a0fd2",
+        "display-macos/display-macos.json": "4abe316e6cfbc8d95017d8768c742d9826c4deba60a3141046a9475d5be2bd0d",
+        "clean-macos/clean-macos.json": "c77c6438111e3a0083f026906158d97c30bef2f72b1e603500cd11c234814b09"
+      },
+      "display": {
+        "checks": {
+          "compact_review_keyboard_reachable": true,
+          "native_compact_intermediate": true,
+          "localized_modal_focus_and_dismiss": true,
+          "actual_text_control_selection_contrast": true,
+          "idle_without_nonessential_motion": true,
+          "normal_shutdown": true,
+          "fixture_retired": true
+        },
+        "sizes": [
+          {
+            "requested": [
+              560,
+              400
+            ],
+            "native_resize": {
+              "old_outer_height": 682,
+              "old_outer_width": 1024,
+              "performed": true,
+              "requested_outer_height": 428,
+              "requested_outer_width": 560
+            },
+            "geometry": {
+              "width": 560,
+              "height": 400,
+              "logical_width": 560,
+              "logical_height": 400,
+              "scale": 1,
+              "compact": true,
+              "wide": false,
+              "focus_key": 30,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          },
+          {
+            "requested": [
+              900,
+              600
+            ],
+            "native_resize": {
+              "old_outer_height": 428,
+              "old_outer_width": 560,
+              "performed": true,
+              "requested_outer_height": 628,
+              "requested_outer_width": 900
+            },
+            "geometry": {
+              "width": 900,
+              "height": 600,
+              "logical_width": 900,
+              "logical_height": 600,
+              "scale": 1,
+              "compact": false,
+              "wide": false,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          }
+        ],
+        "native_preferences_and_screens": {
+          "increase_contrast": false,
+          "reduce_motion": true,
+          "screens": [
+            {
+              "height": 768,
+              "scale": 1,
+              "width": 1024
+            }
+          ]
+        },
+        "display_coverage": "compact/intermediate native CI; separate ARM wide/Retina and Linux mixed-scale evidence"
+      }
+    },
+    "x86_64-apple-darwin": {
+      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
+      "binary_sha256": "188af9308056e56c62797cfc7926b6db6793dd4c2216b74d7eadc78efba6369a",
+      "artifact_sha256": "62c06c5357af0cb2301547488a3a4570f4c3df6aafee32593aa6a1cef2ec68f3",
+      "package_payloads_verified": 1301,
+      "tar_members_verified": 1302,
+      "native_notice_copies_verified": 28,
+      "hashes_verified": 443,
+      "artwork_p95_ms": 15.903972,
+      "artwork_method": "read-full-decode-v2-fixed100",
+      "artwork_samples": 100,
+      "artwork_wall_samples_ms": [
+        13.373839,
+        13.564053,
+        13.36173,
+        13.144725,
+        13.103614,
+        13.504456,
+        13.559130000000001,
+        13.192535999999999,
+        13.447241,
+        16.846717,
+        15.32315,
+        14.603431,
+        13.524283,
+        14.950476,
+        15.118994,
+        15.559833000000001,
+        13.827928,
+        14.339759,
+        14.784429,
+        14.120917,
+        13.601063,
+        13.226368,
+        14.661121,
+        19.592916,
+        13.935550999999998,
+        13.48542,
+        14.058103000000001,
+        13.700341,
+        13.591422000000001,
+        15.585994000000001,
+        14.01979,
+        14.505289,
+        13.990269,
+        15.089328,
+        13.317623000000001,
+        13.264605000000001,
+        13.493197,
+        14.535619,
+        13.860742,
+        13.451184,
+        13.330769,
+        14.262436999999998,
+        13.789067000000001,
+        14.427895,
+        14.545728,
+        13.933638,
+        13.737749,
+        14.911622,
+        14.215296,
+        13.715154,
+        14.408558,
+        17.108496000000002,
+        13.887536,
+        13.972083999999999,
+        14.46391,
+        14.011979,
+        13.990053000000001,
+        14.538257,
+        14.80692,
+        14.112871,
+        13.816805,
+        15.220717,
+        13.869114,
+        13.852998999999999,
+        14.080936000000001,
+        15.559807,
+        13.43174,
+        13.726985,
+        14.072206,
+        13.426041999999999,
+        13.665106,
+        13.436153,
+        13.266821,
+        13.318699,
+        13.659405,
+        13.905918999999999,
+        14.036405,
+        13.399167,
+        13.563578999999999,
+        13.98992,
+        15.903972,
+        15.311998,
+        13.787605,
+        13.881933,
+        13.30748,
+        14.100244,
+        13.679645,
+        13.43057,
+        13.574447,
+        15.997158,
+        19.011966,
+        13.869183999999999,
+        14.020766,
+        14.241887,
+        13.754499,
+        14.417665,
+        15.689804000000002,
+        13.584097,
+        13.532069,
+        13.625942
+      ],
+      "artwork_cpu_samples_ms": [
+        13.376,
+        13.549999999999999,
+        13.364000000000008,
+        13.145000000000003,
+        13.105000000000006,
+        13.477000000000002,
+        13.560000000000002,
+        13.193999999999983,
+        13.449000000000016,
+        16.259999999999998,
+        15.325000000000005,
+        14.429999999999998,
+        13.494000000000007,
+        14.950999999999992,
+        15.119999999999994,
+        15.518000000000004,
+        13.828000000000007,
+        14.341999999999967,
+        14.784999999999993,
+        14.122999999999998,
+        13.578000000000035,
+        13.22699999999999,
+        14.662999999999982,
+        19.595000000000027,
+        13.891000000000043,
+        13.424999999999965,
+        14.025999999999982,
+        13.702000000000048,
+        13.574999999999948,
+        15.565000000000051,
+        14.022000000000034,
+        14.506999999999993,
+        13.99200000000006,
+        15.029000000000071,
+        13.319999999999999,
+        13.264999999999972,
+        13.494000000000007,
+        14.535999999999994,
+        13.799000000000007,
+        13.404000000000082,
+        13.332000000000011,
+        14.263000000000027,
+        13.789999999999969,
+        14.429000000000025,
+        14.546999999999976,
+        13.92799999999994,
+        13.738999999999946,
+        14.912999999999954,
+        14.217000000000034,
+        13.717000000000091,
+        14.409000000000006,
+        17.10899999999993,
+        13.88900000000004,
+        13.974000000000043,
+        14.46499999999995,
+        14.013999999999971,
+        13.990999999999975,
+        14.53899999999997,
+        14.809000000000072,
+        14.114999999999988,
+        13.817999999999998,
+        15.221999999999959,
+        13.871000000000077,
+        13.813999999999993,
+        14.08200000000004,
+        15.442999999999984,
+        13.433000000000028,
+        13.721000000000094,
+        14.073000000000002,
+        13.427999999999995,
+        13.666999999999874,
+        13.438000000000061,
+        13.268000000000058,
+        13.319999999999999,
+        13.58400000000004,
+        13.908000000000031,
+        14.037000000000077,
+        13.352999999999948,
+        13.537999999999828,
+        13.991000000000087,
+        15.12099999999994,
+        14.485999999999999,
+        13.790000000000191,
+        13.884000000000007,
+        13.309000000000015,
+        14.101999999999837,
+        13.679999999999914,
+        13.431000000000193,
+        13.576000000000032,
+        15.664000000000122,
+        18.337000000000046,
+        13.871000000000189,
+        13.990999999999865,
+        14.243000000000006,
+        13.756000000000101,
+        14.366000000000101,
+        15.69200000000004,
+        13.584999999999958,
+        13.533999999999935,
+        13.627999999999973
+      ],
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572054305",
+      "host": {
+        "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+        "machine": "x86_64",
+        "logical_cpus": 4,
+        "cpu": "Intel(R) Core(TM) i7-8700B CPU @ 3.20GHz",
+        "memory_bytes": 15032385536
+      },
+      "distribution": {
+        "executable_bytes": 26460656,
+        "manifest_payload_bytes": 33681438,
+        "archive": {
+          "file": "task2-x86_64-apple-darwin.tar.gz",
+          "bytes": 11439858,
+          "sha256": "f59d1f5ea4c8ec6e5d5184f1b3e49ca50d36b0e397d96905956d5328b88c65a2"
+        },
+        "disk_image": null,
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "resource_runs": 8,
+      "resource_warmups": 2,
+      "resource_measurements": 6,
+      "resource_summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 218.41080100000454,
+            "median": 224.54389300003186,
+            "max": 247.94950699993024
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.8033855386431866,
+            "median": 1.3116294264163104,
+            "max": 1.3682590439745457
+          },
+          "peak_rss_bytes": {
+            "min": 225632256,
+            "median": 226115584,
+            "max": 227049472
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 231.58647699995072,
+            "median": 231.83494900001733,
+            "max": 233.69411499993475
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.7353985941151366,
+            "median": 1.0662967779165482,
+            "max": 1.6265292926267527
+          },
+          "peak_rss_bytes": {
+            "min": 215805952,
+            "median": 215834624,
+            "max": 238882816
+          }
+        }
+      },
+      "all_resource_quality_and_ceiling_checks_pass": true,
+      "reports": {
+        "clean-macos/clean-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "positive_system_read": true,
+            "source_read_denied": true,
+            "developer_execution_denied": true,
+            "actual_network_denied": true,
+            "winit-skia-0": true,
+            "winit-skia-1": true,
+            "winit-skia-software-0": true,
+            "winit-skia-software-1": true,
+            "no_remaining_fixture": true,
+            "fresh_home_no_development_cache": true,
+            "isolation_root_retired": true
+          }
+        },
+        "display-macos/display-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "compact_review_keyboard_reachable": true,
+            "native_compact_intermediate": true,
+            "localized_modal_focus_and_dismiss": true,
+            "actual_text_control_selection_contrast": true,
+            "idle_without_nonessential_motion": true,
+            "normal_shutdown": true,
+            "fixture_retired": true
+          }
+        },
+        "input-macos/input-macos.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "french_dead_key_and_azerty": true,
+            "native_select_all_and_clear": true,
+            "native_composed_decomposed_editing": true,
+            "native_long_french_clipboard_undo_redo": true,
+            "native_input_under_load_budget": true,
+            "native_thousand_navigation_budget": true,
+            "input_sources_restored": true,
+            "normal_shutdown": true,
+            "fixture_removed": true
+          }
+        },
+        "resources/resource-measurements.json": {
+          "automated_resource_measurement": "pass",
+          "summary": {
+            "winit-skia": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 218.41080100000454,
+                "median": 224.54389300003186,
+                "max": 247.94950699993024
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.8033855386431866,
+                "median": 1.3116294264163104,
+                "max": 1.3682590439745457
+              },
+              "peak_rss_bytes": {
+                "min": 225632256,
+                "median": 226115584,
+                "max": 227049472
+              }
+            },
+            "winit-skia-software": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 231.58647699995072,
+                "median": 231.83494900001733,
+                "max": 233.69411499993475
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.7353985941151366,
+                "median": 1.0662967779165482,
+                "max": 1.6265292926267527
+              },
+              "peak_rss_bytes": {
+                "min": 215805952,
+                "median": 215834624,
+                "max": 238882816
+              }
+            }
+          }
+        }
+      },
+      "native_performance": {
+        "native_input_performance": 35.132345,
+        "thousand_navigation": 313.636671
+      },
+      "report_sha256": {
+        "runtime-requirements.json": "0cb4975136bac544a9a5bc03064e2e788965cb2153744150f52d805a15336046",
+        "resources/resource-measurements.json": "a07560dcde46c21bfc88f783b0c57f099c09c3355b72cfc649c3ee9dd6ab28d8",
+        "native-macos/native-macos.json": "9b4be203823c03a419aa1fcf29603c348b2739aab4d6da48400c75d826771e5c",
+        "input-macos/input-macos.json": "c74e4ef3516e44d02bea948fa62934ca59739cdac9a746e26806d8386d806ea7",
+        "display-macos/display-macos.json": "f48bf96843324ad6ff25efccc04a2b46dd67911b45776675b12b9885d69b06d5",
+        "clean-macos/clean-macos.json": "d3aa95392ec32b676c1de7c482d90171e53b0782c0f6a63307f720e521da2f60"
+      },
+      "display": {
+        "checks": {
+          "compact_review_keyboard_reachable": true,
+          "native_compact_intermediate": true,
+          "localized_modal_focus_and_dismiss": true,
+          "actual_text_control_selection_contrast": true,
+          "idle_without_nonessential_motion": true,
+          "normal_shutdown": true,
+          "fixture_retired": true
+        },
+        "sizes": [
+          {
+            "requested": [
+              560,
+              400
+            ],
+            "native_resize": {
+              "old_outer_height": 788,
+              "old_outer_width": 1180,
+              "performed": true,
+              "requested_outer_height": 428,
+              "requested_outer_width": 560
+            },
+            "geometry": {
+              "width": 560,
+              "height": 400,
+              "logical_width": 560,
+              "logical_height": 400,
+              "scale": 1,
+              "compact": true,
+              "wide": false,
+              "focus_key": 30,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          },
+          {
+            "requested": [
+              900,
+              600
+            ],
+            "native_resize": {
+              "old_outer_height": 428,
+              "old_outer_width": 560,
+              "performed": true,
+              "requested_outer_height": 628,
+              "requested_outer_width": 900
+            },
+            "geometry": {
+              "width": 900,
+              "height": 600,
+              "logical_width": 900,
+              "logical_height": 600,
+              "scale": 1,
+              "compact": false,
+              "wide": false,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          }
+        ],
+        "native_preferences_and_screens": {
+          "increase_contrast": false,
+          "reduce_motion": true,
+          "screens": [
+            {
+              "height": 1080,
+              "scale": 1,
+              "width": 1920
+            }
+          ]
+        },
+        "display_coverage": "compact/intermediate native CI; separate ARM wide/Retina and Linux mixed-scale evidence"
+      }
+    },
+    "x86_64-unknown-linux-gnu": {
+      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
+      "binary_sha256": "0b7dc32208040b87b6cda43059ee5c9acd8f1b13536a4aed65d71f39d6dfabf9",
+      "artifact_sha256": "146ad8c63544b6a07aeb2c0e17abf5b8928b92f390e3df04fa230463a76a90e6",
+      "package_payloads_verified": 729,
+      "tar_members_verified": 730,
+      "native_notice_copies_verified": 14,
+      "hashes_verified": 692,
+      "artwork_p95_ms": 11.820579,
+      "artwork_method": "read-full-decode-v2-fixed100",
+      "artwork_samples": 100,
+      "artwork_wall_samples_ms": [
+        11.338285,
+        11.338054999999999,
+        11.291063000000001,
+        11.325125,
+        11.353168,
+        11.33469,
+        11.277873000000001,
+        11.284003,
+        11.329911999999998,
+        11.286275999999999,
+        11.218905,
+        11.142904999999999,
+        11.144357000000001,
+        11.095383,
+        11.937496000000001,
+        11.788300999999999,
+        11.345301000000001,
+        11.204117,
+        11.191849,
+        11.065929,
+        11.176566000000001,
+        11.200672,
+        11.267774,
+        11.310228,
+        11.32481,
+        11.314744,
+        11.283007,
+        11.303357,
+        11.302657,
+        11.254624,
+        11.266131,
+        11.196716,
+        11.281654,
+        11.310298,
+        11.259001,
+        11.226882,
+        11.300493,
+        11.315196,
+        11.26501,
+        11.262937,
+        11.275806,
+        11.287384,
+        11.317018,
+        11.280824,
+        11.243708,
+        11.352462000000001,
+        11.283177,
+        11.417289,
+        11.392062,
+        11.287524,
+        11.321154,
+        11.554577,
+        11.303868999999999,
+        11.276447000000001,
+        11.293703,
+        11.403488999999999,
+        11.268044,
+        11.304029,
+        11.263036000000001,
+        11.284799,
+        11.335466,
+        11.285261,
+        11.55606,
+        11.898818,
+        11.926479,
+        11.820578999999999,
+        11.872248,
+        11.874191,
+        11.74147,
+        11.779948000000001,
+        11.583941000000001,
+        11.449688,
+        11.379062000000001,
+        11.522639,
+        11.611443000000001,
+        11.479063,
+        11.373313,
+        11.378041,
+        11.332592,
+        11.308265,
+        11.353353,
+        11.306122,
+        11.303177,
+        11.240773,
+        11.304228,
+        11.289376,
+        11.373383,
+        11.401897,
+        11.471622,
+        11.44403,
+        11.469889,
+        11.397079,
+        11.446414,
+        11.447395,
+        11.391801,
+        11.519133,
+        11.475147,
+        11.532874,
+        11.526625000000001,
+        11.439824
+      ],
+      "artwork_cpu_samples_ms": [
+        11.339879,
+        11.339859,
+        11.292559,
+        11.326709999999997,
+        11.354901999999994,
+        11.335933000000006,
+        11.279329000000004,
+        11.285348,
+        11.331747000000004,
+        11.287872000000004,
+        11.219969999999996,
+        11.144178000000004,
+        11.145809999999978,
+        11.096606999999981,
+        11.940514999999985,
+        11.791072000000014,
+        11.347550999999983,
+        11.205379000000015,
+        11.193621000000014,
+        11.067051999999993,
+        11.179139999999975,
+        11.202213999999987,
+        11.268924000000013,
+        11.311427000000041,
+        11.326369000000003,
+        11.315983999999945,
+        11.284267000000014,
+        11.304777000000044,
+        11.304156999999982,
+        11.25585499999998,
+        11.267841999999973,
+        11.197977999999997,
+        11.282765000000028,
+        11.311726999999994,
+        11.26020099999997,
+        11.227971999999975,
+        11.301612000000016,
+        11.316224000000041,
+        11.26596000000002,
+        11.263796999999965,
+        11.27665499999997,
+        11.288132000000006,
+        11.318296999999976,
+        11.281792999999984,
+        11.244726999999898,
+        11.354110999999945,
+        11.284527000000043,
+        11.419487999999923,
+        11.395682999999934,
+        11.288662999999977,
+        11.322893999999973,
+        11.556031999999995,
+        11.30526799999998,
+        11.27758599999995,
+        11.294782000000003,
+        11.40566799999998,
+        11.26968500000003,
+        11.30530800000007,
+        11.264286000000068,
+        11.286139999999945,
+        11.336465000000073,
+        11.286871000000032,
+        11.558114000000064,
+        11.900145000000029,
+        11.927534999999988,
+        11.822259000000003,
+        11.874927000000035,
+        11.875579000000025,
+        11.742840000000033,
+        11.781959000000008,
+        11.585495999999917,
+        11.436474000000029,
+        11.380429999999997,
+        11.523814000000021,
+        11.612646999999976,
+        11.480549000000062,
+        11.375041999999947,
+        11.359118000000002,
+        11.334300999999991,
+        11.309444000000003,
+        11.354842000000032,
+        11.307311000000041,
+        11.286180000000034,
+        11.241983999999983,
+        11.305577999999983,
+        11.290476000000105,
+        11.37471099999987,
+        11.404065000000019,
+        11.473048000000041,
+        11.445446999999831,
+        11.47146599999993,
+        11.398355999999943,
+        11.447509999999994,
+        11.448832000000131,
+        11.39322900000006,
+        11.520498999999962,
+        11.476692999999871,
+        11.519897999999973,
+        11.52814000000002,
+        11.425177000000009
+      ],
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572890732",
+      "host": {
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "machine": "x86_64",
+        "logical_cpus": 4,
+        "cpu": "AMD EPYC 9V45 96-Core Processor",
+        "memory_bytes": 16766414848
+      },
+      "distribution": {
+        "executable_bytes": 40692920,
+        "manifest_payload_bytes": 44574432,
+        "archive": {
+          "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+          "bytes": 14782130,
+          "sha256": "b0734c5b9185a3ca628675052d4f6e0dadc72617abc948862e918b4ac7971ca2"
+        },
+        "disk_image": null,
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "resource_runs": 8,
+      "resource_warmups": 2,
+      "resource_measurements": 6,
+      "resource_summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 95.95666699999583,
+            "median": 103.14984699994056,
+            "max": 138.37805100001788
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.40476374701326195,
+            "median": 0.4048006764974468,
+            "max": 0.40481496249809057
+          },
+          "peak_rss_bytes": {
+            "min": 205254656,
+            "median": 213876736,
+            "max": 215670784
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 38.13137999998162,
+            "median": 38.432521999993696,
+            "max": 39.59193800005778
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.16191650313503403,
+            "median": 0.16193446131497002,
+            "max": 0.24290081604332178
+          },
+          "peak_rss_bytes": {
+            "min": 74465280,
+            "median": 74510336,
+            "max": 74686464
+          }
+        }
+      },
+      "all_resource_quality_and_ceiling_checks_pass": true,
+      "reports": {
+        "accessibility-linux/accessibility-linux.json": {
+          "orca_baseline": "pass",
+          "errors": [],
+          "checks": {
+            "x11": true,
+            "wayland": true,
+            "native_wayland_application": true,
+            "retired-librairii-orca-x11-f5b8a743a0414c5d938563126f232dbb": true,
+            "retired-librairii-orca-wayland-f5b8a743a0414c5d938563126f232dbb": true,
+            "image_retired": true
+          }
+        },
+        "display-linux/display-linux.json": {
+          "result": "pass",
+          "errors": [],
+          "checks": {
+            "x11": true,
+            "wayland": true,
+            "retired-librairii-display-a5bda033094543e9bb05a0b7a849b403-x11": true,
+            "retired-librairii-display-a5bda033094543e9bb05a0b7a849b403-wayland": true,
+            "image_retired": true
+          }
+        },
+        "linux-vm/linux-vm.json": {
+          "isolated_linux_vm": "pass",
+          "errors": [],
+          "checks": {
+            "kvm_hardware_acceleration": true,
+            "network_device_removed_before_app": true,
+            "both_lifecycle_phases_complete": true,
+            "new_boot_same_installed_binary": true,
+            "native_offline_fresh_user": true,
+            "no_development_or_browser_packages": true,
+            "remove_reinstall_same_verified_package": true,
+            "separate_canaries_preserved": true,
+            "reinstalled_owned_shutdown": true,
+            "all_owned_desktop_service_groups_retired": true,
+            "x11_all_native_cases": true,
+            "wayland_all_native_cases": true,
+            "installed_wayland_normal_cpu_gui": true,
+            "owned_vm_reaped": true,
+            "owned_disks_removed": true
+          }
+        },
+        "native-linux/native-linux.json": {
+          "automated_native_integration": "pass",
+          "errors": [],
+          "checks": {
+            "x11": true,
+            "wayland": true,
+            "retired-librairii-native-x11-45dd8f82fd0b41a182fcfe63715cfc6f": true,
+            "retired-librairii-native-wayland-45dd8f82fd0b41a182fcfe63715cfc6f": true,
+            "image_retired": true
+          }
+        },
+        "resources/resource-measurements.json": {
+          "automated_resource_measurement": "pass",
+          "summary": {
+            "winit-skia": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 95.95666699999583,
+                "median": 103.14984699994056,
+                "max": 138.37805100001788
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.40476374701326195,
+                "median": 0.4048006764974468,
+                "max": 0.40481496249809057
+              },
+              "peak_rss_bytes": {
+                "min": 205254656,
+                "median": 213876736,
+                "max": 215670784
+              }
+            },
+            "winit-skia-software": {
+              "samples": 3,
+              "launch_to_ready_marker_ms": {
+                "min": 38.13137999998162,
+                "median": 38.432521999993696,
+                "max": 39.59193800005778
+              },
+              "idle_cpu_percent_one_core": {
+                "min": 0.16191650313503403,
+                "median": 0.16193446131497002,
+                "max": 0.24290081604332178
+              },
+              "peak_rss_bytes": {
+                "min": 74465280,
+                "median": 74510336,
+                "max": 74686464
+              }
+            }
+          }
+        }
+      },
+      "linux_native_performance": {
+        "linux-vm/after/evidence/wayland/native-session.json": {
+          "native_input_performance": 19.63493799999938,
+          "thousand_navigation": 263.3175059999999
+        },
+        "linux-vm/after/evidence/x11/native-session.json": {
+          "native_input_performance": 18.19616599999563,
+          "thousand_navigation": 241.85198300000366
+        },
+        "linux-vm/before/evidence/x11/native-session.json": {
+          "native_input_performance": 18.19616599999563,
+          "thousand_navigation": 241.85198300000366
+        },
+        "native-linux/wayland/native-session.json": {
+          "native_input_performance": 20.577651999929003,
+          "thousand_navigation": 241.14746099996864
+        },
+        "native-linux/x11/native-session.json": {
+          "native_input_performance": 18.449142000008578,
+          "thousand_navigation": 241.24769000002289
+        }
+      },
+      "linux_input_diagnostics": {
+        "linux-vm/after/evidence/wayland/native-session.json": {
+          "foreground_check_ms": {
+            "p95_ms": 2.242162999998243,
+            "max_ms": 3.526448999998877
+          },
+          "event_post_ms": {
+            "p95_ms": 11.490624000000338,
+            "max_ms": 11.83331500000051
+          },
+          "acknowledgment_wait_ms": {
+            "p95_ms": 9.932671999997922,
+            "max_ms": 10.924199999998052
+          },
+          "total_with_foreground_ms": {
+            "p95_ms": 21.03032899999846,
+            "max_ms": 21.615903000000714
+          }
+        },
+        "linux-vm/after/evidence/x11/native-session.json": {
+          "foreground_check_ms": {
+            "p95_ms": 3.8108379999926,
+            "max_ms": 4.60603499999479
+          },
+          "event_post_ms": {
+            "p95_ms": 3.450141999991274,
+            "max_ms": 4.3325799999962555
+          },
+          "acknowledgment_wait_ms": {
+            "p95_ms": 15.54925799999296,
+            "max_ms": 16.449531000006345
+          },
+          "total_with_foreground_ms": {
+            "p95_ms": 20.928708999989,
+            "max_ms": 21.15876799999228
+          }
+        },
+        "linux-vm/before/evidence/x11/native-session.json": {
+          "foreground_check_ms": {
+            "p95_ms": 3.8108379999926,
+            "max_ms": 4.60603499999479
+          },
+          "event_post_ms": {
+            "p95_ms": 3.450141999991274,
+            "max_ms": 4.3325799999962555
+          },
+          "acknowledgment_wait_ms": {
+            "p95_ms": 15.54925799999296,
+            "max_ms": 16.449531000006345
+          },
+          "total_with_foreground_ms": {
+            "p95_ms": 20.928708999989,
+            "max_ms": 21.15876799999228
+          }
+        },
+        "native-linux/wayland/native-session.json": {
+          "foreground_check_ms": {
+            "p95_ms": 1.3836519999586017,
+            "max_ms": 1.4567619999752424
+          },
+          "event_post_ms": {
+            "p95_ms": 9.115847999964899,
+            "max_ms": 9.660091000000648
+          },
+          "acknowledgment_wait_ms": {
+            "p95_ms": 11.976732999983142,
+            "max_ms": 14.12534099995355
+          },
+          "total_with_foreground_ms": {
+            "p95_ms": 22.015816000021005,
+            "max_ms": 24.567805000060616
+          }
+        },
+        "native-linux/x11/native-session.json": {
+          "foreground_check_ms": {
+            "p95_ms": 3.248889000019517,
+            "max_ms": 3.3752589999949123
+          },
+          "event_post_ms": {
+            "p95_ms": 2.3982330000080765,
+            "max_ms": 2.5879989999566533
+          },
+          "acknowledgment_wait_ms": {
+            "p95_ms": 16.32390099996428,
+            "max_ms": 19.41060399997241
+          },
+          "total_with_foreground_ms": {
+            "p95_ms": 21.21262699995441,
+            "max_ms": 23.973998000087704
+          }
+        }
+      },
+      "orca": {
+        "wayland": {
+          "checks": 16,
+          "completed_audio_steps": 14,
+          "samples": 1759849,
+          "offscreen": {
+            "name": "0999 · Étoiles — 日本語 — 故事",
+            "role": "list item",
+            "states": {
+              "focused": true,
+              "focusable": true,
+              "enabled": true,
+              "sensitive": true,
+              "showing": true,
+              "selected": true,
+              "checked": false,
+              "editable": false
+            }
+          },
+          "preserved": {
+            "name": "0001 · Étoiles — 日本語 — 故事",
+            "role": "list item",
+            "states": {
+              "focused": true,
+              "focusable": true,
+              "enabled": true,
+              "sensitive": true,
+              "showing": true,
+              "selected": true,
+              "checked": false,
+              "editable": false
+            }
+          }
+        },
+        "x11": {
+          "checks": 16,
+          "completed_audio_steps": 14,
+          "samples": 1106948,
+          "offscreen": {
+            "name": "0999 · Étoiles — 日本語 — 故事",
+            "role": "list item",
+            "states": {
+              "focused": true,
+              "focusable": true,
+              "enabled": true,
+              "sensitive": true,
+              "showing": true,
+              "selected": true,
+              "checked": false,
+              "editable": false
+            }
+          },
+          "preserved": {
+            "name": "0001 · Étoiles — 日本語 — 故事",
+            "role": "list item",
+            "states": {
+              "focused": true,
+              "focusable": true,
+              "enabled": true,
+              "sensitive": true,
+              "showing": true,
+              "selected": true,
+              "checked": false,
+              "editable": false
+            }
+          }
+        }
+      },
+      "report_sha256": {
+        "runtime-requirements.json": "a4f39407b2270a71874d7af216a3f7953d0303232f8da2167adaaa5599b651a8",
+        "resources/resource-measurements.json": "273865dadf6d241f782759dc53d77987466ef37f67e8671f9e030379f9c143ac",
+        "native-linux/native-linux.json": "315b31d7cb9ae49122c4f63961a33133fac9f3addd2d0f55609d07550dda5e95",
+        "accessibility-linux/accessibility-linux.json": "3e61b86d38a1405800a051020574b84c797633297d30ff97477c272aad11ebfb",
+        "display-linux/display-linux.json": "768c08f4b24a863e7404f346ec41dde9844f3f0ad3bb1c1ae60f730393a7c5ec",
+        "linux-vm/linux-vm.json": "2af315edc04b3ae8811a805952bd45cd958e012914c9bd4279b3fae8eec4f0b0",
+        "clean-linux/clean-linux.json": "f24dd05ea42d7508e91589a929c78a452c3fe93363258007b9cc794af7cb1f09",
+        "wayland/wayland.json": "e1d9feeb412f74703ca8563de01c8bb772bc3d25c589fce504559ec088088751",
+        "gpu-recovery/gpu-recovery.json": "d6b7deca9a2b0f6978924371ce780804c8cddea07ab84066057a9d1d802f5a7f"
+      },
+      "display": {
+        "x11": {
+          "checks": {
+            "compact_review_keyboard_reachable": true,
+            "native_compact_intermediate_wide": true,
+            "localized_modal_focus_and_dismiss": true,
+            "actual_text_control_selection_contrast": true,
+            "idle_without_nonessential_motion": true,
+            "normal_shutdown": true,
+            "fixture_retired": true
+          },
+          "sizes": [
+            {
+              "width": 560,
+              "height": 400,
+              "logical_width": 560,
+              "logical_height": 400,
+              "scale": 1,
+              "compact": true,
+              "wide": false,
+              "focus_key": 30,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 900,
+              "height": 760,
+              "logical_width": 900,
+              "logical_height": 760,
+              "scale": 1,
+              "compact": false,
+              "wide": false,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 1280,
+              "height": 800,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 1,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          ],
+          "scale_transitions": [],
+          "private_os_preferences": {
+            "enable_animations": "false",
+            "gtk_theme": "'HighContrast'"
+          }
+        },
+        "wayland": {
+          "checks": {
+            "compact_review_keyboard_reachable": true,
+            "native_compact_intermediate_wide": true,
+            "localized_modal_focus_and_dismiss": true,
+            "actual_text_control_selection_contrast": true,
+            "actual_mixed_scale_transitions": true,
+            "idle_without_nonessential_motion": true,
+            "normal_shutdown": true,
+            "fixture_retired": true
+          },
+          "sizes": [
+            {
+              "width": 560,
+              "height": 400,
+              "logical_width": 560,
+              "logical_height": 400,
+              "scale": 1,
+              "compact": true,
+              "wide": false,
+              "focus_key": 30,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 900,
+              "height": 760,
+              "logical_width": 900,
+              "logical_height": 760,
+              "scale": 1,
+              "compact": false,
+              "wide": false,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 1280,
+              "height": 800,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 1,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          ],
+          "scale_transitions": [
+            {
+              "width": 2560,
+              "height": 1600,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 2,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 1280,
+              "height": 800,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 1,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 2560,
+              "height": 1600,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 2,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            },
+            {
+              "width": 1280,
+              "height": 800,
+              "logical_width": 1280,
+              "logical_height": 800,
+              "scale": 1,
+              "compact": false,
+              "wide": true,
+              "focus_key": 10,
+              "selected_id": 0,
+              "selected_row": 0,
+              "rows": 1000,
+              "working": false,
+              "review_visible": false,
+              "contrast_ratios": [
+                16.92682190355294,
+                17.385309347450427,
+                4.528515190218159
+              ]
+            }
+          ],
+          "private_os_preferences": {
+            "enable_animations": "false",
+            "gtk_theme": "'HighContrast'"
+          }
+        }
+      }
+    }
+  },
+  "owner_scope": {
+    "platforms": [
+      "ARM macOS",
+      "real Intel macOS",
+      "Linux x86-64 X11/Wayland"
+    ],
+    "input": "French/Latin native input; all valid UTF-8 data/filenames remain unrestricted",
+    "deferred": [
+      "Windows",
+      "Japanese/Chinese/Arabic-specific input/IME/shaping"
+    ],
+    "excluded_by_owner": [
+      "VoiceOver execution"
+    ]
+  },
+  "scope_limits": [
+    "Native event/model acknowledgement and geometry/rendered frames; no physical-HID or first-physical-pixel claim",
+    "Configured private Orca X11 profile disables action-key echo; no full-product accessibility or human intelligibility claim",
+    "macOS runtime isolation is a fresh process/HOME sandbox on identified15.7.9 CI, not an erased OS/Gatekeeper/signing/notarization/product installer claim",
+    "Final product installer/data-upgrade and distribution audit belong to Task18"
+  ],
+  "retained_budgets": {
+    "native_input_p95_ms": 100,
+    "thousand_expansion_navigation_p95_ms": 3000,
+    "24_artwork_full_read_decode_p95_ms": 50,
+    "query_and_shelf": "Existing merged backend ceilings unchanged; root Rust quality passes"
+  },
+  "additional_budgets": {
+    "startup_marker_ms": 1000,
+    "idle_cpu_percent_one_core": 5,
+    "peak_rss_bytes": 536870912,
+    "archive_bytes": 33554432
+  },
+  "retina": "retina/retina.json; clean GUI source41ff363 and debug binary668b5233; three actual2x sizes with unmodified frames/hash/retirement; independently reviewed",
+  "conditional_fallback": "2.12 handled: not triggered because Slint passes the scoped mandatory gates after reviewed repairs",
+  "independent_review": {
+    "reviewer": "task2_continuation_review",
+    "date": "2026-10-24",
+    "result": "approved; no remaining actionable findings",
+    "report": "review.md",
+    "scope": "Exact three-target packages, raw observations, retained budgets, selected license graph and owner-approved qualification limits; PR merge not authorized."
+  }
+}

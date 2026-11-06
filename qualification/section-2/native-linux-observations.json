@@ -1,0 +1,737 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-23",
+  "implementation_commit": "230cc47ecf3c567e5540b98134602c1a5b535945",
+  "workflow_run": 40018196257,
+  "workflow_url": "https://github.com/01max/librairii/actions/runs/40018196257",
+  "artifact_id": 12530166359,
+  "artifact_zip_sha256": "dafef629628c1f97ea3246a957c9f71f4caf4a767c91a00c60289483815682e1",
+  "raw_report_sha256": "595107c5160d569efb94ca4898d99a8dba1f968bf665541bd6ac0015f5906178",
+  "report": {
+    "source": "2439bcbb28faaae7457d0fe9d21921ba4f844f20",
+    "source_dirty": false,
+    "target": "x86_64-unknown-linux-gnu",
+    "binary_sha256": "564bb81527a42d3b4b1ce313ca8387f3a234d6e31477f2f26e68f62e7900b569",
+    "archive": {
+      "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+      "bytes": 14625712,
+      "sha256": "662dd830e89a8084e0c5304e0fe9e5014ff7970bc4f52ef83f98404f86b5b742"
+    },
+    "base": "ubuntu:24.04@sha256:a2d43bffc46670d7108bb3c0468c67c5557c4c92e83e1e34cbff1322ad1b94dc",
+    "image": "sha256:c96d7ab2d0b532eacd0f0c7563e27ab9f7101600541e622508632b533d2d2f1d",
+    "checks": {
+      "x11": true,
+      "wayland": true,
+      "retired-librairii-native-x11-ac621472c5e54066b318aad5c2f8fde7": true,
+      "retired-librairii-native-wayland-ac621472c5e54066b318aad5c2f8fde7": true,
+      "image_retired": true
+    },
+    "errors": [],
+    "automated_native_integration": "pass",
+    "physical_input_ime_qualified": false,
+    "screen_reader_speech_qualified": false,
+    "macos_integration_qualified": false,
+    "clean_host_qualified": false,
+    "toolkit_selected": false,
+    "scope": "Real GTK portal selections/cancel, parent association, native OS accelerator/input and observed Thunar folder UI in isolated X11/Openbox and Wayland/Sway sessions. Synthetic OS events/AT-SPI actions, not physical input or Orca speech."
+  },
+  "sessions": {
+    "x11": {
+      "session": "x11",
+      "binary_sha256": "564bb81527a42d3b4b1ce313ca8387f3a234d6e31477f2f26e68f62e7900b569",
+      "cases": {
+        "files-multiple": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 89,
+          "fixture": "/tmp/librairii-qualification-MLmemW",
+          "x11_parent": {
+            "dialog_xid": "12582915",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 89,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 89\n"
+          },
+          "selection_table": {
+            "name": "Files",
+            "rows": 2,
+            "columns": 4,
+            "row_archive_names": [
+              [
+                "Deuxième archive 02.pk"
+              ],
+              [
+                "Été 日本語 故事.zip"
+              ]
+            ],
+            "observed_names": [
+              [
+                "",
+                "20‎∶23",
+                "31 bytes",
+                "Deuxième archive 02.pk",
+                "Font"
+              ],
+              [
+                "",
+                "20‎∶23",
+                "24 bytes",
+                "Archive",
+                "Été 日本語 故事.zip"
+              ]
+            ]
+          },
+          "selected_rows": [
+            0,
+            1
+          ],
+          "selected_paths": [
+            "/tmp/librairii-qualification-MLmemW/Deuxième archive 02.pk",
+            "/tmp/librairii-qualification-MLmemW/Été 日本語 故事.zip"
+          ],
+          "returncode": 0
+        },
+        "files-single": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 116,
+          "fixture": "/tmp/librairii-qualification-B2S69k",
+          "x11_parent": {
+            "dialog_xid": "12584189",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 116,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 116\n"
+          },
+          "selection_table": {
+            "name": "Files",
+            "rows": 2,
+            "columns": 4,
+            "row_archive_names": [
+              [
+                "Deuxième archive 02.pk"
+              ],
+              [
+                "Été 日本語 故事.zip"
+              ]
+            ],
+            "observed_names": [
+              [
+                "",
+                "20‎∶23",
+                "31 bytes",
+                "Deuxième archive 02.pk",
+                "Font"
+              ],
+              [
+                "",
+                "20‎∶23",
+                "24 bytes",
+                "Archive",
+                "Été 日本語 故事.zip"
+              ]
+            ]
+          },
+          "selected_rows": [
+            1
+          ],
+          "selected_paths": [
+            "/tmp/librairii-qualification-B2S69k/Été 日本語 故事.zip"
+          ],
+          "returncode": 0
+        },
+        "files-cancel": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "cancelled",
+          "app_pid": 136,
+          "fixture": "/tmp/librairii-qualification-WMgajf",
+          "x11_parent": {
+            "dialog_xid": "12585148",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 136,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 136\n"
+          },
+          "selected_paths": [],
+          "returncode": 0
+        },
+        "folder-accept": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 154,
+          "fixture": "/tmp/librairii-qualification-s9wp3T",
+          "x11_parent": {
+            "dialog_xid": "12585893",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 154,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 154\n"
+          },
+          "selected_paths": [
+            "/tmp/librairii-qualification-s9wp3T"
+          ],
+          "returncode": 0
+        },
+        "folder-cancel": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "cancelled",
+          "app_pid": 173,
+          "fixture": "/tmp/librairii-qualification-mer7No",
+          "x11_parent": {
+            "dialog_xid": "12586679",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 173,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 173\n"
+          },
+          "selected_paths": [],
+          "returncode": 0
+        },
+        "folder-reject": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "rejected",
+          "app_pid": 191,
+          "fixture": "/tmp/librairii-qualification-UYpLrq",
+          "x11_parent": {
+            "dialog_xid": "12587563",
+            "transient_property": "WM_TRANSIENT_FOR(WINDOW): window id # 0x800003\n",
+            "transient": 8388611,
+            "parent_pid": 191,
+            "pid_property": "_NET_WM_PID(CARDINAL) = 191\n"
+          },
+          "selected_paths": [
+            "/tmp"
+          ],
+          "returncode": 0
+        },
+        "early-settings": {
+          "checks": {
+            "early_settings_delivered": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "delivered",
+          "app_pid": 211,
+          "fixture": "/tmp/librairii-qualification-PexpVQ",
+          "returncode": 0
+        },
+        "reveal": {
+          "checks": {
+            "actual_file_manager_window_path": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "requested",
+          "app_pid": 224,
+          "fixture": "/tmp/librairii-qualification-Zox1MP",
+          "observed_file_manager_path": "/tmp/librairii-qualification-Zox1MP/",
+          "returncode": 0
+        }
+      },
+      "errors": [],
+      "native_integration": "pass",
+      "file_hashes": {
+        "xvfb.log": "6d73d78138c41bea466314919237a4fe998e5b670a356ab2012f328fff769a7b",
+        "reveal.log": "3f3f4bc7d27aa03d51566e26b6ee73ccc2f8cb772d47971801287b048dd61005",
+        "gtk.log": "53a177fa755402c3a9e206d916d0675b0d670408eba09750f1f91fcf7e9f4e19",
+        "files-multiple.log": "23206c08c8caeff3c80ee14e512155647a643967e8929e1bf0f45bf175c95acc",
+        "files-cancel.log": "0d9d58fe2fa15393e3427a8d791021fdb8c31ef2e43c9d073628e7ee556cc1cb",
+        "portal.log": "9e3782bea8f8a9c246718b38f7b16588bbbd199ebfe48e4eb5af365112612e9e",
+        "monitor.log": "6233254c8b37de3ed2447d3640fb66712ef2b31f65366c6417989cff755044af",
+        "folder-reject.log": "f814ce442f1347f4df076dffa2eb245deb98ffb4d4ebad79b2bbcd2ce86899a3",
+        "versions.txt": "16fb10e302188331dafaffc9ff4510be4fd87a140eb252d0f4903908ee8d4e62",
+        "native-session.json": "d4534f8f9f63fe6b5cfcc922f3942a6247b1337cd5b71827b6bff9896dd47abc",
+        "files-single.log": "89cd880c9abadb7ff4a926d038102636fcb770841ad3008e4db7f2000d310a6a",
+        "early-settings.log": "f524d78861f70e26bfb1c254e2342d6c2965855117292c80ae49539c71f33250",
+        "folder-cancel.log": "660d2d8a99740783ad5be64b008586d6c5cdfd08cbcd40de019314fe8d3c55ea",
+        "openbox.log": "32abf5b872ec47be3533af7e10b1515ad05e225c2aa9d4036ae3da5b6f335d4b",
+        "folder-accept.log": "23206c08c8caeff3c80ee14e512155647a643967e8929e1bf0f45bf175c95acc",
+        "file-manager-preference.txt": "7ed6f305faa6c9e88fc980496274c79d16bf9031972d149ee19f3ec5c8a49417",
+        "files-single/selected.png": "78df10c9df3eebb7f151422aa550ddf8ca6930ae82d9655329be60fd5033d216",
+        "files-single/dialog.png": "94cc5628d10bc4945e8767b0d17833adfc7402253fd8a5307997433690c3ac5b",
+        "files-single/case.json": "0ac0c6863ff8f6d889f1066385798b3d448fb55de3a6bb3b15bd20bbd7a453cc",
+        "folder-cancel/dialog.png": "8a3a824c4ec9e9cc2c6393be786160ed5cdec016da633841ca09112502922b9f",
+        "folder-cancel/case.json": "a6c8ff8e1d83cb169bc2bf5e43585dc9a8a60b88d2191fb9b792169b78628275",
+        "files-cancel/dialog.png": "9c3f0f68382bd9c93aae20de2a4727c2bc87284e326ae30d06e898c3a0ef75a3",
+        "files-cancel/case.json": "14e175c12ba0da45c9b1d6ee356be417647edf3461e8e10b1343448b5a9dd9a1",
+        "reveal/revealed.png": "f796d72389787b6fba51a7307422bbc458f51522444a01e502a048910aaafa39",
+        "reveal/case.json": "f00c687a2e17ca21d2df3c638d3d0d6428be017355ef807c67be18e70cdf3217",
+        "folder-accept/dialog.png": "46f7bb7b22b8362ba6fe773bd84e6f3d1c4638d6bbc7f74994455712c2032f66",
+        "folder-accept/case.json": "2bebc9a278e98534cba0f2eb7aa6a4432c54edf02f777879d6002fadf077d9e9",
+        "files-multiple/selected.png": "4639c5c0bbd63a32b13e602c521221fcb32be4d5859430bfa907f47fe25bd404",
+        "files-multiple/dialog.png": "06da6325a900b8eefcf3f214cb68a96b87a8f2f9cb515f04246c0654c8239b6b",
+        "files-multiple/case.json": "8ffb36f504aff22f521f3bf5c19830aaa5b126cdf19709ba26db12117fb02966",
+        "early-settings/case.json": "d6c4666ccb8e846d4b6a5be01fbeac742013145a353077c3262e95573976e660",
+        "folder-reject/outside-folder.png": "ef44641352ddf818ad67804f86a277cd80642f48275377e61ab44546837a5270",
+        "folder-reject/dialog.png": "33d816eea4b227e69189990bb6e486d4e83eca67b17c3691804c3b69c6cc4d43",
+        "folder-reject/case.json": "e7551f73a6e765f8d145d63fb1f08577e7fd9c2cdbfccc0bcb9a18e028ee2c6c",
+        "files-single/app/fixture.txt": "10f228d2dd97ef51e73324f20d0e0ad9c1bd0a6cbc713ddb931f1acfea443a1f",
+        "files-single/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-single/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-single/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "files-single/app/callback-complete.txt": "428d33dc307fc25f3753c4d474ac079bbd714b13f57565b76d3acdc47e6a6b6d",
+        "files-single/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-single/app/selected-paths.txt": "8e7a1c85ba774445ad0e0c887f414d0fa4383c0e82840416e2a7fcebf1830a5f",
+        "files-single/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-cancel/app/fixture.txt": "50534a4ca2109c14af1cc2b3d7b6c9e25b0d528b0b5b65852e42bd5682007413",
+        "folder-cancel/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-cancel/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-cancel/app/outcome.txt": "8b47045eb7b8ca42aa967f33ee1d014ba89f8d1ac207426b482d34b5c0d90935",
+        "folder-cancel/app/callback-complete.txt": "d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc",
+        "folder-cancel/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-cancel/app/selected-paths.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-cancel/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "files-cancel/app/fixture.txt": "bebc0b3ba407fe0ba7ed28aaab9c10c4b405a59428ac72dce5b6a6ca8ab9c1f6",
+        "files-cancel/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-cancel/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-cancel/app/outcome.txt": "8b47045eb7b8ca42aa967f33ee1d014ba89f8d1ac207426b482d34b5c0d90935",
+        "files-cancel/app/callback-complete.txt": "d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc",
+        "files-cancel/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-cancel/app/selected-paths.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-cancel/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "reveal/app/fixture.txt": "40b9de6f2a5a64eaa335c0f2afcb427bd4aea143a59f16cf2b5b226a2bb54a0a",
+        "reveal/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reveal/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "reveal/app/outcome.txt": "c6a91ee7f93b091b009a611956b9c0a9b414e4ee111666cdf3e87e2271defa79",
+        "reveal/app/callback-complete.txt": "09d3d4b349cf9f56de3c2e9e403da54b52b9ae0be6896e313003603557c45135",
+        "reveal/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "reveal/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-accept/app/fixture.txt": "f45d57a36252a18edbaba2193b53ea393e8e7777838ab65c8c2ae96530a51fc2",
+        "folder-accept/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-accept/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-accept/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "folder-accept/app/callback-complete.txt": "2ce54eb0851296b24779e9565c2e892b888075ec0a1c2dd409730ed1d1380b15",
+        "folder-accept/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-accept/app/selected-paths.txt": "f45d57a36252a18edbaba2193b53ea393e8e7777838ab65c8c2ae96530a51fc2",
+        "folder-accept/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "files-multiple/app/fixture.txt": "4acf204be064766233049d5931941a8c9c8bb367d4e2ad433eadc72fc209ac10",
+        "files-multiple/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-multiple/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-multiple/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "files-multiple/app/callback-complete.txt": "428d33dc307fc25f3753c4d474ac079bbd714b13f57565b76d3acdc47e6a6b6d",
+        "files-multiple/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-multiple/app/selected-paths.txt": "b3280e12e7eaf403e972e7697695346df1e19ebdddf851551626c3ae00c1ee50",
+        "files-multiple/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "early-settings/app/fixture.txt": "084f743314fc7c2a50d5139b4a4053d7ad78c07873df904603a985970073cf0a",
+        "early-settings/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "early-settings/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "early-settings/app/callback-complete.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "early-settings/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "early-settings/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-reject/app/fixture.txt": "a700fd66893ed04d34aa75fdfab4923df79d83abe55d283ed54d43160702898d",
+        "folder-reject/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-reject/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-reject/app/outcome.txt": "20cd938a2ea64f612b3523bc9219130c6fc66cd09b394ea38437488c0b8898b2",
+        "folder-reject/app/callback-complete.txt": "1c249826e1fa7ad297d0bd719cc6d85c30ca060160c8d99226e3a0601bfd46d2",
+        "folder-reject/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-reject/app/selected-paths.txt": "e9671acd244849c57167c658fa2f969752048f7ab184a3dcf5c46cb4d56ae124",
+        "folder-reject/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293"
+      }
+    },
+    "wayland": {
+      "session": "wayland",
+      "binary_sha256": "564bb81527a42d3b4b1ce313ca8387f3a234d6e31477f2f26e68f62e7900b569",
+      "cases": {
+        "files-multiple": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 87,
+          "fixture": "/tmp/librairii-qualification-qNzL42",
+          "selection_table": {
+            "name": "Files",
+            "rows": 2,
+            "columns": 4,
+            "row_archive_names": [
+              [
+                "Deuxième archive 02.pk"
+              ],
+              [
+                "Été 日本語 故事.zip"
+              ]
+            ],
+            "observed_names": [
+              [
+                "",
+                "20‎∶23",
+                "31 bytes",
+                "Deuxième archive 02.pk",
+                "Font"
+              ],
+              [
+                "",
+                "20‎∶23",
+                "24 bytes",
+                "Archive",
+                "Été 日本語 故事.zip"
+              ]
+            ]
+          },
+          "selected_rows": [
+            0,
+            1
+          ],
+          "selected_paths": [
+            "/tmp/librairii-qualification-qNzL42/Deuxième archive 02.pk",
+            "/tmp/librairii-qualification-qNzL42/Été 日本語 故事.zip"
+          ],
+          "returncode": 0
+        },
+        "files-single": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 115,
+          "fixture": "/tmp/librairii-qualification-iG79Ig",
+          "selection_table": {
+            "name": "Files",
+            "rows": 2,
+            "columns": 4,
+            "row_archive_names": [
+              [
+                "Deuxième archive 02.pk"
+              ],
+              [
+                "Été 日本語 故事.zip"
+              ]
+            ],
+            "observed_names": [
+              [
+                "",
+                "20‎∶23",
+                "31 bytes",
+                "Deuxième archive 02.pk",
+                "Font"
+              ],
+              [
+                "",
+                "20‎∶23",
+                "24 bytes",
+                "Archive",
+                "Été 日本語 故事.zip"
+              ]
+            ]
+          },
+          "selected_rows": [
+            1
+          ],
+          "selected_paths": [
+            "/tmp/librairii-qualification-iG79Ig/Été 日本語 故事.zip"
+          ],
+          "returncode": 0
+        },
+        "files-cancel": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "cancelled",
+          "app_pid": 133,
+          "fixture": "/tmp/librairii-qualification-zVnGAn",
+          "selected_paths": [],
+          "returncode": 0
+        },
+        "folder-accept": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "selected",
+          "app_pid": 151,
+          "fixture": "/tmp/librairii-qualification-R6KgNs",
+          "selected_paths": [
+            "/tmp/librairii-qualification-R6KgNs"
+          ],
+          "returncode": 0
+        },
+        "folder-cancel": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "cancelled",
+          "app_pid": 170,
+          "fixture": "/tmp/librairii-qualification-aAyx5Q",
+          "selected_paths": [],
+          "returncode": 0
+        },
+        "folder-reject": {
+          "checks": {
+            "real_modal_dialog": true,
+            "one_real_portal_call": true,
+            "parent_identified": true,
+            "parent_associated": true,
+            "no_parent_rejection": true,
+            "actual_picker_result": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "rejected",
+          "app_pid": 189,
+          "fixture": "/tmp/librairii-qualification-q87H5Z",
+          "selected_paths": [
+            "/tmp"
+          ],
+          "returncode": 0
+        },
+        "early-settings": {
+          "checks": {
+            "early_settings_delivered": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "delivered",
+          "app_pid": 211,
+          "fixture": "/tmp/librairii-qualification-cSTwis",
+          "returncode": 0
+        },
+        "reveal": {
+          "checks": {
+            "actual_file_manager_window_path": true,
+            "os_settings_accelerator": true,
+            "native_focus_restored_and_search_input": true,
+            "owned_shutdown": true,
+            "fixture_removed": true
+          },
+          "expected": "requested",
+          "app_pid": 222,
+          "fixture": "/tmp/librairii-qualification-SFdN6W",
+          "observed_file_manager_path": "/tmp/librairii-qualification-SFdN6W/",
+          "returncode": 0
+        }
+      },
+      "errors": [],
+      "native_integration": "pass",
+      "file_hashes": {
+        "keyboard-seat.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reveal.log": "c91edc0bcbde1a1728691dadeaae0e6b610a9811eca4b3113143a76f9aefe7e7",
+        "gtk.log": "4c198d1934575c011c81215891f8f056c231c3c18c80178131582f8f2b87e00a",
+        "files-multiple.log": "32b4334783c1755a7a71da99a0f5cc230d7b8dc769a2e6685d5cee6e0efe2b8b",
+        "sway.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-cancel.log": "33b2db553bfce5057009ebb7a5fbb99c91d04f236397fe8b3e0e8cc1c7ed846a",
+        "portal.log": "aecb01b345e6b4d71352d5e30501485b703ed84c3108d9dda0685873a3c6b4df",
+        "monitor.log": "0598842b14ffd845952ec0fb5d19fd748ed0b125714e0de37fc0e4fc61c70623",
+        "folder-reject.log": "4d5af287acb5f9671a076e1866529381830a8ffc49a6b7c81bfc06b605eae048",
+        "versions.txt": "16fb10e302188331dafaffc9ff4510be4fd87a140eb252d0f4903908ee8d4e62",
+        "native-session.json": "a60a59730facc6952f7f2d69860909478052ac9e489fadab9de03a91c56a31b5",
+        "files-single.log": "cf533dcba5bdd8cf3d8aef8c0a9a695e8a32a88f70d2c165c6511452627fcd93",
+        "early-settings.log": "ac7fdce27f2c4104f75f27cc2ed46f9041cc849776e567e4a64b8a9a7002bdd0",
+        "folder-cancel.log": "5ed0dad3df34f4949c6b2eee0ef107a945527c27849602c3b4c0ec475207976d",
+        "folder-accept.log": "3b8f5257fd1adc8b16ef25dae0dc8deb9327f897c57f4c93314eee58a182836d",
+        "file-manager-preference.txt": "7ed6f305faa6c9e88fc980496274c79d16bf9031972d149ee19f3ec5c8a49417",
+        "files-single/selected.png": "9b04f867b2243769e676e55145527f1f5c7e93c3608ed7a4e9a63928fc57d445",
+        "files-single/dialog.png": "b199906789bf74f3b13bd58106105749ee1d8762ffddb4449c6fd9d1777f1e3f",
+        "files-single/case.json": "72ac864b578ccf72c0d384c817966c685125a1dbd450fae84ce12cfaba7953d0",
+        "folder-cancel/dialog.png": "359cd357d442a94122d5e78852ebb7b68767d68ec156c11d6b0a98aed5667fc9",
+        "folder-cancel/case.json": "25769c3f0ff36f29f7684bdec91f03b3d539c42474459e1cdb23a14e93f3a291",
+        "files-cancel/dialog.png": "037ec4cf196278863f46893dcf2236ec534479e28cd0993b10d3473a96e161fc",
+        "files-cancel/case.json": "b1a0e6afa141d6f8769cab8934dad55a71a65da849a16059c32a0d0080738f91",
+        "reveal/revealed.png": "78b44559442d3d42ccebe280fe70f3f96d331b4b7ad8b663c6267f259551ccfb",
+        "reveal/case.json": "5973913408c367b68b23926f4b4c7f0b237f95ba5eceb7c33dacfcd6d499b952",
+        "folder-accept/dialog.png": "e89bd6aba39ad4fd0f539e058213b55127e1fede23112cf47e8637c71f267a6b",
+        "folder-accept/case.json": "0f37962d9d10d862f3eedff83cf0cd834ba4d2bd437d5f1e85d434f199d2d008",
+        "files-multiple/selected.png": "ff71e52a4e2a4f8ba582834a6991426c11afe609eff60ecc3ce71648ee201505",
+        "files-multiple/dialog.png": "6edef483f0fc26edb8230ff67985f6fb04e1beeda0ac2881449181dd6269f536",
+        "files-multiple/case.json": "1fc6f43578ad9f097dc3c6d2995fcd78a3d5ece61d3f4557353c8b23201cb30f",
+        "early-settings/case.json": "a00ee86510c80c19bccb378ba51bec0b58053bb52a1c44f0c6849c5131c86e20",
+        "folder-reject/outside-folder.png": "58c1e5badb79bd1c1e13ee6fee6bcd534399cba471029f12cfa0de78e9afb29c",
+        "folder-reject/dialog.png": "181d8e5687202f58f2ca99e9e4cb0ae1327a12a06045d7cdd05edb5f79c9c82e",
+        "folder-reject/case.json": "00ca579bfe79a778a62d1aa53c4a31a400ddf8ec07deaded2f896e411657dc6b",
+        "files-single/app/fixture.txt": "d56260eb6b0d3b151576f764ed93d9ee2345b7bcc8b63c2ba1a3fdd55b94d60b",
+        "files-single/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-single/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-single/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "files-single/app/callback-complete.txt": "428d33dc307fc25f3753c4d474ac079bbd714b13f57565b76d3acdc47e6a6b6d",
+        "files-single/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-single/app/selected-paths.txt": "d3e687de3a44acf76f1a53e8fe805efa6dfbe7c12fcdd5da3e01e9dea0ed870c",
+        "files-single/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-cancel/app/fixture.txt": "7a852282f1f4a8452bf1db71e227bf2f61ab36e2d80b18e2951bfde8d004951a",
+        "folder-cancel/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-cancel/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-cancel/app/outcome.txt": "8b47045eb7b8ca42aa967f33ee1d014ba89f8d1ac207426b482d34b5c0d90935",
+        "folder-cancel/app/callback-complete.txt": "d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc",
+        "folder-cancel/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-cancel/app/selected-paths.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-cancel/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "files-cancel/app/fixture.txt": "8e0fc593a31b384f57b797b560d67ce3bfba9657ee54bd27996590a8e03c36bd",
+        "files-cancel/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-cancel/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-cancel/app/outcome.txt": "8b47045eb7b8ca42aa967f33ee1d014ba89f8d1ac207426b482d34b5c0d90935",
+        "files-cancel/app/callback-complete.txt": "d353a99eb4556847ceeb3c306ac886cf6b4fa13043eb1864b9aeb0607fd5f2cc",
+        "files-cancel/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-cancel/app/selected-paths.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-cancel/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "reveal/app/fixture.txt": "42ba5653df327b7273c4182ccd17071c97024bacaf7bda623c6496c5cdf96955",
+        "reveal/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reveal/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "reveal/app/outcome.txt": "c6a91ee7f93b091b009a611956b9c0a9b414e4ee111666cdf3e87e2271defa79",
+        "reveal/app/callback-complete.txt": "09d3d4b349cf9f56de3c2e9e403da54b52b9ae0be6896e313003603557c45135",
+        "reveal/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "reveal/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-accept/app/fixture.txt": "7901bcecfa8b201c00c2a73d09de59512985a6c426074367d90c4483aa658c1f",
+        "folder-accept/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-accept/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-accept/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "folder-accept/app/callback-complete.txt": "2ce54eb0851296b24779e9565c2e892b888075ec0a1c2dd409730ed1d1380b15",
+        "folder-accept/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-accept/app/selected-paths.txt": "7901bcecfa8b201c00c2a73d09de59512985a6c426074367d90c4483aa658c1f",
+        "folder-accept/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "files-multiple/app/fixture.txt": "320f12750e15f32b72f7d3d75bc7958c2041d01a338d07178d0ec924412134fd",
+        "files-multiple/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "files-multiple/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "files-multiple/app/outcome.txt": "d7cbbb688b2e506c022e95cef8c4f629a29b9b36a6e50324e70dff466dbb95af",
+        "files-multiple/app/callback-complete.txt": "428d33dc307fc25f3753c4d474ac079bbd714b13f57565b76d3acdc47e6a6b6d",
+        "files-multiple/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "files-multiple/app/selected-paths.txt": "b85f3835c8aa245472b6f3d90a6481574f239c26124f794d161ec3e163790bee",
+        "files-multiple/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "early-settings/app/fixture.txt": "c1a1686ae0617b99a1c2c3d7579e1254900437d294e1693adbf30ceeca5fbe47",
+        "early-settings/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "early-settings/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "early-settings/app/callback-complete.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "early-settings/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "early-settings/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293",
+        "folder-reject/app/fixture.txt": "f489904dcc3ba4c8be9af439b6a3e9b94bf9b5dca413bfdb8dff99e406fc7e90",
+        "folder-reject/app/finish": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "folder-reject/app/retired.txt": "ef1602e5e686638236a97c77ace68dc21e4a1c1938e0d96756d2142794625d21",
+        "folder-reject/app/outcome.txt": "20cd938a2ea64f612b3523bc9219130c6fc66cd09b394ea38437488c0b8898b2",
+        "folder-reject/app/callback-complete.txt": "1c249826e1fa7ad297d0bd719cc6d85c30ca060160c8d99226e3a0601bfd46d2",
+        "folder-reject/app/ready.txt": "4b164d6a9f9c85850a3ba960960457ca1594f6f2f03a8bfe781c4335e502c98b",
+        "folder-reject/app/selected-paths.txt": "e9671acd244849c57167c658fa2f969752048f7ab184a3dcf5c46cb4d56ae124",
+        "folder-reject/app/state.txt": "53443b0babf9647b13b809d3efcb18cb719640d4965ce99ba13ffca5e212e293"
+      }
+    }
+  },
+  "independent_review": "Approved scoped evidence: all 16 cases and 190 session-file hashes verified; exact portal response codes/URIs, X11 raw PID/transient properties and six Wayland export/request/import parent associations through normal teardown verified. All 711 package payload hashes and matching archive/executable/source verified. Both Thunar screenshots visibly show the actual fixture path. Physical input, IME, Orca, macOS, full clean-host and toolkit qualification remain open.",
+  "scope_limits": [
+    "Synthetic OS key events and native AT-SPI actions, not physical keyboards or IME.",
+    "GTK Ctrl+L injection did not open the location field; failed screenshots remain retained and the shortcut stays unqualified.",
+    "Thunar location preference is private and read back. Actual displayed path is read only.",
+    "All eight cases must pass on both sessions. Overall Task2.6, full clean-host/macOS and toolkit selection remain open."
+  ],
+  "failed_native_runs": [
+    40010930728,
+    40011756460,
+    40012639720,
+    40013478231,
+    40014481637,
+    40015771459,
+    40016943055
+  ],
+  "visual_evidence_limits": "Selected and outside-folder screenshots precede GTK repaint and can retain the prior row highlight. They prove native-dialog/filename presence, not the final visual selection. Native row observations and exact returned callback paths/response codes independently prove the final selection. Both Thunar displayed fixture paths are visually verified."
+}

@@ -1,0 +1,196 @@
+{
+  "ageColor": "#405CF5",
+  "collectionRevision": 2,
+  "collectionState": "needs_attention",
+  "events": [
+    {
+      "requestedStories": 2,
+      "changedStories": 2,
+      "assignmentsAdded": 2,
+      "assignmentsRemoved": 0
+    },
+    {
+      "requestedStories": 1,
+      "changedStories": 1,
+      "assignmentsAdded": 1,
+      "assignmentsRemoved": 0
+    },
+    {
+      "requestedStories": 2,
+      "changedStories": 2,
+      "assignmentsAdded": 2,
+      "assignmentsRemoved": 0
+    },
+    {
+      "requestedStories": 2,
+      "changedStories": 0,
+      "assignmentsAdded": 0,
+      "assignmentsRemoved": 0
+    },
+    {
+      "invalidAtomic": true
+    },
+    {
+      "assignments": 1,
+      "collections": [
+        1
+      ]
+    },
+    {
+      "staleDelete": true
+    }
+  ],
+  "firstFlag": {
+    "requestedStories": 1,
+    "changedStories": 1,
+    "changes": [
+      {
+        "storyId": 1,
+        "previous": false,
+        "current": true
+      }
+    ]
+  },
+  "flags": [
+    true,
+    false,
+    false
+  ],
+  "mixedFlag": {
+    "requestedStories": 2,
+    "changedStories": 1,
+    "changes": [
+      {
+        "storyId": 2,
+        "previous": false,
+        "current": true
+      }
+    ]
+  },
+  "undo": {
+    "requestedStories": 1,
+    "changedStories": 1,
+    "changes": [
+      {
+        "storyId": 2,
+        "previous": true,
+        "current": false
+      }
+    ]
+  },
+  "workspace": {
+    "catalog": {
+      "definitions": [
+        {
+          "id": 2,
+          "key": "ete-favorites",
+          "normalizedKey": "ete-favorites",
+          "label": "Favorite",
+          "color": "#405CF5",
+          "kind": "boolean",
+          "source": "user",
+          "presentation": "default",
+          "position": 0,
+          "protected": false,
+          "values": []
+        },
+        {
+          "id": 3,
+          "key": "genre",
+          "normalizedKey": "genre",
+          "label": "Genre",
+          "color": "#405CF5",
+          "kind": "choice",
+          "source": "user",
+          "presentation": "default",
+          "position": 1,
+          "protected": false,
+          "values": [
+            {
+              "id": 3,
+              "definitionId": 3,
+              "key": "calm",
+              "normalizedKey": "calm",
+              "label": "Calm",
+              "position": 0
+            },
+            {
+              "id": 4,
+              "definitionId": 3,
+              "key": "dreamy",
+              "normalizedKey": "dreamy",
+              "label": "Dreamy",
+              "position": 1
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "key": "age",
+          "normalizedKey": "age",
+          "label": "Age",
+          "color": "#267D5D",
+          "kind": "choice",
+          "source": "derived",
+          "presentation": "system",
+          "position": 0,
+          "protected": true,
+          "values": [
+            {
+              "id": 1,
+              "definitionId": 1,
+              "key": "3-5",
+              "normalizedKey": "3-5",
+              "label": "3–5 years",
+              "position": 0
+            },
+            {
+              "id": 2,
+              "definitionId": 1,
+              "key": "6-8",
+              "normalizedKey": "6-8",
+              "label": "6–8 years",
+              "position": 1
+            }
+          ]
+        }
+      ]
+    },
+    "requestedStories": 3,
+    "states": [
+      {
+        "definitionId": 2,
+        "assignedStories": 2,
+        "values": []
+      },
+      {
+        "definitionId": 3,
+        "assignedStories": 0,
+        "values": [
+          {
+            "valueId": 3,
+            "assignedStories": 1
+          },
+          {
+            "valueId": 4,
+            "assignedStories": 2
+          }
+        ]
+      },
+      {
+        "definitionId": 1,
+        "assignedStories": 0,
+        "values": [
+          {
+            "valueId": 1,
+            "assignedStories": 0
+          },
+          {
+            "valueId": 2,
+            "assignedStories": 0
+          }
+        ]
+      }
+    ]
+  }
+}

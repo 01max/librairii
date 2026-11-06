@@ -1,0 +1,1429 @@
+{
+  "checked_on": "2026-10-20",
+  "status": "candidates only; no toolkit decision",
+  "rust": "1.99.1",
+  "crates": [
+    {
+      "name": "slint",
+      "version": "1.18.1",
+      "released": "2026-09-21T08:52:15.993358Z",
+      "rust_version": "1.92",
+      "license": "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0",
+      "features": {
+        "accessibility": [
+          "i-slint-backend-selector/accessibility"
+        ],
+        "backend-android-activity-05": [
+          "i-slint-backend-android-activity/native-activity",
+          "i-slint-backend-android-activity/aa-05"
+        ],
+        "backend-android-activity-06": [
+          "i-slint-backend-android-activity/native-activity",
+          "i-slint-backend-android-activity/aa-06",
+          "i-slint-backend-selector/backend-android-activity"
+        ],
+        "backend-default": [
+          "i-slint-backend-selector/default"
+        ],
+        "backend-linuxkms": [
+          "i-slint-backend-selector/backend-linuxkms",
+          "dep:i-slint-backend-linuxkms",
+          "std"
+        ],
+        "backend-linuxkms-libinput": [
+          "i-slint-backend-selector/backend-linuxkms-libinput",
+          "std"
+        ],
+        "backend-linuxkms-libseat": [
+          "i-slint-backend-selector/backend-linuxkms-libseat",
+          "std"
+        ],
+        "backend-linuxkms-noseat": [
+          "i-slint-backend-selector/backend-linuxkms-noseat",
+          "std"
+        ],
+        "backend-qt": [
+          "i-slint-backend-selector/backend-qt",
+          "std",
+          "i-slint-backend-qt"
+        ],
+        "backend-winit": [
+          "i-slint-backend-selector/backend-winit",
+          "std"
+        ],
+        "backend-winit-wayland": [
+          "i-slint-backend-selector/backend-winit-wayland",
+          "std"
+        ],
+        "backend-winit-x11": [
+          "i-slint-backend-selector/backend-winit-x11",
+          "std"
+        ],
+        "compat-1-0": [
+          "compat-1-2",
+          "renderer-software"
+        ],
+        "compat-1-18": [],
+        "compat-1-2": [
+          "compat-1-18",
+          "i-slint-backend-linuxkms?/libseat",
+          "i-slint-backend-linuxkms?/libinput"
+        ],
+        "default": [
+          "std",
+          "backend-default",
+          "renderer-femtovg",
+          "renderer-software",
+          "accessibility",
+          "compat-1-2",
+          "system-tray"
+        ],
+        "gettext": [
+          "i-slint-core/gettext-rs"
+        ],
+        "image-default-formats": [
+          "i-slint-core/image-default-formats"
+        ],
+        "libm": [
+          "i-slint-core/libm",
+          "i-slint-renderer-software?/libm"
+        ],
+        "live-preview": [
+          "dep:i-slint-live-preview"
+        ],
+        "log": [
+          "i-slint-core/log"
+        ],
+        "mcp": [
+          "std",
+          "i-slint-backend-selector/mcp"
+        ],
+        "raw-window-handle-06": [
+          "dep:raw-window-handle-06",
+          "i-slint-backend-selector/raw-window-handle-06"
+        ],
+        "renderer-femtovg": [
+          "i-slint-backend-selector/renderer-femtovg",
+          "i-slint-renderer-femtovg/opengl",
+          "std"
+        ],
+        "renderer-femtovg-wgpu": [
+          "i-slint-backend-selector/renderer-femtovg-wgpu",
+          "i-slint-renderer-femtovg/wgpu",
+          "std"
+        ],
+        "renderer-skia": [
+          "i-slint-backend-selector/renderer-skia",
+          "dep:i-slint-renderer-skia",
+          "std"
+        ],
+        "renderer-skia-opengl": [
+          "i-slint-backend-selector/renderer-skia-opengl",
+          "dep:i-slint-renderer-skia",
+          "std"
+        ],
+        "renderer-skia-vulkan": [
+          "i-slint-backend-selector/renderer-skia-vulkan",
+          "dep:i-slint-renderer-skia",
+          "std"
+        ],
+        "renderer-software": [
+          "i-slint-backend-selector/renderer-software",
+          "dep:i-slint-renderer-software"
+        ],
+        "renderer-vello": [
+          "i-slint-backend-selector/renderer-vello",
+          "std"
+        ],
+        "renderer-winit-femtovg": [
+          "renderer-femtovg"
+        ],
+        "renderer-winit-skia": [
+          "renderer-skia"
+        ],
+        "renderer-winit-skia-opengl": [
+          "renderer-skia-opengl"
+        ],
+        "renderer-winit-skia-vulkan": [
+          "renderer-skia-vulkan"
+        ],
+        "renderer-winit-software": [
+          "renderer-software"
+        ],
+        "serde": [
+          "i-slint-core/serde"
+        ],
+        "software-renderer-path": [
+          "i-slint-renderer-software/path"
+        ],
+        "software-renderer-systemfonts": [
+          "renderer-software"
+        ],
+        "std": [
+          "i-slint-core/std",
+          "i-slint-renderer-software?/std"
+        ],
+        "system-testing": [
+          "std",
+          "i-slint-backend-selector/system-testing"
+        ],
+        "system-tray": [
+          "i-slint-core/system-tray"
+        ],
+        "unsafe-single-threaded": [
+          "i-slint-core/unsafe-single-threaded"
+        ],
+        "unstable-fontique-011": [
+          "i-slint-common/shared-fontique"
+        ],
+        "unstable-libinput-09": [
+          "i-slint-backend-selector/unstable-libinput-09"
+        ],
+        "unstable-wgpu-29": [
+          "i-slint-core/unstable-wgpu-29",
+          "i-slint-backend-selector/unstable-wgpu-29",
+          "i-slint-backend-android-activity?/unstable-wgpu-29",
+          "dep:wgpu-29"
+        ],
+        "unstable-wgpu-30": [
+          "i-slint-core/unstable-wgpu-30",
+          "i-slint-backend-selector/unstable-wgpu-30",
+          "i-slint-backend-android-activity?/unstable-wgpu-30",
+          "dep:wgpu-30"
+        ],
+        "unstable-winit-030": [
+          "backend-winit",
+          "dep:i-slint-backend-winit",
+          "i-slint-backend-selector/unstable-winit-030"
+        ]
+      },
+      "checksum": "15e477d5ff6fec20909100ff8f7062432ebfbda7a62a0f37d0252aa126f38c83",
+      "repository": "https://github.com/slint-ui/slint",
+      "primary_source": "https://crates.io/api/v1/crates/slint/1.18.1"
+    },
+    {
+      "name": "slint-build",
+      "version": "1.18.1",
+      "released": "2026-09-21T08:52:01.000528Z",
+      "rust_version": "1.92",
+      "license": "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0",
+      "features": {
+        "compat-1-18": [],
+        "default": [
+          "compat-1-18",
+          "renderer-software"
+        ],
+        "experimental-module-builds": [
+          "i-slint-compiler/experimental-library-module"
+        ],
+        "image-default-formats": [
+          "i-slint-compiler/image-default-formats"
+        ],
+        "renderer-software": [
+          "i-slint-compiler/renderer-software",
+          "dep:fontique"
+        ],
+        "sdf-fonts": [
+          "renderer-software",
+          "i-slint-compiler/sdf-fonts"
+        ]
+      },
+      "checksum": "3ea28d4e1ad47d829b91e227f17037fac07a8001668a93fee47ac04f88718ebc",
+      "repository": "https://github.com/slint-ui/slint",
+      "primary_source": "https://crates.io/api/v1/crates/slint-build/1.18.1"
+    },
+    {
+      "name": "i-slint-backend-winit",
+      "version": "1.18.1",
+      "released": "2026-09-21T08:52:08.377821Z",
+      "rust_version": "1.92",
+      "license": "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0",
+      "features": {
+        "accessibility": [
+          "dep:accesskit",
+          "dep:accesskit_winit",
+          "i-slint-core/accessibility-text"
+        ],
+        "default": [],
+        "raw-window-handle-06": [
+          "i-slint-core/raw-window-handle-06"
+        ],
+        "renderer-femtovg": [
+          "i-slint-renderer-femtovg/opengl",
+          "dep:glutin",
+          "dep:glutin-winit",
+          "windows/Win32_Graphics_OpenGL"
+        ],
+        "renderer-femtovg-wgpu": [
+          "i-slint-renderer-femtovg/wgpu",
+          "dep:i-slint-renderer-femtovg",
+          "unstable-wgpu-30"
+        ],
+        "renderer-skia": [
+          "i-slint-renderer-skia"
+        ],
+        "renderer-skia-opengl": [
+          "renderer-skia",
+          "i-slint-renderer-skia/opengl"
+        ],
+        "renderer-skia-vulkan": [
+          "renderer-skia",
+          "i-slint-renderer-skia/vulkan"
+        ],
+        "renderer-software": [
+          "dep:softbuffer",
+          "dep:imgref",
+          "dep:rgb",
+          "dep:i-slint-renderer-software",
+          "i-slint-renderer-software/std",
+          "dep:bytemuck"
+        ],
+        "renderer-vello": [
+          "dep:i-slint-renderer-anyrender",
+          "i-slint-renderer-anyrender/vello",
+          "unstable-wgpu-29"
+        ],
+        "unstable-wgpu-29": [
+          "i-slint-core/unstable-wgpu-29",
+          "i-slint-renderer-skia?/unstable-wgpu-29"
+        ],
+        "unstable-wgpu-30": [
+          "i-slint-core/unstable-wgpu-30",
+          "i-slint-renderer-femtovg?/unstable-wgpu-30",
+          "i-slint-renderer-skia?/unstable-wgpu-30"
+        ],
+        "wayland": [
+          "winit/wayland",
+          "winit/wayland-csd-adwaita",
+          "glutin?/wayland",
+          "glutin-winit?/wayland",
+          "dep:arboard",
+          "arboard/wayland-data-control",
+          "i-slint-renderer-skia?/wayland",
+          "softbuffer?/wayland",
+          "softbuffer?/wayland-dlopen"
+        ],
+        "x11": [
+          "winit/x11",
+          "glutin?/x11",
+          "glutin?/glx",
+          "glutin-winit?/x11",
+          "glutin-winit?/glx",
+          "dep:arboard",
+          "i-slint-renderer-skia?/x11",
+          "softbuffer?/x11",
+          "softbuffer?/x11-dlopen"
+        ]
+      },
+      "checksum": "dae4fcf1b19e9cb109984d2af87d2b9485388c619265bff71dd523133888bee2",
+      "repository": "https://github.com/slint-ui/slint",
+      "primary_source": "https://crates.io/api/v1/crates/i-slint-backend-winit/1.18.1"
+    },
+    {
+      "name": "i-slint-renderer-skia",
+      "version": "1.18.1",
+      "released": "2026-09-21T08:52:04.855258Z",
+      "rust_version": "1.92",
+      "license": "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0",
+      "features": {
+        "default": [
+          "softbuffer",
+          "wgpu-30"
+        ],
+        "kms": [
+          "softbuffer/kms"
+        ],
+        "opengl": [],
+        "unstable-wgpu-29": [
+          "i-slint-core/unstable-wgpu-29",
+          "wgpu-29"
+        ],
+        "unstable-wgpu-30": [
+          "i-slint-core/unstable-wgpu-30",
+          "wgpu-30"
+        ],
+        "vulkan": [
+          "skia-safe/vulkan",
+          "wgpu-30",
+          "wgpu-30/vulkan",
+          "wgpu-30/vulkan-portability",
+          "wgpu-29?/vulkan",
+          "wgpu-29?/vulkan-portability"
+        ],
+        "wayland": [
+          "glutin/wayland",
+          "softbuffer/wayland",
+          "softbuffer/wayland-dlopen"
+        ],
+        "wgpu-29": [
+          "i-slint-core/wgpu-29",
+          "dep:wgpu-29",
+          "dep:spin_on",
+          "dep:windows-core",
+          "dep:wgpu-hal-29"
+        ],
+        "wgpu-30": [
+          "i-slint-core/wgpu-30",
+          "dep:wgpu-30",
+          "dep:spin_on",
+          "dep:windows-core",
+          "dep:wgpu-hal-30"
+        ],
+        "x11": [
+          "glutin/x11",
+          "glutin/glx",
+          "softbuffer/x11",
+          "softbuffer/x11-dlopen"
+        ]
+      },
+      "checksum": "dc9c1cf02385f1d26fc1f423544e52390a8e5c2d89420a8042aa94b4fe109d1f",
+      "repository": "https://github.com/slint-ui/slint",
+      "primary_source": "https://crates.io/api/v1/crates/i-slint-renderer-skia/1.18.1"
+    },
+    {
+      "name": "winit",
+      "version": "0.30.13",
+      "released": "2026-03-02T13:50:47.664884Z",
+      "rust_version": "1.70.0",
+      "license": "Apache-2.0",
+      "features": {
+        "android-game-activity": [
+          "android-activity/game-activity"
+        ],
+        "android-native-activity": [
+          "android-activity/native-activity"
+        ],
+        "default": [
+          "rwh_06",
+          "x11",
+          "wayland",
+          "wayland-dlopen",
+          "wayland-csd-adwaita"
+        ],
+        "mint": [
+          "dpi/mint"
+        ],
+        "rwh_04": [
+          "dep:rwh_04",
+          "ndk/rwh_04"
+        ],
+        "rwh_05": [
+          "dep:rwh_05",
+          "ndk/rwh_05"
+        ],
+        "rwh_06": [
+          "dep:rwh_06",
+          "ndk/rwh_06"
+        ],
+        "serde": [
+          "dep:serde",
+          "cursor-icon/serde",
+          "smol_str/serde",
+          "dpi/serde"
+        ],
+        "wayland": [
+          "wayland-client",
+          "wayland-backend",
+          "wayland-protocols",
+          "wayland-protocols-plasma",
+          "sctk",
+          "ahash",
+          "memmap2"
+        ],
+        "wayland-csd-adwaita": [
+          "sctk-adwaita",
+          "sctk-adwaita/ab_glyph"
+        ],
+        "wayland-csd-adwaita-crossfont": [
+          "sctk-adwaita",
+          "sctk-adwaita/crossfont"
+        ],
+        "wayland-csd-adwaita-notitle": [
+          "sctk-adwaita"
+        ],
+        "wayland-dlopen": [
+          "wayland-backend/dlopen"
+        ],
+        "x11": [
+          "x11-dl",
+          "bytemuck",
+          "percent-encoding",
+          "xkbcommon-dl/x11",
+          "x11rb"
+        ]
+      },
+      "checksum": "a6755fa58a9f8350bd1e472d4c3fcc25f824ec358933bba33306d0b63df5978d",
+      "repository": "https://github.com/rust-windowing/winit",
+      "primary_source": "https://crates.io/api/v1/crates/winit/0.30.13"
+    },
+    {
+      "name": "skia-safe",
+      "version": "0.153.3",
+      "released": "2026-09-04T16:55:51.184155Z",
+      "rust_version": "1.85",
+      "license": "MIT",
+      "features": {
+        "all-linux": [
+          "ganesh",
+          "gl",
+          "egl",
+          "vulkan",
+          "x11",
+          "wayland",
+          "textlayout",
+          "svg",
+          "skottie",
+          "webp",
+          "graphite"
+        ],
+        "all-macos": [
+          "ganesh",
+          "gl",
+          "vulkan",
+          "metal",
+          "textlayout",
+          "svg",
+          "skottie",
+          "webp",
+          "graphite"
+        ],
+        "all-windows": [
+          "ganesh",
+          "gl",
+          "vulkan",
+          "d3d",
+          "textlayout",
+          "svg",
+          "skottie",
+          "webp",
+          "graphite"
+        ],
+        "binary-cache": [
+          "skia-bindings/binary-cache"
+        ],
+        "d3d": [
+          "ganesh",
+          "windows",
+          "skia-bindings/d3d"
+        ],
+        "default": [
+          "binary-cache",
+          "embed-icudtl",
+          "pdf",
+          "jpeg"
+        ],
+        "egl": [
+          "gl",
+          "skia-bindings/egl"
+        ],
+        "embed-freetype": [
+          "skia-bindings/embed-freetype"
+        ],
+        "embed-icudtl": [
+          "skia-bindings/embed-icudtl"
+        ],
+        "freetype-woff2": [
+          "skia-bindings/freetype-woff2"
+        ],
+        "ganesh": [
+          "skia-bindings/ganesh"
+        ],
+        "gl": [
+          "ganesh",
+          "skia-bindings/gl"
+        ],
+        "gpu": [],
+        "graphite": [
+          "skia-bindings/graphite"
+        ],
+        "jpeg": [
+          "skia-bindings/jpeg"
+        ],
+        "metal": [
+          "skia-bindings/metal"
+        ],
+        "no-compile": [
+          "skia-bindings/no-compile"
+        ],
+        "pdf": [
+          "skia-bindings/pdf",
+          "jpeg"
+        ],
+        "save-svg-images": [],
+        "skottie": [
+          "skia-bindings/skottie",
+          "textlayout",
+          "dep:base64",
+          "dep:percent-encoding"
+        ],
+        "svg": [
+          "skia-bindings/svg",
+          "dep:base64",
+          "dep:percent-encoding",
+          "skia-svg-macros"
+        ],
+        "textlayout": [
+          "skia-bindings/textlayout"
+        ],
+        "ureq": [
+          "dep:ureq"
+        ],
+        "use-system-jpeg-turbo": [
+          "skia-bindings/use-system-jpeg-turbo"
+        ],
+        "vulkan": [
+          "skia-bindings/vulkan"
+        ],
+        "wayland": [
+          "egl",
+          "skia-bindings/wayland"
+        ],
+        "webp": [
+          "webp-encode",
+          "webp-decode"
+        ],
+        "webp-decode": [
+          "skia-bindings/webp-decode"
+        ],
+        "webp-encode": [
+          "skia-bindings/webp-encode"
+        ],
+        "x11": [
+          "gl",
+          "skia-bindings/x11"
+        ]
+      },
+      "checksum": "c61cb643dac43067f3eb76c866635a74377ac0abca0ff2590674e1e295514c3d",
+      "repository": "https://github.com/rust-skia/rust-skia",
+      "primary_source": "https://crates.io/api/v1/crates/skia-safe/0.153.3"
+    },
+    {
+      "name": "rusqlite",
+      "version": "0.40.2",
+      "released": "2026-08-08T14:21:52.570893Z",
+      "rust_version": null,
+      "license": "MIT",
+      "features": {
+        "array": [
+          "vtab",
+          "pointer"
+        ],
+        "backup": [],
+        "blob": [],
+        "buildtime_bindgen": [
+          "libsqlite3-sys?/buildtime_bindgen",
+          "sqlite-wasm-rs?/bindgen"
+        ],
+        "bundled": [
+          "libsqlite3-sys?/bundled",
+          "modern_sqlite"
+        ],
+        "bundled-full": [
+          "modern-full",
+          "bundled"
+        ],
+        "bundled-sqlcipher": [
+          "libsqlite3-sys?/bundled-sqlcipher",
+          "bundled"
+        ],
+        "bundled-sqlcipher-vendored-openssl": [
+          "libsqlite3-sys?/bundled-sqlcipher-vendored-openssl",
+          "bundled-sqlcipher"
+        ],
+        "bundled-windows": [
+          "libsqlite3-sys?/bundled-windows"
+        ],
+        "cache": [
+          "hashlink"
+        ],
+        "collation": [],
+        "column_decltype": [],
+        "column_metadata": [
+          "libsqlite3-sys?/column_metadata"
+        ],
+        "csvtab": [
+          "csv",
+          "vtab"
+        ],
+        "default": [
+          "cache",
+          "ffi-sqlite-wasm-rs"
+        ],
+        "extra_check": [],
+        "fallible_uint": [],
+        "ffi-sqlite-wasm-rs": [
+          "dep:sqlite-wasm-rs"
+        ],
+        "functions": [],
+        "hooks": [],
+        "i128_blob": [],
+        "in_gecko": [
+          "modern_sqlite",
+          "libsqlite3-sys?/in_gecko"
+        ],
+        "limits": [],
+        "load_extension": [],
+        "loadable_extension": [
+          "libsqlite3-sys?/loadable_extension"
+        ],
+        "modern-full": [
+          "array",
+          "backup",
+          "blob",
+          "modern_sqlite",
+          "chrono",
+          "collation",
+          "column_metadata",
+          "column_decltype",
+          "csvtab",
+          "extra_check",
+          "functions",
+          "hooks",
+          "i128_blob",
+          "jiff",
+          "limits",
+          "load_extension",
+          "serde_json",
+          "serialize",
+          "series",
+          "time",
+          "trace",
+          "unlock_notify",
+          "url",
+          "uuid",
+          "vtab",
+          "window"
+        ],
+        "modern_sqlite": [
+          "libsqlite3-sys?/bundled_bindings"
+        ],
+        "pointer": [],
+        "preupdate_hook": [
+          "libsqlite3-sys?/preupdate_hook",
+          "hooks"
+        ],
+        "serialize": [],
+        "series": [
+          "vtab"
+        ],
+        "session": [
+          "libsqlite3-sys?/session",
+          "hooks"
+        ],
+        "sqlcipher": [
+          "libsqlite3-sys?/sqlcipher"
+        ],
+        "trace": [],
+        "unlock_notify": [
+          "libsqlite3-sys?/unlock_notify"
+        ],
+        "vtab": [],
+        "wasm32-wasi-vfs": [
+          "libsqlite3-sys?/wasm32-wasi-vfs"
+        ],
+        "window": [
+          "functions"
+        ],
+        "with-asan": [
+          "libsqlite3-sys?/with-asan"
+        ]
+      },
+      "checksum": "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3",
+      "repository": "https://github.com/rusqlite/rusqlite",
+      "primary_source": "https://crates.io/api/v1/crates/rusqlite/0.40.2"
+    },
+    {
+      "name": "libsqlite3-sys",
+      "version": "0.38.2",
+      "released": "2026-08-08T14:21:30.774453Z",
+      "rust_version": null,
+      "license": "MIT",
+      "features": {
+        "buildtime_bindgen": [
+          "bindgen",
+          "pkg-config",
+          "vcpkg"
+        ],
+        "bundled": [
+          "cc",
+          "bundled_bindings"
+        ],
+        "bundled-sqlcipher": [
+          "bundled"
+        ],
+        "bundled-sqlcipher-vendored-openssl": [
+          "bundled-sqlcipher",
+          "openssl-sys/vendored"
+        ],
+        "bundled-windows": [
+          "cc",
+          "bundled_bindings"
+        ],
+        "bundled_bindings": [],
+        "column_metadata": [],
+        "default": [
+          "min_sqlite_version_3_34_1"
+        ],
+        "in_gecko": [],
+        "loadable_extension": [
+          "prettyplease",
+          "quote",
+          "syn"
+        ],
+        "min_sqlite_version_3_34_1": [
+          "pkg-config",
+          "vcpkg"
+        ],
+        "preupdate_hook": [
+          "buildtime_bindgen"
+        ],
+        "session": [
+          "preupdate_hook",
+          "buildtime_bindgen"
+        ],
+        "sqlcipher": [],
+        "unlock_notify": [],
+        "wasm32-wasi-vfs": [],
+        "with-asan": []
+      },
+      "checksum": "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8",
+      "repository": "https://github.com/rusqlite/rusqlite",
+      "primary_source": "https://crates.io/api/v1/crates/libsqlite3-sys/0.38.2"
+    },
+    {
+      "name": "zip",
+      "version": "9.0.5",
+      "released": "2026-10-17T18:45:16.846672Z",
+      "rust_version": "1.88",
+      "license": "MIT",
+      "features": {
+        "_arbitrary": [
+          "dep:arbitrary"
+        ],
+        "_bzip2_any": [],
+        "_deflate-any": [],
+        "_miri_compatible_features": [
+          "bzip2",
+          "chrono",
+          "deflate-flate2",
+          "flate2/rust_backend",
+          "deflate-zopfli",
+          "jiff-02",
+          "legacy-zip",
+          "lzma",
+          "nt-time",
+          "ppmd",
+          "unreserved",
+          "xz",
+          "time"
+        ],
+        "aes-crypto": [
+          "dep:aes",
+          "dep:constant_time_eq",
+          "getrandom/std",
+          "dep:hmac",
+          "dep:pbkdf2",
+          "dep:sha1",
+          "dep:zeroize"
+        ],
+        "bzip2": [
+          "dep:bzip2",
+          "bzip2/default",
+          "_bzip2_any"
+        ],
+        "bzip2-rs": [
+          "dep:bzip2",
+          "bzip2/bzip2-sys",
+          "_bzip2_any"
+        ],
+        "chrono": [
+          "dep:chrono"
+        ],
+        "default": [
+          "aes-crypto",
+          "bzip2",
+          "deflate64",
+          "deflate",
+          "lzma",
+          "ppmd",
+          "time",
+          "zstd",
+          "xz"
+        ],
+        "deflate": [
+          "deflate-zopfli",
+          "deflate-flate2-zlib-rs"
+        ],
+        "deflate-flate2": [
+          "_deflate-any",
+          "dep:flate2"
+        ],
+        "deflate-flate2-zlib": [
+          "deflate-flate2",
+          "flate2/zlib"
+        ],
+        "deflate-flate2-zlib-ng": [
+          "deflate-flate2",
+          "flate2/zlib-ng"
+        ],
+        "deflate-flate2-zlib-ng-compat": [
+          "deflate-flate2",
+          "flate2/zlib-ng-compat"
+        ],
+        "deflate-flate2-zlib-rs": [
+          "deflate-flate2",
+          "flate2/zlib-rs"
+        ],
+        "deflate-zopfli": [
+          "dep:zopfli",
+          "_deflate-any"
+        ],
+        "jiff-02": [
+          "dep:jiff"
+        ],
+        "legacy-zip": [
+          "bitstream-io"
+        ],
+        "lzma": [
+          "dep:lzma-rust2"
+        ],
+        "nt-time": [
+          "dep:nt-time"
+        ],
+        "ppmd": [
+          "dep:ppmd-rust"
+        ],
+        "time": [
+          "dep:time"
+        ],
+        "unreserved": [],
+        "xz": [
+          "dep:lzma-rust2"
+        ],
+        "zstd": [
+          "dep:zstd"
+        ]
+      },
+      "checksum": "6e04976da629d3b04204ba8105b396a193af8ad2583b2c79bfb3ab8af580a11e",
+      "repository": "https://github.com/zip-rs/zip2",
+      "primary_source": "https://crates.io/api/v1/crates/zip/9.0.5"
+    },
+    {
+      "name": "sevenz-rust2",
+      "version": "0.24.1",
+      "released": "2026-10-18T05:58:24.770705Z",
+      "rust_version": "1.93",
+      "license": "Apache-2.0",
+      "features": {
+        "aes256": [
+          "dep:aes",
+          "dep:cbc",
+          "dep:getrandom",
+          "dep:sha2"
+        ],
+        "aes256_wasm": [
+          "aes256",
+          "getrandom/wasm_js"
+        ],
+        "brotli": [
+          "dep:brotli"
+        ],
+        "bzip2": [
+          "dep:bzip2"
+        ],
+        "compress": [
+          "lzma-rust2/encoder"
+        ],
+        "default": [
+          "aes256",
+          "bzip2",
+          "compress",
+          "ppmd",
+          "util"
+        ],
+        "default_wasm": [
+          "aes256_wasm",
+          "bzip2",
+          "compress",
+          "ppmd",
+          "util"
+        ],
+        "deflate": [
+          "dep:flate2"
+        ],
+        "lz4": [
+          "dep:lz4_flex"
+        ],
+        "nt-time": [
+          "dep:nt-time"
+        ],
+        "ppmd": [
+          "dep:ppmd-rust"
+        ],
+        "util": [],
+        "zstd": [
+          "dep:zstd"
+        ]
+      },
+      "checksum": "2f0c68c0e8289bfd09e49ef433e8de02c7c464afc1d7f5a275c99749a880e301",
+      "repository": "https://github.com/hasenbanck/sevenz-rust",
+      "primary_source": "https://crates.io/api/v1/crates/sevenz-rust2/0.24.1"
+    },
+    {
+      "name": "rfd",
+      "version": "0.17.2",
+      "released": "2026-01-12T20:57:19.255609Z",
+      "rust_version": null,
+      "license": "MIT",
+      "features": {
+        "common-controls-v6": [
+          "windows-sys/Win32_UI_Controls"
+        ],
+        "default": [
+          "xdg-portal",
+          "wayland"
+        ],
+        "file-handle-inner": [],
+        "gtk3": [
+          "gtk-sys",
+          "glib-sys",
+          "gobject-sys"
+        ],
+        "wayland": [
+          "wayland-backend",
+          "wayland-client",
+          "wayland-protocols"
+        ],
+        "xdg-portal": [
+          "pollster"
+        ]
+      },
+      "checksum": "20dafead71c16a34e1ff357ddefc8afc11e7d51d6d2b9fbd07eaa48e3e540220",
+      "repository": "https://github.com/PolyMeilex/rfd",
+      "primary_source": "https://crates.io/api/v1/crates/rfd/0.17.2"
+    },
+    {
+      "name": "muda",
+      "version": "0.21.2",
+      "released": "2026-10-08T18:04:50.636757Z",
+      "rust_version": "1.90",
+      "license": "Apache-2.0 OR MIT",
+      "features": {
+        "common-controls-v6": [],
+        "default": [
+          "gtk3"
+        ],
+        "gtk3": [
+          "dep:gtk",
+          "dep:libc"
+        ],
+        "gtk4": [
+          "dep:gtk4",
+          "dep:libc"
+        ],
+        "serde": [
+          "dep:serde",
+          "dpi/serde",
+          "keyboard-types/serde"
+        ],
+        "snapshot": []
+      },
+      "checksum": "4340e89c178916e62879c5c36b7f699019369be413e496178a6983ce91b8bc03",
+      "repository": "https://github.com/tauri-apps/muda",
+      "primary_source": "https://crates.io/api/v1/crates/muda/0.21.2"
+    },
+    {
+      "name": "tempfile",
+      "version": "3.27.0",
+      "released": "2026-03-11T00:20:04.812840Z",
+      "rust_version": "1.63",
+      "license": "MIT OR Apache-2.0",
+      "features": {
+        "default": [
+          "getrandom"
+        ],
+        "nightly": []
+      },
+      "checksum": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+      "repository": "https://github.com/Stebalien/tempfile",
+      "primary_source": "https://crates.io/api/v1/crates/tempfile/3.27.0"
+    },
+    {
+      "name": "cargo-nextest",
+      "version": "0.9.148",
+      "released": "2026-10-08T03:34:31.492821Z",
+      "rust_version": "1.91",
+      "license": "Apache-2.0 OR MIT",
+      "features": {
+        "default": [
+          "default-no-update",
+          "self-update"
+        ],
+        "default-no-update": [
+          "usdt"
+        ],
+        "experimental-tokio-console": [
+          "nextest-runner/experimental-tokio-console"
+        ],
+        "self-update": [
+          "dep:dialoguer",
+          "nextest-runner/self-update"
+        ],
+        "usdt": [
+          "nextest-runner/usdt"
+        ]
+      },
+      "checksum": "7023461ee82c0c2864df74ee340fb7777c13fc556f99e913646ab6ddccd05dd4",
+      "repository": "https://github.com/nextest-rs/nextest",
+      "primary_source": "https://crates.io/api/v1/crates/cargo-nextest/0.9.148"
+    },
+    {
+      "name": "cargo-deny",
+      "version": "0.20.2",
+      "released": "2026-07-09T17:58:09.303885Z",
+      "rust_version": "1.88.0",
+      "license": "MIT OR Apache-2.0",
+      "features": {},
+      "checksum": "e528dfcbe739af7ce37a77d3d6df1b29dd6887b1c701d888820c0f16b864f737",
+      "repository": "https://github.com/EmbarkStudios/cargo-deny",
+      "primary_source": "https://crates.io/api/v1/crates/cargo-deny/0.20.2"
+    },
+    {
+      "name": "cargo-audit",
+      "version": "0.22.2",
+      "released": "2026-06-05T12:33:04.440539Z",
+      "rust_version": "1.88",
+      "license": "Apache-2.0 OR MIT",
+      "features": {
+        "binary-scanning": [
+          "rustsec/binary-scanning",
+          "dep:object",
+          "dep:rustc-demangle",
+          "dep:syn"
+        ],
+        "default": [
+          "binary-scanning"
+        ],
+        "fix": []
+      },
+      "checksum": "700c2b240f7fd330c24b675fe429f73a5b676531fcc6300400b2b67f155ba12a",
+      "repository": "https://github.com/rustsec/rustsec",
+      "primary_source": "https://crates.io/api/v1/crates/cargo-audit/0.22.2"
+    },
+    {
+      "name": "cargo-llvm-cov",
+      "version": "0.9.1",
+      "released": "2026-09-06T16:20:49.621751Z",
+      "rust_version": "1.87",
+      "license": "Apache-2.0 OR MIT",
+      "features": {},
+      "checksum": "5e00647cc92940c4dd82249c480fe08fd3809767e89f056bcec46d8a7962ea5b",
+      "repository": "https://github.com/taiki-e/cargo-llvm-cov",
+      "primary_source": "https://crates.io/api/v1/crates/cargo-llvm-cov/0.9.1"
+    },
+    {
+      "name": "cargo-fuzz",
+      "version": "0.13.2",
+      "released": "2026-06-09T18:37:27.158092Z",
+      "rust_version": null,
+      "license": "MIT OR Apache-2.0",
+      "features": {},
+      "checksum": "5acfd01930e49823e58c30dd8012d3338a620377d7c7d4cc140ca4b2169400e2",
+      "repository": "https://github.com/rust-fuzz/cargo-fuzz/",
+      "primary_source": "https://crates.io/api/v1/crates/cargo-fuzz/0.13.2"
+    },
+    {
+      "name": "proptest",
+      "version": "1.12.0",
+      "released": "2026-10-10T18:18:05.623491Z",
+      "rust_version": "1.88",
+      "license": "MIT OR Apache-2.0",
+      "features": {
+        "alloc": [],
+        "atomic64bit": [],
+        "attr-macro": [
+          "proptest-macro"
+        ],
+        "bit-set": [
+          "dep:bit-set",
+          "dep:bit-vec"
+        ],
+        "default": [
+          "std",
+          "fork",
+          "timeout",
+          "bit-set"
+        ],
+        "default-code-coverage": [
+          "std",
+          "fork",
+          "timeout",
+          "bit-set"
+        ],
+        "f16": [],
+        "fork": [
+          "std",
+          "rusty-fork",
+          "tempfile"
+        ],
+        "handle-panics": [
+          "std"
+        ],
+        "hardware-rng": [
+          "x86"
+        ],
+        "no_std": [
+          "num-traits/libm"
+        ],
+        "std": [
+          "rand/std",
+          "rand/sys_rng",
+          "regex-syntax",
+          "num-traits/std"
+        ],
+        "timeout": [
+          "fork",
+          "rusty-fork/timeout"
+        ],
+        "unstable": [
+          "f16"
+        ]
+      },
+      "checksum": "b8530004ccb15eae51c7e40009fbe317f341f804db54dc033eec1c50be28cfa0",
+      "repository": "https://github.com/proptest-rs/proptest",
+      "primary_source": "https://crates.io/api/v1/crates/proptest/1.12.0"
+    },
+    {
+      "name": "insta",
+      "version": "1.49.0",
+      "released": "2026-10-03T01:12:59.795476Z",
+      "rust_version": "1.66.0",
+      "license": "Apache-2.0",
+      "features": {
+        "_cargo_insta_internal": [
+          "clap"
+        ],
+        "colors": [
+          "console"
+        ],
+        "csv": [
+          "dep:csv",
+          "serde"
+        ],
+        "default": [
+          "colors"
+        ],
+        "filters": [
+          "regex",
+          "strip-ansi-escapes"
+        ],
+        "glob": [
+          "walkdir",
+          "globset"
+        ],
+        "json": [
+          "serde"
+        ],
+        "redactions": [
+          "pest",
+          "pest_derive",
+          "serde"
+        ],
+        "ron": [
+          "dep:ron",
+          "serde"
+        ],
+        "toml": [
+          "dep:toml_edit",
+          "dep:toml_writer",
+          "serde"
+        ],
+        "yaml": [
+          "serde"
+        ]
+      },
+      "checksum": "b67d3d2e287e4b86c10b3f3b641033d1f89b74bdb39d05f34952e2b9a6fe21cd",
+      "repository": "https://github.com/mitsuhiko/insta",
+      "primary_source": "https://crates.io/api/v1/crates/insta/1.49.0"
+    },
+    {
+      "name": "criterion",
+      "version": "0.8.2",
+      "released": "2026-02-04T10:43:03.398729Z",
+      "rust_version": "1.86",
+      "license": "Apache-2.0 OR MIT",
+      "features": {
+        "async": [],
+        "async_futures": [
+          "dep:futures",
+          "async"
+        ],
+        "async_smol": [
+          "dep:smol",
+          "async"
+        ],
+        "async_tokio": [
+          "dep:tokio",
+          "async"
+        ],
+        "cargo_bench_support": [],
+        "csv_output": [
+          "dep:csv"
+        ],
+        "default": [
+          "rayon",
+          "plotters",
+          "cargo_bench_support"
+        ],
+        "html_reports": [],
+        "plotters": [
+          "dep:plotters"
+        ],
+        "rayon": [
+          "dep:rayon"
+        ],
+        "real_blackbox": [],
+        "stable": [
+          "csv_output",
+          "html_reports",
+          "async_futures",
+          "async_smol",
+          "async_tokio"
+        ]
+      },
+      "checksum": "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3",
+      "repository": "https://github.com/criterion-rs/criterion.rs",
+      "primary_source": "https://crates.io/api/v1/crates/criterion/0.8.2"
+    },
+    {
+      "name": "eframe",
+      "version": "0.37.0",
+      "released": "2026-10-15T15:28:53.621684Z",
+      "rust_version": "1.95",
+      "license": "MIT OR Apache-2.0",
+      "features": {
+        "__screenshot": [],
+        "accesskit": [
+          "egui-winit/accesskit"
+        ],
+        "android-game-activity": [
+          "egui-winit/android-game-activity"
+        ],
+        "android-native-activity": [
+          "egui-winit/android-native-activity"
+        ],
+        "clipboard": [
+          "egui-winit/clipboard"
+        ],
+        "default": [
+          "accesskit",
+          "clipboard",
+          "default_fonts",
+          "links",
+          "system_fonts",
+          "wayland",
+          "web_screen_reader",
+          "wgpu",
+          "winit/default",
+          "x11"
+        ],
+        "default_fonts": [
+          "egui/default_fonts"
+        ],
+        "experimental": [
+          "egui/experimental"
+        ],
+        "glow": [
+          "dep:egui_glow",
+          "dep:glow",
+          "dep:glutin-winit",
+          "dep:glutin"
+        ],
+        "inspection": [
+          "dep:egui_inspection",
+          "accesskit"
+        ],
+        "links": [
+          "egui-winit/links"
+        ],
+        "persistence": [
+          "egui-winit/serde",
+          "egui/persistence",
+          "ron",
+          "serde"
+        ],
+        "system_fonts": [
+          "dep:egui_system_font_provider"
+        ],
+        "wayland": [
+          "egui-winit/wayland",
+          "egui-wgpu?/wayland",
+          "egui_glow?/wayland",
+          "glutin?/wayland",
+          "glutin-winit?/wayland"
+        ],
+        "web_screen_reader": [
+          "web-sys/SpeechSynthesis",
+          "web-sys/SpeechSynthesisUtterance"
+        ],
+        "wgpu": [
+          "wgpu_no_default_features",
+          "egui-wgpu/default"
+        ],
+        "wgpu_no_default_features": [
+          "dep:wgpu",
+          "dep:egui-wgpu",
+          "dep:pollster"
+        ],
+        "x11": [
+          "egui-winit/x11",
+          "egui-wgpu?/x11",
+          "egui_glow?/x11",
+          "glutin?/x11",
+          "glutin?/glx",
+          "glutin-winit?/x11",
+          "glutin-winit?/glx"
+        ]
+      },
+      "checksum": "9c5642501a65ca657d05f00c643a5c14ff2346cb3818032bfe23d58e1f8e5f84",
+      "repository": "https://github.com/emilk/egui/tree/main/crates/eframe",
+      "primary_source": "https://crates.io/api/v1/crates/eframe/0.37.0"
+    },
+    {
+      "name": "egui_kittest",
+      "version": "0.37.0",
+      "released": "2026-10-15T15:36:03.134160Z",
+      "rust_version": "1.95",
+      "license": "MIT OR Apache-2.0",
+      "features": {
+        "eframe": [
+          "dep:eframe",
+          "eframe/accesskit"
+        ],
+        "snapshot": [
+          "dep:dify",
+          "dep:image",
+          "dep:open",
+          "dep:tempfile",
+          "image/png"
+        ],
+        "video": [
+          "snapshot"
+        ],
+        "wgpu": [
+          "dep:egui-wgpu",
+          "dep:pollster",
+          "dep:image",
+          "dep:wgpu",
+          "eframe?/wgpu"
+        ],
+        "x11": [
+          "eframe?/x11"
+        ]
+      },
+      "checksum": "0979c2e37860fcf13a2bea77508607f067a9a6a84ba9bd47b5e298582fb59b86",
+      "repository": "https://github.com/emilk/egui",
+      "primary_source": "https://crates.io/api/v1/crates/egui_kittest/0.37.0"
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+[
+  {
+    "canonicalPayload": "{}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v1-default",
+      "version": 1,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{\"name\":\"ete %_\"},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v1-nested",
+      "version": 1,
+      "payload": "{\"anyOf\":[{\"name\":\"  ÉTÉ  %_ \",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"Moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v2-default",
+      "version": 2,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{\"name\":\"ete %_\"},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v2-nested",
+      "version": 2,
+      "payload": "{\"anyOf\":[{\"name\":\"  ÉTÉ  %_ \",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"Moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v3-default",
+      "version": 3,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{\"name\":\"ete %_\"},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v3-nested",
+      "version": 3,
+      "payload": "{\"anyOf\":[{\"name\":\"  ÉTÉ  %_ \",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"Moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v4-default",
+      "version": 4,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{\"name\":\"ete %_\",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v4-nested",
+      "version": 4,
+      "payload": "{\"anyOf\":[{\"name\":\"  ÉTÉ  %_ \",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"Moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v5-default",
+      "version": 5,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{\"name\":\"ete %_\",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "saved-v5-nested",
+      "version": 5,
+      "payload": "{\"anyOf\":[{\"name\":\"  ÉTÉ  %_ \",\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]},{\"name\":\"Moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"anyOf\":[{},{\"name\":\"moon\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "v4-retired-visibility",
+      "version": 4,
+      "payload": "{\"brokenVisibility\":\"only\",\"anyOf\":[{\"brokenState\":\"false\"},{\"name\":\"moon\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "canonicalPayload": "{\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]}",
+    "canonicalVersion": 5,
+    "error": "",
+    "input": {
+      "id": "v5-reused-user-tag",
+      "version": 5,
+      "payload": "{\"booleanFilters\":[{\"definitionId\":7,\"state\":\"true\"}]}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "invalid_saved_query",
+    "input": {
+      "id": "v5-retired-filter-rejected",
+      "version": 5,
+      "payload": "{\"brokenState\":\"true\"}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "unsupported_saved_query_version",
+    "input": {
+      "id": "unknown-version",
+      "version": 6,
+      "payload": "{}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "invalid_saved_query",
+    "input": {
+      "id": "duplicate-property",
+      "version": 5,
+      "payload": "{\"name\":\"moon\",\"name\":\"forest\"}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "invalid_saved_query",
+    "input": {
+      "id": "unknown-property",
+      "version": 5,
+      "payload": "{\"unexpected\":true}",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "invalid_saved_query",
+    "input": {
+      "id": "invalid-json",
+      "version": 5,
+      "payload": "{",
+      "legacyBrokenId": 7
+    }
+  },
+  {
+    "error": "invalid_saved_query",
+    "input": {
+      "id": "duplicate-filter",
+      "version": 5,
+      "payload": "{\"booleanFilters\":[{\"definitionId\":4,\"state\":\"true\"},{\"definitionId\":4,\"state\":\"false\"}]}",
+      "legacyBrokenId": 7
+    }
+  }
+]

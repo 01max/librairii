@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "owner": "librairii-3 (baseline); librairii-1 accountable for future section assignments",
+  "rust_status": "unimplemented/unverified on A/I/L/W",
+  "preferences": [
+    {
+      "file": "settings.json",
+      "version": 1,
+      "fields": [
+        "version",
+        "language",
+        "root",
+        "libraryId",
+        "complete",
+        "recovering"
+      ],
+      "authority": "independent OS profile; serialized atomic updates",
+      "source": "internal/preferences/model.go",
+      "parity": [
+        "P52",
+        "P53",
+        "P54",
+        "P55"
+      ]
+    },
+    {
+      "file": "relocation.json",
+      "fields": [
+        "id",
+        "libraryId",
+        "source",
+        "destination",
+        "phase",
+        "entries[].path",
+        "entries[].size",
+        "entries[].sha256",
+        "entries[].directory"
+      ],
+      "authority": "independent config; verify identity and path ownership before replay",
+      "source": "internal/preferences/journal.go",
+      "parity": [
+        "P54",
+        "P55"
+      ]
+    },
+    {
+      "file": ".librairii-library",
+      "format": "stable UUID line",
+      "source": "internal/preferences/bootstrap.go",
+      "parity": [
+        "P01",
+        "P52"
+      ]
+    },
+    {
+      "file": ".librairii-move-owner",
+      "format": "owned move workspace marker, tied to journal UUID",
+      "source": "internal/preferences/reservation.go",
+      "parity": [
+        "P54"
+      ]
+    },
+    {
+      "key": "librairii.library-view",
+      "values": [
+        "list",
+        "small",
+        "large"
+      ],
+      "default": "large",
+      "source": "frontend/src/library-view.ts",
+      "parity": [
+        "P13",
+        "P51"
+      ]
+    },
+    {
+      "key": "librairii.notice-preferences",
+      "fields": [
+        "dismissedOperations[]",
+        "luniiSyncDismissed"
+      ],
+      "default": {
+        "dismissedOperations": [],
+        "luniiSyncDismissed": false
+      },
+      "source": "frontend/src/notice-preferences.ts",
+      "parity": [
+        "P43",
+        "P50",
+        "P51"
+      ]
+    },
+    {
+      "key": "history.state.collectionQuery",
+      "fields": [
+        "hash",
+        "shelfId (legacy Collection)",
+        "collectionId",
+        "scope",
+        "group.kind",
+        "group.id",
+        "group.manualOrder"
+      ],
+      "source": "frontend/src/query-history.ts",
+      "contract": "typed Library/Collection/Shelf/custom; legacy IDs resolve to Collections; native transfer explicit, browser internals are not migration authority",
+      "parity": [
+        "P16",
+        "P17",
+        "P51"
+      ]
+    },
+    {
+      "key": "location.hash",
+      "versions": [
+        1,
+        2,
+        3
+      ],
+      "current": 3,
+      "source": "frontend/src/query-codec.ts",
+      "parity": [
+        "P14",
+        "P15",
+        "P16",
+        "P17"
+      ]
+    },
+    {
+      "key": "collapsedTagFacets",
+      "persistence": "session React state only; not found in localStorage/profile",
+      "source": "frontend/src/App.tsx",
+      "parity": [
+        "P15",
+        "P51"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "operation:changed",
+      "payload": "operations.Snapshot in payload-inventory.json",
+      "source": "internal/operations/manager.go",
+      "parity": [
+        "P10"
+      ]
+    },
+    {
+      "name": "settings:open",
+      "payload": "early delivery buffered exactly once by settings gate",
+      "source": "settings_menu.go",
+      "parity": [
+        "P53"
+      ]
+    },
+    {
+      "name": "frontend:rendered",
+      "payload": "Go smoke log/acceptance readiness only",
+      "source": "app.go",
+      "parity": [
+        "P59"
+      ]
+    }
+  ],
+  "operation_payloads": {
+    "source": "internal/operations/model.go; schema-inventory.json; payload-inventory.json",
+    "kinds": [
+      "import",
+      "metadata_sync",
+      "export"
+    ],
+    "states": [
+      "queued",
+      "running",
+      "succeeded",
+      "partially_succeeded",
+      "failed",
+      "cancelled",
+      "interrupted"
+    ],
+    "item_states": [
+      "pending",
+      "running",
+      "succeeded",
+      "skipped",
+      "conflicted",
+      "failed",
+      "cancelled"
+    ],
+    "export_source_types": [
+      "selection",
+      "current_query",
+      "shelf",
+      "shelves",
+      "collection",
+      "collections",
+      "curated_shelf",
+      "curated_shelves"
+    ],
+    "legacy_identity": "shelf/shelves remains dynamic Collection history; immutable persisted scope, unavailable UUID can lack numeric story ID",
+    "skip_codes": [
+      "story_marked_broken",
+      "story_unavailable"
+    ],
+    "parity": [
+      "P09",
+      "P10",
+      "P11",
+      "P44",
+      "P46",
+      "P48",
+      "P50"
+    ]
+  },
+  "os_adapters": [
+    {
+      "capability": "native multiple-file/folder dialogs, cancel, aliases and localized titles",
+      "sources": [
+        "internal/platform/runtime.go",
+        "internal/platform/runtime_dialog_darwin.go",
+        "packaged_acceptance_native_darwin.go",
+        "packaged_acceptance_native_linux.go"
+      ],
+      "parity": [
+        "P05",
+        "P48",
+        "P53",
+        "P57",
+        "P59"
+      ]
+    },
+    {
+      "capability": "validated exact export-directory reveal, argv invocation without shell interpolation",
+      "sources": [
+        "internal/platform/reveal.go",
+        "internal/platform/reveal_test.go"
+      ],
+      "parity": [
+        "P48",
+        "P55",
+        "P57"
+      ]
+    },
+    {
+      "capability": "native Settings menu/accelerator, early command buffer and edit roles",
+      "sources": [
+        "settings_menu.go",
+        "settings_gate.go",
+        "internal/platform/settings_menu_darwin.go",
+        "internal/platform/settings_menu_darwin.m",
+        "internal/platform/settings_menu_linux.go"
+      ],
+      "parity": [
+        "P53",
+        "P57"
+      ]
+    },
+    {
+      "capability": "platform language, independent macOS/Linux profile/default-root and isolated override",
+      "sources": [
+        "internal/platform/language.go",
+        "internal/platform/storage_profile.go",
+        "internal/platform/storage_readiness.go",
+        "internal/preferences/model.go",
+        "internal/storage/root.go"
+      ],
+      "parity": [
+        "P01",
+        "P52",
+        "P53",
+        "P55"
+      ]
+    },
+    {
+      "capability": "publish without replacement, durable config replacement/file+directory sync and ownership",
+      "sources": [
+        "internal/exporter/publish_darwin.go",
+        "internal/exporter/publish_linux.go",
+        "internal/preferences/store.go",
+        "internal/preferences/reservation.go",
+        "internal/archive/repository.go",
+        "internal/exporter/copier.go"
+      ],
+      "parity": [
+        "P04",
+        "P47",
+        "P54",
+        "P55"
+      ]
+    },
+    {
+      "capability": "application lifecycle, runtime asset handler and generation gate",
+      "sources": [
+        "main.go",
+        "release_config.go",
+        "settings_move.go",
+        "internal/app/application.go",
+        "internal/artwork/handler.go"
+      ],
+      "parity": [
+        "P11",
+        "P42",
+        "P54",
+        "P57"
+      ]
+    },
+    {
+      "capability": "separate package/build/install acceptance",
+      "sources": [
+        "scripts/build-current-installer",
+        "scripts/verify-packaged-acceptance",
+        "scripts/build-linux",
+        "scripts/verify-platform-linux",
+        ".github/workflows/platform-release.yml"
+      ],
+      "parity": [
+        "P59",
+        "P60"
+      ]
+    }
+  ],
+  "new_platform_boundary": "Windows native adapters and real Intel qualification are new requirements, not baseline passes. Baseline profile Directory rejects unsupported platforms."
+}

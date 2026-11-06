@@ -1,0 +1,1 @@
+workers_joined=true; fixture_retired=true

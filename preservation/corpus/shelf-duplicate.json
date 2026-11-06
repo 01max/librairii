@@ -1,0 +1,114 @@
+{
+  "exclusions": [
+    {
+      "title": "Moon excluded",
+      "uuid": "523e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "members": [
+    {
+      "cachedTitle": "Old ocean",
+      "origins": null,
+      "position": 0,
+      "protected": true,
+      "story": {
+        "broken": true,
+        "byteSize": 1292,
+        "compatibility": "compatible",
+        "detectedFormat": "zip",
+        "id": 1,
+        "importedAt": "2000-01-01T00:00:00Z",
+        "sources": {
+          "artwork": "fallback",
+          "author": "fallback",
+          "description": "fallback",
+          "title": "embedded"
+        },
+        "title": "Old ocean",
+        "uuid": "123e4567-e89b-42d3-a456-426614174000"
+      },
+      "uuid": "123e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Moon still",
+      "origins": null,
+      "position": 1,
+      "protected": false,
+      "story": {
+        "broken": false,
+        "byteSize": 1292,
+        "compatibility": "compatible",
+        "detectedFormat": "zip",
+        "id": 2,
+        "importedAt": "2000-01-01T00:00:00Z",
+        "sources": {
+          "artwork": "fallback",
+          "author": "fallback",
+          "description": "fallback",
+          "title": "embedded"
+        },
+        "title": "Moon still",
+        "uuid": "223e4567-e89b-42d3-a456-426614174000"
+      },
+      "uuid": "223e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Manual ocean",
+      "origins": null,
+      "position": 2,
+      "protected": true,
+      "story": {
+        "broken": false,
+        "byteSize": 1292,
+        "compatibility": "compatible",
+        "detectedFormat": "zip",
+        "id": 3,
+        "importedAt": "2000-01-01T00:00:00Z",
+        "sources": {
+          "artwork": "fallback",
+          "author": "fallback",
+          "description": "fallback",
+          "title": "embedded"
+        },
+        "title": "Manual ocean",
+        "uuid": "323e4567-e89b-42d3-a456-426614174000"
+      },
+      "uuid": "323e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Unavailable",
+      "origins": null,
+      "position": 3,
+      "protected": false,
+      "uuid": "623e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "page": 1,
+  "pageSize": 24,
+  "shelf": {
+    "brokenCount": 1,
+    "count": 4,
+    "id": 2,
+    "name": "Independent copy",
+    "position": 1,
+    "revision": 1,
+    "sourceCount": 2,
+    "unavailableCount": 1
+  },
+  "sources": [
+    {
+      "active": true,
+      "collectionId": 1,
+      "id": 3,
+      "name": "Moon"
+    },
+    {
+      "active": true,
+      "collectionId": 2,
+      "id": 4,
+      "name": "Forest"
+    }
+  ],
+  "totalItems": 4,
+  "totalPages": 1
+}

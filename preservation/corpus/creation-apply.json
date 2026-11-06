@@ -1,0 +1,50 @@
+{
+  "exclusions": [],
+  "members": [
+    {
+      "cachedTitle": "Old ocean",
+      "origins": null,
+      "position": 0,
+      "protected": true,
+      "story": {
+        "broken": false,
+        "byteSize": 1292,
+        "compatibility": "compatible",
+        "detectedFormat": "zip",
+        "id": 1,
+        "importedAt": "2000-01-01T00:00:00Z",
+        "sources": {
+          "artwork": "fallback",
+          "author": "fallback",
+          "description": "fallback",
+          "title": "embedded"
+        },
+        "title": "Old ocean",
+        "uuid": "123e4567-e89b-42d3-a456-426614174000"
+      },
+      "uuid": "123e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "page": 1,
+  "pageSize": 24,
+  "shelf": {
+    "brokenCount": 0,
+    "count": 1,
+    "id": 1,
+    "name": "Seeded",
+    "position": 0,
+    "revision": 1,
+    "sourceCount": 1,
+    "unavailableCount": 0
+  },
+  "sources": [
+    {
+      "active": true,
+      "collectionId": 1,
+      "id": 1,
+      "name": "Moon"
+    }
+  ],
+  "totalItems": 1,
+  "totalPages": 1
+}

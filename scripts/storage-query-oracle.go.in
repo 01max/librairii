@@ -1,0 +1,114 @@
+// Task 4.4: read frozen inputs, upgrade disposable copies with the unchanged Go
+// services, and capture actual query returns. Never open a corpus DB in place.
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/library"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Exactly the admitted producer's timestamp policy; preserve NULLs and every
+// non-time field. This makes full StorySummary returns comparable across runs.
+func fixTimes(db *sql.DB) {
+	rows, err := db.Query("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+	must(err)
+	var tables []string
+	for rows.Next() {
+		var name string
+		must(rows.Scan(&name))
+		tables = append(tables, name)
+	}
+	must(rows.Err())
+	must(rows.Close())
+	for _, table := range tables {
+		name := strings.ReplaceAll(table, "\"", "\"\"")
+		columns, err := db.Query(`PRAGMA table_info("` + name + `")`)
+		must(err)
+		var times []string
+		for columns.Next() {
+			var cid, notnull, pk int
+			var column, kind string
+			var defaultValue any
+			must(columns.Scan(&cid, &column, &kind, &notnull, &defaultValue, &pk))
+			switch column {
+			case "created_at", "updated_at", "applied_at", "added_at", "accepted_at", "started_at", "finished_at":
+				times = append(times, column)
+			}
+		}
+		must(columns.Err())
+		must(columns.Close())
+		for _, column := range times {
+			_, err = db.Exec(`UPDATE "`+name+`" SET "`+column+`"=? WHERE "`+column+`" IS NOT NULL AND "`+column+`"!=?`, "2000-01-01 00:00:00", "2000-01-01 00:00:00")
+			must(err)
+		}
+	}
+}
+
+func main() {
+	if len(os.Args) != 3 {
+		panic("explicit corpus and output paths required")
+	}
+	scratch, err := os.MkdirTemp("", "librairii-storage-query-oracle-")
+	must(err)
+	defer os.RemoveAll(scratch)
+	ctx := context.Background()
+	var captures []any
+	requests := []string{
+		`{}`,
+		`{"name":"MÔON"}`,
+		`{"name":"%_"}`,
+		`{"page":2,"pageSize":1,"sort":"imported_desc"}`,
+		`{"booleanFilters":[{"definitionId":8,"state":"true"}]}`,
+		`{"anyOf":[{"name":"moon"},{"name":"missing"}]}`,
+	}
+	for prefix := 1; prefix <= 18; prefix++ {
+		body, err := os.ReadFile(filepath.Join(os.Args[1], fmt.Sprintf("prefix-%03d.sqlite3", prefix)))
+		must(err)
+		path := filepath.Join(scratch, fmt.Sprintf("prefix-%03d.sqlite3", prefix))
+		must(os.WriteFile(path, body, 0600))
+		db, err := database.Open(ctx, path)
+		must(err)
+		fixTimes(db.Writer())
+		query := library.NewQuery(db.SQL(), nil)
+		var cases []any
+		for _, request := range requests {
+			var input library.StoryLibraryQuery
+			must(json.Unmarshal([]byte(request), &input))
+			count, countErr := query.Count(ctx, input)
+			page, pageErr := query.Search(ctx, input)
+			if (countErr == nil) != (pageErr == nil) {
+				panic("query and count disagree")
+			}
+			if countErr != nil {
+				if countErr != library.ErrInvalidStoryLibraryQuery || pageErr != library.ErrInvalidStoryLibraryQuery {
+					panic(fmt.Sprintf("unexpected errors: %v / %v", countErr, pageErr))
+				}
+				cases = append(cases, map[string]any{"request": request, "error": "invalid_query"})
+			} else {
+				cases = append(cases, map[string]any{"request": request, "count": count, "page": page})
+			}
+		}
+		must(db.Close())
+		digest := sha256.Sum256(body)
+		captures = append(captures, map[string]any{"prefix": prefix, "inputSha256": hex.EncodeToString(digest[:]), "cases": cases})
+	}
+	body, err := json.MarshalIndent(map[string]any{"oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460", "timestampPolicy": "preservation/generator/databases.go::fixTimes", "prefixes": captures}, "", "  ")
+	must(err)
+	must(os.WriteFile(os.Args[2], append(body, '\n'), 0600))
+}

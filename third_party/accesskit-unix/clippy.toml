@@ -1,0 +1,4 @@
+# Preserve the upstream crate's declared MSRV when checking this local backport.
+# The qualification application's newer policy must not suggest newer syntax
+# throughout otherwise verbatim third-party source.
+msrv = "1.85"

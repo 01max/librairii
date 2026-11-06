@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "separate_repo_head_at_capture": "816a932c02898b3bd73147083bf9501cc7eb763b",
+  "publication": "No separate spec repository commit/push/archive; local canonical updates only. Application PR ships reviewed snapshots/diff/provenance.",
+  "dependency_order": [
+    "Broken independent flag/storage/Undo",
+    "Collections and curated Shelves supersede visibility/export/protection/removal wording"
+  ],
+  "files": [
+    {
+      "canonical_path": "specs/application-settings/spec.md",
+      "before_sha256": "e6ece7cd376a8f69f2e2a576060ee6409be712eac3229b28a472e3e1e9e88d3b",
+      "after_sha256": "e6ece7cd376a8f69f2e2a576060ee6409be712eac3229b28a472e3e1e9e88d3b",
+      "snapshot": "effective/application-settings.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/curated-shelves/spec.md",
+      "before_sha256": "e0d384d67ca76a7c739202cb0b41d2fd04b1d6c2e8eaadbf2a734392e7f7534e",
+      "after_sha256": "8718e20b12c40083a828122bb1287e5e95e3befccaa9bc75052595706369b1d7",
+      "snapshot": "effective/curated-shelves.md",
+      "changed_by_1_4": true
+    },
+    {
+      "canonical_path": "specs/library-browsing/spec.md",
+      "before_sha256": "9ce019fb553eb7fb0103531b9bafe97ad63db8b5f66ddbf4ce1bbbf974b13bdf",
+      "after_sha256": "9ce019fb553eb7fb0103531b9bafe97ad63db8b5f66ddbf4ce1bbbf974b13bdf",
+      "snapshot": "effective/library-browsing.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/library-location/spec.md",
+      "before_sha256": "a34fcbee72d4b289b7bfd1cc9fefe02acbe4de2741b8816ce00a9ccbccf6a50a",
+      "after_sha256": "a34fcbee72d4b289b7bfd1cc9fefe02acbe4de2741b8816ce00a9ccbccf6a50a",
+      "snapshot": "effective/library-location.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/local-story-catalog/spec.md",
+      "before_sha256": "68a2f152890be82f871c4fdf419091d9ad44ac4a56519656f050bedd1855e7e6",
+      "after_sha256": "68a2f152890be82f871c4fdf419091d9ad44ac4a56519656f050bedd1855e7e6",
+      "snapshot": "effective/local-story-catalog.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/lunii-metadata-sync/spec.md",
+      "before_sha256": "0882a6a216cee9e54c44eff9b1eddb424f9efe43c9d41f6a2373f3dd85414418",
+      "after_sha256": "e00db02ceec79e505ba1b692cbfb41521304af771b691d28504178a5627f25df",
+      "snapshot": "effective/lunii-metadata-sync.md",
+      "changed_by_1_4": true
+    },
+    {
+      "canonical_path": "specs/lunii-qt-export/spec.md",
+      "before_sha256": "e6c33f213e61dac856ad61b93677349502461bf58cf27b9db4bb712b200578a3",
+      "after_sha256": "e6c33f213e61dac856ad61b93677349502461bf58cf27b9db4bb712b200578a3",
+      "snapshot": "effective/lunii-qt-export.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/saved-collections/spec.md",
+      "before_sha256": "f226eb3dd6e65e71710177abf0bec2fb0b2b182a91bdeb0d6c8e67d183e456e3",
+      "after_sha256": "f226eb3dd6e65e71710177abf0bec2fb0b2b182a91bdeb0d6c8e67d183e456e3",
+      "snapshot": "effective/saved-collections.md",
+      "changed_by_1_4": false
+    },
+    {
+      "canonical_path": "specs/shelf-update-reviews/spec.md",
+      "before_sha256": "f72989419ffa5b51b1a63d4eec73e36d2c919118a54daacd4faed1a1d3eedc96",
+      "after_sha256": "90175baffd6b4f2c0b72c1454f2bdc586f3d75117c36252fcf56aba56e27a52a",
+      "snapshot": "effective/shelf-update-reviews.md",
+      "changed_by_1_4": true
+    },
+    {
+      "canonical_path": "specs/story-broken-flag/spec.md",
+      "before_sha256": "ff91332f6c7e4feb974cf750cb41abb28c52b2b3c592b95a527b39bc629eabf0",
+      "after_sha256": "8114c7085fc2d781c726277a324eaa444628fe1fc365df7cca296f63dfc08a82",
+      "snapshot": "effective/story-broken-flag.md",
+      "changed_by_1_4": true
+    },
+    {
+      "canonical_path": "specs/story-tagging/spec.md",
+      "before_sha256": "f63f48f1a4d7096b8d7c1906cc81a55d4101b491703cd301357b2cce0e0284bb",
+      "after_sha256": "d30a82ebe2fc26c67da3964f95140d672f8ecd133691c78aca5887127b1db6ce",
+      "snapshot": "effective/story-tagging.md",
+      "changed_by_1_4": true
+    },
+    {
+      "canonical_path": "specs/ui-localization/spec.md",
+      "before_sha256": "237d3d78168fe93e6155a74dd3f3ac4dff0edbacfe9579be5777ea3349f92cfd",
+      "after_sha256": "237d3d78168fe93e6155a74dd3f3ac4dff0edbacfe9579be5777ea3349f92cfd",
+      "snapshot": "effective/ui-localization.md",
+      "changed_by_1_4": false
+    }
+  ],
+  "validation": {
+    "rewrite_change_strict": "passed",
+    "effective_specs_strict": {
+      "passed": 12,
+      "failed": 0
+    }
+  },
+  "checklist": "Only1.1\u20131.5 checked locally;1.6\u20131.9 remain open at this capture."
+}

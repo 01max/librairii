@@ -1,0 +1,907 @@
+{
+  "version": 1,
+  "planning_source": "changes/rewrite-in-rust-native-desktop/parity-matrix.md in separate OpenSpec repository",
+  "sha256": "d0a9bd0627e5961abcfc44ce2d425e2578f9113e18348d54487cbb4703ed75cc",
+  "rows": [
+    {
+      "id": "P01",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/storage/root.go`, `internal/storage/root_test.go`, `internal/storage/readiness_test.go`; `internal/preferences/model.go`; `docs/user-guide.md`",
+      "retained_behavior": "Preserve `db/librairii.sqlite3`, `archives/`, `catalog/`, `staging/`, `trash/`, `logs/`, `.librairii-library`, existing root/profile identity and contained path semantics. Absolute developer roots stay isolated. Uninstall never erases library data.",
+      "proposed_rust_evidence": "`parity::P01`: fresh/adopted/override root manifest, exact identity/layout and ownership assertions; symlink/path-alias fixtures; all packaged uninstall checks.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P02",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/database/database.go`, `internal/database/schema.go`, migrations `internal/database/migrations/001_foundation.sql`–`internal/database/migrations/018_collection_shelf_exports.sql`; `internal/database/database_test.go`, `internal/database/schema_test.go`, `internal/database/concurrency_test.go`",
+      "retained_behavior": "Open existing SQLite without a format reset. Retain `product=librairii`, schema family `wails-go-sqlite`, contiguous migration-prefix validation, foreign keys, constraints, WAL, 5-second busy timeout, serialized writer and a read pool capped at four connections. Reject unknown/gapped/newer/foreign history before mutation.",
+      "proposed_rust_evidence": "`parity::P02`: every supported migration prefix and schema corruption class, reopen/foreign-key/query-plan checks, concurrent readers/writer, semantic diff against Go; inspect the bundled SQLite feature set.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P03",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/database/database_test.go`: `TestOpenBacksUpOnlyWhenCompatibleMigrationsArePending`, `TestFailedMigrationRestoresBackupWithoutTouchingArchives`, `TestRelocateSchemaConflictPreservesEveryLegacyFile`; `frontend/src/App.test.tsx`",
+      "retained_behavior": "Consistent pre-migration backup; failed migration restores prior database without deleting archive bytes. Foreign schema remains mutation-blocked until explicit preserve-and-create action safely retains DB/WAL/SHM in a unique recovery directory; failure never silently replaces files.",
+      "proposed_rust_evidence": "`parity::P03`: online backup with live WAL, injected migration/preservation/rollback failures, restart and hash comparison; recovery UI confirmation; verify retained recovery files.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P04",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/archive/repository.go`, `internal/archive/repository_test.go`, `internal/archive/repository_fuzz_test.go`; `internal/artwork/repository_test.go`",
+      "retained_behavior": "Stream selected source into isolated staging, compute SHA-256, publish content-addressed managed bytes without editing/moving/deleting source. Reuse only identical managed bytes; reject changed staging, symlink ancestors and escapes; cleanup touches only owned staging/artifacts.",
+      "proposed_rust_evidence": "`parity::P04`: source/managed byte hashes, create-new/no-clobber races, cancellation and crash checkpoints, path-substitution corpus and real filesystem failure injection.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P05",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/inspection/contracts.go`, `internal/inspection/zip_inspector_test.go`, `internal/inspection/sevenzip_inspector_test.go`, `internal/inspection/studio_zip_test.go`, `internal/inspection/testfixture/archive_test.go`; `internal/platform/runtime_test.go`",
+      "retained_behavior": "Native picker accepts `.plain.pk`, `.v1.pk`, `.v2.pk`, `.pk`, `.zip`, `.7z`. Supported suffix and validated content jointly determine accepted combinations; preserve STUdio disguised as `.pk` rejection. Preserve generic and STUdio ZIP/7z, precedence and classification; 7z STUdio remains `seven_zip`. No decrypt/repair/convert behavior.",
+      "proposed_rust_evidence": "`parity::P05`: exact outcome/classification differential corpus for every supported family and misleading extension; qualified archive codecs/solid variants; actual multi-file picker filters on each OS.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P06",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/inspection/zip_inspector_test.go`: required payload/UUID/metadata cases; `internal/inspection/studio_zip_test.go`: story/thumbnail/asset-reference cases; `internal/inspection/sevenzip_inspector_test.go`",
+      "retained_behavior": "Preserve required entries, UUID validation/ambiguity rejection, permitted embedded metadata/artwork precedence, CRC/corruption behavior and missing-asset errors. ZIP fully reads payload for CRC validation; 7z preserves bounded selected-entry inspection, with no bulk extraction.",
+      "proposed_rust_evidence": "`parity::P06`: golden metadata and exact stable error codes, corrupt required/unrelated payload variants, invalid UUID/JSON/assets, unknown sizes and cancellation; archive files are unchanged after inspection.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P07",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/inspection/limits.go`, `internal/inspection/contracts_test.go`, `internal/inspection/limits_fuzz_test.go`, ZIP/7z inspector tests; `internal/archive/filename_test.go`",
+      "retained_behavior": "Retain limits: path 512 bytes/depth 16, 10,000 entries, 2 GiB expanded bytes, aggregate ratio 200, metadata 1 MiB, artwork 10 MiB. Preserve current header/read accounting and overflow rejection; reject traversal, links, unsafe/duplicate paths, nested and unsupported archives. Stronger actual-read bounds, decoded-image limits and Windows checks are explicit hardening, subject to the compatibility exception process below.",
+      "proposed_rust_evidence": "`parity::P07`: exact boundary±1 corpus, decompression bombs/solid blocks/unknown sizes, adversarial paths and integer fuzzing. Separate retained behavior from strengthened 7z read/image limits; record any changed outcome/performance as an explicit reviewed compatibility exception before accepting it.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P08",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/importer/service_test.go`: `TestImportIsIdempotentByExactChecksum`, `TestImportReportsUUIDConflictWithoutChangingExistingStory`, concurrent/retry/compensation tests; `internal/app/vertical_slice_test.go`",
+      "retained_behavior": "Exact checksum reimport is idempotent; differing bytes claiming active UUID preserve the existing archive/story. Partial publication is retryable; DB failure/cancel compensates owned published files safely. Imported metadata/artwork become usable only with consistent custody.",
+      "proposed_rust_evidence": "`parity::P08`: repeated/concurrent import oracle, UUID conflict, publication-before-DB crash, write failure and cancellation on each custody transition; same managed count and source hashes after retry.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P09",
+      "workstream": "Runtime",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/operations/manager.go`, `internal/operations/manager_test.go`: bounded concurrency, cancellation and `TestManagerDoesNotApplyTheImportPickerLimitToExportScopes`; `internal/app/concurrency_vertical_slice_test.go`",
+      "retained_behavior": "Preserve production two-worker behavior, configurable bound 1–8 and queue capacity `2 × workers`; import selection limit 1,000 is not an export-result cap. Browse remains responsive during import/sync/export. One active metadata sync; no duplicate start while pending.",
+      "proposed_rust_evidence": "`parity::P09`: deterministic scheduler/backpressure counters, multi-operation cancellation/queue failure and >1,000-result export; native input during blocking archive/database work; no unbounded tasks/event backlog.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P10",
+      "workstream": "Runtime",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/operations/repository_test.go`, `internal/operations/manager_test.go`; `frontend/src/App.test.tsx` active import/export reconciliation; `internal/app/import_runtime_test.go`",
+      "retained_behavior": "Persist queued/running/terminal and per-item outcomes/progress; restore every active operation and reconcile missed events. Stable errors survive restart. Ignore superseded query, generation and view-all responses; durable terminal results cannot regress to stale running snapshots.",
+      "proposed_rust_evidence": "`parity::P10`: out-of-order/duplicate/dropped event model tests, multiple simultaneous jobs, restart at every status transition and persistence retry/failure; assert UI/model never regresses.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P11",
+      "workstream": "Runtime",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/operations/manager_test.go`: startup reconciliation/cleanup/interruption tests; `internal/app/application_test.go`: lifecycle; `internal/app/import_runtime_test.go`: interrupted removal; `main.go`",
+      "retained_behavior": "Graceful close stops intake, owns/cancels/joins work, and finishes durable commit/report/compensation before closing resources. Go currently waits without timeout; a new wait/escalation deadline cannot authorize abandoning durable work. Forced termination reconciles nonresumable jobs, abandoned staging/export temp and removal intents; cleanup failures are reported without disabling unrelated recovery.",
+      "proposed_rust_evidence": "`parity::P11`: clean shutdown with active jobs and forced-kill/relaunch matrix; tested wait/escalation UI and resource ownership without deadline-based abandonment, truthful interrupted outcomes; no stale worker touches a newly activated root.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P12",
+      "workstream": "Runtime",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/diagnostics/logger.go`, `internal/diagnostics/service.go`, `internal/diagnostics/diagnostics_test.go`; `internal/app/application_test.go`: `TestDiagnosticExportKeepsNativeDestinationInsideGo`; user guide privacy section",
+      "retained_behavior": "Bounded JSONL `events.jsonl`, default at most five files ×256 KiB. Explicit local diagnostic ZIP includes only validated logs/aggregate facts, excluding DB/archive bytes, tokens, absolute private paths and artwork. Native destination/cancel/failure remains actionable.",
+      "proposed_rust_evidence": "`parity::P12`: exact allowlist/redaction/rotation corpus, hostile log/path and oversize cases, ZIP member inspection, picker/cancel/no-overwrite; preserve stable diagnostic format or provide versioned compatibility.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P13",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/App.tsx`, `frontend/src/StoryCover.tsx`, `frontend/src/LibraryViewPicker.tsx`, `frontend/src/library-view.ts`; `frontend/src/App.test.tsx` view/presentation/empty-shell cases; `docs/user-guide.md`",
+      "retained_behavior": "Labeled Library/Tags/Import/Export; understandable opening/empty/error/recovery states; All stories plus group previews; persistent list/small/large views with query/selection/sort retained. Artwork preserves aspect ratio with title below; text list needs no image. Selected panel retains readable tags at all widths.",
+      "proposed_rust_evidence": "`parity::P13`: native model/action tests and reviewed deterministic screenshot sets for every mode/state, image proportions/fallbacks, toolbar actions and preference restart; long/short titles and missing art.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P14",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/searchtext/searchtext.go`, `internal/searchtext/testdata/normalization.json`; `internal/library/story_query_test.go`; `frontend/src/query-codec.test.ts`, `frontend/src/App.test.tsx` multiword typing",
+      "retained_behavior": "Literal Unicode casefold/accent-insensitive infix match of resolved displayed title; `%`, `_` and escapes stay literal. Same normalization fixtures in every layer, 200-rune input limit, deterministic sorting/ties. Typed text preserves spaces/case rather than replacing it with normalized text.",
+      "proposed_rust_evidence": "`parity::P14`: unchanged shared Unicode corpus, SQL escaping/boundary/property tests, composed/decomposed accents and full native typing/IME scenarios; fixture provenance for Unicode data version.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P15",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/library/query.go`, `internal/library/query_codec.go`, `internal/library/story_query_test.go`, `internal/library/story_query_plans_test.go`; `frontend/src/TagSearchFilters.tsx`, `TagSearchFilters` behavior in `frontend/src/App.test.tsx`",
+      "retained_behavior": "Name/language/compatibility/derived/manual-tag criteria combine; OR within choice values, AND across groups, tri-state booleans. Current default page 24/max 100; supported limits, deduplication and canonical ordering retained. Collapse does not clear; clear one/all preserves explicit sort and predictable focus.",
+      "proposed_rust_evidence": "`parity::P15`: shared query golden fixtures and SQL result/count/page comparisons; tri-state/OR algebra proptests; invalid duplicate/oversize criteria rejected; native chip/clear/filter collapse keyboard tests.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P16",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/query-history.ts`, `frontend/src/query-history.test.ts`, `frontend/src/query-codec.ts`; `frontend/src/App.test.tsx` back/forward/reload/ID collision cases",
+      "retained_behavior": "Typed Library/Collection/Shelf/custom navigation, current criteria/page/sort and manual-versus-view Shelf ordering survive back/forward/reopen. All stories clears refinements. Legacy dynamic-Shelf IDs resolve to Collections, never a same-ID curated Shelf. Native shell needs no URL bar but retains supported legacy decoder.",
+      "proposed_rust_evidence": "`parity::P16`: native history state machine, serialization/restart tests and versioned handover; scope ID collision and deleted-active-Collection cases; back/forward commands and focus.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P17",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/collections/query_test.go`, `internal/collections/broken_query_test.go`, `internal/collections/visible_broken_migration_test.go`; `internal/library/testdata/story_library_query_codec.json`; `frontend/src/visible-broken-query.test.ts`",
+      "retained_behavior": "Saved query v5 and URL v3 preserve all supported predecessors, bounded 262,144-byte saved payload and query-complexity constraints. Recursively remove retired built-in Broken restrictions without dropping other AND/OR structure, including empty alternatives. Unknown/corrupt definitions stay repairable; ordinary reused-ID/broken-named tags retain semantics.",
+      "proposed_rust_evidence": "`parity::P17`: byte-for-byte canonical codec oracle; supported old versions/nested restrictions/ID reuse/empty alternatives; fuzz unknown/oversize/duplicate payloads; malformed input never becomes unfiltered success.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P18",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/App.test.tsx`: selection/detail/bulk-tag/stale-response/view-all cases; `frontend/src/ShelfWorkspace.test.tsx`; `internal/library/story_query_test.go`",
+      "retained_behavior": "Single inspection and bulk selection remain distinct, with correct summary/actions. Presentation switches, flags and refreshes preserve applicable selection and focus. Assignment targets freeze across filtering changes; detail refresh tracks the inspected story. Paginated and View all results cannot overwrite a newer query.",
+      "proposed_rust_evidence": "`parity::P18`: selection/model invariants across pages/views/operations, frozen-target tests, stale async result injection; packaged select→details→bulk tags/flags/export workflow.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P19",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/StoryDetailsDialog.tsx`, `frontend/src/story-description.ts`, `frontend/src/story-description.test.ts`; `frontend/src/App.test.tsx` details/technical/removal/tag-editor cases",
+      "retained_behavior": "Details show readable description, art, tags, provenance and relevant actions without losing collection context. HTML becomes inert native text with entities/paragraphs/lists, never active links/scripts. Reopening starts description at top; technical UUID/archive/validation/full checksum is disclosed separately; nested tag editor returns to refreshed details.",
+      "proposed_rust_evidence": "`parity::P19`: shared description text fixtures/security corpus, native details model and scroll reset, technical toggle, nested dialog/focus return and removal-confirmation behavior.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P20",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/tagging/service_test.go`, `internal/tagging/values_test.go`, `internal/tagging/collection_references_test.go`; `frontend/src/TagManager.test.tsx`",
+      "retained_behavior": "Boolean/choice definitions and choice values support create/rename/color/reorder/delete with validation and immutable keys. Destructive changes show assignment/query impact and require explicit confirmation. Missing referenced criteria invalidate affected Collection queries for repair; no silent criterion deletion.",
+      "proposed_rust_evidence": "`parity::P20`: CRUD/ordering/unique-key and invalid-input oracle, deletion-preview staleness/transaction rollback, affected Collection state; native manager forms, inline errors, confirmation/cancel and keyboard ordering.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P21",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/tagging/assignments_test.go`; `frontend/src/TagAssignmentEditor.test.tsx`; `internal/app/tagging_vertical_slice_test.go`",
+      "retained_behavior": "Atomic single/bulk boolean and additive choice assignment, mixed states, idempotent/no-op feedback, entire batch validated before mutation; derived assignments remain read-only. Existing choice values are not replaced when one additive value is toggled. Retired Broken definition never reappears.",
+      "proposed_rust_evidence": "`parity::P21`: real SQLite mixed-batch/no-op/invalid-target/rollback tests and UI mixed-checkbox semantics; choice toggle preserves unrelated values; selection change cannot retarget in-flight edit.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P22",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/metadata/projector_test.go`: protected color persistence/precise age bands; `internal/tagging/service_test.go`; `frontend/src/TagManager.test.tsx`",
+      "retained_behavior": "Protected derived identity, label/value and assignment rules remain intact while colors are user-editable. Age defaults green; chosen colors survive startup seeding and official metadata projection. User-authored labels and ordinary broken tags are preserved and non-color-identifiable.",
+      "proposed_rust_evidence": "`parity::P22`: seed→custom color→sync→restart golden DB, derived CRUD rejection, uncertain age left unassigned; native protected-vs-custom labels/controls and non-color identification.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P23",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/library/broken_flags_test.go`; `internal/database/broken_flag_test.go`; `internal/app/story_flags_test.go`; `frontend/src/BrokenToggle.test.tsx`, `frontend/src/App.test.tsx`",
+      "retained_behavior": "Independent manual Broken flag defaults false and survives sync/verification/rediscovery; legacy built-in assignments migrate losslessly. Single/mixed bulk set/clear is atomic/idempotent. Exact Undo restores changed targets only and rejects whole restore if expected current flags/availability differ. No-op/failed writes offer no false Undo.",
+      "proposed_rust_evidence": "`parity::P23`: old-schema migration and rollback, set/restore property tests, unavailable/stale/concurrent targets and failure injection; accessible pending/error/Undo UI including mixed selections.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P24",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/library/visible_broken_test.go`; `frontend/src/App.test.tsx` always-visible/final-page/focus cases; `frontend/src/ShelfWorkspace.test.tsx`; `docs/architecture/0004-collections-and-shelves.md`",
+      "retained_behavior": "Broken never alters view/source membership, result counts, page, selection or focus by itself. Warning badge/muted artwork update across duplicate previews and all groups. Separate panel/details/bulk switches; cards carry warnings without extra action buttons. Feedback appears only after a toggle and clears when details close.",
+      "proposed_rust_evidence": "`parity::P24`: identical matching/count/order before/after all flag changes, synchronized duplicate story models; native every-view/touch/keyboard/pending/no-op cases and no hidden Broken filter.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P25",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/collections/service_test.go`, `internal/collections/repository_test.go`, `internal/collections/evaluator_test.go`; `internal/database/collections_shelves_test.go`; `frontend/src/App.test.tsx` Collection CRUD/repair cases",
+      "retained_behavior": "Legacy dynamic Shelves retain IDs/name/order/non-Broken criteria as Collections. Save/update/rename/reorder/duplicate/delete remain independent of archives; live membership/counts reevaluate after import/removal/tags/catalog. Valid empty query means all active stories; empty results remain valid. Unsafe/missing criteria require explicit repair.",
+      "proposed_rust_evidence": "`parity::P25`: v14/v15/latest migration, CRUD and dynamic reevaluation oracles, stale orders/duplicate names/missing criteria; native repair/empty/edit/import recovery and deleted-active custom query states.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P26",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/collections/evaluator_test.go`: preview union, combined persistence and copied criteria; `internal/collections/query_test.go`; `frontend/src/App.test.tsx` selected Collection union cases",
+      "retained_behavior": "Multi-Collection selection shows per-Collection/overlap/union counts, deduplicates matches, and Save current query saves a copied OR union rather than only the displayed Collection. Editing/deleting original Collections cannot mutate the copy; exports use current deduplicated matches.",
+      "proposed_rust_evidence": "`parity::P26`: overlap/disjoint/empty/nested OR oracle and dependency-removal tests; native union preview/save/count/export actions preserve correct scope.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P27",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/service_test.go`; `internal/app/curated_shelves_test.go`; `frontend/src/ShelfWorkspace.tsx`, `frontend/src/App.test.tsx` Shelf navigation",
+      "retained_behavior": "Curated Shelf names have an independent namespace from Collections. Empty/manual Shelves are valid. CRUD and ordering affect only that Shelf/its decisions; approved UUID membership never automatically follows import, catalog, tags, flags or reads. Navigation clearly separates Collections and Shelves.",
+      "proposed_rust_evidence": "`parity::P27`: namespace/CRUD/independence/restart cases, shared numeric IDs, immutable library/archive counts, native Shelf actions/confirmation and empty state.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P28",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/creation_review_test.go`, `internal/shelves/seeding_test.go`; `frontend/src/ShelfCreation.test.tsx`, `frontend/src/ShelfCreation.tsx`",
+      "retained_behavior": "Creation from selected stories, Collection source(s), or both requires deduplicated initial preview and explicit Create with N stories. Nothing is approved by default; unchecked source matches remain later suggestions. Manual/source overlap is retained manually; cancel/stale preview creates nothing. Linking without seed adds no members.",
+      "proposed_rust_evidence": "`parity::P28`: no-write preview, exact chosen UUID set, zero-member create, overlap attribution and stale source rejection; French keyboard create/cancel/focus and refreshed preview with renewed decisions.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P29",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/curation_test.go`, `internal/shelves/browse_test.go`, `internal/shelves/readdition_test.go`; `frontend/src/ShelfWorkspace.test.tsx` full-order test",
+      "retained_behavior": "Manual single/bulk add clears exclusions and preserves manual retention, including existing source members; new members append once. Ordinary removal changes membership only, allowing later suggestion. View sorting/filtering never rewrites membership/order. Explicit arrow reordering works beyond 100 members and after rank gaps; no protection toggle.",
+      "proposed_rust_evidence": "`parity::P29`: atomic/idempotent/rollback curation, add→remove→suggest→add, full UUID order paging and filtered-view reorder availability; native selected membership actions keep proper UUID targets.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P30",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/curation_test.go`: cached titles; `internal/shelves/review_integrity_test.go`: restart/reimport; `internal/app/curated_shelves_test.go`; user guide",
+      "retained_behavior": "Removed library records retain Shelf UUID membership/order, manual decisions, exclusions and historical origins. Unavailable placeholders show cached title/UUID and count toward approved membership; never inferred source-removal candidates. Same UUID reimport reconnects under a different numeric story ID.",
+      "proposed_rust_evidence": "`parity::P30`: remove→restart→reimport golden membership, missing/unknown UUID browse/selection/export reasons, no metadata/tag loss in independent Shelf records; readable native placeholders.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P31",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/sources_test.go`, `internal/shelves/review_test.go`, `internal/shelves/apply_test.go`; `frontend/src/ShelfSources.tsx`, `frontend/src/ShelfWorkspace.tsx`",
+      "retained_behavior": "Collection-only sources mean any match and never insert automatically. Deduplicate overlap by UUID; show current source matches separately from historical Added from acceptance origins, including detached sources. Manual/explicit Keep retain membership independently of current matches.",
+      "proposed_rust_evidence": "`parity::P31`: source-link/no-populate/overlap/origin golden fixtures, changed/renamed/detached sources, durable provenance; native source picker wording and member attribution.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P32",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/review_test.go`, `internal/shelves/apply_test.go`; `frontend/src/ShelfReview.tsx`, `frontend/src/ShelfReview.test.tsx`",
+      "retained_behavior": "Review reads do not mutate. Addition/removal decisions default Not now. Explicit Add/Exclude/Keep/Remove and exclude, bulk controls and final action totals precede atomic apply. Deferred-only or cancel does nothing. Applied Keep becomes manual retention; source-derived removals require actual approved decision.",
+      "proposed_rust_evidence": "`parity::P32`: no-write previews, all mixed decisions/totals, no-op deferrals, write rollback/retry; native decision defaults, grouping, bulk actions, apply disabled when appropriate, error/focus behavior.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P33",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/incomplete_review_test.go`, `internal/shelves/review_integrity_test.go`: evaluation failure; `frontend/src/ShelfReview.tsx`, `frontend/src/ShelfSources.test.tsx`",
+      "retained_behavior": "If any source is invalid or cannot evaluate, healthy sources may propose additions, but all inferred removals pause. Show Review incomplete rather than Up to date; unavailable/manual/kept members remain protected from inference without exposing protection controls. Repairing source resumes fresh evaluation.",
+      "proposed_rust_evidence": "`parity::P33`: broken-reference/transport/source failure combinations and partial union oracle, unavailable/manual overlap, repair/retry; native removal controls disabled with explanatory state.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P34",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/review_tokens_test.go`, `internal/shelves/review_integrity_test.go`, `internal/shelves/creation_review_test.go`; `frontend/src/ShelfReview.test.tsx`",
+      "retained_behavior": "Review/creation/source-impact snapshots bind target/source definitions/results/availability/decisions, expire after 15 minutes and cache at most 64 tickets. Apply revalidates transactionally, rejects stale/replayed/conflicting/out-of-preview actions without partial write; flag-only changes do not invalidate curation.",
+      "proposed_rust_evidence": "`parity::P34`: clock-driven expiry/cache bounds, concurrent apply, source/member edits, malformed decisions and all-or-nothing rollback; native stale refresh clears approvals and requires renewed decisions.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P35",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/ShelfWorkspace.test.tsx`: dismissed mismatch and failed auto-review cases; `internal/shelves/membership_decisions_test.go`; `frontend/src/ShelfReview.tsx`, `frontend/src/ReviewWarnings.test.tsx`",
+      "retained_behavior": "Opening a sourced Shelf prompts for newly affected source-mismatch removals with nothing approved. Dismiss leaves deferred and does not reopen identical mismatches repeatedly; new affected UUID can prompt. Manual-only Shelf has no prompt. Full Review updates remains available. Large review/warning sets stay bounded and grouped with context.",
+      "proposed_rust_evidence": "`parity::P35`: same/new mismatch prompt state, source refresh/failure/manual retry, French keyboard cancellation; 300 candidates mount ≤25 rows/page and decision state/totals survive paging.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P36",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/apply_test.go`, `internal/shelves/curation_test.go`, `internal/shelves/readdition_test.go`; `frontend/src/ShelfWorkspace.test.tsx`, `frontend/src/ShelfReview.tsx`",
+      "retained_behavior": "Explicit exclusions persist by UUID across every source/restart until reversed. Manage exclusions is reachable directly from review and Shelf actions, with excluded count. Allow suggestions clears exclusion only; it never adds membership. Previous historical exclusions remain, ordinary removal creates none.",
+      "proposed_rust_evidence": "`parity::P36`: exclude→new source→restart→clear→fresh diff, manual add clears exclusion, no accidental membership insert; native 25-row pagination/direct path and exact action wording.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P37",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/source_changes_test.go`, `internal/shelves/review_integrity_test.go`: linked-Shelf/source edits; `frontend/src/ShelfSources.test.tsx`, `frontend/src/ShelfSources.tsx`",
+      "retained_behavior": "Detach previews affected members and requires Keep all or explicit Keep/Remove decisions. Unknown coverage/unavailable member disables inference; last-source Keep becomes manual. Linked Collection deletion reviews all affected Shelves and commits deletion/decisions atomically; cancel leaves everything unchanged.",
+      "proposed_rust_evidence": "`parity::P37`: multi-Shelf transaction rollback, newly linked Shelf/source edit invalidates plan, final-source handling; native one affected Shelf/page retains decisions and totals through navigation/cancel.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P38",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/shelves/duplicate_test.go`, `internal/shelves/review_integrity_test.go`; `frontend/src/ShelfWorkspace.tsx` duplicate workflow",
+      "retained_behavior": "Duplication independently copies approved UUID order, sources, historical origins, manual Keep/retention, exclusions and unavailable members; it accepts no fresh source matches and copies no pending review token. Future decisions on original/duplicate do not affect the other.",
+      "proposed_rust_evidence": "`parity::P38`: full-state semantic diff with regenerated identities, no query reevaluation/token transfer, diverging subsequent decisions and restart; native naming/duplicate confirmation.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P39",
+      "workstream": "Catalog",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`docs/architecture/0002-lunii-catalog-interoperability.md`, user guide privacy section; `internal/lunii/client.go`, `internal/lunii/client_test.go`, `internal/lunii/testdata/guest_token.json`, `internal/lunii/testdata/catalog.json`; `internal/app/metadata_vertical_slice_test.go`",
+      "retained_behavior": "Only explicit public catalog refresh plus lazy official artwork contacts network. Preserve guest-token/catalog envelope, allowlisted HTTPS/TLS minimum, no redirects, deadlines and byte limits; no personal login, archive upload/download, device keys/firmware/direct transfer or scheduled sync. Offline local work remains complete.",
+      "proposed_rust_evidence": "`parity::P39`: frozen synthetic HTTP protocol fixtures and hostile redirect/origin/TLS/timeout/oversize server tests; network-denied complete local workflow and zero unintended requests on startup/language/navigation.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P40",
+      "workstream": "Catalog",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/metadata/normalize_test.go`, `internal/metadata/raw_store_test.go`, `internal/metadata/repository_test.go`, `internal/metadata/refresh_test.go`, `internal/metadata/status_test.go`",
+      "retained_behavior": "Stage/validate full bounded raw catalog before atomic activation; preserve exact raw bytes and snapshot identities. Corrupt/offline/timeout/cancel/failure retains last-known-good catalog. Cancellation before/after publication boundaries reports truthful committed outcome. Never/fresh/stale cache states remain distinct.",
+      "proposed_rust_evidence": "`parity::P40`: catalog normalization/snapshot oracle, cancel/failure at each durable checkpoint, activation/derived-projection rollback, raw path substitution and restart; stable freshness/report identity.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P41",
+      "workstream": "Catalog",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/metadata/library_provider_test.go`, `internal/metadata/normalize_test.go`, `internal/metadata/projector_test.go`, `internal/metadata/search_test.go`; `internal/preferences/language_policy_test.go`; frontend UI-language tests",
+      "retained_behavior": "Match complete UUID only; resolve official preferred locale, same-language translation, other official translation, embedded then deterministic fallback. Unambiguous age derives read-only facets; unknown/ambiguous ages stay unassigned. Sync may change display/search/Collection matches/Shelf suggestions, never manual tags/flags/approved membership/archive bytes. UI language does not change metadata policy.",
+      "proposed_rust_evidence": "`parity::P41`: golden resolved title/description/art/age/provenance and search backfill, metadata refresh preserving manual data; language switch causes no fetch or content/query rewrite.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P42",
+      "workstream": "Catalog",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/artwork/handler_test.go`, `internal/artwork/catalog_cache_test.go`, `internal/artwork/repository_test.go`; `internal/metadata/repository_test.go` opaque registration cases; `frontend/src/StoryCover.tsx`",
+      "retained_behavior": "Local embedded art and validated official opaque references are contained; lazy fetch caches and coalesces misses, enforces origin/content limits, rejects arbitrary paths/unregistered URLs and symlink escapes. Cache works offline; decoded thumbnails bounded/evicted, proportions retained, deterministic fallback when unavailable.",
+      "proposed_rust_evidence": "`parity::P42`: opaque ID/cache/network oracle, concurrent miss and invalid image/path corpus, image decode allocation tests; native visible-range requests, request cancellation and root-generation isolation.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P43",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/LuniiSync.tsx`, `frontend/src/metadata-state.test.ts`, `frontend/src/App.test.tsx` first-sync/last-success/retry/dismissal cases; `internal/metadata/status_test.go`",
+      "retained_behavior": "First sync prominently explains enrichment. Last successful time stays visible in local formatting during other work/failed refresh; previous cache remains usable. Progress/cancel/retry prevent duplicate starts. Panel close persists; Show Lunii sync only reopens and does not start network work.",
+      "proposed_rust_evidence": "`parity::P43`: native never/fresh/stale/running/cancel/error presentation, time/freshness persistence and competing operation events, reopen with zero requests; English/French and preference handover.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P44",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/exporter/resolver_test.go`, `internal/exporter/curated_scope_test.go`; `internal/operations/export_identity_test.go`; `frontend/src/export-source.test.ts`, `frontend/src/ShelfWorkspace.test.tsx`, `frontend/src/App.test.tsx`",
+      "retained_behavior": "Preserve explicit selection, complete query beyond visible page, Collection/Collection union, approved Shelf/Shelf union, whole Shelf, refined Shelf result and selected unavailable UUID scopes. Deduplicate; pending suggestions never export. Historical `shelf/shelves` history retains dynamic Collection meaning. Drawer selection export is for multiple Library stories.",
+      "proposed_rust_evidence": "`parity::P44`: scope-resolution oracle including overlaps/empty/refined/manual/unavailable/legacy identity and >1,000 results; native labels/actions send correct typed request and immutable persisted scope.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P45",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/exporter/preflight_test.go`, `internal/exporter/eligibility_preflight_test.go`, `internal/exporter/destination_test.go`; `frontend/src/App.test.tsx` blocked/preflight/rechoose cases",
+      "retained_behavior": "Preflight covers every intended UUID; report Broken/unavailable/integrity/validation/extension/conflict reasons. Skips reserve no output name/bytes. All-ineligible cannot start. Existing filename conflicts explain recovery; Choose another folder reuses scope, cancelled picker retains preview. Native chosen paths stay in trusted adapter boundary.",
+      "proposed_rust_evidence": "`parity::P45`: complete ordered preflight golden outputs, duplicate names/destination races/unwritable/unknown members, filename portability errors, native picker cancel/retry and all-ineligible disabled action.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P46",
+      "workstream": "Domain",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/app/prepared_eligibility_test.go`, `internal/app/queued_export_eligibility_test.go`; `internal/operations/queued_eligibility_test.go`; `internal/exporter/broken_flag_test.go`",
+      "retained_behavior": "Every export skips Broken, including explicit selection. Changed flags/scope before start invalidate preparation and demand fresh preview. Recheck queued items immediately before copy; flagging in-flight/already published copies does not retract them, unflagging an already skipped item does not silently expand running scope.",
+      "proposed_rust_evidence": "`parity::P46`: controlled copy barriers and concurrent flags/source changes; stale preparation and queue skip codes/totals, no unintended copies; native renewed preview and final partial report.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P47",
+      "workstream": "Archive",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/exporter/copier_test.go`, `internal/exporter/lunii_qt_compatibility_test.go`; `internal/archive/filename_test.go`; user guide export boundary",
+      "retained_behavior": "Export exact original filename/supported extension/archive bytes with no manifest/transcode/decryption/sidecars. Destination-local temp publishes atomically without overwrite even under racing file creation. Revalidate source hash/validation/identity before publication. Passthrough for Lunii.QT is not universal device/playback certification.",
+      "proposed_rust_evidence": "`parity::P47`: every archive-family byte hash and directory listing, corruption/source substitution/no-clobber races/short writes; Linux/macOS/Windows atomic primitive and locked-file/antivirus cases.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P48",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/exporter/copier_test.go` cancel/failure/temp cleanup; `internal/operations/manager_test.go`; `frontend/src/ExportReport.test.tsx`, `frontend/src/export-state.test.ts`, `frontend/src/OperationHistoryDialog.tsx`; `internal/platform/reveal_test.go`",
+      "retained_behavior": "Progress shows items/bytes and cancellation boundary. Cancel/failure cleans unfinished owned temps and retains completed exports. Report groups successes/exceptions/skips with item reasons; completed destination remains revealable from notice/history, validates directory, surfaces launch failure.",
+      "proposed_rust_evidence": "`parity::P48`: restart/partial/cancel golden reports and temp ownership cases; host-native file-manager reveal of exact validated directory, never shell interpolation; keyboard/localized report and retry.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P49",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/removal/service_test.go`; `internal/app/import_runtime_test.go` interrupted removal; `frontend/src/App.test.tsx` remove confirm/cancel/retry; user guide recovery section",
+      "retained_behavior": "Explicit removal first moves managed archive to `trash/removals/<operation-id>/`, then deletes active associations; DB failure/interruption restores/reconciles safely. Original source stays untouched; Shelf UUID state persists. There is no in-app trash restore/purge. Manual external copy/reimport recovery does not restore removed manual tag assignments.",
+      "proposed_rust_evidence": "`parity::P49`: confirm/cancel, trash/move/DB/restore failures and forced crash/restart, exact remaining archives/tags/Shelf UUID state; documented reimport recovery rehearsal without inventing restore UI.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P50",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/operations/history_test.go`, `internal/operations/export_identity_test.go`; `frontend/src/OperationHistoryDialog.tsx`; `frontend/src/App.test.tsx` History/paging/reveal/stale cases",
+      "retained_behavior": "History includes imports/syncs/exports, dismissed and previous-session records; 20-item creation-time/ID cursor pages without duplicates/missing older records. Expand item outcomes, load older, refresh/retry, local dates, retain terminal saved result over stale progress and reveal destination. Opening history never reopens notices.",
+      "proposed_rust_evidence": "`parity::P50`: cursor oracle with ties/new concurrent records and restart, live/persisted merge precedence; native expansion/paging/loading/error/empty/reveal/focus; bounded rendering for long histories.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P51",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/library-view.ts`, `frontend/src/notice-preferences.ts`, `frontend/src/query-history.ts`; `frontend/src/App.test.tsx` persisted dismissal/view cases; `openspec/changes/rewrite-in-rust-native-desktop/design.md` handover decision",
+      "retained_behavior": "Preserve view mode, per-operation terminal dismissal, sync-panel visibility, current semantic navigation and available back/forward state through supported versioned bridge. Dismissed operation stays hidden after stale events/restart but new IDs appear. Missing/corrupt preference storage retains safe session/default behavior, never library loss.",
+      "proposed_rust_evidence": "`parity::P51`: old-app export→library-bound bounded JSON→one-time atomic native import/receipt, idempotence/unknown IDs/version/size failure, explicit optional recovery/default path; no WebView database scraping.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P52",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/preferences/bootstrap_test.go`, `internal/preferences/store_test.go`; `internal/platform/storage_profile_test.go`; `frontend/src/SettingsPanel.test.tsx`; `docs/architecture/0003-settings-and-library-location.md`",
+      "retained_behavior": "New installation confirms language/exact selected empty root before initialization; picker cancel creates nothing, retry preserves partial confirmed setup. Adopt identifiable prior library in place only with proven lifetime exclusion; otherwise explicitly adopt an independent clone/native profile/recovery workspace while legacy settings/defaults retain the source. Versioned independent profile updates atomically/serially preserve concurrent language/root writes; corruption/unsupported profile enters recovery. Developer override bypasses production profile/onboarding, defaults English, disables relocation.",
+      "proposed_rust_evidence": "`parity::P52`: fresh/qualified-in-place/isolated-clone/foreign/missing/partial setup/persistence failure and concurrent update fixtures, exact root/profile/UUID authority and independent files/journal paths; later legacy startup, native restart/relocation and no unintended source writes; native first-run/recovery/override UI.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P53",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`settings_menu.go`, `settings_gate_test.go`, `settings_acceptance_script_test.go`; `internal/platform/settings_menu_darwin.go`, `internal/platform/settings_menu_linux.go`; `frontend/src/SettingsPanel.test.tsx`, `frontend/src/i18n.test.ts`, `frontend/src/ui-language-policy.test.ts`",
+      "retained_behavior": "Native/in-app Settings remain accessible during recovery, early startup command delivered once; macOS standard menu/⌘, plus editing roles; Linux menu and accelerator; Windows equivalent native conventions added. Français/English applies immediately after durable write, preserving selection/query/unsaved input/jobs; localize all app text/plurals/dates/numbers/accessibility and historical outcomes, not authored content/metadata policy.",
+      "proposed_rust_evidence": "`parity::P53`: catalog key/parameter parity, early-command and failed-persistence tests; actual translated menu/accelerator/edit commands; native complete French/English screens and unknown historical diagnostic fallback.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P54",
+      "workstream": "Storage",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/preferences/relocation_test.go`, `internal/preferences/target_test.go`; `settings_move_test.go`; `docs/verification/settings-and-library-location.md`; `scripts/verify-settings-acceptance`",
+      "retained_behavior": "Idle exclusive whole-library move to acceptable empty folder, exact root, preview/size/progress/cancel before commit; source authoritative until verification/profile commit, destination afterward. Include DB/archives/catalog/tags/groups/history/staging/trash/logs/recovery files. Cross-volume stream/copy/check hashes+integrity; reconstruct services and clear stale preparations. Cleanup preserves changed/unrecorded files and reports retained path.",
+      "proposed_rust_evidence": "`parity::P54`: every move/journal phase crash/cancel/corruption/profile uncertainty, same and real second volume, disk full and concurrent readers; post-move query/art/import/export/removal/diagnostics prove single root generation.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P55",
+      "workstream": "Platform",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`internal/preferences/recovery.go`, `internal/preferences/journal.go`, `internal/preferences/model.go`; `internal/platform/storage_profile_test.go`; `internal/archive/filename.go`, `internal/exporter/preflight_test.go`; `openspec/changes/rewrite-in-rust-native-desktop/design.md` portability policy",
+      "retained_behavior": "Missing configured drive/root never becomes empty replacement. Try again/Locate validates same library ID; reject different library. Preserve profiles/journals/history with absolute paths during cross-OS handover using reviewed rebind/recovery rules. Never silently rename archives or rewrite original filenames for Windows; report invalid export targets non-destructively.",
+      "proposed_rust_evidence": "`parity::P55`: cross-OS copied library/profile/journal corpus, case/Unicode aliases, long/non-UTF-8 paths, UNC/reserved names/reparse points/removable/read-only/locked files; explicit relocation/rebind/recovery and filename conflict reports.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P56",
+      "workstream": "UI",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`frontend/src/modal-focus.ts`, `frontend/src/LibrarySidebar.tsx`, `frontend/src/ModalBackdrop.tsx`; `frontend/scripts/frontend-accessibility.mjs`, `frontend/scripts/frontend-responsive.mjs`; UI dialog tests",
+      "retained_behavior": "Every action keyboard reachable with visible focus, labeled roles/mixed/switch/progress states, contrast/non-color tags and reduced motion. Escape/backdrop/Close with nested focus trap/return; block unsafe dismissal while required setup/move/commit is pending. Independent content/sidebar scroll, short-window access, narrow disclosure, French text fitting and no horizontal overflow.",
+      "proposed_rust_evidence": "`parity::P56`: native accessibility-tree/state tests plus VoiceOver/NVDA/AT-SPI/Orca critical flows; desktop/compact/high-DPI/high-contrast/IME/clipboard/dead-key and touch checks; reviewed native screenshots and screen-reader evidence.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P57",
+      "workstream": "Platform",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`main.go`, `release_config.go`, `packaged_acceptance.go`, `frontend/src/navigation-policy.test.ts` as prior boundary; proposal/runtime spec replace Wails/React",
+      "retained_behavior": "Dedicated Rust-rendered desktop app with no production webview/browser/JavaScript runtime/local HTTP bridge/Go sidecar. Native multiple-file/folder pickers, menu/edit actions and validated reveal. UI thread stays free of blocking work; toolkit qualifies renderer/software path, supported input and accessible controls on each target.",
+      "proposed_rust_evidence": "`parity::P57`: toolkit spike gates, packaged process/linkage/resource inspection, offline launch without Go/Rust/Node installed, software-rendered Linux/Windows runs, exact native adapter acceptance and clean teardown.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P58",
+      "workstream": "Release",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`cmd/library-performance/main.go`, `docs/performance/large-library.md`, adjacent baseline JSON; `internal/shelves/performance_test.go`; `frontend/scripts/frontend-performance.mjs`",
+      "retained_behavior": "Retain 5,000-story query/count/page/artwork budgets, 1,000-story native expansion≤3 s and input p95≤100 ms; preserve 25-row review/warning/create/exclusion pages and one affected Shelf/page. Bounded worker/image/query models. Host baselines are observations; frame/timer gaps remain diagnostics.",
+      "proposed_rust_evidence": "`parity::P58`: warmed native/storage fixtures with recorded machine, p95 gate values below, 300-candidate controls bound and 50-review-add apply; record startup/RSS/CPU/package size/fallback and approve extra ceilings after spike.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P59",
+      "workstream": "Release",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`docs/release-platforms.md`; `scripts/verify-packaged-acceptance`, `verify-platform-linux`, `verify-settings-acceptance`; `.github/workflows/platform-release.yml`; `release_config_test.go`",
+      "retained_behavior": "Independently build/package/execute required A/I/L/W artifacts with correct architecture/version/resources/dependencies/checksums. Matching target host tests installed/extracted production application; build/cross-compile alone is insufficient. Current old release evidence covers A and L only; I/W are new qualification. No artifact published from failed/cancelled gate.",
+      "proposed_rust_evidence": "`parity::P59`: one pinned packaging/qualification command per target, target manifest/evidence JSON/package SHA-256; macOS DMG install/sign/notarize, Linux archive desktop X11+Wayland/dependency checks, Windows portable+per-user installer/install/update/uninstall.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    },
+    {
+      "id": "P60",
+      "workstream": "Release",
+      "baseline_owner": "librairii-3",
+      "implementation_accountable": "librairii-1 (assign section owner before implementation)",
+      "existing_evidence": "`cmd/release-smoke/main.go`, `cmd/release-smoke/main_test.go`; `internal/app/broken_flag_vertical_slice_test.go`: `TestMigratedCollectionThroughShelfReviewRestartAndExport`; `docs/verification/collections-and-shelves.md`; `openspec/changes/rewrite-in-rust-native-desktop/design.md` rollback",
+      "retained_behavior": "Complete end-to-end synthetic clean and upgraded workflows twice per actual package: import→inspect→catalog→tags→Collection→Shelf/review→Broken/Undo→export→trash→restart; settings/language/move/recovery and diagnostics included. Lifetime writer exclusion or isolated library/profile/recovery adoption, consistent whole-library/profile backup, verified rollback and retained post-backup user changes precede cutover. Retire Go/React only after every mandatory row closes.",
+      "proposed_rust_evidence": "`parity::P60`: end-to-end evidence keyed by commit+target+artifact; participating second-launch/crash lock tests and unmodified Go launched after adoption during live Rust removal/relocation, proving in-place refusal or source-only legacy activity and unchanged candidate artifacts across restart/relocation; bridge-Go reopen of Rust-mutated schema018 when proven, otherwise clone/explicit complete-backup recovery. Independent final review reconciles register/specs/docs and open gates.",
+      "targets": {
+        "A": "unimplemented/unverified",
+        "I": "unimplemented/unverified",
+        "L": "unimplemented/unverified",
+        "W": "unimplemented/unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1606 @@
+{
+  "version": 1,
+  "requirements": [
+    {
+      "capability": "application-settings",
+      "requirement": "Settings are accessible through native and in-app commands",
+      "scenarios": [
+        "macOS user opens settings",
+        "Linux user opens settings",
+        "Settings command arrives during frontend initialization",
+        "User navigates settings with the keyboard"
+      ],
+      "parity_ids": [
+        "P52",
+        "P53"
+      ],
+      "source": "specs/application-settings/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "application-settings",
+      "requirement": "Preferences persist independently of library storage",
+      "scenarios": [
+        "Settings survive relocation and restart",
+        "Preference persistence fails",
+        "Updates overlap",
+        "Configuration is invalid"
+      ],
+      "parity_ids": [
+        "P52",
+        "P53"
+      ],
+      "source": "specs/application-settings/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "application-settings",
+      "requirement": "First launch requires explicit library setup",
+      "scenarios": [
+        "New user confirms the suggested location",
+        "New user chooses another folder",
+        "User cancels the folder picker",
+        "Setup cannot complete"
+      ],
+      "parity_ids": [
+        "P52",
+        "P53"
+      ],
+      "source": "specs/application-settings/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "application-settings",
+      "requirement": "Existing installations retain their library",
+      "scenarios": [
+        "User upgrades an existing installation",
+        "Default root contains a foreign database"
+      ],
+      "parity_ids": [
+        "P52",
+        "P53"
+      ],
+      "source": "specs/application-settings/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "application-settings",
+      "requirement": "Explicit development roots remain isolated",
+      "scenarios": [
+        "Packaged acceptance supplies an isolated root",
+        "User attempts relocation in override mode"
+      ],
+      "parity_ids": [
+        "P52",
+        "P53"
+      ],
+      "source": "specs/application-settings/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Persistent curated Shelf identity and membership",
+      "scenarios": [
+        "Shelf is empty or purely manual",
+        "Collection matches change",
+        "Shelf name duplicates only a Collection name",
+        "Shelf is deleted"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Explicit initial seeding",
+      "scenarios": [
+        "Collection-backed Shelf is created",
+        "Initial preview is cancelled or stale",
+        "Source is linked without seeding"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Manual curation and retention",
+      "scenarios": [
+        "User adds a story already supplied by a source",
+        "User keeps a removal candidate",
+        "User inspects membership actions",
+        "User refines or reorders the view"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Persistent exclusions and reversible decisions",
+      "scenarios": [
+        "User rejects an addition permanently",
+        "User removes a matching member ordinarily",
+        "User explicitly removes and excludes a matching member",
+        "User reverses an exclusion",
+        "User defers an addition"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Stable unavailable membership",
+      "scenarios": [
+        "Story is removed and reimported",
+        "Unavailable member is browsed"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "curated-shelves",
+      "requirement": "Independent Shelf duplication and persistence",
+      "scenarios": [
+        "Sourced Shelf is duplicated",
+        "Application restarts"
+      ],
+      "parity_ids": [
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38"
+      ],
+      "source": "specs/curated-shelves/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Collection-first desktop interface",
+      "scenarios": [
+        "Collection contains stories",
+        "User opens story details",
+        "Collection is empty"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Story name substring search",
+      "scenarios": [
+        "Name contains the search text",
+        "Name differs only by case or accents",
+        "Search text contains wildcard characters"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Search and metadata filtering",
+      "scenarios": [
+        "User combines name and tag criteria",
+        "User removes an active filter",
+        "User clears all filters",
+        "User searches inside a Shelf"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Predictable tag filter composition",
+      "scenarios": [
+        "Multiple values in one definition",
+        "Values across definitions",
+        "Boolean false state is composed with a choice"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Durable navigation and filter state",
+      "scenarios": [
+        "User returns with back navigation",
+        "Collection or Shelf reloads",
+        "Supported legacy URL contains Broken restrictions",
+        "Current user tag reuses a retired identity",
+        "Legacy Shelf and new Shelf IDs overlap"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Visible operation and failure states",
+      "scenarios": [
+        "Long-running operation is active",
+        "Operation partially fails"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Canonical archive shelves UI parity",
+      "scenarios": [
+        "Desktop shell is rendered",
+        "Intermediate responsive states are rendered",
+        "Compact responsive state is rendered",
+        "Canonical interaction states are exercised",
+        "Visual deviation is proposed"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Accessible implementation without visual drift",
+      "scenarios": [
+        "User navigates without a pointer",
+        "Tag colors are indistinguishable",
+        "Nonvisual semantics are added"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Clear family browsing controls",
+      "scenarios": [
+        "Story artwork is available",
+        "No successful sync yet"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Viewport scrolling revision (2026-10-15)",
+      "scenarios": [
+        "Short window contains overflowing stories and filters"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Popup and tag usability revision (2026-10-15)",
+      "scenarios": [
+        "All stories after saving a search",
+        "Story tags and small shelves remain readable",
+        "Long story opens and tag filters collapse",
+        "Edit story tags from details",
+        "User distinguishes flagging from tag editing"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Distinct Library Collection and Shelf navigation",
+      "scenarios": [
+        "User browses both group types",
+        "User chooses export from a refined Shelf",
+        "User operates review without a pointer"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-browsing",
+      "requirement": "Broken state does not filter browsing or source matching",
+      "scenarios": [
+        "Story is flagged while selected",
+        "Broken story belongs to several groups",
+        "New request tries to restore built-in flag filtering"
+      ],
+      "parity_ids": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P24",
+        "P25",
+        "P27",
+        "P43",
+        "P50",
+        "P51",
+        "P56"
+      ],
+      "source": "specs/library-browsing/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Library folders are selected natively and validated",
+      "scenarios": [
+        "Selected destination is valid",
+        "Destination already contains files",
+        "Destination overlaps protected paths",
+        "User selects the current folder through an alias",
+        "Picker is cancelled",
+        "Destination changes after preview"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Relocation preserves the complete library",
+      "scenarios": [
+        "Library moves successfully",
+        "User restarts after a successful move",
+        "Move crosses volumes"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Relocation has exclusive access to library resources",
+      "scenarios": [
+        "Import or export is running",
+        "Mutation races with relocation",
+        "Artwork request is in flight",
+        "Collection resumes after relocation"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Relocation verifies data before committing authority",
+      "scenarios": [
+        "Copying or verification fails",
+        "Destination cannot be opened or settings cannot be saved",
+        "User cancels during copying"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Interrupted relocation recovers deterministically",
+      "scenarios": [
+        "Application exits before commitment",
+        "Application exits after commitment",
+        "Source cleanup fails",
+        "Destination disappears after commitment"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "library-location",
+      "requirement": "Missing libraries require explicit recovery",
+      "scenarios": [
+        "External library drive is disconnected",
+        "User reconnects the drive",
+        "User locates the same library after moving it externally",
+        "User selects a different library for recovery"
+      ],
+      "parity_ids": [
+        "P54",
+        "P55"
+      ],
+      "source": "specs/library-location/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Application-managed local storage",
+      "scenarios": [
+        "First launch initializes storage",
+        "First launch awaits confirmation",
+        "Existing library is adopted",
+        "Storage is not writable",
+        "Configured library is missing",
+        "Explicit development root initializes storage"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Supported archive import",
+      "scenarios": [
+        "Valid archive is imported",
+        "Extension does not match content",
+        "Archive exceeds safety limits"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Immutable and atomic archive custody",
+      "scenarios": [
+        "Import succeeds atomically",
+        "Import fails or is cancelled"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Deterministic duplicate handling",
+      "scenarios": [
+        "Exact archive is imported again",
+        "UUID conflicts with different bytes"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Embedded metadata fallback",
+      "scenarios": [
+        "Embedded metadata is present",
+        "Optional metadata is absent"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "local-story-catalog",
+      "requirement": "Recoverable story removal",
+      "scenarios": [
+        "User confirms removal",
+        "User cancels removal"
+      ],
+      "parity_ids": [
+        "P01",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P49"
+      ],
+      "source": "specs/local-story-catalog/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-metadata-sync",
+      "requirement": "Explicit official catalog refresh",
+      "scenarios": [
+        "User refreshes successfully",
+        "Upstream request times out"
+      ],
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43"
+      ],
+      "source": "specs/lunii-metadata-sync/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-metadata-sync",
+      "requirement": "Match official metadata by story UUID",
+      "scenarios": [
+        "Imported story has a catalog match",
+        "Imported story has no catalog match"
+      ],
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43"
+      ],
+      "source": "specs/lunii-metadata-sync/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-metadata-sync",
+      "requirement": "Last-known-good offline behavior",
+      "scenarios": [
+        "Refresh payload is invalid",
+        "No catalog has ever been downloaded"
+      ],
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43"
+      ],
+      "source": "specs/lunii-metadata-sync/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-metadata-sync",
+      "requirement": "Derived system facets",
+      "scenarios": [
+        "Age metadata maps to a configured band",
+        "Age metadata is insufficient",
+        "Catalog refresh changes a derived value",
+        "Flagged story gains official metadata"
+      ],
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43"
+      ],
+      "source": "specs/lunii-metadata-sync/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-metadata-sync",
+      "requirement": "Metadata-only network scope",
+      "scenarios": [
+        "Refresh completes"
+      ],
+      "parity_ids": [
+        "P39",
+        "P40",
+        "P41",
+        "P42",
+        "P43"
+      ],
+      "source": "specs/lunii-metadata-sync/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Explicit export scope",
+      "scenarios": [
+        "Selected stories are exported",
+        "Filtered result is exported",
+        "One Collection is exported",
+        "Multiple Collections are exported",
+        "Shelf is exported before updates are approved",
+        "Multiple curated Shelves are exported",
+        "Collection needs attention",
+        "Shelf source needs attention",
+        "Resolved scope is empty"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Export preflight",
+      "scenarios": [
+        "Preflight is clean",
+        "Preflight finds unavailable items",
+        "Shelf includes broken stories",
+        "Scope has no eligible members"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Lunii.QT-compatible passthrough output",
+      "scenarios": [
+        "Archive exports successfully",
+        "Multiple eligible formats are exported"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Atomic and non-overwriting export",
+      "scenarios": [
+        "Destination filename already exists",
+        "Copy fails midway"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Export progress and final report",
+      "scenarios": [
+        "Export completes successfully",
+        "Export completes partially",
+        "User cancels an export"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Universal broken-story export exclusion",
+      "scenarios": [
+        "Flagged story is explicitly selected",
+        "Flag is cleared before a new preview"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Prepared and queued export eligibility validation",
+      "scenarios": [
+        "Flag changes between preview and start",
+        "Pending item becomes broken during export",
+        "Skipped item becomes unflagged during export",
+        "Published member is flagged"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "lunii-qt-export",
+      "requirement": "Stable historical export identities",
+      "scenarios": [
+        "Historical dynamic export is viewed after upgrade",
+        "Mixed history survives restart",
+        "Unavailable Shelf UUID is part of a partial export"
+      ],
+      "parity_ids": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48"
+      ],
+      "source": "specs/lunii-qt-export/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "saved-collections",
+      "requirement": "Migrate dynamic Shelves to Collections",
+      "scenarios": [
+        "Existing saved search is upgraded",
+        "Existing invalid definition is upgraded"
+      ],
+      "parity_ids": [
+        "P17",
+        "P25",
+        "P26"
+      ],
+      "source": "specs/saved-collections/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "saved-collections",
+      "requirement": "Save canonical Collection criteria",
+      "scenarios": [
+        "Search and filters are saved",
+        "Empty query is saved",
+        "Duplicate Collection name is submitted"
+      ],
+      "parity_ids": [
+        "P17",
+        "P25",
+        "P26"
+      ],
+      "source": "specs/saved-collections/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "saved-collections",
+      "requirement": "Collection management and dynamic evaluation",
+      "scenarios": [
+        "Imported or retagged story changes matches",
+        "Story is marked broken",
+        "Collection is duplicated or its criteria replaced",
+        "Collection has no matches"
+      ],
+      "parity_ids": [
+        "P17",
+        "P25",
+        "P26"
+      ],
+      "source": "specs/saved-collections/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "saved-collections",
+      "requirement": "Collection query integrity",
+      "scenarios": [
+        "Referenced tag value is deleted",
+        "Supported legacy query is opened",
+        "Ordinary broken-named tag is used"
+      ],
+      "parity_ids": [
+        "P17",
+        "P25",
+        "P26"
+      ],
+      "source": "specs/saved-collections/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "saved-collections",
+      "requirement": "Multi-Collection union selection",
+      "scenarios": [
+        "Story matches two Collections",
+        "User wants an intersection",
+        "Combined definition is saved"
+      ],
+      "parity_ids": [
+        "P17",
+        "P25",
+        "P26"
+      ],
+      "source": "specs/saved-collections/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Collection-only sources and durable origins",
+      "scenarios": [
+        "Sources overlap",
+        "Matching sources change after acceptance"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Nonmutating update evaluation",
+      "scenarios": [
+        "Newly matching story is reviewed",
+        "One of several sources still matches",
+        "No source still matches",
+        "Manually retained, unavailable, or broken story is reviewed",
+        "Valid review has no candidates"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Conservative incomplete reviews",
+      "scenarios": [
+        "One source loses a referenced tag",
+        "Source is repaired"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Explicit atomic review decisions",
+      "scenarios": [
+        "Mixed decisions are applied",
+        "Empty or deferred-only review is applied",
+        "Conflicting or unauthorized decision is supplied"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Snapshot integrity",
+      "scenarios": [
+        "Source matches change after preview",
+        "Concurrent Shelf decision changes",
+        "Only a broken flag changes"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "Reviewed source detachment and Collection deletion",
+      "scenarios": [
+        "User keeps all while detaching",
+        "Last source is detached",
+        "Detachment is cancelled or deferred",
+        "Linked Collection is deleted",
+        "Remaining source is invalid"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "shelf-update-reviews",
+      "requirement": "On-demand review presentation",
+      "scenarios": [
+        "User opens a Shelf without evaluation",
+        "Review contains many candidates"
+      ],
+      "parity_ids": [
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37"
+      ],
+      "source": "specs/shelf-update-reviews/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Independent manual broken flag",
+      "scenarios": [
+        "New story is imported",
+        "Existing flagged story is encountered again",
+        "Archive verification succeeds",
+        "User clears a flag on an invalid archive"
+      ],
+      "parity_ids": [
+        "P17",
+        "P23",
+        "P24",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Explicit atomic flag mutation",
+      "scenarios": [
+        "Story is marked broken",
+        "Mixed selection is marked in bulk",
+        "Flags are cleared in bulk",
+        "Duplicate IDs or already-matching flags are supplied",
+        "Batch contains an unavailable story",
+        "Application is not ready for mutation"
+      ],
+      "parity_ids": [
+        "P17",
+        "P23",
+        "P24",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Direct flag controls throughout story views",
+      "scenarios": [
+        "User flags a selected story",
+        "Bulk switch is used during multi-selection",
+        "User navigates without hover",
+        "User inspects a mixed selection",
+        "User changes a flag from details"
+      ],
+      "parity_ids": [
+        "P24",
+        "P17",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Distinct story warning presentation",
+      "scenarios": [
+        "Flagged story is visible",
+        "User inspects tags on a flagged story"
+      ],
+      "parity_ids": [
+        "P24",
+        "P17",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Reversible feedback and consistent reconciliation",
+      "scenarios": [
+        "Story is marked or cleared in a view",
+        "Story appears in multiple group rows",
+        "User undoes a bulk action",
+        "Undo target changed or became unavailable",
+        "Flag write fails or changes nothing"
+      ],
+      "parity_ids": [
+        "P17",
+        "P23",
+        "P24",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-broken-flag",
+      "requirement": "Lossless migration from the built-in Broken tag",
+      "scenarios": [
+        "Existing library is upgraded",
+        "Upgraded library restarts",
+        "Fresh library is initialized",
+        "Tag ID is reused after migration"
+      ],
+      "parity_ids": [
+        "P17",
+        "P23",
+        "P24",
+        "P46"
+      ],
+      "source": "specs/story-broken-flag/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-tagging",
+      "requirement": "User-defined tag definition CRUD",
+      "scenarios": [
+        "Valid choice definition is created",
+        "Valid boolean definition is created",
+        "Definition key is not unique",
+        "Definition is renamed or recolored",
+        "User creates an ordinary tag named broken"
+      ],
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "source": "specs/story-tagging/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-tagging",
+      "requirement": "Allowed value CRUD",
+      "scenarios": [
+        "Values are added to an age definition",
+        "Duplicate value is submitted",
+        "Value is renamed",
+        "Value is added to a boolean definition"
+      ],
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "source": "specs/story-tagging/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-tagging",
+      "requirement": "Manual story tag assignment",
+      "scenarios": [
+        "Values are assigned to one story",
+        "Value is assigned in bulk",
+        "Manual value is removed",
+        "User-defined boolean is toggled"
+      ],
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "source": "specs/story-tagging/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-tagging",
+      "requirement": "Derived system facets are protected",
+      "scenarios": [
+        "User inspects a derived age value",
+        "User attempts to manage a derived definition"
+      ],
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "source": "specs/story-tagging/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "story-tagging",
+      "requirement": "Destructive tag changes require informed confirmation",
+      "scenarios": [
+        "User confirms definition deletion",
+        "User cancels value deletion",
+        "Deleted value is referenced by a Collection",
+        "Invalidated Collection supplies a curated Shelf"
+      ],
+      "parity_ids": [
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "source": "specs/story-tagging/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "ui-localization",
+      "requirement": "Complete English and French UI presentation",
+      "scenarios": [
+        "User browses the French interface",
+        "User browses the English interface",
+        "Application opens a native picker"
+      ],
+      "parity_ids": [
+        "P53",
+        "P56"
+      ],
+      "source": "specs/ui-localization/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "ui-localization",
+      "requirement": "Initial UI language uses supported system preferences",
+      "scenarios": [
+        "French system language",
+        "Unsupported system language",
+        "Saved choice overrides system language"
+      ],
+      "parity_ids": [
+        "P53",
+        "P56"
+      ],
+      "source": "specs/ui-localization/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "ui-localization",
+      "requirement": "Language changes apply immediately without losing work",
+      "scenarios": [
+        "Language switches during ordinary use",
+        "Operation is active during a language change",
+        "Unsupported language is submitted"
+      ],
+      "parity_ids": [
+        "P53",
+        "P56"
+      ],
+      "source": "specs/ui-localization/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "ui-localization",
+      "requirement": "UI language does not change content or metadata policy",
+      "scenarios": [
+        "User switches to French with official metadata present",
+        "User-authored organization is preserved"
+      ],
+      "parity_ids": [
+        "P53",
+        "P56"
+      ],
+      "source": "specs/ui-localization/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    },
+    {
+      "capability": "ui-localization",
+      "requirement": "Backend outcomes render in the current UI language",
+      "scenarios": [
+        "User reads previous operation history in French",
+        "Historical outcome lacks a supported message identity"
+      ],
+      "parity_ids": [
+        "P53",
+        "P56"
+      ],
+      "source": "specs/ui-localization/spec.md",
+      "owner": "librairii-3 baseline; librairii-1 implementation assignment",
+      "rust_status": "unimplemented/unverified"
+    }
+  ],
+  "limitations": "Mapping inventory only, not an independent audit or executable Rust coverage claim. Rewrite delta specs intentionally overlay native runtime/adoption behavior."
+}

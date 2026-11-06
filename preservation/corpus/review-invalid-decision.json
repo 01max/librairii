@@ -1,0 +1,25 @@
+{
+  "action": "add",
+  "after": {
+    "id": 1,
+    "name": "Seeded",
+    "position": 0,
+    "revision": 2,
+    "count": 2,
+    "brokenCount": 0,
+    "unavailableCount": 0,
+    "sourceCount": 1
+  },
+  "before": {
+    "id": 1,
+    "name": "Seeded",
+    "position": 0,
+    "revision": 2,
+    "count": 2,
+    "brokenCount": 0,
+    "unavailableCount": 0,
+    "sourceCount": 1
+  },
+  "error": "invalid_shelf_input",
+  "uuid": "623e4567-e89b-42d3-a456-426614174000"
+}

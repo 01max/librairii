@@ -1,0 +1,365 @@
+{
+  "date": "2026-10-24",
+  "targets": [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu"
+  ],
+  "toolchain": {
+    "channel": "1.99.1",
+    "profile": "minimal",
+    "components": [
+      "rustfmt",
+      "clippy"
+    ]
+  },
+  "gui_features": [
+    "std",
+    "compat-1-18",
+    "accessibility",
+    "backend-winit-x11",
+    "backend-winit-wayland",
+    "renderer-skia",
+    "raw-window-handle-06",
+    "unstable-winit-030"
+  ],
+  "gui_candidates": [
+    {
+      "name": "accesskit",
+      "version": "0.24.1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "d3b7f7f85a7e5f68090000ed7622545829afd484d210358702ae4cb97dd0c320",
+      "dependencies": [
+        "uuid"
+      ]
+    },
+    {
+      "name": "accesskit_winit",
+      "version": "0.33.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "d5b41e63a69f36d9f1f41e70464c7e5f72eee485ef26aab19f0b4f86e6c0a84c",
+      "dependencies": [
+        "accesskit",
+        "accesskit_ios",
+        "accesskit_macos",
+        "accesskit_unix",
+        "accesskit_windows",
+        "raw-window-handle",
+        "winit"
+      ]
+    },
+    {
+      "name": "muda",
+      "version": "0.19.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "1dd04e60bc0b07438a6771710ee1698f98f6ebbc7f89b61264af1563b8aeb878",
+      "dependencies": [
+        "crossbeam-channel",
+        "dpi",
+        "keyboard-types",
+        "objc2 0.6.5",
+        "objc2-app-kit 0.3.2",
+        "objc2-core-foundation",
+        "objc2-foundation 0.3.2",
+        "once_cell",
+        "png",
+        "thiserror 2.0.21",
+        "windows-sys 0.61.2"
+      ]
+    },
+    {
+      "name": "raw-window-handle",
+      "version": "0.6.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
+    },
+    {
+      "name": "rfd",
+      "version": "0.17.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "20dafead71c16a34e1ff357ddefc8afc11e7d51d6d2b9fbd07eaa48e3e540220",
+      "dependencies": [
+        "block2 0.6.2",
+        "dispatch2",
+        "js-sys",
+        "libc",
+        "log",
+        "objc2 0.6.5",
+        "objc2-app-kit 0.3.2",
+        "objc2-core-foundation",
+        "objc2-foundation 0.3.2",
+        "percent-encoding",
+        "pollster",
+        "raw-window-handle",
+        "wasm-bindgen",
+        "wasm-bindgen-futures",
+        "wayland-backend",
+        "wayland-client",
+        "wayland-protocols",
+        "web-sys",
+        "windows-sys 0.61.2"
+      ]
+    },
+    {
+      "name": "skia-bindings",
+      "version": "0.153.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "eb325787c91b3f6c34a7c6f2b8a2297b20292d733ca53a08c233e5028aec49af",
+      "dependencies": [
+        "bindgen",
+        "cc",
+        "flate2",
+        "heck",
+        "pkg-config",
+        "regex",
+        "serde_json",
+        "tar",
+        "toml"
+      ]
+    },
+    {
+      "name": "skia-safe",
+      "version": "0.153.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "c61cb643dac43067f3eb76c866635a74377ac0abca0ff2590674e1e295514c3d",
+      "dependencies": [
+        "bitflags 2.13.2",
+        "skia-bindings",
+        "windows"
+      ]
+    },
+    {
+      "name": "slint",
+      "version": "1.18.1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "15e477d5ff6fec20909100ff8f7062432ebfbda7a62a0f37d0252aa126f38c83",
+      "dependencies": [
+        "const-field-offset",
+        "i-slint-backend-selector",
+        "i-slint-backend-winit",
+        "i-slint-common",
+        "i-slint-core",
+        "i-slint-core-macros",
+        "i-slint-renderer-skia",
+        "i-slint-renderer-software",
+        "num-traits",
+        "once_cell",
+        "pin-weak",
+        "raw-window-handle",
+        "slint-macros",
+        "unicode-segmentation",
+        "vtable"
+      ]
+    },
+    {
+      "name": "slint-build",
+      "version": "1.18.1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "3ea28d4e1ad47d829b91e227f17037fac07a8001668a93fee47ac04f88718ebc",
+      "dependencies": [
+        "derive_more",
+        "i-slint-compiler",
+        "spin_on",
+        "toml_edit"
+      ]
+    },
+    {
+      "name": "winit",
+      "version": "0.30.13",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "a6755fa58a9f8350bd1e472d4c3fcc25f824ec358933bba33306d0b63df5978d",
+      "dependencies": [
+        "ahash",
+        "android-activity",
+        "atomic-waker",
+        "bitflags 2.13.2",
+        "block2 0.5.1",
+        "bytemuck",
+        "calloop 0.13.0",
+        "cfg_aliases",
+        "concurrent-queue",
+        "core-foundation",
+        "core-graphics",
+        "cursor-icon",
+        "dpi",
+        "js-sys",
+        "libc",
+        "memmap2",
+        "ndk",
+        "objc2 0.5.3",
+        "objc2-app-kit 0.2.2",
+        "objc2-foundation 0.2.2",
+        "objc2-ui-kit 0.2.2",
+        "orbclient",
+        "percent-encoding",
+        "pin-project",
+        "raw-window-handle",
+        "redox_syscall 0.4.1",
+        "rustix 0.38.44",
+        "sctk-adwaita",
+        "smithay-client-toolkit",
+        "smol_str 0.2.2",
+        "tracing",
+        "unicode-segmentation",
+        "wasm-bindgen",
+        "wasm-bindgen-futures",
+        "wayland-backend",
+        "wayland-client",
+        "wayland-protocols",
+        "wayland-protocols-plasma",
+        "web-sys",
+        "web-time",
+        "windows-sys 0.52.0",
+        "x11-dl",
+        "x11rb",
+        "xkbcommon-dl"
+      ]
+    }
+  ],
+  "merged_data_dependencies": [
+    {
+      "name": "flate2",
+      "version": "1.1.10",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb",
+      "dependencies": [
+        "crc32fast",
+        "miniz_oxide 0.9.1",
+        "zlib-rs"
+      ]
+    },
+    {
+      "name": "libsqlite3-sys",
+      "version": "0.38.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8",
+      "dependencies": [
+        "cc",
+        "pkg-config",
+        "vcpkg"
+      ]
+    },
+    {
+      "name": "rawzip",
+      "version": "0.5.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "ac9999039f74cd73c03158cddfe4362991703c74efe5ce5c8073026f80a5e48c"
+    },
+    {
+      "name": "rusqlite",
+      "version": "0.40.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3",
+      "dependencies": [
+        "bitflags",
+        "fallible-iterator",
+        "fallible-streaming-iterator",
+        "libsqlite3-sys",
+        "smallvec"
+      ]
+    },
+    {
+      "name": "sevenz-turbo",
+      "version": "0.29.2",
+      "dependencies": [
+        "brotli",
+        "bzip2",
+        "flate2",
+        "js-sys",
+        "lz4_flex",
+        "lzma-turbo",
+        "ppmd-turbo",
+        "wasm-bindgen",
+        "zeroize",
+        "zstd"
+      ]
+    }
+  ],
+  "production_archive_patch": {
+    "manifest": ".config/sevenz-turbo-patch.json",
+    "sha256": "cd0b537c98c2f59e478814e0b83f05783b04c23d78884686f8abd492c9b62036"
+  },
+  "helpers": {
+    "cargo-nextest": "0.9.148",
+    "cargo-deny": "0.20.2",
+    "cargo-audit": "0.22.2",
+    "cargo-llvm-cov": "0.9.1",
+    "cargo-fuzz": "0.13.2"
+  },
+  "gui_lock_sha256": "613fcd9b99a9debd0fe125eea159fd63c3e075d77bb322b8b001ec7bb41bd2a3",
+  "slint_license": {
+    "route": "LicenseRef-Slint-Royalty-free-2.0",
+    "attribution": "AboutSlint in a top-level About screen",
+    "owner_choice": "Direct user reply in this task on 2026-10-23",
+    "source": "https://github.com/slint-ui/slint/blob/v1.18.1/LICENSES/LicenseRef-Slint-Royalty-free-2.0.md",
+    "path": "notices/Slint-Royalty-free-2.0.md",
+    "sha256": "5167f5056e850419106ab6265efbdca7cba4d99c849d1445ca0bbf6a1e2315fe"
+  },
+  "toolkit_selection": "selected for the scoped Linux/macOS native rewrite; see selection-gate.md",
+  "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only",
+  "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change",
+  "thumbnail_probe": {
+    "image": "0.25.10",
+    "features": [
+      "png"
+    ],
+    "default_features": false,
+    "inputs": "1000 bounded original 48x64 synthetic PNGs; no external images",
+    "cache_entries": 64,
+    "request_and_result_queue_entries": 16,
+    "pending_cap": 33,
+    "deferred_cap": 1000,
+    "decode_sample_cap": 512
+  },
+  "gui_local_backports": [
+    {
+      "name": "accesskit_atspi_common",
+      "version": "0.19.1",
+      "path": "vendor/accesskit-atspi-common",
+      "original_registry_checksum": "023da0e5097f46df7092d5280b02efb9bbf8d93298daeced42652463e357d636",
+      "source_commit": "c88605b96d04431f9c3c792464a0f2f253480e94",
+      "upstream_backport": "6ee0558b6315b3ef1594db24ce45a030ecac7cb5",
+      "reason": "Correct disabled Enabled/Sensitive AT-SPI states; exact upstream correction and real adapter regressions.",
+      "provenance": "vendor/accesskit-atspi-common/UPSTREAM.json"
+    }
+  ],
+  "artwork_probe": {
+    "method": "read-full-decode-v3-scratch-fixed100",
+    "measured_batches": 100,
+    "warmup_batches": 1,
+    "covers_per_batch": 24,
+    "dimensions": "320x400",
+    "p95": "nearest rank sorted[94], wall milliseconds, unchanged50ms ceiling",
+    "cpu_diagnostics": "CLOCK_PROCESS_CPUTIME_ID via already-selected libc=0.2.191; diagnostic only, never replaces wall gate",
+    "retained_failure": "run40118957740 Intel20sample p95=72.528676ms stays failed",
+    "scratch": "Reuse compressed and 384000-byte RGB8 output storage; every cover still opens/reads to EOF and fully decodes with CRC checks; every output byte consumed.",
+    "retained_run68_failure": {
+      "head": "f166d7851f667483e1dcee8a68be8533d62f86b4",
+      "run": 40125909364,
+      "target": "x86_64-apple-darwin",
+      "wall_p95_ms": 61.13101,
+      "cpu_p95_ms": 51.246,
+      "verdict": "failed; root cause unknown; not rescored",
+      "evidence": "completion-evidence/artwork-scratch/"
+    }
+  },
+  "qualification_decision": {
+    "date": "2026-10-24",
+    "status": "selected",
+    "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40127878713",
+    "evidence": "completion-evidence/final-matrix.json",
+    "independent_review": "completion-evidence/review.md"
+  },
+  "qualification_decision_history": [
+    {
+      "date": "2026-10-24",
+      "status": "selected",
+      "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+      "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+      "evidence": "completion-evidence/run67-matrix.json",
+      "independent_review": "completion-evidence/run67-review.md",
+      "current_revalidation": "Pending fresh three-target native qualification after run68 failure; the selected run67 decision remains attributed to its implementation head."
+    }
+  ]
+}

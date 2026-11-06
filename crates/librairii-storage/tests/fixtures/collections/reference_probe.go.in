@@ -1,0 +1,34 @@
+package collections
+
+import (
+ "context"
+ "crypto/sha256"
+ "encoding/binary"
+ "encoding/hex"
+ "encoding/json"
+ "errors"
+ "os"
+ "strings"
+ "testing"
+ "unicode/utf8"
+ "github.com/01max/librairii/internal/library"
+)
+func TestTask9FrozenReference(t *testing.T) {
+ h:=sha256.New(); var frame [13]byte
+ for r:=rune(0);r<=utf8.MaxRune;r++ {if r>=0xd800 && r<=0xdfff {continue};name,key,e:=normalizeCollectionName(string(r));binary.LittleEndian.PutUint32(frame[:4],uint32(r));binary.LittleEndian.PutUint32(frame[4:8],uint32(len(name)));binary.LittleEndian.PutUint32(frame[8:12],uint32(len(key)));frame[12]=0;if e==nil {frame[12]=1};h.Write(frame[:]);h.Write([]byte(name));h.Write([]byte(key))}
+ cases:=[]any{};for _,input:=range []string{"  All\tStories ","ÉTÉ","𝑨","İIıi","a\u0085b","a\u200bb","a\x00b","\u0301",strings.Repeat("a",80),strings.Repeat("a",81),"a"+strings.Repeat("\u0301",80)} {name,key,e:=normalizeCollectionName(input);cases=append(cases,map[string]any{"input":input,"name":name,"normalizedName":key,"valid":e==nil})}
+ _,db:=openCollectionRepository(t);s,e:=NewService(db);if e!=nil {t.Fatal(e)};ctx:=context.Background();events:=[]any{}
+ c,e:=s.Create(ctx,"  𝑨\tÉTÉ  ",library.StoryLibraryQuery{Name:"𝑨",Page:99,PageSize:1});if e!=nil {t.Fatal(e)};events=append(events,c)
+ copy,e:=s.Duplicate(ctx,c.ID,"Independent");if e!=nil {t.Fatal(e)};events=append(events,copy)
+ i,e:=s.Inspect(ctx,c.ID);if e!=nil {t.Fatal(e)};events=append(events,i.Collection)
+ c,e=s.Rename(ctx,c.ID,"Histoires d'ÉTÉ");if e!=nil {t.Fatal(e)};events=append(events,c)
+ _,e=s.Create(ctx,"HISTOIRES d'ete",library.StoryLibraryQuery{});events=append(events,map[string]bool{"duplicateName":errors.Is(e,ErrDuplicateCollectionName)})
+ c,e=s.ReplaceQuery(ctx,c.ID,library.StoryLibraryQuery{});if e!=nil {t.Fatal(e)};events=append(events,c)
+ order,e:=s.Reorder(ctx,[]int64{copy.ID,c.ID});if e!=nil {t.Fatal(e)};events=append(events,order)
+ _,e=db.Exec(`INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(77,'Legacy','legacy',77,1,'{"page":9,"name":"moon","brokenState":"broken"}')`);if e!=nil {t.Fatal(e)}
+ i,e=s.Inspect(ctx,77);if e!=nil {t.Fatal(e)};events=append(events,i.Collection)
+ _,e=db.Exec(`INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(88,'Unsupported','unsupported',88,99,'{"name":"forest"}')`);if e!=nil {t.Fatal(e)}
+ i,e=s.Inspect(ctx,88);if e!=nil {t.Fatal(e)};events=append(events,i.Collection)
+ result:=map[string]any{"go":"go1.26.5","unicode":"15.0.0","scalarDigest":hex.EncodeToString(h.Sum(nil)),"cases":cases,"events":events}
+ b,e:=json.MarshalIndent(result,"","  ");if e!=nil {t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK9_CAPTURE"),append(b,'\n'),0600);e!=nil {t.Fatal(e)}
+}

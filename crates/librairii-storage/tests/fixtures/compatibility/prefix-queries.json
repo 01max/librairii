@@ -1,0 +1,2510 @@
+{
+  "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "prefixes": [
+    {
+      "cases": [
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "error": "invalid_query",
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "8c3e213771e74fcf0d0767da202ef4da2bd7574692af3b795595dcd706128e5c",
+      "prefix": 1
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "error": "invalid_query",
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "7513fbd7ab90e665edf71cc38e2ef3b5d53292238e9c40bc1fdf5ff9c284cffe",
+      "prefix": 2
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "error": "invalid_query",
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "2920cf7ee6bcaeeaa577d7e00483dd89e8c62a5d2df82b0d4f08aa106ac90e9a",
+      "prefix": 3
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": false,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "d0c7f306775ba7f8d3bf32e190f6b0245ecb7086ba54577b69eaead017d62944",
+      "prefix": 4
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "bffaa8468baf599a51b0ed9552710af03dd98472168601cc3804c79cb067eb6e",
+      "prefix": 5
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "c121d90fe74f6d5ef1fa69b60268791f62845289eaeb5a5e2c26de9863f70088",
+      "prefix": 6
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "10129974aad3d76f5dff5077321cf106332057c8c94e39f3c9bb6d235dbdb485",
+      "prefix": 7
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "facf7a4545570333413337cafa45eb6586a14a7559d2e8ad80534bc4b09fcfa6",
+      "prefix": 8
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "f9a41348dc2311b2aac875861131ef64bb0d76783135939cb61cf2aecc4cc8c6",
+      "prefix": 9
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "4b28d4b602e5f4c13976ff6a7ac0025702c4e633a69ce57ba548416a27388262",
+      "prefix": 10
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "69204540d6133c0c3fb3383e478312f7b5fbfb9031e0ab0f4783eff237cb70f9",
+      "prefix": 11
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "739328e1803d9ba36c024731f2ba3f8e32ddfbe6065ef550a1b737e3539d3c56",
+      "prefix": 12
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "1a042debb3f6b0562ae2884bfcf8d18d39475faac46a90246233156bc430f669",
+      "prefix": 13
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "0d795ef8190820be0461fbfbae01cd2a1836a1b071411d161aa5fe9e4a35cf78",
+      "prefix": 14
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "eeb7becfa5ef40090b59e42465cd9d4f3ad57f1b9952373ab3c4a72ba85d24d1",
+      "prefix": 15
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "cc9c566a1cf90250d8763e3da741c4d911fe7adf38a11cd91a68f6e561d23e44",
+      "prefix": 16
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "b3e1fa7db1c155f1324c4385b85b9b7e644af3dc33b6fac3d4a97c6c306b364f",
+      "prefix": 17
+    },
+    {
+      "cases": [
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"MÔON\"}"
+        },
+        {
+          "count": 0,
+          "page": {
+            "stories": [],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 0,
+            "totalPages": 0,
+            "sort": "name_asc"
+          },
+          "request": "{\"name\":\"%_\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [],
+            "page": 2,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "imported_desc"
+          },
+          "request": "{\"page\":2,\"pageSize\":1,\"sort\":\"imported_desc\"}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"booleanFilters\":[{\"definitionId\":8,\"state\":\"true\"}]}"
+        },
+        {
+          "count": 1,
+          "page": {
+            "stories": [
+              {
+                "broken": true,
+                "id": 1,
+                "uuid": "123e4567-e89b-42d3-a456-426614174000",
+                "title": "Moon legacy",
+                "sources": {
+                  "title": "embedded",
+                  "description": "fallback",
+                  "author": "fallback",
+                  "artwork": "fallback"
+                },
+                "detectedFormat": "zip",
+                "compatibility": "compatible",
+                "byteSize": 1292,
+                "importedAt": "2000-01-01 00:00:00"
+              }
+            ],
+            "page": 1,
+            "pageSize": 24,
+            "totalItems": 1,
+            "totalPages": 1,
+            "sort": "name_asc"
+          },
+          "request": "{\"anyOf\":[{\"name\":\"moon\"},{\"name\":\"missing\"}]}"
+        }
+      ],
+      "inputSha256": "2b370ec2373d30d2ce42ab85cbf97292146461c970fe2baf36425ac7c0ce4f93",
+      "prefix": 18
+    }
+  ],
+  "timestampPolicy": "preservation/generator/databases.go::fixTimes",
+  "generatorSha256": "1448b76de7842a04c4189c673cf89873866fc9a7fd1753d3e81be953dd8614d7",
+  "oracleSourceManifestSha256": "e547c7f66f0d7fc32b4ee41eeecf063c0047be6deaf73c51c7610908f65b5e6e"
+}

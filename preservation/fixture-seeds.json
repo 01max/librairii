@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "provenance": "Synthetic copyrighted-content-free fixtures and generators from the oracle; still retained in application Git ancestry. Copied portable corpus is added under subtask 1.6.",
+  "files": [
+    {
+      "path": "cmd/release-smoke/testdata/catalog.json",
+      "sha256": "28392485418d49fbbb47c2cdcbd679ea967e88b370a8b8d429ec4a6a38928158",
+      "bytes": 701
+    },
+    {
+      "path": "internal/inspection/testfixture/archive.go",
+      "sha256": "cca9d5f1a38b1813d1d3c26e94b86f5b081ebb7e076941cb21533a1a3dacb338",
+      "bytes": 6552
+    },
+    {
+      "path": "internal/inspection/testfixture/archive_test.go",
+      "sha256": "44f9fe4812dc12f0ad4a4e8051e8af3186cf06b0ad8a69e3352cf3fb7b2a4893",
+      "bytes": 2665
+    },
+    {
+      "path": "internal/inspection/testfixture/sevenzip.go",
+      "sha256": "d5ff53cf711d78ccd4d8333a8724cb4997d6e3f320e780b1d7553686208d732b",
+      "bytes": 3092
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/README.txt",
+      "sha256": "73764803f3705966b6bf095fac30683d6aefcd4d271b2fbd38c886f639e3734d",
+      "bytes": 136
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/bomb.7z",
+      "sha256": "807c4c7e4ad06963ea4b8db4c95d9f6bba0ee496c1fd33222045b0c61220e186",
+      "bytes": 404
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/deep-path.7z",
+      "sha256": "b3046209985cd66d54fe652a2bfd24cc0e5c5ffd7a6ca583fb4666fc1806e37a",
+      "bytes": 310
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/generic.7z",
+      "sha256": "ff024242bcbdd735b5a50c781448bff7b4d05b04af14f89bdd2511998ba5ec1b",
+      "bytes": 277
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/missing.7z",
+      "sha256": "a054887614859ac97b7967e6746b974f1ffc0b03a1183ee0c23142a7d8a0bf5e",
+      "bytes": 266
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/nested.7z",
+      "sha256": "e03f388c8e8199bd9f622d0857dff221cf9f1f8cac8958415ab020bfa7a5d207",
+      "bytes": 308
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/studio.7z",
+      "sha256": "b34adf1d15624c848f3df046779624436248875003c815c2b9e8c57f491410f9",
+      "bytes": 499
+    },
+    {
+      "path": "internal/inspection/testfixture/testdata/symlink.7z",
+      "sha256": "ccea241eb2fb57d1d73bec21b8f95b657d6c9c4b779fa3a8bd6ba8c82bf367aa",
+      "bytes": 320
+    },
+    {
+      "path": "internal/library/testdata/story_library_query_codec.json",
+      "sha256": "3c702b2d6a97ca5fee526d8ad2e3851eb65392e5627299c07f93bd5b9de360b4",
+      "bytes": 3542
+    },
+    {
+      "path": "internal/lunii/testdata/catalog.json",
+      "sha256": "28392485418d49fbbb47c2cdcbd679ea967e88b370a8b8d429ec4a6a38928158",
+      "bytes": 701
+    },
+    {
+      "path": "internal/lunii/testdata/guest_token.json",
+      "sha256": "622694f5e893ac916c34e1483f9c20911bc64f59b390685e75562891b91fdf5b",
+      "bytes": 87
+    },
+    {
+      "path": "internal/performancefixture/budgets.go",
+      "sha256": "6634d35aea6f8b873eaf90aec0af26e0d492669dec00c3bee7bf012d02b7c170",
+      "bytes": 493
+    },
+    {
+      "path": "internal/performancefixture/fixture.go",
+      "sha256": "d160a6efa350fba1929fd3e59b7127f5d7db7cfbf7573f5368f32feb599ec6dc",
+      "bytes": 11079
+    },
+    {
+      "path": "internal/performancefixture/fixture_test.go",
+      "sha256": "96c858242463f65bc3fd06301747c039332998a4903d6c99f390b7072225c651",
+      "bytes": 4895
+    },
+    {
+      "path": "internal/performancefixture/plans.go",
+      "sha256": "5a0217e9aa9878c17f95fd0f1493a771f9a04a4254fdca6fa2d6bd8cb85db2ec",
+      "bytes": 4084
+    },
+    {
+      "path": "internal/searchtext/testdata/normalization.json",
+      "sha256": "f298dd1787bb4c68214786fc7cbfb703404235e6554c770d717ca7c0b9d066f2",
+      "bytes": 313
+    },
+    {
+      "path": "testdata/ui-prototypes/05-archive-shelves.html",
+      "sha256": "1b6bb40b2ca411726d90e942d4ea0b3620a5a0ec77b0976093a20be0a625f75a",
+      "bytes": 73986
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+// Qualification-only template. Execute exclusively in a disposable independent
+// frozen73a archive with the authenticated xtext ZIP and pinned Go1.26.5.
+// No runtime Go, production storage/profile or preservation-generator changes.
+package main
+
+import (
+    "crypto/sha256"
+    "encoding/binary"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "hash"
+    "os"
+    "runtime"
+    "sort"
+    "strings"
+    "unicode"
+    "unicode/utf8"
+
+    "github.com/01max/librairii/internal/searchtext"
+    "golang.org/x/text/cases"
+    "golang.org/x/text/unicode/norm"
+)
+
+type digests map[string]hash.Hash
+func newDigests(names ...string) digests {
+    d := make(digests)
+    for _, name := range names { d[name] = sha256.New() }
+    return d
+}
+func (d digests) frame(name string, id uint32, value string) {
+    var header [8]byte
+    binary.LittleEndian.PutUint32(header[:4], id)
+    binary.LittleEndian.PutUint32(header[4:], uint32(len(value)))
+    d[name].Write(header[:])
+    d[name].Write([]byte(value))
+}
+func (d digests) values() map[string]string {
+    output := make(map[string]string)
+    for key, h := range d { output[key] = hex.EncodeToString(h.Sum(nil)) }
+    return output
+}
+func bit(value bool) string { if value { return "\x01" }; return "\x00" }
+
+func main() {
+    fold := cases.Fold()
+    scalar := newDigests("fold", "nfkd", "normalize", "ccc", "mn", "space", "lower", "asciiFieldFold")
+    // First scalar per (original CCC, Mn membership), ordered by those keys.
+    type key struct { ccc uint8; mn bool }
+    representatives := make(map[key]rune)
+    var contextualRunes []rune
+    count := 0
+    for r := rune(0); r <= unicode.MaxRune; r++ {
+        if !utf8.ValidRune(r) { continue }
+        value := string(r)
+        properties := norm.NFKD.PropertiesString(value)
+        ccc := properties.CCC()
+        decomposed := norm.NFKD.String(value)
+        mn := unicode.Is(unicode.Mn, r)
+        scalar.frame("fold", uint32(r), fold.String(value))
+        scalar.frame("nfkd", uint32(r), decomposed)
+        scalar.frame("normalize", uint32(r), searchtext.Normalize(value))
+        scalar.frame("ccc", uint32(r), string([]byte{ccc}))
+        scalar.frame("mn", uint32(r), bit(mn))
+        scalar.frame("space", uint32(r), bit(unicode.IsSpace(r)))
+        scalar.frame("lower", uint32(r), strings.ToLower(value))
+        smallest := r
+        for next := unicode.SimpleFold(r); next != r; next = unicode.SimpleFold(next) {
+            if next < smallest { smallest = next }
+        }
+        ascii := byte(0)
+        if 'A' <= smallest && smallest <= 'Z' { ascii = byte(smallest) }
+        scalar.frame("asciiFieldFold", uint32(r), string([]byte{ascii}))
+        count++
+        if ccc != 0 { k := key{ccc, mn}; if _, ok := representatives[k]; !ok { representatives[k] = r } }
+        if decomposed != value || !properties.BoundaryBefore() { contextualRunes = append(contextualRunes,r) }
+    }
+    keys := make([]key, 0, len(representatives))
+    for k := range representatives { keys = append(keys, k) }
+    sort.Slice(keys, func(i,j int) bool {
+        if keys[i].ccc != keys[j].ccc { return keys[i].ccc < keys[j].ccc }
+        return !keys[i].mn && keys[j].mn
+    })
+    sequence := newDigests("input", "nfkd", "normalize")
+    sequenceCount := uint32(0)
+    add := func(value string) {
+        sequence.frame("input", sequenceCount, value)
+        sequence.frame("nfkd", sequenceCount, norm.NFKD.String(value))
+        sequence.frame("normalize", sequenceCount, searchtext.Normalize(value))
+        sequenceCount++
+    }
+    for _, a := range keys { for _, b := range keys { for _, n := range []int{0,1,2,28,29,30,31,32,59,60,61,300} {
+        add("a" + strings.Repeat(string(representatives[a]),n) + string(representatives[b]) + string(representatives[a]) + "Z")
+    } } }
+    for _, r := range []rune{0x1161,0x11a8,0xac00,0xac01,0x034f,0x0344,0x0f73,0x16ff0,0x1715} {
+        for _, n := range []int{29,30,31,32,60,61,300} {
+            add("a" + strings.Repeat(string(r),n) + "\u0300\u0315\u0327Z")
+            add("a" + strings.Repeat("\u0300",n) + string(r) + "\u0327\u0315Z")
+        }
+    }
+    // Every scalar with a decomposition or backward-interacting properties
+    // also meets leading/trailing nonstarter counts on BOTH sides of overflow.
+    for _, r := range contextualRunes { for _, n := range []int{29,30,31} {
+        add("a" + strings.Repeat("\u0300",n) + string(r) + "\u0315\u0327Z")
+        add("a" + string(r) + strings.Repeat("\u0300",n) + "\u0315\u0327Z")
+    } }
+    result := map[string]any{
+        "scope":"actual frozen Go normalization differential reference, not whole-string/platform qualification",
+        "go":runtime.Version(), "norm":norm.Version, "cases":cases.UnicodeVersion,
+        "unicode":unicode.Version, "scalarCount":count, "scalarDigests":scalar.values(),
+        "representativeCount":len(keys), "sequenceCount":sequenceCount, "sequenceDigests":sequence.values(),
+        "contextualRuneCount":len(contextualRunes),
+        "framing":"for each metric: u32 little-endian scalar/code or sequence index, u32 UTF8 byte length, exact bytes",
+    }
+    if err := json.NewEncoder(os.Stdout).Encode(result); err != nil { fmt.Fprintln(os.Stderr,err); os.Exit(1) }
+}

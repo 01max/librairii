@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "frozenRevision": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "capturedAtUtc": "2026-10-21T13:28:07.792199+00:00",
+  "toolchain": "go version go1.26.5 darwin/arm64",
+  "sourceFiles": [
+    {
+      "path": "internal/tagging/service.go",
+      "bytes": 14229,
+      "sha256": "e9837662db26ab194a169e14c133808416883daf997f95266df1ce0eed611e62"
+    },
+    {
+      "path": "internal/tagging/values.go",
+      "bytes": 11818,
+      "sha256": "d6ef3f03053c29f1538b0c42522c548bbf7da42e4a4cf9c44e97ab48e65e7a71"
+    },
+    {
+      "path": "internal/tagging/assignments.go",
+      "bytes": 14162,
+      "sha256": "959ff612735a56f62e7e002be4a2e44abcc99e0be7155e2569d9c8b95d11988d"
+    },
+    {
+      "path": "internal/tagging/collection_references.go",
+      "bytes": 4050,
+      "sha256": "69de03d1c9463c9f2c5e41a2553dee3418bf2eee2d2ff709e7d3e46308eabaa5"
+    },
+    {
+      "path": "internal/tagging/color.go",
+      "bytes": 1047,
+      "sha256": "531d989ab7e8cf2ef6f88819e20ba67b2a36b0008905bb5e5a7c0c62a87e2028"
+    },
+    {
+      "path": "internal/library/broken_flags.go",
+      "bytes": 3361,
+      "sha256": "e3184815162702fd3106c93167f5a9171b37a52428ede865080453f20b40a6e3"
+    },
+    {
+      "path": "internal/metadata/projector.go",
+      "bytes": 11542,
+      "sha256": "ec5e7a7637cf544b2d11183b8070419a23ec5c63a7810340ca1ad50d7f9db3af"
+    },
+    {
+      "path": "internal/collectionquery/references.go",
+      "bytes": 5966,
+      "sha256": "b3e72f4a3fb6f67ed3ee934c9db148d75d0f1ee82ab6d25ce21ea0eda1481828"
+    }
+  ],
+  "files": [
+    {
+      "path": "normalization.json",
+      "bytes": 1001,
+      "sha256": "7842d5d29db879503f4e8325264d802c12b04630bf81514583875772bc77dae0"
+    },
+    {
+      "path": "normalization_probe.go.in",
+      "bytes": 1196,
+      "sha256": "14adae9a35cb527811e96fddc63358ab271f236af2ad5b0a52a5ea42214e630d"
+    },
+    {
+      "path": "vertical.json",
+      "bytes": 4038,
+      "sha256": "1c44336a529d9d8e2f62618de00f2ad9fb766ec40b8fa274c88e4f6088b40c74"
+    },
+    {
+      "path": "vertical_probe.go.in",
+      "bytes": 4212,
+      "sha256": "96200a1e9128dd3598c54c7aec4f7b4e6fea0d2387c78b76f9467e1d5e74e815"
+    }
+  ],
+  "comparison": "No normalization: every captured field, order, ID, flag and count is compared. Scalar digest frames codepoint u32 LE, output byte length u32 LE, valid byte and UTF-8 output for every non-surrogate scalar.",
+  "qualification": "Actual frozen Go API/normalizer references on real synthetic SQLite. No Rust UI/import/export/publication qualification."
+}

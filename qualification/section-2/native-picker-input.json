@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "recorded_date": "2026-10-23",
+  "source": "af132fec61c3836dcef90e50bbf78cd225a40809",
+  "source_dirty": false,
+  "target": "aarch64-apple-darwin",
+  "binary_sha256": "b3322941ad1d35df9ccc25c60cff0d7dff75a7e99e2c634fe992e30e78d90529",
+  "host": {
+    "os": "macOS 15.7.7",
+    "architecture": "arm64",
+    "host_kind": "development desktop; not clean host"
+  },
+  "checks": {
+    "physical_picker_select_all": {
+      "status": "pass",
+      "observed_by": "maxime (physical keyboard, reported in chat)",
+      "observations": "In Go to Folder: type /tmp/Before; Command-A; type /tmp/After without Return. Operator confirmed only /tmp/After remained. Same automated shortcut failed in both app picker and standalone AppKit control; those failures remain separately recorded.",
+      "capture_references": []
+    },
+    "automated_picker_select_all": {
+      "status": "fail",
+      "observed_by": "Codex native UI automation",
+      "trigger": "Type /tmp/PickerBefore; Command-A; type /tmp/PickerAfter",
+      "actual": "/tmp/PickerBefore/tmp/PickerAfter",
+      "controls": "Authored plain AppKit NSOpenPanel Go-to-Folder and Search fields reproduce the same failure without Slint/Winit/muda/rfd. The same control app normal NSTextField passes.",
+      "interpretation": "Retained automation limitation; physical picker selection passes. Do not classify this as a Slint gate failure."
+    },
+    "physical_picker_clipboard": {
+      "status": "pass",
+      "observed_by": "maxime (physical keyboard, reported in chat)",
+      "observations": "Copied /tmp/Été 日本語 from the question; Command-A/Command-V produced exact text in Go to Folder; Command-A/Command-X emptied the field and Command-V restored it. After Escape twice, paste in Search also passed. Operator answered both fields pass."
+    },
+    "physical_search_paste": {
+      "status": "pass",
+      "observed_by": "maxime (physical keyboard, reported in chat)",
+      "observations": "After closing Go to Folder and its native picker, Unicode clipboard paste into Search succeeded."
+    },
+    "settings_focus_ax": {
+      "status": "pass",
+      "observed_by": "Codex native UI automation; accessibility state only",
+      "observations": "From Search containing /tmp/Été 日本語, Command-comma opens Settings with Close focused. Four forward Tab and four Shift-Tab inputs remain within English/Français/Close. Escape closes Settings, restores Search focus and preserves the exact draft. Visual focus and screen-reader speech are not inferred."
+    },
+    "settings_language_ax": {
+      "status": "pass",
+      "observed_by": "Codex native UI automation; accessibility state only",
+      "observations": "Opening Settings from its button, choosing Français and pressing Escape produces localized AX labels, preserves the Unicode Search draft and returns focus to Réglages. Native application menu exposes À propos, Réglages and Quitter. About command opens the corresponding AX container; rendered attribution is not claimed from this observation."
+    },
+    "native_picker_cancel_ax": {
+      "status": "pass",
+      "observed_by": "Codex native UI automation; accessibility state only",
+      "observations": "File picker and folder picker expose native sheets for this run’s synthetic fixture. Cancel returns the parent with Search focused, draft unchanged and status Cancelled."
+    },
+    "automated_file_acceptance": {
+      "status": "not_run",
+      "observations": "AX selection exposed both synthetic files as selected, but Open stayed disabled and a coordinate attempt failed with noWindowsAvailable. No successful file/folder acceptance or full picker gate is inferred. Native selection needs a reliable automation surface or operator observation."
+    }
+  },
+  "discarded_experiment": "rfd AsyncFileDialog with retained native menu scope produced the same automated failure. Prototype changes were discarded; committed application source restored and rebuilt.",
+  "toolkit_selected": false,
+  "still_open": [
+    "spoken accessibility",
+    "dead keys/CJK IME",
+    "other native integration/input cases",
+    "real Intel and Linux X11/Wayland operator records",
+    "GPU failure recovery and representative performance",
+    "clean-host launches and complete native notice audit"
+  ],
+  "automation_limitations": [
+    "Physical picker Select All/cut/paste pass despite corresponding automation failures, including an AppKit-only control.",
+    "App AX state changed to French/About while screenshot retained the earlier English main view; visual presentation cannot be inferred from AX alone.",
+    "Attempt to foreground the app through Dock timed out; no Dock action or successful foreground visual verification is claimed."
+  ]
+}

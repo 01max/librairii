@@ -1,0 +1,592 @@
+{
+  "cldr": "32",
+  "dnsOmission": {
+    "changedMembers": [
+      {
+        "dnsFreeSha256": "5b17809452fc4d9bbed297fee2bc1243eb7cdde4dbf95f68cd958ec48f00455f",
+        "originalSha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+        "path": "internal/language/language.go"
+      },
+      {
+        "dnsFreeSha256": "cf9aa92339a76a2e56cc80b0bedf92ee9931c26a2d71bfd8436e6e1a0093e6be",
+        "originalSha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+        "path": "internal/language/tables.go"
+      },
+      {
+        "dnsFreeSha256": "c3fce9c2ffc9e234acc8e5d01b328ebc94577d4f72dc2f7db7397056086ecc06",
+        "originalSha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+        "path": "language/language.go"
+      }
+    ],
+    "equalRawAndProductResults": true,
+    "regionFlags": {
+      "count": 359,
+      "maskedByteSha256": "fd2f6b17097db2606192ffc49fe90c6ef501b6a347d69384d2319d2650f0bdfc",
+      "retainedOtherBits": true
+    },
+    "removed": [
+      "regionTypes.ccTLD-bit1-value2",
+      "internal/language.Region.TLD",
+      "language.Region.TLD"
+    ],
+    "unchangedMembers": 484
+  },
+  "framing": "u32LE index,u32LE byte length,exact UTF8; rawDefault has three frames per input: Tag.String,err.Error or empty,FormatBool(tag==Und)",
+  "go": "go1.26.5",
+  "groups": {
+    "bases": {
+      "accepted": 170695,
+      "canonical": "7f566c52d0a30f81d900846fdf713bf1c1437c37236311cf2fd77144e6fd5364",
+      "count": 346788,
+      "inputs": "b04e5678c6608cd3633a4d011cd758dbd9ecf1d424517f84755ff77744642ab1",
+      "rawDefault": "c3a01bbec7e9eea5d2505155bf9038ea8a395ec7193f10060afe772ee2fb3e0a"
+    },
+    "compact-rg": {
+      "accepted": 523900,
+      "canonical": "23a690db89ded90d3645301ba79890b365b731592f1da5b3c845cacacff16f45",
+      "count": 523900,
+      "inputs": "a240b5f61bbbc36cd7cfa65b804ad194dc8158799e53fb70f1145b642bb2ac0f",
+      "rawDefault": "fe6e19476565b026454ae6b3f3e0181a2fd84b9aa1de0ca3c89b5caf942d3c7b"
+    },
+    "random": {
+      "accepted": 255,
+      "canonical": "fb3fd8f65cc0c00dfb79538572ce3f2ee5ca35281f3a2c5397b02848264378ee",
+      "count": 10000,
+      "inputs": "d78d67990d34d27cd07bc7fe1a11d9cca35e8157e5fc038b0575742a176c552b",
+      "rawDefault": "8949b5bc131f783f6e5a14707f10fd2e8f0dca612ac30a373ef38c4809e86250"
+    },
+    "regions": {
+      "accepted": 979,
+      "canonical": "5da12047ca87f5bc973064d3346498016372150f50c93202dc0c9b9085d33b5a",
+      "count": 19252,
+      "inputs": "0ff5825584fc581231d40f5f43d6e76a72f1d7b63ba00bf8bce734325b1539e0",
+      "rawDefault": "90f06436e8dc92723c4116090233ed0b7a66e44d1c683b4b1b0f0bf8601e0464"
+    },
+    "scripts": {
+      "accepted": 261,
+      "canonical": "a57609a93e2eb5ea553963786288d1ccd91330dfde959e391d1a490018c84a1d",
+      "count": 456976,
+      "inputs": "4af8b64a2f72100b96279a10b0bf3f32e3ac6aa9b8e0f234a27001eabe931e15",
+      "rawDefault": "39e2f7edca28761d441953386434f6e8934ae754df5977378a4a700a78422b33"
+    },
+    "selected": {
+      "accepted": 52,
+      "canonical": "e1e8cca289be5baddbf71a2dec637d07d5b34df9b2b361717fb1311d03748313",
+      "count": 69,
+      "inputs": "112a8d3aee832fda2513a34d104e1e5d1d15b04ff88f291d3c8e52af2666765e",
+      "rawDefault": "805ba2a0cc43acc30d2164a08bf36cf1f4490bec0dd52a4cba6d88ddf98e2ad2"
+    },
+    "variants": {
+      "accepted": 12544,
+      "canonical": "69fc2de77299990fe4dea9ef77b459165428b0f3ad47232d3489ec45c20863f2",
+      "count": 12544,
+      "inputs": "8aef3d78e4adc609216f11523f8f91d66ab81d76e9e64027df049398c0539faa",
+      "rawDefault": "65dc97f4fc7aef9087fc1e7e7ad4be2c11a7feecf7aad2b2731c882d994aba7e"
+    }
+  },
+  "provenance": {
+    "authenticatedZipSha256": "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863",
+    "goToolSha256": "3f947495f00cb7f8088a5cfd694da8dc43869b33f5e7377b048fb18922ffb7e0",
+    "oracle": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "oracleArchiveSha256": "cb64032495c4e12e94fc0332f3f0f82b3addb37eccc48fe270144143e11564ca",
+    "originalFiles": 436,
+    "scope": "disposable independent archive + external modfile; offline pinned Go1.26.5, no original input writes",
+    "sourceIndexSha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
+    "templateSha256": "0e00e209ca02790c23611eb7fa19409639ef52f0029cb5ae28d6efc5ba3ffc67",
+    "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+    "unchangedOriginalFiles": 436,
+    "unchangedZipMembers": 487
+  },
+  "scope": "required35-byte product canonicalLanguage boundary; raw Default/String/Und/errors retained for DNS-omission counterfactual only",
+  "seedSha256": "43e2b7563d57294410da9d6d06693954b347cce9bc00b3fef923338f77755957",
+  "selected": [
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "",
+      "raw": "und",
+      "und": true
+    },
+    {
+      "canonical": "",
+      "error": "",
+      "input": "und",
+      "raw": "und",
+      "und": true
+    },
+    {
+      "canonical": "",
+      "error": "",
+      "input": "root",
+      "raw": "und",
+      "und": true
+    },
+    {
+      "canonical": "und-Zzzz",
+      "error": "",
+      "input": "und-Zzzz",
+      "raw": "und-Zzzz",
+      "und": false
+    },
+    {
+      "canonical": "und-ZZ",
+      "error": "",
+      "input": "und-ZZ",
+      "raw": "und-ZZ",
+      "und": false
+    },
+    {
+      "canonical": "und-x-user",
+      "error": "",
+      "input": "und-x-user",
+      "raw": "und-x-user",
+      "und": false
+    },
+    {
+      "canonical": "x-user",
+      "error": "",
+      "input": "x-user",
+      "raw": "x-user",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "x",
+      "raw": "und",
+      "und": true
+    },
+    {
+      "canonical": "en-x-i-default",
+      "error": "",
+      "input": "i-default",
+      "raw": "en-x-i-default",
+      "und": false
+    },
+    {
+      "canonical": "und-x-i-enochian",
+      "error": "",
+      "input": "i-enochian",
+      "raw": "und-x-i-enochian",
+      "und": false
+    },
+    {
+      "canonical": "sr-Latn",
+      "error": "",
+      "input": "sh",
+      "raw": "sr-Latn",
+      "und": false
+    },
+    {
+      "canonical": "sr-Cyrl",
+      "error": "",
+      "input": "sh-Cyrl",
+      "raw": "sr-Cyrl",
+      "und": false
+    },
+    {
+      "canonical": "ro-MD",
+      "error": "",
+      "input": "mo",
+      "raw": "ro-MD",
+      "und": false
+    },
+    {
+      "canonical": "ro-RO",
+      "error": "",
+      "input": "mo-RO",
+      "raw": "ro-RO",
+      "und": false
+    },
+    {
+      "canonical": "he",
+      "error": "",
+      "input": "iw",
+      "raw": "he",
+      "und": false
+    },
+    {
+      "canonical": "en-US-u-va-posix",
+      "error": "",
+      "input": "en_US_POSIX",
+      "raw": "en-US-u-va-posix",
+      "und": false
+    },
+    {
+      "canonical": "en-US-u-va-posix",
+      "error": "",
+      "input": "en-us-posix",
+      "raw": "en-US-u-va-posix",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: subtag \"posix\" is well-formed but unknown",
+      "input": "de-posix",
+      "raw": "de",
+      "und": false
+    },
+    {
+      "canonical": "jbo",
+      "error": "",
+      "input": "art-lojban",
+      "raw": "jbo",
+      "und": false
+    },
+    {
+      "canonical": "de-1901-1996",
+      "error": "",
+      "input": "de-1901-1996",
+      "raw": "de-1901-1996",
+      "und": false
+    },
+    {
+      "canonical": "de-1901-1996",
+      "error": "",
+      "input": "de-1996-1901",
+      "raw": "de-1901-1996",
+      "und": false
+    },
+    {
+      "canonical": "de-1901",
+      "error": "",
+      "input": "de-1901-1901",
+      "raw": "de-1901",
+      "und": false
+    },
+    {
+      "canonical": "sl-rozaj-biske-1994",
+      "error": "",
+      "input": "sl-rozaj-biske-1994",
+      "raw": "sl-rozaj-biske-1994",
+      "und": false
+    },
+    {
+      "canonical": "abc",
+      "error": "",
+      "input": "en-abc",
+      "raw": "abc",
+      "und": false
+    },
+    {
+      "canonical": "en",
+      "error": "",
+      "input": "en-und",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "en-u-foobar-foobaz",
+      "error": "",
+      "input": "en-u-foobar-foobaz",
+      "raw": "en-u-foobar-foobaz",
+      "und": false
+    },
+    {
+      "canonical": "en-u-foobaz-foobar",
+      "error": "",
+      "input": "en-u-foobaz-foobar",
+      "raw": "en-u-foobaz-foobar",
+      "und": false
+    },
+    {
+      "canonical": "en-u-abc-abc",
+      "error": "",
+      "input": "en-u-abc-abc",
+      "raw": "en-u-abc-abc",
+      "und": false
+    },
+    {
+      "canonical": "en-u-ca",
+      "error": "",
+      "input": "en-u-ca-ca",
+      "raw": "en-u-ca",
+      "und": false
+    },
+    {
+      "canonical": "en-u-ca-true",
+      "error": "",
+      "input": "en-u-ca-true-ca-true",
+      "raw": "en-u-ca-true",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: different values for same key in -u extension",
+      "input": "en-u-ca-true-ca-false",
+      "raw": "en-u-ca-true",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: different values for same key in -u extension",
+      "input": "en-u-ca-gregory-ca-buddhist",
+      "raw": "en-u-ca-gregory",
+      "und": false
+    },
+    {
+      "canonical": "en-u-ca-gregory-nu-latn",
+      "error": "",
+      "input": "en-u-nu-latn-ca-gregory",
+      "raw": "en-u-ca-gregory-nu-latn",
+      "und": false
+    },
+    {
+      "canonical": "en-u-12-123",
+      "error": "",
+      "input": "en-u-12-123",
+      "raw": "en-u-12-123",
+      "und": false
+    },
+    {
+      "canonical": "en-a-foo-a-bar",
+      "error": "",
+      "input": "en-a-foo-a-bar",
+      "raw": "en-a-foo-a-bar",
+      "und": false
+    },
+    {
+      "canonical": "en-x-a-u-foo",
+      "error": "",
+      "input": "en-x-a-u-foo",
+      "raw": "en-x-a-u-foo",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en",
+      "error": "",
+      "input": "en-t-eng",
+      "raw": "en-t-en",
+      "und": false
+    },
+    {
+      "canonical": "en-t-sh",
+      "error": "",
+      "input": "en-t-sh",
+      "raw": "en-t-sh",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-abc",
+      "error": "",
+      "input": "en-t-en-abc",
+      "raw": "en-t-en-abc",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-us",
+      "error": "",
+      "input": "en-t-en-US-123-!!!",
+      "raw": "en-t-en-us",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-us",
+      "error": "",
+      "input": "en-t-en-US-123-foo-%%%%",
+      "raw": "en-t-en-us",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-us",
+      "error": "",
+      "input": "en-t-en-US-123",
+      "raw": "en-t-en-us",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-us",
+      "error": "",
+      "input": "en-t-en-US-foo",
+      "raw": "en-t-en-us",
+      "und": false
+    },
+    {
+      "canonical": "en-t-12-foo-34",
+      "error": "",
+      "input": "en-t-12-foo-34",
+      "raw": "en-t-12-foo-34",
+      "und": false
+    },
+    {
+      "canonical": "en-t-h0",
+      "error": "",
+      "input": "en-t-h0",
+      "raw": "en-t-h0",
+      "und": false
+    },
+    {
+      "canonical": "en-t-en-us-h0-foo",
+      "error": "",
+      "input": "en-t-en-us-h0-foo",
+      "raw": "en-t-en-us-h0-foo",
+      "und": false
+    },
+    {
+      "canonical": "en-US",
+      "error": "",
+      "input": "en-US-u-rg-uszzzz",
+      "raw": "en-US",
+      "und": false
+    },
+    {
+      "canonical": "en-US",
+      "error": "",
+      "input": "en-US-u-rg-uszzzz-foobar",
+      "raw": "en-US",
+      "und": false
+    },
+    {
+      "canonical": "en-u-rg-uszzzz",
+      "error": "",
+      "input": "en-u-rg-uszzzz-foobar",
+      "raw": "en-u-rg-uszzzz",
+      "und": false
+    },
+    {
+      "canonical": "en-US-u-rg-gbzzzz-va-posix",
+      "error": "",
+      "input": "en-US-u-rg-gbzzzz-va-posix",
+      "raw": "en-US-u-rg-gbzzzz-va-posix",
+      "und": false
+    },
+    {
+      "canonical": "en-US-u-va-posix",
+      "error": "",
+      "input": "en-US-u-rg-uszzzz-va-posix",
+      "raw": "en-US-u-va-posix",
+      "und": false
+    },
+    {
+      "canonical": "ca-ES-valencia",
+      "error": "",
+      "input": "ca-ES-valencia-u-rg-eszzzz",
+      "raw": "ca-ES-valencia",
+      "und": false
+    },
+    {
+      "canonical": "ks-Zzzz",
+      "error": "",
+      "input": "ks-Zzzz",
+      "raw": "ks-Zzzz",
+      "und": false
+    },
+    {
+      "canonical": "en-Zzzz",
+      "error": "",
+      "input": "en-Zzzz",
+      "raw": "en-Zzzz",
+      "und": false
+    },
+    {
+      "canonical": "en-Zyyy",
+      "error": "",
+      "input": "en-Zyyy",
+      "raw": "en-Zyyy",
+      "und": false
+    },
+    {
+      "canonical": "en-Zinh",
+      "error": "",
+      "input": "en-Zinh",
+      "raw": "en-Zinh",
+      "und": false
+    },
+    {
+      "canonical": "en-US",
+      "error": "",
+      "input": " en_US  ",
+      "raw": "en-US",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en-K",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en\u0000",
+      "raw": "und",
+      "und": true
+    },
+    {
+      "canonical": "en",
+      "error": "",
+      "input": " en ",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en--US",
+      "raw": "en-US",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en_",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "_en",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: subtag \"1234\" is well-formed but unknown",
+      "input": "en-1234",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "qaa-Qaaa-QM-x-a",
+      "error": "",
+      "input": "qaa-Qaaa-QM-x-a",
+      "raw": "qaa-Qaaa-QM-x-a",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en-u-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en-u-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: subtag \"aaaaaaaa\" is well-formed but unknown",
+      "input": "en-aaaaaaaa",
+      "raw": "en",
+      "und": false
+    },
+    {
+      "canonical": "",
+      "error": "language: tag is not well-formed",
+      "input": "en-aaaaaaaaa",
+      "raw": "en",
+      "und": false
+    }
+  ],
+  "sourceCopyright": [
+    "// Copyright 2013 The Go Authors. All rights reserved.",
+    "// Copyright 2015 The Go Authors. All rights reserved.",
+    "// Copyright 2018 The Go Authors. All rights reserved."
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "implementation_revision": "53aa12f64c9c4f3c62660920975b25efb7424e85",
+  "built_source": "e82aed2ee9f8d7d36123f3620f696923cf8044af",
+  "target": "x86_64-unknown-linux-gnu",
+  "binary_sha256": "441456ed75fcfeaf62c1111c87856cb5c15879d66a3194d59e119c0d16a1427d",
+  "source_dirty": false,
+  "workflow": "https://github.com/01max/librairii/actions/runs/39971404114",
+  "artifact": "https://github.com/01max/librairii/actions/runs/39971404114/artifacts/12508144900",
+  "artifact_zip_sha256": "edd04ebf9d7a3e3b8531bb03ebc5c891b4398f9bcfb6d550d03e255493032481",
+  "raw_report_sha256": "0003a10572bd70a4abf9a07691ec055b9e9e162262701966b0f87ddc3264f8e6",
+  "host": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "session": "owned Weston headless/Pixman, no X11 display",
+  "versions": [
+    "libpixman-1-0 0.42.2-1build1",
+    "libwayland-client0 1.22.0-2.1build1",
+    "libwayland-server0 1.22.0-2.1build1",
+    "wayland-utils 1.2.0-1build1",
+    "weston 13.0.0-4build3"
+  ],
+  "compositor_argv": [
+    "weston",
+    "--backend=headless-backend.so",
+    "--renderer=pixman",
+    "--shell=kiosk-shell.so",
+    "--socket=qualification-wayland",
+    "--idle-time=0",
+    "--width=1280",
+    "--height=900",
+    "--no-config"
+  ],
+  "checks": {
+    "versions_recorded": true,
+    "compositor_protocols": true,
+    "normal_renderer": true,
+    "cpu_renderer": true,
+    "edit": true,
+    "focus": true,
+    "quit": true,
+    "thumbnail": true,
+    "no_x11_fallback": true,
+    "compositor_survived_cases": true,
+    "compositor_closed": true,
+    "runtime_socket_removed_by_compositor": true,
+    "temporary_runtime_retired": true
+  },
+  "errors": [],
+  "automated_wayland": "pass",
+  "runs": {
+    "wayland_info": {
+      "returncode": 0,
+      "errors": [],
+      "log_sha256": "fb960d7cb8187774437a3c59caffe49fa9d20625ab34ad5bfad6fbf132decdf3"
+    },
+    "normal": {
+      "returncode": 0,
+      "errors": [],
+      "backend_request": "winit-skia",
+      "checks": {
+        "process_completed": true,
+        "xdg_window_configured": true,
+        "window_buffer_submitted": true,
+        "component_input_and_scene": true,
+        "actual_surface_identified": true,
+        "explicit_cpu_surface": true,
+        "fresh_distinct_frames": true
+      },
+      "snapshots": {
+        "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+        "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+      },
+      "log_sha256": "d91842ee855f16a29d36cf4bc073173c5b3890abb80b6b7d65d7a940ad1ac7ba",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend wgpu; surface: 32 bpp)"
+      ]
+    },
+    "cpu": {
+      "returncode": 0,
+      "errors": [],
+      "backend_request": "winit-skia-software",
+      "checks": {
+        "process_completed": true,
+        "xdg_window_configured": true,
+        "window_buffer_submitted": true,
+        "component_input_and_scene": true,
+        "actual_surface_identified": true,
+        "explicit_cpu_surface": true,
+        "fresh_distinct_frames": true
+      },
+      "snapshots": {
+        "multilingual.png": "0882288921d6d13a31b76e751febf12823d87264accb6ae828d4be4e3fa9df92",
+        "filtered.png": "3ae86b18d4cb513789e0ad7bf60aab4b6f19e3f9d19fae7127dba31f0962dd7d"
+      },
+      "log_sha256": "b2250940ce15e8837a219c6da7fe5d8e177676b80f528f1bc8152abf5baf81a3",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+      ]
+    },
+    "edit": {
+      "returncode": 0,
+      "errors": [],
+      "log_sha256": "33e171c420b738d164ec9c6741772d5daee27b75ec0f1d73389f170ea2356c77",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+      ]
+    },
+    "focus": {
+      "returncode": 0,
+      "errors": [],
+      "log_sha256": "b1a54df6fd0a004669660b30e93e97312179328f2037a6c3bf9ce4a0db959ef1",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+      ]
+    },
+    "quit": {
+      "returncode": 0,
+      "errors": [],
+      "log_sha256": "57842b53a122cdfe25636d60b70a5fc06a5e3feb02fae8cb5bc2c1e41828cb97",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+      ]
+    },
+    "thumbnail": {
+      "returncode": 0,
+      "errors": [],
+      "log_sha256": "6d8a1b8a81f8fa38713f51f1fa30b8385694b99e41555cf5447b61bfc3b3566c",
+      "actual_surface": [
+        "Slint: Build config: release; Backend: Skia renderer (skia backend software; surface: 24 bpp)"
+      ]
+    },
+    "missing_socket": {
+      "returncode": 1,
+      "errors": [],
+      "log_sha256": "ad27f7248439c28157a4f6757849e11764b4dcca616a057694eb41c21240c46f",
+      "output": "Error: Error initializing winit event loop: os error at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winit-0.30.13/src/platform_impl/linux/wayland/event_loop/mod.rs:89: Could not find wayland compositor\n"
+    }
+  },
+  "independent_visual_review": "pass; all four French/CJK before/filtered frames visually reviewed; hashes match raw report",
+  "physical_input_ime_qualified": false,
+  "first_presentation_qualified": false,
+  "physical_gpu_qualified": false,
+  "portal_picker_reveal_qualified": false,
+  "screen_reader_qualified": false,
+  "clean_host_qualified": false,
+  "toolkit_selected": false,
+  "task_2_11_complete": false,
+  "independent_evidence_review": "pass; independently verified source/binary binding, raw report/log consistency, same-toplevel protocol sequences, component markers and native missing-compositor failure"
+}

@@ -1,0 +1,485 @@
+[
+  {
+    "entries": [
+      {
+        "Name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "path-bytes-511",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "path-bytes-512",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-bytes-513",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a/a/a/a/a/a/a/a/a/a/a/a/a/a/z",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "path-depth-15",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/z",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "path-depth-16",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/z",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-depth-17",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "entry",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "entry-count-9999",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 9999
+  },
+  {
+    "entries": [
+      {
+        "Name": "entry",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "entry-count-10000",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 10000
+  },
+  {
+    "entries": [
+      {
+        "Name": "entry",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "entry_limit",
+    "id": "entry-count-10001",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 10001
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 2147483647,
+        "UncompressedBytes": 2147483647,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "expanded-bytes-2147483647",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 2147483648,
+        "UncompressedBytes": 2147483648,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "expanded-bytes-2147483648",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 2147483649,
+        "UncompressedBytes": 2147483649,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "expanded_size_limit",
+    "id": "expanded-bytes-2147483649",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 100,
+        "UncompressedBytes": 19900,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "aggregate-ratio-199",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 100,
+        "UncompressedBytes": 20000,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "aggregate-ratio-200",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "payload",
+        "CompressedBytes": 100,
+        "UncompressedBytes": 20100,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "compression_ratio_limit",
+    "id": "aggregate-ratio-201",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "../escape",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-2e2e2f657363617065",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "/absolute",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-2f6162736f6c757465",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "C:/drive",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-433a2f6472697665",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a\\b",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-615c62",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a\u0000b",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "unsafe_path",
+    "id": "path-610062",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  },
+  {
+    "entries": [
+      {
+        "Name": "a/../safe",
+        "CompressedBytes": 1,
+        "UncompressedBytes": 1,
+        "IsDirectory": false,
+        "IsLink": false
+      }
+    ],
+    "error": "",
+    "id": "path-612f2e2e2f73616665",
+    "limits": {
+      "MaxPathBytes": 512,
+      "MaxPathDepth": 16,
+      "MaxEntries": 10000,
+      "MaxExpandedBytes": 2147483648,
+      "MaxCompressionRatio": 200,
+      "MaxMetadataBytes": 1048576,
+      "MaxArtworkBytes": 10485760
+    },
+    "repeat": 1
+  }
+]

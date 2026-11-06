@@ -1,0 +1,169 @@
+[
+  {
+    "artwork": {
+      "entry": "_thumbnail.png",
+      "mediaType": "image/png",
+      "sha256": "3bcd06f0f0bb9f5df401b7d51a6cc754ea2b8e5264fe7f9f8899fd4d3ebd6a42"
+    },
+    "bytes": 1538,
+    "description": "A synthetic fixture made only for Librairii tests.",
+    "error": "",
+    "file": "archives/clockwork-forest.plain.pk",
+    "format": "plain_pk",
+    "sha256": "0bdfff356adb1d780faa5e5302b051c6921016e9e24c537cef7bbec151700d73",
+    "title": "The Clockwork Forest",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 1244,
+    "description": "",
+    "error": "",
+    "file": "archives/00112233445546778899aabbccddeeff.v1.pk",
+    "format": "v1_pk",
+    "sha256": "65dca154cffcb4b29fc92ebe574d6f04683feaa9d1e4b0997a1f5826463a60a5",
+    "title": "",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 1244,
+    "description": "",
+    "error": "",
+    "file": "archives/00112233445546778899aabbccddeeff.v2.pk",
+    "format": "v2_pk",
+    "sha256": "65dca154cffcb4b29fc92ebe574d6f04683feaa9d1e4b0997a1f5826463a60a5",
+    "title": "",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 1244,
+    "description": "",
+    "error": "",
+    "file": "archives/clockwork-forest.pk",
+    "format": "generic_pk",
+    "sha256": "65dca154cffcb4b29fc92ebe574d6f04683feaa9d1e4b0997a1f5826463a60a5",
+    "title": "",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 1292,
+    "description": "",
+    "error": "",
+    "file": "archives/clockwork-forest.zip",
+    "format": "zip",
+    "sha256": "578e060082d43a484cdd7e52f9b42342839f776817ce1296915f5861ce84774b",
+    "title": "",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "artwork": {
+      "entry": "thumbnail.png",
+      "mediaType": "image/png",
+      "sha256": "3bcd06f0f0bb9f5df401b7d51a6cc754ea2b8e5264fe7f9f8899fd4d3ebd6a42"
+    },
+    "bytes": 962,
+    "description": "A synthetic STUdio fixture.",
+    "error": "",
+    "file": "archives/clockwork-forest-studio.zip",
+    "format": "studio_zip",
+    "sha256": "5f6c807297db8f764052651a58346df1e4e7390f63208be453aedc8312d412b4",
+    "title": "The Clockwork Forest",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 1412,
+    "error": "missing_entry",
+    "file": "archives/missing-ni.plain.pk",
+    "sha256": "79898fa6c29fb5acca6ce705d5adbdd5c0f64bd362da36315d7a04f74103d229"
+  },
+  {
+    "bytes": 962,
+    "error": "unsupported_format",
+    "file": "archives/studio-disguised.pk",
+    "sha256": "5f6c807297db8f764052651a58346df1e4e7390f63208be453aedc8312d412b4"
+  },
+  {
+    "bytes": 1426,
+    "error": "unsafe_path",
+    "file": "archives/traversal.zip",
+    "sha256": "8beb3b09aa5b78ab2cec36a5dd7cd7a34fb9f39e0692ee378d7e6bab135a829d"
+  },
+  {
+    "bytes": 1661,
+    "error": "ambiguous_structure",
+    "file": "archives/duplicate-path.plain.pk",
+    "sha256": "8b4ebdb5d67345b3a25ba026996cc65b80467e3f83ceda1941ae3ecd4da7087e"
+  },
+  {
+    "bytes": 1674,
+    "error": "nested_archive",
+    "file": "archives/nested.plain.pk",
+    "sha256": "7bcf8dfb6e492a20aba9a2b10b81690fed547cc0fd358e7c3a4821050f13fe3c"
+  },
+  {
+    "bytes": 277,
+    "description": "",
+    "error": "",
+    "file": "archives/generic.7z",
+    "format": "seven_zip",
+    "sha256": "ff024242bcbdd735b5a50c781448bff7b4d05b04af14f89bdd2511998ba5ec1b",
+    "title": "",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "artwork": {
+      "entry": "thumbnail.png",
+      "mediaType": "image/png",
+      "sha256": "3bcd06f0f0bb9f5df401b7d51a6cc754ea2b8e5264fe7f9f8899fd4d3ebd6a42"
+    },
+    "bytes": 499,
+    "description": "A synthetic STUdio fixture.",
+    "error": "",
+    "file": "archives/studio.7z",
+    "format": "seven_zip",
+    "sha256": "b34adf1d15624c848f3df046779624436248875003c815c2b9e8c57f491410f9",
+    "title": "The Clockwork Forest",
+    "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+  },
+  {
+    "bytes": 404,
+    "error": "compression_ratio_limit",
+    "file": "archives/bomb.7z",
+    "sha256": "807c4c7e4ad06963ea4b8db4c95d9f6bba0ee496c1fd33222045b0c61220e186"
+  },
+  {
+    "bytes": 310,
+    "error": "unsafe_path",
+    "file": "archives/deep-path.7z",
+    "sha256": "b3046209985cd66d54fe652a2bfd24cc0e5c5ffd7a6ca583fb4666fc1806e37a"
+  },
+  {
+    "bytes": 266,
+    "error": "missing_entry",
+    "file": "archives/missing.7z",
+    "sha256": "a054887614859ac97b7967e6746b974f1ffc0b03a1183ee0c23142a7d8a0bf5e"
+  },
+  {
+    "bytes": 308,
+    "error": "nested_archive",
+    "file": "archives/nested.7z",
+    "sha256": "e03f388c8e8199bd9f622d0857dff221cf9f1f8cac8958415ab020bfa7a5d207"
+  },
+  {
+    "bytes": 320,
+    "error": "link_entry",
+    "file": "archives/symlink.7z",
+    "sha256": "ccea241eb2fb57d1d73bec21b8f95b657d6c9c4b779fa3a8bd6ba8c82bf367aa"
+  },
+  {
+    "bytes": 14,
+    "error": "invalid_container",
+    "file": "archives/invalid.zip",
+    "sha256": "6bbf954ab0045bc546f16a6db16c95afef820dccd807348411ea924dabb972e9"
+  },
+  {
+    "bytes": 1292,
+    "error": "unsupported_format",
+    "file": "archives/unsupported.txt",
+    "sha256": "578e060082d43a484cdd7e52f9b42342839f776817ce1296915f5861ce84774b"
+  }
+]

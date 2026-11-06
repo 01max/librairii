@@ -1,0 +1,50 @@
+[
+  {
+    "error": "",
+    "input": "archives/clockwork-forest.plain.pk",
+    "result": {
+      "Code": "imported",
+      "UUID": "00112233-4455-4677-8899-aabbccddeeff",
+      "StoryID": 1,
+      "ArchiveID": 1,
+      "ExistingStoryID": 0,
+      "Checksum": "0bdfff356adb1d780faa5e5302b051c6921016e9e24c537cef7bbec151700d73"
+    }
+  },
+  {
+    "error": "",
+    "input": "archives/clockwork-forest.plain.pk",
+    "result": {
+      "Code": "duplicate_checksum",
+      "UUID": "00112233-4455-4677-8899-aabbccddeeff",
+      "StoryID": 1,
+      "ArchiveID": 1,
+      "ExistingStoryID": 1,
+      "Checksum": "0bdfff356adb1d780faa5e5302b051c6921016e9e24c537cef7bbec151700d73"
+    }
+  },
+  {
+    "error": "",
+    "input": "archives/clockwork-forest.zip",
+    "result": {
+      "Code": "uuid_conflict",
+      "UUID": "00112233-4455-4677-8899-aabbccddeeff",
+      "StoryID": 1,
+      "ArchiveID": 1,
+      "ExistingStoryID": 1,
+      "Checksum": "578e060082d43a484cdd7e52f9b42342839f776817ce1296915f5861ce84774b"
+    }
+  },
+  {
+    "error": "inspection_failed",
+    "input": "archives/invalid.zip",
+    "result": {
+      "Code": "",
+      "UUID": "",
+      "StoryID": 0,
+      "ArchiveID": 0,
+      "ExistingStoryID": 0,
+      "Checksum": ""
+    }
+  }
+]

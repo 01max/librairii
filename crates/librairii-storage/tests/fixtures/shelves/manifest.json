@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "frozenRevision": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "capturedAtUtc": "2026-10-21T17:27:47.319294+00:00",
+  "toolchain": "go version go1.26.5 darwin/arm64",
+  "sourceFiles": [
+    {
+      "path": "internal/shelves/apply.go",
+      "bytes": 1805,
+      "sha256": "0f1244384ef3c16e25ab3ccec7a5a1a83e30ac3fa3acbc7b8e7ad333b930d80c"
+    },
+    {
+      "path": "internal/shelves/apply_test.go",
+      "bytes": 5921,
+      "sha256": "76a66b05834cd52c60183ca62dbdad1cec569d2e368570a11a5ba09615862bc2"
+    },
+    {
+      "path": "internal/shelves/browse.go",
+      "bytes": 3653,
+      "sha256": "bde5934dfd978ea52a39a959a60de3d6bb5105ad7c50a7b2121491814df3fbbd"
+    },
+    {
+      "path": "internal/shelves/browse_test.go",
+      "bytes": 1398,
+      "sha256": "23865c973a05b3fc3f75523671dd87cdd1deb2e0bf76288ad7a7e919da4b3382"
+    },
+    {
+      "path": "internal/shelves/collection_deletion.go",
+      "bytes": 5522,
+      "sha256": "df55897b5ee4e7f690785a4a3d7b354dec4a9d74e3ed275031d55236c21202b5"
+    },
+    {
+      "path": "internal/shelves/creation_review.go",
+      "bytes": 6301,
+      "sha256": "0f6d0ca425dbf0ff76fd684a0adc7b0c9de97265f5568fd0aefe5e00ef97d05a"
+    },
+    {
+      "path": "internal/shelves/creation_review_test.go",
+      "bytes": 3277,
+      "sha256": "567dfc501d50ca3dc725ac1abb3526189e8f7f096a2ecd9a3eff3da207874355"
+    },
+    {
+      "path": "internal/shelves/curation.go",
+      "bytes": 8158,
+      "sha256": "27a9c46fce2d04da3094860785abdef00bfade8fed2e95a5d1b65534c1ce9991"
+    },
+    {
+      "path": "internal/shelves/curation_test.go",
+      "bytes": 6511,
+      "sha256": "189336c16e1f4100c8351f682a7ec51db6057253bec5a63c8c43d99355d65c5d"
+    },
+    {
+      "path": "internal/shelves/duplicate.go",
+      "bytes": 2907,
+      "sha256": "ec3352e577c80fb15215a0f6f7a1cf670e6b5d1db57c3f769534b92a07c6da17"
+    },
+    {
+      "path": "internal/shelves/duplicate_test.go",
+      "bytes": 1963,
+      "sha256": "f57dff41d6195cefde2e9346ceb817306c89c8d10d3a1f5df55ee667ca74106f"
+    },
+    {
+      "path": "internal/shelves/incomplete_review_test.go",
+      "bytes": 2306,
+      "sha256": "8173c0b27e79e916acc8d5b2f1ce6c4e747c4c026d74065095f89b40d16d6bfe"
+    },
+    {
+      "path": "internal/shelves/membership_decisions_test.go",
+      "bytes": 2294,
+      "sha256": "990c5dc391c3bd926131a2a952fa80fc37bf793f2b1618bc4bc3ff7da5f1bb44"
+    },
+    {
+      "path": "internal/shelves/performance_test.go",
+      "bytes": 3165,
+      "sha256": "3f04975f2386c9d340084c310e6cd111465c9ece0b461bd604332a5a0ecce0d2"
+    },
+    {
+      "path": "internal/shelves/readdition_test.go",
+      "bytes": 2441,
+      "sha256": "b9929dbd844ebc7cf7cabc5a70793d11fb6152e64997a9261c02ee6d92e7c052"
+    },
+    {
+      "path": "internal/shelves/review.go",
+      "bytes": 7092,
+      "sha256": "268fa7207fb58ab6769bd81c22b73099849d2ddcfea4a964ed4d5c5cfd6bbd13"
+    },
+    {
+      "path": "internal/shelves/review_integrity_test.go",
+      "bytes": 8051,
+      "sha256": "5fdc224250697886efece75ff25b689433009c20c9bfdce5b15be8937e65e821"
+    },
+    {
+      "path": "internal/shelves/review_test.go",
+      "bytes": 2719,
+      "sha256": "2ffe2a064c96d2b1ce40451e0094b13da56705e704eaa2b9e5d97d3660c69016"
+    },
+    {
+      "path": "internal/shelves/review_tokens.go",
+      "bytes": 4019,
+      "sha256": "c8fedda3da9373f8a3befc7bd74370c1fd646aa233091a779b9e568d648c1517"
+    },
+    {
+      "path": "internal/shelves/review_tokens_test.go",
+      "bytes": 3745,
+      "sha256": "23c95b31f6e9a6ec04ca00fcd04002cdad1570775c81ce89e4a563b73856abff"
+    },
+    {
+      "path": "internal/shelves/seeding.go",
+      "bytes": 2531,
+      "sha256": "40ccf883b02413b4a92a8b883e5fb4838c15873d49c286052047a1cb3a7bc731"
+    },
+    {
+      "path": "internal/shelves/seeding_test.go",
+      "bytes": 1182,
+      "sha256": "36e7f36ede85520e9f13f365efc5d069c0a67e2d2c81da6fc1e6a35b93c0397e"
+    },
+    {
+      "path": "internal/shelves/service.go",
+      "bytes": 7870,
+      "sha256": "926b4e5ea7423c4aa83aa06177a1beecca9779ebb00441dc637653a3c561d970"
+    },
+    {
+      "path": "internal/shelves/service_test.go",
+      "bytes": 2328,
+      "sha256": "c721ae055ce6199c219fe22161444c51b6cbbe212d408b93dd13cded009e2ed8"
+    },
+    {
+      "path": "internal/shelves/source_changes.go",
+      "bytes": 7135,
+      "sha256": "b5917c7292c555ba85a3b920251fd68e8085f7d59d6bb4504f73d17c7bf15a92"
+    },
+    {
+      "path": "internal/shelves/source_changes_test.go",
+      "bytes": 7997,
+      "sha256": "ca90ede0f7b4b1e3636e825ae9f360204d62f1384ffb8332313c4c5e0f1873ee"
+    },
+    {
+      "path": "internal/shelves/sources.go",
+      "bytes": 1797,
+      "sha256": "450bd8744f7a31898a0e6e57ef3751dd0e6a003545fc32eb021122fa31cbaad8"
+    },
+    {
+      "path": "internal/shelves/sources_test.go",
+      "bytes": 1424,
+      "sha256": "8aa6fc433b66cc0343940e87402a753ae09e661b8b7b6d553fa814dde02a4a28"
+    }
+  ],
+  "files": [
+    {
+      "path": "reference.json",
+      "bytes": 13134,
+      "sha256": "b9b5015c5fbef43b592c7594e018b2afde9a23fed873208b680f6ff55215fb13"
+    },
+    {
+      "path": "reference_probe.go.in",
+      "bytes": 3773,
+      "sha256": "3b23405d1856b850a932fd0d8aca67d98f6c192ae23854df51810815d0f64744"
+    }
+  ],
+  "repeatCapture": "byte-identical",
+  "scope": "Synthetic public Shelf summaries, raw ordered UUID decisions, complete current/historical source identity and acceptance provenance; no original or preservation files changed."
+}

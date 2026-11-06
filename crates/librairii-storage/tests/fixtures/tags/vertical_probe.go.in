@@ -1,0 +1,29 @@
+package tagging_test
+import("context";"database/sql";"encoding/json";"errors";"os";"path/filepath";"testing"
+"github.com/01max/librairii/internal/database";"github.com/01max/librairii/internal/tagging";"github.com/01max/librairii/internal/library";"github.com/01max/librairii/internal/metadata")
+func TestTask8FrozenVertical(t *testing.T){
+ ctx:=context.Background();opened,e:=database.Open(ctx,filepath.Join(t.TempDir(),"library.sqlite3"));if e!=nil{t.Fatal(e)};defer opened.Close();db:=opened.Writer()
+ for id:=1;id<=3;id++{_,e=db.Exec(`INSERT INTO stories(id,uuid,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),'story')`,id);if e!=nil{t.Fatal(e)};_,e=db.Exec(`INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')`,id);if e!=nil{t.Fatal(e)}}
+ tags,_:=tagging.NewService(db);projector,_:=metadata.NewCatalogProjector(db,metadata.DefaultCatalogProjectionConfig());age,e:=projector.EnsureFacets(ctx);if e!=nil{t.Fatal(e)}
+ a,e:=tags.CreateDefinition(ctx,tagging.CreateDefinition{Key:"Été favorites",Label:"Favorite",Color:"#405CF5",Kind:tagging.KindBoolean});if e!=nil{t.Fatal(e)}
+ b,e:=tags.CreateDefinition(ctx,tagging.CreateDefinition{Key:"Genre",Label:"Genre",Color:"#405CF5",Kind:tagging.KindChoice});if e!=nil{t.Fatal(e)}
+ v,e:=tags.CreateValue(ctx,tagging.CreateValue{DefinitionID:b.ID,Key:"Calm",Label:"Calm"});if e!=nil{t.Fatal(e)};w,e:=tags.CreateValue(ctx,tagging.CreateValue{DefinitionID:b.ID,Key:"Dreamy",Label:"Dreamy"});if e!=nil{t.Fatal(e)}
+ events:=[]any{};r,e:=tags.SetBulkBoolean(ctx,[]int64{1,1,2},a.ID,true);if e!=nil{t.Fatal(e)};events=append(events,r)
+ r,e=tags.SetBulkChoiceValues(ctx,[]int64{1},b.ID,[]int64{v.ID});if e!=nil{t.Fatal(e)};events=append(events,r)
+ r,e=tags.SetBulkChoiceValue(ctx,[]int64{1,2},b.ID,w.ID,true);if e!=nil{t.Fatal(e)};events=append(events,r)
+ r,e=tags.SetBulkChoiceValue(ctx,[]int64{1,2},b.ID,w.ID,true);if e!=nil{t.Fatal(e)};events=append(events,r)
+ _,e=tags.SetBulkBoolean(ctx,[]int64{3,999},a.ID,true);events=append(events,map[string]bool{"invalidAtomic":errors.Is(e,tagging.ErrStoryNotFound)})
+ workspace,e:=tags.AssignmentWorkspace(ctx,[]int64{1,2,3});if e!=nil{t.Fatal(e)}
+ _,e=db.Exec(`INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(1,'Calm','calm',0,5,?)`,fmtPayload(b.ID,v.ID));if e!=nil{t.Fatal(e)}
+ plan,e:=tags.PlanValueDeletion(ctx,v.ID);if e!=nil{t.Fatal(e)};events=append(events,map[string]any{"assignments":plan.AssignmentCount,"collections":plan.AffectedCollectionIDs})
+ _,e=tags.SetBulkChoiceValue(ctx,[]int64{3},b.ID,v.ID,true);if e!=nil{t.Fatal(e)};e=tags.DeleteValue(ctx,plan);events=append(events,map[string]bool{"staleDelete":errors.Is(e,tagging.ErrValueDeletePlanStale)})
+ plan,e=tags.PlanValueDeletion(ctx,v.ID);if e!=nil{t.Fatal(e)};if e=tags.DeleteValue(ctx,plan);e!=nil{t.Fatal(e)}
+ var state string;var revision int64;db.QueryRow(`SELECT validity_state,revision FROM collections WHERE id=1`).Scan(&state,&revision)
+ color,e:=tags.RecolorDefinition(ctx,age,"#405CF5");if e!=nil{t.Fatal(e)};if _,e=projector.EnsureFacets(ctx);e!=nil{t.Fatal(e)}
+ flags:=library.NewBrokenFlags(db);first,e:=flags.Set(ctx,[]int64{1},true);if e!=nil{t.Fatal(e)};action,e:=flags.Set(ctx,[]int64{1,2,2},true);if e!=nil{t.Fatal(e)};undo,e:=flags.Restore(ctx,action.Changes);if e!=nil{t.Fatal(e)}
+ values:=[]bool{};for id:=1;id<=3;id++{var v bool;db.QueryRow(`SELECT is_broken FROM stories WHERE id=?`,id).Scan(&v);values=append(values,v)}
+ result:=map[string]any{"events":events,"workspace":workspace,"collectionState":state,"collectionRevision":revision,"ageColor":color.Color,"firstFlag":first,"mixedFlag":action,"undo":undo,"flags":values}
+ data,e:=json.MarshalIndent(result,"","  ");if e!=nil{t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK8_VERTICAL"),append(data,'\n'),0600);e!=nil{t.Fatal(e)}
+}
+func fmtPayload(d,v int64)string{b,_:=json.Marshal(map[string]any{"anyOf":[]any{map[string]any{"name":"moon"},map[string]any{"choiceFilters":[]any{map[string]any{"definitionId":d,"valueIds":[]int64{v}}}}}});return string(b)}
+var _ *sql.DB

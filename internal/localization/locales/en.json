@@ -605,5 +605,15 @@
   "Any": "Any",
   "Tagged": "Tagged",
   "Not tagged": "Not tagged",
-  "Clear tag filters": "Clear tag filters"
+  "Clear tag filters": "Clear tag filters",
+  "Close the other Librairii application, then retry.": "Close the other Librairii application, then retry.",
+  "This library was used by the native application. To return to this version, use a separate pre-native backup and keep the newer library.": "This library was used by the native application. To return to this version, use a separate pre-native backup and keep the newer library.",
+  "Move to the native application": "Move to the native application",
+  "Export your view, notice and navigation preferences. Your library files stay in place.": "Export your view, notice and navigation preferences. Your library files stay in place.",
+  "Export preferences…": "Export preferences…",
+  "Export preferences for the native application": "Export preferences for the native application",
+  "Preferences exported. Import the file in the native application.": "Preferences exported. Import the file in the native application.",
+  "Preference transfer is invalid or exceeds its limits.": "Preference transfer is invalid or exceeds its limits.",
+  "Preference transfer could not be saved.": "Preference transfer could not be saved.",
+  "Preference transfer could not be saved. Choose a folder without an existing transfer file.": "Preference transfer could not be saved. Choose a folder without an existing transfer file."
 }

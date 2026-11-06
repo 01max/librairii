@@ -1,0 +1,35 @@
+import {Button,VerticalBox,HorizontalBox,Palette} from "std-widgets.slint";
+component Label inherits Text {wrap:word-wrap;color:Palette.foreground;vertical-stretch:0;}
+component Command inherits Button {callback reveal(length,length);changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+component Entry inherits Command {
+    in property <int> row-index;in property <int> selected;in property <int> epoch;
+    callback focused(int,bool);
+    changed epoch=>{if root.selected==root.row-index && self.enabled {self.focus();}}
+    changed has-focus=>{root.focused(root.row-index,self.has-focus);if self.has-focus{root.reveal(self.absolute-position.y,self.height);}}
+}
+export component HistoryPanel inherits VerticalBox {
+    in property <bool> french;in property <bool> active;
+    in property <[string]> entries;in property <string> summary;in property <string> error;
+    in property <bool> older;
+    changed older=>{if !root.older && older-button.has-focus {refresh.focus();}}
+    changed error=>{if root.error=="" && retry-button.has-focus {refresh.focus();}}
+    callback inspect(int);callback refresh();callback load-older();callback retry();callback reveal(length,length);
+    public function activate(){root.focus-index=-1;refresh.focus();}
+    private property <int> focus-index;
+    private property <int> focus-epoch;
+    private property <int> observed-focus:-1;
+    out property <int> focused-entry:root.observed-focus;
+    public function focus-older(){root.focus-index=-1;if older-button.visible && older-button.enabled {older-button.focus();}}
+    public function focus-retry(){root.focus-index=-1;if retry-button.visible && retry-button.enabled {retry-button.focus();}}
+    public function restore(index:int){if index>=0 && index<root.entries.length {root.focus-index=index;root.focus-epoch+=1;}else{refresh.focus();}}
+    out property <bool> first-focused:refresh.has-focus;
+    out property <bool> retry-focused:retry-button.has-focus;
+    padding:0px;spacing:10px;
+    Label {text:root.french ? "Imports, synchronisations et exports enregistrés dans la bibliothèque, y compris les notifications fermées et les sessions précédentes. Chaque page contient au plus 20 opérations." : "Imports, syncs and exports saved in your library, including dismissed notices and earlier sessions. Each page contains at most 20 operations.";}
+    refresh:=Command {enabled:root.active;text:root.french ? "Actualiser l’historique" : "Refresh history";clicked=>{root.refresh();}changed has-focus=>{if self.has-focus {root.focus-index=-1;root.reveal(self.absolute-position.y,self.height);}}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {text:root.summary;accessible-live-region:polite;}
+    Label {text:root.error;accessible-live-region:polite;}
+    for entry[index] in root.entries: Entry {row-index:index;selected:root.focus-index;epoch:root.focus-epoch;enabled:root.active;text:entry;clicked=>{root.inspect(index);}focused(i,value)=>{if value {root.focus-index=-1;root.observed-focus=i;}else if root.observed-focus==i {root.observed-focus=-1;}}reveal(y,h)=>{root.reveal(y,h);}}
+    retry-button:=Command {visible:root.error!="";height:self.visible ? self.preferred-height : 0px;enabled:root.active;text:root.french ? "Réessayer" : "Try again";clicked=>{root.retry();}changed has-focus=>{if self.has-focus{root.focus-index=-1;root.reveal(self.absolute-position.y,self.height);}}reveal(y,h)=>{root.reveal(y,h);}}
+    older-button:=Command {visible:root.older;height:self.visible ? self.preferred-height : 0px;enabled:root.active;text:root.french ? "Charger les activités plus anciennes" : "Load older activity";clicked=>{root.load-older();}changed has-focus=>{if self.has-focus{root.focus-index=-1;root.reveal(self.absolute-position.y,self.height);}}reveal(y,h)=>{root.reveal(y,h);}}
+}

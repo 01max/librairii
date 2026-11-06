@@ -1,0 +1,275 @@
+<style>
+#librairii-native-concepts{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark;--lib-ink:light-dark(#202b3c,#e9edf4);--lib-muted:light-dark(#697486,#a2adbf);--lib-paper:light-dark(#ffffff,#222938);--lib-canvas:light-dark(#f8f9fc,#1b2130);--lib-sidebar:light-dark(#edf0f6,#252d3e);--lib-line:light-dark(#dce1eb,#3c465c);--lib-blue:light-dark(#405cf5,#9babff);--lib-blue-fill:light-dark(#405cf5,#5268de);--lib-selected:light-dark(#e6ebff,#34416b);--lib-green:light-dark(#286350,#91c8af);--lib-green-bg:light-dark(#e8f3ed,#253d35);--lib-amber:light-dark(#895a0d,#f1c475);--lib-amber-bg:light-dark(#fff2d9,#493d2b);--lib-red:light-dark(#ab4149,#ed9ca4);--lib-shadow:light-dark(#14233d1a,#00000040);color:var(--lib-ink);font-size:13px;line-height:1.45}
+#librairii-native-concepts *{box-sizing:border-box}
+#librairii-native-concepts button,#librairii-native-concepts input,#librairii-native-concepts select{font:inherit;color:inherit}
+#librairii-native-concepts button{cursor:default}
+#librairii-native-concepts button:focus-visible,#librairii-native-concepts input:focus-visible,#librairii-native-concepts select:focus-visible{outline:3px solid var(--lib-blue);outline-offset:3px}
+#librairii-native-concepts button{border:1px solid var(--lib-line);border-radius:6px;background:var(--lib-paper);padding:7px 10px;display:inline-flex;gap:7px;align-items:center;justify-content:center;white-space:normal}
+#librairii-native-concepts button:hover{background:var(--lib-sidebar)}
+#librairii-native-concepts button.lib-primary{background:var(--lib-blue-fill);border-color:var(--lib-blue-fill);color:#fff}
+#librairii-native-concepts button.lib-quiet{border-color:transparent;background:transparent}
+#librairii-native-concepts button:disabled{opacity:.46}
+#librairii-native-concepts [hidden]{display:none!important}
+#librairii-native-concepts .lib-window{background:var(--lib-paper);border:1px solid var(--lib-line);border-radius:12px;overflow:hidden;position:relative;min-height:698px}
+#librairii-native-concepts .lib-titlebar{min-height:51px;display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--lib-sidebar);border-bottom:1px solid var(--lib-line);padding-right:104px}
+#librairii-native-concepts .lib-lights{display:flex;gap:7px;flex-shrink:0}
+#librairii-native-concepts .lib-lights span{width:11px;height:11px;border-radius:50%;background:#ee7775}
+#librairii-native-concepts .lib-lights span:nth-child(2){background:#e7bb59}
+#librairii-native-concepts .lib-lights span:nth-child(3){background:#73b68d}
+#librairii-native-concepts .lib-appname{font-size:14px;font-weight:650;letter-spacing:-.35px}
+#librairii-native-concepts .lib-divider{height:18px;width:1px;background:var(--lib-line)}
+#librairii-native-concepts .lib-titlecaption{color:var(--lib-muted);font-size:12px}
+#librairii-native-concepts .lib-toolbar{padding:11px 16px;border-bottom:1px solid var(--lib-line);display:flex;align-items:center;gap:8px;background:var(--lib-paper);flex-wrap:wrap}
+#librairii-native-concepts .lib-search{flex:1;min-width:140px;position:relative;display:flex;align-items:center;gap:7px;border:1px solid var(--lib-line);border-radius:6px;background:var(--lib-canvas);padding:7px 10px}
+#librairii-native-concepts .lib-search input{width:100%;border:0;background:transparent;outline-offset:6px;min-width:0}
+#librairii-native-concepts .lib-key{font-size:11px;color:var(--lib-muted);border:1px solid var(--lib-line);border-radius:3px;padding:0 3px;white-space:nowrap}
+#librairii-native-concepts svg{width:15px;height:15px;flex-shrink:0}
+#librairii-native-concepts .lib-split{display:grid;grid-template-columns:174px minmax(0,1fr) 220px;min-height:668px}
+#librairii-native-concepts .lib-sidebar{background:var(--lib-sidebar);border-right:1px solid var(--lib-line);padding:17px 10px;display:flex;flex-direction:column;gap:16px}
+#librairii-native-concepts .lib-navgroup{display:grid;gap:3px}
+#librairii-native-concepts .lib-sectionhead{display:flex;align-items:center;justify-content:space-between;padding:0 8px 6px;font-size:11px;font-weight:650;color:var(--lib-muted);letter-spacing:.1px}
+#librairii-native-concepts .lib-nav{width:100%;justify-content:flex-start;border:0;background:transparent;text-align:left;padding:7px 8px;border-radius:5px;gap:7px}
+#librairii-native-concepts .lib-nav[aria-pressed=true]{background:var(--lib-selected);color:var(--lib-blue);font-weight:600}
+#librairii-native-concepts .lib-nav .lib-count{margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:var(--lib-muted)}
+#librairii-native-concepts .lib-dot{width:7px;height:7px;border-radius:50%;background:#8b9bd9;flex-shrink:0}
+#librairii-native-concepts .lib-dot.green{background:#59a889}
+#librairii-native-concepts .lib-dot.gold{background:#d5a956}
+#librairii-native-concepts .lib-review-count{font-size:10px;border-radius:8px;min-width:16px;padding:0 4px;background:var(--lib-amber-bg);color:var(--lib-amber);margin-left:auto;text-align:center}
+#librairii-native-concepts .lib-bottomnav{margin-top:auto;border-top:1px solid var(--lib-line);padding-top:11px}
+#librairii-native-concepts .lib-librarypath{font-size:10px;color:var(--lib-muted);padding:7px 8px;overflow-wrap:anywhere}
+#librairii-native-concepts .lib-main{padding:21px 20px;background:var(--lib-canvas);min-width:0}
+#librairii-native-concepts .lib-heading{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:15px}
+#librairii-native-concepts h2{font-size:24px;line-height:1.15;letter-spacing:-.8px;font-weight:650;margin:0 0 6px}
+#librairii-native-concepts .lib-subtitle{color:var(--lib-muted);font-size:11px}
+#librairii-native-concepts .lib-view{display:flex;background:var(--lib-paper);border:1px solid var(--lib-line);border-radius:6px;align-items:center;padding:2px}
+#librairii-native-concepts .lib-view button{border:0;background:transparent;padding:5px;border-radius:4px}
+#librairii-native-concepts .lib-view button[aria-pressed=true]{background:var(--lib-selected);color:var(--lib-blue)}
+#librairii-native-concepts .lib-sync{display:flex;gap:8px;align-items:center;border-top:1px solid var(--lib-line);border-bottom:1px solid var(--lib-line);padding:10px 0;margin-bottom:16px;color:var(--lib-muted);font-size:11px;flex-wrap:wrap}
+#librairii-native-concepts .lib-sync .lib-sync-text{flex:1}
+#librairii-native-concepts .lib-sync button{padding:3px 4px;font-size:11px;color:var(--lib-blue)}
+#librairii-native-concepts .lib-storygrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:13px;row-gap:18px;align-items:start}
+#librairii-native-concepts .lib-story{min-width:0;position:relative}
+#librairii-native-concepts .lib-storybutton{display:block;width:100%;border:0;border-radius:6px;background:transparent;padding:0;overflow:visible;text-align:left}
+#librairii-native-concepts .lib-storybutton[aria-pressed=true] .lib-cover{outline:3px solid var(--lib-blue);outline-offset:3px}
+#librairii-native-concepts .lib-storyname{font-size:11px;line-height:1.3;font-weight:600;margin-top:8px;overflow-wrap:anywhere}
+#librairii-native-concepts .lib-storymeta{font-size:10px;color:var(--lib-muted);margin-top:3px}
+#librairii-native-concepts .lib-cover{height:145px;border-radius:5px;position:relative;overflow:hidden;background:var(--art-bg,#28596b);box-shadow:0 3px 7px #0a162921;isolation:isolate}
+#librairii-native-concepts .lib-cover:before{content:"";position:absolute;z-index:0;width:92px;height:92px;background:var(--art-sun,#e6bf65);border-radius:50%;right:-9px;top:19px}
+#librairii-native-concepts .lib-cover:after{content:"";position:absolute;z-index:1;width:130%;height:72%;border-radius:70% 70% 0 0;background:var(--art-land,#173f47);left:-30%;bottom:-32%;transform:rotate(-18deg)}
+#librairii-native-concepts .lib-cover .lib-land{width:110%;height:55%;background:var(--art-front,#31615d);border-radius:75% 75% 0 0;position:absolute;right:-34%;bottom:-12%;transform:rotate(17deg);z-index:2}
+#librairii-native-concepts .lib-cover .lib-treetop{position:absolute;left:20%;bottom:37%;height:49px;width:34px;background:var(--art-land,#173f47);clip-path:polygon(50% 0,100% 100%,0 100%);z-index:3}
+#librairii-native-concepts .lib-cover .lib-treetop:after{content:"";position:absolute;background:inherit;width:4px;height:20px;left:15px;bottom:-9px}
+#librairii-native-concepts .lib-cover .lib-spark{position:absolute;width:5px;height:5px;left:21%;top:22%;border-radius:1px;background:var(--art-sun,#e6bf65);box-shadow:19px -12px 0 -1px var(--art-sun,#e6bf65),3px 20px 0 -1px var(--art-sun,#e6bf65);transform:rotate(45deg)}
+#librairii-native-concepts .lib-cover .lib-covertext{position:absolute;left:12px;right:10px;top:13px;font-family:Georgia,serif;font-size:16px;line-height:1.05;color:var(--art-type,#fff6dc);z-index:4;max-width:100px;text-shadow:0 1px 5px #15252838}
+#librairii-native-concepts .lib-cover.moon:before{width:67px;height:67px;right:16px;top:27px;box-shadow:8px -6px 0 0 var(--art-bg,#305370) inset}
+#librairii-native-concepts .lib-cover.train .lib-treetop{clip-path:none;width:42px;height:22px;border-radius:5px 10px 0 0;bottom:20%;left:19%;background:#e69c5f;box-shadow:10px -8px 0 -3px #e69c5f}
+#librairii-native-concepts .lib-cover.train .lib-treetop:after{width:8px;height:8px;border-radius:50%;bottom:-5px;left:4px;background:#223347;box-shadow:26px 0 0 #223347}
+#librairii-native-concepts .lib-cover.cloud .lib-treetop{clip-path:none;background:#f4e6dd;width:45px;height:22px;border-radius:40px;left:18%;bottom:35%;box-shadow:12px -9px 0 -2px #f4e6dd}
+#librairii-native-concepts .lib-cover.is-broken{filter:saturate(.45)}
+#librairii-native-concepts .lib-brokenbadge{position:absolute;bottom:7px;right:6px;background:#fff3dd;color:#744709;border-radius:4px;padding:2px 5px;font-size:9px;z-index:6;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#librairii-native-concepts .lib-inspector{padding:18px 17px;border-left:1px solid var(--lib-line);background:var(--lib-paper)}
+#librairii-native-concepts .lib-inspector-label{font-size:11px;color:var(--lib-muted);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between}
+#librairii-native-concepts .lib-inspector-cover{max-width:125px;margin:0 auto 17px}
+#librairii-native-concepts .lib-inspector-cover .lib-cover{height:157px}
+#librairii-native-concepts h3{font-weight:650;font-size:18px;line-height:1.2;letter-spacing:-.4px;margin:0 0 5px}
+#librairii-native-concepts .lib-description{font-size:12px;line-height:1.6;color:var(--lib-muted);margin:13px 0}
+#librairii-native-concepts .lib-facts{display:flex;gap:16px;padding:10px 0 12px;font-size:11px;border-bottom:1px solid var(--lib-line)}
+#librairii-native-concepts .lib-facts strong{display:block;color:var(--lib-ink);font-size:12px;font-weight:600}
+#librairii-native-concepts .lib-facts span{color:var(--lib-muted)}
+#librairii-native-concepts .lib-chiprow{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}
+#librairii-native-concepts .lib-chip{font-size:10px;display:inline-flex;gap:4px;align-items:center;background:var(--lib-green-bg);color:var(--lib-green);padding:3px 6px;border-radius:4px}
+#librairii-native-concepts .lib-chip.blue{background:var(--lib-selected);color:var(--lib-blue)}
+#librairii-native-concepts .lib-inspector-actions{display:grid;gap:7px;margin-top:14px}
+#librairii-native-concepts .lib-flag{display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:12px 0;border-bottom:1px solid var(--lib-line);gap:7px}
+#librairii-native-concepts .lib-flag input{accent-color:var(--lib-blue);width:27px;height:15px}
+#librairii-native-concepts .lib-technical{margin-top:12px;color:var(--lib-muted);font-size:10px}
+#librairii-native-concepts .lib-technical summary{cursor:default}
+#librairii-native-concepts .lib-statusbar{display:flex;justify-content:space-between;gap:12px;padding:7px 13px;font-size:10px;background:var(--lib-sidebar);border-top:1px solid var(--lib-line);color:var(--lib-muted)}
+#librairii-native-concepts .lib-statusbar span{display:flex;align-items:center;gap:5px}
+#librairii-native-concepts .lib-filterpanel{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px;background:var(--lib-paper);border:1px solid var(--lib-line);margin-bottom:14px;border-radius:6px}
+#librairii-native-concepts .lib-filterpanel select{background:var(--lib-paper);border:1px solid var(--lib-line);border-radius:4px;padding:5px}
+#librairii-native-concepts .lib-empty{color:var(--lib-muted);padding:38px 0;font-size:12px}
+#librairii-native-concepts .lib-storygrid.as-list{display:block}
+#librairii-native-concepts .lib-storygrid.as-list .lib-story{display:grid;grid-template-columns:38px minmax(0,1fr) 80px;gap:10px;padding:8px 0;border-bottom:1px solid var(--lib-line);align-items:center}
+#librairii-native-concepts .lib-storygrid.as-list .lib-cover{height:44px;border-radius:3px}
+#librairii-native-concepts .lib-storygrid.as-list .lib-covertext,#librairii-native-concepts .lib-storygrid.as-list .lib-brokenbadge{display:none}
+#librairii-native-concepts .lib-storygrid.as-list .lib-storyname{margin:0}
+#librairii-native-concepts .lib-storygrid.as-list .lib-storymeta{text-align:right}
+#librairii-native-concepts .lib-workspace .lib-split{grid-template-columns:182px minmax(0,1fr) 252px}
+#librairii-native-concepts .lib-workspace .lib-main{padding:21px 18px;background:var(--lib-paper)}
+#librairii-native-concepts .lib-workspace .lib-inspector{background:var(--lib-canvas);padding:17px 16px}
+#librairii-native-concepts .lib-workspace h2{font-size:22px}
+#librairii-native-concepts .lib-shelftabs{display:flex;gap:17px;border-bottom:1px solid var(--lib-line);margin:17px 0 14px}
+#librairii-native-concepts .lib-shelftabs button{border:0;border-radius:0;padding:0 0 9px;background:transparent;color:var(--lib-muted);font-size:12px}
+#librairii-native-concepts .lib-shelftabs button[aria-pressed=true]{color:var(--lib-blue);box-shadow:inset 0 -2px var(--lib-blue);font-weight:600}
+#librairii-native-concepts .lib-inline-summary{display:flex;gap:8px;align-items:center;color:var(--lib-muted);font-size:11px;margin:12px 0}
+#librairii-native-concepts .lib-list-head{display:grid;grid-template-columns:minmax(0,1fr) 65px 65px;gap:8px;padding:7px 7px;font-size:10px;color:var(--lib-muted);border-bottom:1px solid var(--lib-line)}
+#librairii-native-concepts .lib-member{width:100%;display:grid!important;grid-template-columns:34px minmax(0,1fr) 65px 55px;gap:9px!important;align-items:center;text-align:left;padding:10px 7px!important;background:transparent!important;border:0!important;border-bottom:1px solid var(--lib-line)!important;border-radius:0!important}
+#librairii-native-concepts .lib-member[aria-pressed=true]{background:var(--lib-selected)!important;border-radius:5px!important}
+#librairii-native-concepts .lib-member .lib-cover{width:32px;height:41px;border-radius:3px;box-shadow:none}
+#librairii-native-concepts .lib-member .lib-covertext,#librairii-native-concepts .lib-member .lib-brokenbadge{display:none}
+#librairii-native-concepts .lib-member-title{font-size:12px;font-weight:600;display:block}
+#librairii-native-concepts .lib-member-origin{font-size:10px;font-weight:400;color:var(--lib-muted);display:block;margin-top:2px}
+#librairii-native-concepts .lib-cell{font-size:10px;color:var(--lib-muted)}
+#librairii-native-concepts .lib-cell.ok{color:var(--lib-green)}
+#librairii-native-concepts .lib-cell.warn{color:var(--lib-amber)}
+#librairii-native-concepts .lib-unavailable-cover{width:32px;height:41px;border:1px dashed var(--lib-line);border-radius:3px;display:flex;align-items:center;justify-content:center;color:var(--lib-muted)}
+#librairii-native-concepts .lib-shelf-footer{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#librairii-native-concepts .lib-shelf-footer button{font-size:11px}
+#librairii-native-concepts .lib-notice{margin:16px 0 0;padding:10px 11px;background:var(--lib-amber-bg);color:var(--lib-amber);font-size:11px;border-radius:5px}
+#librairii-native-concepts .lib-workspace .lib-inspector h3{font-size:17px}
+#librairii-native-concepts .lib-review-summary{font-size:11px;color:var(--lib-muted);margin:7px 0 15px;line-height:1.6}
+#librairii-native-concepts .lib-review-item{border-top:1px solid var(--lib-line);padding:13px 0}
+#librairii-native-concepts .lib-review-item-name{font-size:12px;font-weight:600;margin-bottom:2px}
+#librairii-native-concepts .lib-review-item small{display:block;color:var(--lib-muted);font-size:10px;margin-bottom:9px}
+#librairii-native-concepts .lib-decisions{display:flex;gap:4px}
+#librairii-native-concepts .lib-decisions button{font-size:10px;padding:5px 7px;flex:1}
+#librairii-native-concepts .lib-decisions button[aria-pressed=true]{background:var(--lib-selected);border-color:var(--lib-blue);color:var(--lib-blue)}
+#librairii-native-concepts .lib-review-footer{margin-top:17px;border-top:1px solid var(--lib-line);padding-top:14px}
+#librairii-native-concepts .lib-review-total{display:flex;justify-content:space-between;font-size:11px;margin-bottom:12px}
+#librairii-native-concepts .lib-review-footer button{width:100%;font-size:12px}
+#librairii-native-concepts .lib-review-footnote{font-size:10px;line-height:1.5;color:var(--lib-muted);margin-top:10px}
+#librairii-native-concepts .lib-sources{font-size:12px;color:var(--lib-muted)}
+#librairii-native-concepts .lib-source-row{padding:12px 0;border-bottom:1px solid var(--lib-line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+#librairii-native-concepts .lib-overlay{position:absolute;inset:51px 0 0;z-index:10;background:light-dark(#17294248,#00000080);display:flex;align-items:center;justify-content:center;padding:20px}
+#librairii-native-concepts .lib-modal{width:440px;max-width:100%;background:var(--lib-paper);border:1px solid var(--lib-line);border-radius:10px;box-shadow:0 15px 50px var(--lib-shadow);padding:23px}
+#librairii-native-concepts .lib-modal p{font-size:12px;color:var(--lib-muted);line-height:1.6}
+#librairii-native-concepts .lib-modal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+#librairii-native-concepts .lib-modal-header h3{margin:0}
+#librairii-native-concepts .lib-modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+#librairii-native-concepts .lib-export-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--lib-line);font-size:12px}
+#librairii-native-concepts .lib-export-row span:last-child{color:var(--lib-muted);text-align:right}
+@media(min-width:1150px){#librairii-native-concepts .lib-cover{height:174px}#librairii-native-concepts .lib-window{min-height:744px}#librairii-native-concepts .lib-split{min-height:668px}}
+@media(max-width:870px){#librairii-native-concepts .lib-split{grid-template-columns:155px minmax(0,1fr)}#librairii-native-concepts .lib-inspector{grid-column:1/-1;border-left:0;border-top:1px solid var(--lib-line)}#librairii-native-concepts .lib-inspector .lib-inspector-inner{display:grid;grid-template-columns:125px minmax(0,1fr);gap:18px}#librairii-native-concepts .lib-workspace .lib-split{grid-template-columns:158px minmax(0,1fr)}#librairii-native-concepts .lib-workspace .lib-inspector{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}#librairii-native-concepts .lib-workspace .lib-inspector .lib-review-title,#librairii-native-concepts .lib-workspace .lib-inspector .lib-review-summary,#librairii-native-concepts .lib-workspace .lib-inspector .lib-review-footer{grid-column:1/-1}#librairii-native-concepts .lib-storygrid{grid-template-columns:repeat(4,minmax(0,1fr))}#librairii-native-concepts .lib-cover{height:136px}#librairii-native-concepts .lib-window{min-height:840px}}
+@media(max-width:600px){#librairii-native-concepts .lib-split,#librairii-native-concepts .lib-workspace .lib-split{display:block;min-height:0}#librairii-native-concepts .lib-sidebar{border-right:0;border-bottom:1px solid var(--lib-line);padding:10px;gap:8px}#librairii-native-concepts .lib-navgroup{display:flex;gap:5px;flex-wrap:wrap}#librairii-native-concepts .lib-sectionhead{width:100%;padding:0 4px 2px}#librairii-native-concepts .lib-nav{width:auto;gap:7px;font-size:11px;padding:5px 7px}#librairii-native-concepts .lib-nav .lib-count{margin-left:4px}#librairii-native-concepts .lib-bottomnav{display:flex;margin-top:0;padding-top:7px}#librairii-native-concepts .lib-librarypath{display:none}#librairii-native-concepts .lib-storygrid{grid-template-columns:repeat(3,minmax(0,1fr))}#librairii-native-concepts .lib-cover{height:128px}#librairii-native-concepts .lib-main{padding:17px 13px}#librairii-native-concepts .lib-toolbar{padding:10px}#librairii-native-concepts .lib-toolbar .lib-search{flex-basis:100%}#librairii-native-concepts .lib-titlecaption{display:none}#librairii-native-concepts .lib-workspace .lib-inspector{display:block}#librairii-native-concepts .lib-list-head{grid-template-columns:minmax(0,1fr) 59px 48px}#librairii-native-concepts .lib-member{grid-template-columns:29px minmax(0,1fr) 57px 47px;gap:6px!important}#librairii-native-concepts .lib-member-title{font-size:11px}#librairii-native-concepts .lib-statusbar{flex-wrap:wrap;gap:4px}#librairii-native-concepts .lib-window{min-height:1095px}#librairii-native-concepts .lib-inspector .lib-inspector-inner{grid-template-columns:92px minmax(0,1fr);gap:14px}#librairii-native-concepts .lib-inspector-cover .lib-cover{height:125px}#librairii-native-concepts .lib-covertext{font-size:14px}}
+@media(prefers-reduced-motion:reduce){#librairii-native-concepts *{scroll-behavior:auto}}
+</style>
+<div id="librairii-native-concepts">
+  <div class="viz-carousel" aria-label="Librairii native desktop concepts">
+    <section data-variant="Story shelves" aria-label="Story shelves concept">
+      <div class="lib-window" data-app="shelves">
+        <div class="lib-titlebar"><div class="lib-lights" aria-hidden="true"><span></span><span></span><span></span></div><span class="lib-appname">Librairii</span><span class="lib-divider"></span><span class="lib-titlecaption">Your stories, beautifully shelved.</span></div>
+        <div class="lib-toolbar"><label class="lib-search"><i data-lucide="search" aria-hidden="true"></i><input data-search placeholder="Search your stories" aria-label="Search stories"><span class="lib-key">⌘ F</span></label><button data-action="filters" aria-expanded="false"><i data-lucide="sliders-horizontal" aria-hidden="true"></i>Filters</button><button data-action="import"><i data-lucide="plus" aria-hidden="true"></i>Import</button><button data-action="export"><i data-lucide="upload" aria-hidden="true"></i>Export view</button></div>
+        <div class="lib-split">
+          <nav class="lib-sidebar" aria-label="Library navigation">
+            <div class="lib-navgroup"><button class="lib-nav" data-scope="all" aria-pressed="true"><i data-lucide="library" aria-hidden="true"></i>All stories<span class="lib-count">8</span></button></div>
+            <div class="lib-navgroup"><div class="lib-sectionhead">Collections<button class="lib-quiet" data-action="collection" aria-label="Create Collection">+</button></div><button class="lib-nav" data-scope="bedtime" aria-pressed="false"><span class="lib-dot"></span>Bedtime<span class="lib-count">4</span></button><button class="lib-nav" data-scope="adventures" aria-pressed="false"><span class="lib-dot green"></span>Adventures<span class="lib-count">5</span></button><button class="lib-nav" data-scope="favorites" aria-pressed="false"><span class="lib-dot gold"></span>Favorites<span class="lib-count">3</span></button></div>
+            <div class="lib-navgroup"><div class="lib-sectionhead">Shelves<button class="lib-quiet" data-action="shelf" aria-label="Create Shelf">+</button></div><button class="lib-nav" data-scope="weekend" aria-pressed="false"><i data-lucide="rows-3" aria-hidden="true"></i>Weekend<span class="lib-count">5</span><span class="lib-review-count">3</span></button><button class="lib-nav" data-scope="travel" aria-pressed="false"><i data-lucide="rows-3" aria-hidden="true"></i>Road trips<span class="lib-count">3</span></button></div>
+            <div class="lib-bottomnav"><button class="lib-nav" data-action="tags"><i data-lucide="tags" aria-hidden="true"></i>Manage tags</button><button class="lib-nav" data-action="history"><i data-lucide="history" aria-hidden="true"></i>History</button><button class="lib-nav" data-action="settings"><i data-lucide="settings-2" aria-hidden="true"></i>Settings</button><div class="lib-librarypath">Local library<br>~/Stories/Librairii</div></div>
+          </nav>
+          <main class="lib-main">
+            <div class="lib-heading"><div><h2 data-heading>All stories</h2><div class="lib-subtitle" data-subtitle>8 stories in your library</div></div><div class="lib-view" aria-label="Presentation"><button data-layout="grid" aria-label="Cover grid" aria-pressed="true"><i data-lucide="layout-grid" aria-hidden="true"></i></button><button data-layout="list" aria-label="List" aria-pressed="false"><i data-lucide="list" aria-hidden="true"></i></button></div></div>
+            <div class="lib-filterpanel" data-filterpanel hidden><label>Age <select data-age><option value="all">All ages</option><option value="3–5">3–5 years</option><option value="6–8">6–8 years</option></select></label><label>Language <select data-language aria-label="Filter language"><option value="all">All languages</option><option value="English">English</option><option value="French">French</option></select></label><button class="lib-quiet" data-action="clear">Clear filters</button></div>
+            <div class="lib-sync"><i data-lucide="circle-check" aria-hidden="true"></i><span class="lib-sync-text">Lunii descriptions &amp; covers · Synced today</span><button class="lib-quiet" data-action="sync">Sync with Lunii</button></div>
+            <div class="lib-storygrid" data-grid></div>
+            <div class="lib-empty" data-empty hidden>No stories match this search.</div>
+          </main>
+          <aside class="lib-inspector" aria-label="Selected story"><div class="lib-inspector-label">Selected story<i data-lucide="panel-right" aria-hidden="true"></i></div><div data-inspector></div></aside>
+        </div>
+        <div class="lib-statusbar"><span><i data-lucide="hard-drive" aria-hidden="true"></i>All changes saved locally</span><span data-status>8 stories · 1 flagged Broken</span></div>
+        <div class="lib-overlay" data-overlay hidden></div>
+      </div>
+    </section>
+    <section data-variant="Desktop workspace" aria-label="Desktop workspace concept" hidden>
+      <div class="lib-window lib-workspace" data-app="workspace">
+        <div class="lib-titlebar"><div class="lib-lights" aria-hidden="true"><span></span><span></span><span></span></div><span class="lib-appname">Librairii</span><span class="lib-divider"></span><span class="lib-titlecaption">Weekend shelf</span></div>
+        <div class="lib-toolbar"><label class="lib-search"><i data-lucide="search" aria-hidden="true"></i><input data-search placeholder="Search this shelf" aria-label="Search shelf"><span class="lib-key">⌘ F</span></label><button data-action="import"><i data-lucide="plus" aria-hidden="true"></i>Import</button><button data-action="history"><i data-lucide="history" aria-hidden="true"></i>History</button><button class="lib-primary" data-action="export"><i data-lucide="upload" aria-hidden="true"></i>Export shelf</button></div>
+        <div class="lib-split">
+          <nav class="lib-sidebar" aria-label="Workspace navigation">
+            <div class="lib-navgroup"><button class="lib-nav" data-scope="all" aria-pressed="false"><i data-lucide="library" aria-hidden="true"></i>All stories<span class="lib-count">8</span></button></div>
+            <div class="lib-navgroup"><div class="lib-sectionhead">Collections<button class="lib-quiet" data-action="collection" aria-label="Create Collection">+</button></div><button class="lib-nav" data-scope="bedtime" aria-pressed="false"><span class="lib-dot"></span>Bedtime<span class="lib-count">4</span></button><button class="lib-nav" data-scope="adventures" aria-pressed="false"><span class="lib-dot green"></span>Adventures<span class="lib-count">5</span></button></div>
+            <div class="lib-navgroup"><div class="lib-sectionhead">Shelves<button class="lib-quiet" data-action="shelf" aria-label="Create Shelf">+</button></div><button class="lib-nav" data-scope="weekend" aria-pressed="true"><i data-lucide="rows-3" aria-hidden="true"></i>Weekend<span class="lib-count">5</span><span class="lib-review-count" data-reviewbadge>3</span></button><button class="lib-nav" data-scope="travel" aria-pressed="false"><i data-lucide="rows-3" aria-hidden="true"></i>Road trips<span class="lib-count">3</span></button></div>
+            <div class="lib-bottomnav"><button class="lib-nav" data-action="tags"><i data-lucide="tags" aria-hidden="true"></i>Manage tags</button><button class="lib-nav" data-action="settings"><i data-lucide="settings-2" aria-hidden="true"></i>Settings</button><div class="lib-librarypath">Local library<br>~/Stories/Librairii</div></div>
+          </nav>
+          <main class="lib-main">
+            <div class="lib-heading"><div><h2 data-heading>Weekend</h2><div class="lib-subtitle" data-subtitle>5 approved stories · Curated by you</div></div><button class="lib-quiet" data-action="shelf" aria-label="Shelf actions"><i data-lucide="ellipsis" aria-hidden="true"></i></button></div>
+            <div class="lib-shelftabs" aria-label="Shelf workspace"><button data-tab="members" aria-pressed="true">Approved stories</button><button data-tab="sources" aria-pressed="false">Collection sources</button></div>
+            <div data-members><div class="lib-inline-summary"><i data-lucide="arrow-down-up" aria-hidden="true"></i>Your order<span style="margin-left:auto">5 members</span></div><div class="lib-list-head"><span>Story</span><span>Language</span><span>Export</span></div><div data-memberlist></div><div class="lib-shelf-footer"><button data-action="add"><i data-lucide="plus" aria-hidden="true"></i>Add stories</button><button class="lib-quiet" data-action="export">Preview export</button></div><div class="lib-notice">Broken and unavailable stories stay on this shelf. They are skipped when exporting.</div></div>
+            <div class="lib-sources" data-sources hidden><p>Matching any linked Collection can suggest updates. Your approved stories stay until you choose to remove them.</p><div class="lib-source-row"><span>Bedtime<br><small>Dynamic Collection</small></span><span>Linked</span></div><div class="lib-source-row"><span>Adventures<br><small>Dynamic Collection</small></span><span>Linked</span></div><button style="margin-top:15px" data-action="sources">Manage sources</button></div>
+          </main>
+          <aside class="lib-inspector" aria-label="Review proposed Shelf updates"><div class="lib-review-title"><div class="lib-inspector-label">From linked Collections<i data-lucide="git-compare-arrows" aria-hidden="true"></i></div><h3>Review updates</h3></div><p class="lib-review-summary">3 suggestions. Nothing changes until you choose and apply a decision.</p><div data-reviewitems style="display:contents"></div><div class="lib-review-footer"><div class="lib-review-total"><span>Approved changes</span><strong data-approved>0</strong></div><button class="lib-primary" data-apply disabled>Apply changes</button><div class="lib-review-footnote">“Not now” keeps your shelf unchanged.<br>Pending suggestions are never exported.</div></div></aside>
+        </div>
+        <div class="lib-statusbar"><span><i data-lucide="hard-drive" aria-hidden="true"></i>All changes saved locally</span><span data-status>5 members · 3 ready for export</span></div>
+        <div class="lib-overlay" data-overlay hidden></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  const root=document.getElementById('librairii-native-concepts');
+  const stories=[
+    {id:1,title:'The Secret Forest',short:'The secret forest',age:'3–5',language:'English',minutes:38,mood:'Adventures',type:'forest',bg:'#397269',sun:'#dfc978',land:'#1d4947',front:'#598572',description:'Follow a little fox beyond the familiar paths, into a forest full of unexpected friends. A gentle adventure about curiosity and finding your way home.'},
+    {id:2,title:'Milo and the Moon',short:'Milo & the moon',age:'3–5',language:'English',minutes:26,mood:'Bedtime',type:'moon',bg:'#344c79',sun:'#efd6a0',land:'#263555',front:'#63729b',description:'Milo has one small question for the moon. A quiet, star-filled journey for the last moments before sleep.'},
+    {id:3,title:'Under the Blue Sea',short:'Under the blue sea',age:'6–8',language:'French',minutes:42,mood:'Adventures',type:'ocean',bg:'#408b9a',sun:'#e6dc9e',land:'#1a596e',front:'#57a7aa',description:'An ocean adventure beneath the waves, with a curious explorer and a very unusual map.'},
+    {id:4,title:'Night Train North',short:'Night train north',age:'6–8',language:'English',minutes:35,mood:'Bedtime',type:'train',bg:'#425581',sun:'#ebc48a',land:'#263c5a',front:'#6a7998',broken:true,description:'A midnight train winds through mountains and sleeping towns. This archive is flagged Broken and will be skipped during export.'},
+    {id:5,title:'The Golden Acorn',short:'The golden acorn',age:'3–5',language:'English',minutes:31,mood:'Adventures',type:'forest',bg:'#a8774d',sun:'#f1d896',land:'#6b6242',front:'#a69c65',description:'A tiny acorn sets a whole woodland in motion. An autumn tale about sharing and small acts of kindness.'},
+    {id:6,title:'Cloud Collectors',short:'Cloud collectors',age:'3–5',language:'French',minutes:24,mood:'Bedtime',type:'cloud',bg:'#95859f',sun:'#efc9b1',land:'#6c667f',front:'#b5a4b8',description:'Two friends find shapes, stories and little wonders in the clouds floating above their village.'},
+    {id:7,title:'Beyond the Mountain',short:'Beyond the mountain',age:'6–8',language:'English',minutes:47,mood:'Adventures',type:'forest',bg:'#6b7f91',sun:'#efd69a',land:'#354e60',front:'#8b9c98',description:'One path, a brave little traveler and a mountain full of possibilities. A choose-your-own adventure for curious minds.'},
+    {id:8,title:'The Sleepy Lighthouse',short:'The sleepy lighthouse',age:'6–8',language:'French',minutes:29,mood:'Bedtime',type:'moon',bg:'#5c7b94',sun:'#f2dcb1',land:'#394e6b',front:'#829ead',description:'As the village goes to sleep, a lighthouse keeps a gentle watch over the sea. A calming story for bedtime.'}
+  ];
+  const unavailable={id:99,title:'The Little Explorer',age:'3–5',language:'English',missing:true};
+  const byId=id=>stories.find(s=>s.id===id)||unavailable;
+  const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const cover=s=>s.missing?'<div class="lib-unavailable-cover"><i data-lucide="file-question" aria-hidden="true"></i></div>':`<div class="lib-cover ${s.type}${s.broken?' is-broken':''}" style="--art-bg:${s.bg};--art-sun:${s.sun};--art-land:${s.land};--art-front:${s.front}"><span class="lib-spark"></span><span class="lib-treetop"></span><span class="lib-land"></span><span class="lib-covertext">${escape(s.short)}</span>${s.broken?'<span class="lib-brokenbadge">⚠ Broken</span>':''}</div>`;
+  const icons=()=>{if(globalThis.lucide)lucide.createIcons({attrs:{width:15,height:15}})};
+  const saved=window.openai?.widgetState?.privateContent||{};
+  const states=[];
+  const persist=()=>{if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{mockups:states.map(s=>({concept:s.kind,scope:s.scope,selectedStory:byId(s.selected).title,reviewDecisions:s.decisions}))},privateContent:{apps:states.map(s=>({kind:s.kind,scope:s.scope,selected:s.selected,layout:s.layout,decisions:s.decisions,members:s.members,suggestions:s.suggestions}))}}).catch(()=>{})};
+  root.querySelectorAll('[data-app]').forEach(app=>{
+    const kind=app.dataset.app;
+    const prev=saved.apps?.find(s=>s.kind===kind)||{};
+    const state={kind,scope:prev.scope||(kind==='workspace'?'weekend':'all'),selected:prev.selected||1,layout:prev.layout||'grid',query:'',age:'all',language:'all',members:prev.members||[1,2,4,5,99],decisions:prev.decisions||{},suggestions:prev.suggestions||[3,6,7]};states.push(state);
+    const status=message=>{app.querySelector('[data-status]').textContent=message};
+    const scopeStories=()=>{if(state.scope==='weekend')return state.members.map(byId);if(state.scope==='travel')return [1,3,7].map(byId);if(state.scope==='favorites')return [1,2,5].map(byId);if(state.scope==='bedtime')return stories.filter(s=>s.mood==='Bedtime');if(state.scope==='adventures')return stories.filter(s=>s.mood==='Adventures');return stories};
+    const filtered=()=>scopeStories().filter(s=>s.title.toLowerCase().includes(state.query.toLowerCase())&&(state.age==='all'||s.age===state.age)&&(state.language==='all'||s.language===state.language));
+    const titles={all:'All stories',bedtime:'Bedtime',adventures:'Adventures',favorites:'Favorites',weekend:'Weekend',travel:'Road trips'};
+    function renderInspector(){
+      const target=app.querySelector('[data-inspector]');if(!target)return;
+      const s=byId(state.selected);
+      target.innerHTML=`<div class="lib-inspector-inner"><div class="lib-inspector-cover">${cover(s)}</div><div><h3>${escape(s.title)}</h3><div class="lib-subtitle">${s.missing?'Unavailable archive':'Local archive · Lunii metadata'}</div><p class="lib-description">${escape(s.description||'This story remains an approved member of the shelf. Reimport its archive to make it available again.')}</p><div class="lib-facts"><span><strong>${escape(s.age)}</strong>years</span><span><strong>${s.minutes||'—'} min</strong>duration</span><span><strong>${s.language==='French'?'FR':'EN'}</strong>language</span></div><div class="lib-chiprow"><span class="lib-chip">${escape(s.age)} years</span>${s.mood?`<span class="lib-chip blue">${s.mood}</span>`:''}</div><label class="lib-flag">Broken<input type="checkbox" data-flag ${s.broken?'checked':''} ${s.missing?'disabled':''} aria-label="Flag ${escape(s.title)} as Broken"></label><div class="lib-inspector-actions"><button data-action="add"><i data-lucide="plus" aria-hidden="true"></i>Add to Shelf…</button><button data-action="details">Open details</button></div><details class="lib-technical"><summary>Archive information</summary><p>${escape(s.title.replaceAll(' ','_'))}.zip<br>Verified · SHA-256 available</p></details></div></div>`;
+      target.querySelector('[data-flag]')?.addEventListener('change',e=>{s.broken=e.target.checked;render();status(`${s.title}: ${s.broken?'flagged Broken; skipped by exports':'flag cleared'}`);persist()});
+    }
+    function renderGrid(){const grid=app.querySelector('[data-grid]');if(!grid)return;const list=filtered();grid.classList.toggle('as-list',state.layout==='list');grid.innerHTML=list.map(s=>`<div class="lib-story"><button class="lib-storybutton" data-story="${s.id}" aria-label="Select ${escape(s.title)}${s.broken?', Broken':''}" aria-pressed="${state.selected===s.id}">${cover(s)}</button><div class="lib-storyname">${escape(s.title)}</div><div class="lib-storymeta">${escape(s.age)} years · ${s.language==='French'?'FR':'EN'}${s.missing?' · Unavailable':''}</div></div>`).join('');app.querySelector('[data-empty]').hidden=!!list.length;}
+    function renderMembers(){const list=app.querySelector('[data-memberlist]');if(!list)return;list.innerHTML=filtered().map(s=>`<button class="lib-member" data-story="${s.id}" aria-pressed="${state.selected===s.id}" aria-label="${escape(s.title)}, ${s.missing?'unavailable':s.broken?'Broken, skipped on export':'ready for export'}">${cover(s)}<span><span class="lib-member-title">${escape(s.title)}</span><span class="lib-member-origin">${s.missing?'Unavailable · kept on shelf':s.id===5?'Added manually':s.mood==='Bedtime'?'Added from Bedtime':'Added from Adventures'}</span></span><span class="lib-cell">${s.language==='French'?'French':'English'}</span><span class="lib-cell ${s.missing||s.broken?'warn':'ok'}">${s.missing?'Missing':s.broken?'Broken':'Ready'}</span></button>`).join('');const ready=scopeStories().filter(s=>!s.broken&&!s.missing).length;app.querySelector('.lib-inline-summary span').textContent=`${scopeStories().length} ${state.scope==='weekend'?'members':'stories'}`;status(`${scopeStories().length} ${state.scope==='weekend'?'members':'stories'} · ${ready} ready for export`);}
+    function renderReview(){const holder=app.querySelector('[data-reviewitems]');if(!holder)return;holder.innerHTML=state.suggestions.map(id=>{const s=byId(id);const choice=state.decisions[id]||'later';return `<div class="lib-review-item"><div class="lib-review-item-name">${escape(s.title)}</div><small>Suggested addition · ${s.mood==='Bedtime'?'Bedtime':'Adventures'}</small><div class="lib-decisions" aria-label="Decision for ${escape(s.title)}"><button data-decision="later" data-id="${id}" aria-pressed="${choice==='later'}">Not now</button><button data-decision="add" data-id="${id}" aria-pressed="${choice==='add'}">Add</button><button data-decision="exclude" data-id="${id}" aria-pressed="${choice==='exclude'}">Exclude</button></div></div>`}).join('');const count=state.suggestions.filter(id=>state.decisions[id]&&state.decisions[id]!=='later').length;app.querySelector('[data-approved]').textContent=count;app.querySelector('[data-apply]').disabled=!count;app.querySelector('[data-apply]').textContent=count?`Apply ${count} ${count===1?'change':'changes'}`:'Apply changes';app.querySelector('[data-reviewbadge]').textContent=state.suggestions.length;app.querySelector('.lib-review-summary').textContent=state.suggestions.length?`${state.suggestions.length} suggestions. Nothing changes until you choose and apply a decision.`:'All reviewed. Your shelf contains only the stories you approved.';}
+    function render(){const list=filtered();app.querySelector('[data-heading]').textContent=titles[state.scope]||'All stories';app.querySelector('[data-subtitle]').textContent=state.scope==='weekend'?`${state.members.length} approved stories · Curated by you`:`${list.length} ${list.length===1?'story':'stories'}${state.query?' matching your search':' in this view'}`;app.querySelectorAll('[data-scope]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.scope===state.scope));app.querySelectorAll('[data-layout]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.layout===state.layout));app.querySelectorAll('[data-scope="weekend"] .lib-count').forEach(c=>c.textContent=state.members.length);if(kind==='workspace')app.querySelector('.lib-toolbar [data-action="export"]').innerHTML='<i data-lucide="upload" aria-hidden="true"></i>'+ (state.scope==='weekend'?'Export shelf':'Export view');renderGrid();renderInspector();renderMembers();renderReview();icons();}
+    const overlay=app.querySelector('[data-overlay]');let returnFocus=null;
+    function closeModal(){overlay.hidden=true;overlay.replaceChildren();returnFocus?.focus();}
+    function modal(title,body,footer=''){returnFocus=document.activeElement;overlay.innerHTML=`<section class="lib-modal" role="dialog" aria-modal="true" aria-label="${escape(title)}"><div class="lib-modal-header"><h3>${escape(title)}</h3><button data-close aria-label="Close dialog"><i data-lucide="x" aria-hidden="true"></i></button></div>${body}<div class="lib-modal-footer">${footer||'<button data-close>Done</button>'}</div></section>`;overlay.hidden=false;icons();overlay.querySelector('[data-close]')?.focus();}
+    function openExport(){const list=kind==='workspace'&&state.scope==='weekend'?scopeStories():filtered();const ready=list.filter(s=>!s.broken&&!s.missing);const skipped=list.filter(s=>s.broken||s.missing);modal(state.scope==='weekend'?'Export Weekend shelf':'Export current view',`<p>${ready.length} ${ready.length===1?'archive':'archives'} ready. Original names and bytes are preserved.</p>${list.map(s=>`<div class="lib-export-row"><span>${escape(s.title)}</span><span>${s.missing?'Skipped · unavailable':s.broken?'Skipped · Broken':'Ready'}</span></div>`).join('')}${skipped.length?'<p>Skipped stories stay in your library and on this shelf.</p>':''}`,`<button data-close>Cancel</button><button class="lib-primary" data-demoexport ${ready.length?'':'disabled'}>Choose folder…</button>`);}
+    app.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;
+      if(b.hasAttribute('data-close')){closeModal();return;}
+      if(b.hasAttribute('data-demoexport')){modal('Export preview', '<p>In the desktop app, this opens your operating system’s folder picker. The selected scope and skipped-story report stay visible until you confirm.</p>');return;}
+      if(b.dataset.scope){state.scope=b.dataset.scope;state.query='';app.querySelector('[data-search]').value='';render();persist();return;}
+      if(b.dataset.layout){state.layout=b.dataset.layout;render();persist();return;}
+      if(b.dataset.story){state.selected=Number(b.dataset.story);render();if(kind==='workspace'){const s=byId(state.selected);modal(s.title,`<p>${escape(s.description||'This story is unavailable, but remains an approved shelf member. Reimport the same UUID to reconnect it.')}</p><div class="lib-chiprow"><span class="lib-chip">${escape(s.age)} years</span><span class="lib-chip blue">${escape(s.language)}</span></div><p>${s.broken?'Flagged Broken · skipped by all exports':s.missing?'Unavailable · skipped by all exports':'Available in your local library'}</p>`)}persist();return;}
+      if(b.dataset.decision){state.decisions[b.dataset.id]=b.dataset.decision;renderReview();icons();persist();return;}
+      if(b.hasAttribute('data-apply')){const acted=state.suggestions.filter(id=>state.decisions[id]&&state.decisions[id]!=='later');acted.forEach(id=>{if(state.decisions[id]==='add'&&!state.members.includes(id))state.members.push(id)});state.suggestions=state.suggestions.filter(id=>!acted.includes(id));render();status(`${acted.length} explicit ${acted.length===1?'decision':'decisions'} applied · Shelf updated`);persist();return;}
+      if(b.dataset.tab){app.querySelectorAll('[data-tab]').forEach(t=>t.setAttribute('aria-pressed',t===b));app.querySelector('[data-members]').hidden=b.dataset.tab!=='members';app.querySelector('[data-sources]').hidden=b.dataset.tab!=='sources';return;}
+      const action=b.dataset.action;if(!action)return;
+      if(action==='export'){openExport();return;}
+      if(action==='filters'){const p=app.querySelector('[data-filterpanel]');p.hidden=!p.hidden;b.setAttribute('aria-expanded',!p.hidden);return;}
+      if(action==='clear'){state.age='all';state.language='all';state.query='';app.querySelector('[data-language]').value='all';app.querySelector('[data-search]').value='';app.querySelector('[data-age]').value='all';render();return;}
+      if(action==='sync'){status('Demo: metadata is already up to date · No network request sent');return;}
+      if(action==='details'){const s=byId(state.selected);modal(s.title,`<p>${escape(s.description||'This story is not available on disk.')}</p><div class="lib-chiprow"><span class="lib-chip">${escape(s.age)} years</span><span class="lib-chip blue">${escape(s.mood||'Approved member')}</span></div><button data-action="tags">Edit tags</button><details class="lib-technical"><summary>Technical details</summary><p>UUID · Archive filename · Verification · SHA-256</p></details>`);return;}
+      if(action==='settings'){modal('Settings','<div class="lib-export-row"><span>Interface language</span><select aria-label="Interface language"><option>English</option><option>Français</option></select></div><div class="lib-export-row"><span>Library location</span><span>~/Stories/Librairii</span></div><p>Your library, tags, Collections and Shelves stay together when you move this folder.</p><button data-action="move">Change location…</button>');return;}
+      if(action==='history'){modal('Operation history','<div class="lib-export-row"><span>Import · 8 stories</span><span>Completed today</span></div><div class="lib-export-row"><span>Sync with Lunii</span><span>Completed today</span></div><p>Dismissed notices remain available here, with their per-story results.</p>');return;}
+      if(action==='tags'){modal('Manage tags','<div class="lib-export-row"><span>Age</span><span>Derived · 3–5 / 6–8</span></div><div class="lib-export-row"><span>Mood</span><span>Bedtime / Adventures</span></div><div class="lib-export-row"><span>Favorite</span><span>Boolean</span></div><p>Tag names, choices and colors remain editable. Broken is a separate story flag.</p>');return;}
+      if(action==='add'){modal('Add to Shelf…','<p>Add the selected story to an existing Shelf. This explicitly approves membership.</p><div class="lib-export-row"><span>Weekend</span><span>5 approved stories</span></div><div class="lib-export-row"><span>Road trips</span><span>3 approved stories</span></div>');return;}
+      if(action==='import'){modal('Import stories','<p>Choose local archives with the native file picker. Librairii inspects their contents and makes a managed copy, keeping your originals untouched.</p><p>.plain.pk · .v1.pk · .v2.pk · .pk · .zip · .7z</p>');return;}
+      if(action==='collection'){modal('New Collection','<p>Save the current search and filters as dynamic criteria. Matches update as your library changes.</p><label>Name <input aria-label="Collection name" placeholder="Collection name" style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--lib-line);border-radius:5px;background:var(--lib-canvas)"></label>');return;}
+      if(action==='shelf'){modal('Shelf actions','<p>A Shelf contains stories you explicitly approve. Rename, duplicate, reorder or create a new Shelf, with an initial membership preview.</p>');return;}
+      if(action==='sources'){modal('Collection sources','<p>Bedtime and Adventures are linked. Matching any source can propose updates; linking a Collection never silently adds or removes approved stories.</p>');return;}
+      if(action==='move'){modal('Move library','<p>The desktop app previews the complete move, copies and verifies your library, then switches location. Your original library remains authoritative until the move is committed.</p>');}
+    });
+    app.querySelector('[data-search]').addEventListener('input',e=>{state.query=e.target.value;renderGrid();renderMembers();const list=filtered();app.querySelector('[data-subtitle]').textContent=`${list.length} matching ${list.length===1?'story':'stories'}`;icons()});
+    app.querySelector('[data-age]')?.addEventListener('change',e=>{state.age=e.target.value;render()});app.querySelector('[data-language]')?.addEventListener('change',e=>{state.language=e.target.value;render()});
+    overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});
+    app.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden){closeModal();e.preventDefault()}if(e.key==='Tab'&&!overlay.hidden){const focusables=[...overlay.querySelectorAll('button:not(:disabled),input,select,summary')];if(!focusables.length)return;const first=focusables[0],last=focusables[focusables.length-1];if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault()}else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault()}}});
+    render();
+  });
+  const design={covers:145,sidebar:174,inspector:true};
+  if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{root.querySelectorAll('[data-app="shelves"] .lib-cover').forEach(c=>c.style.height=`${design.covers}px`);root.querySelector('[data-app="shelves"] .lib-split').style.gridTemplateColumns=`${design.sidebar}px minmax(0,1fr) ${design.inspector?'220px':'0px'}`;root.querySelector('[data-app="shelves"] .lib-inspector').hidden=!design.inspector;}});tweak.addSlider(design,'covers',{label:'Cover height',min:110,max:180,step:5,unit:'px'});tweak.addSlider(design,'sidebar',{label:'Sidebar width',min:155,max:210,step:5,unit:'px'});tweak.addToggle(design,'inspector',{label:'Story inspector'});}
+})();
+</script>

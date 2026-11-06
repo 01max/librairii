@@ -1,0 +1,2 @@
+AppKit(AppKitWindowHandle { ns_view: 0x11f224680 })
+AppKit(AppKitDisplayHandle)

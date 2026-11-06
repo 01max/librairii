@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "oracle_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "status": "preserved Go contracts; no Rust pass",
+  "archive": {
+    "path_bytes": 512,
+    "path_depth": 16,
+    "entries": 10000,
+    "expanded_bytes": 2147483648,
+    "aggregate_compression_ratio": 200,
+    "metadata_bytes": 1048576,
+    "artwork_bytes": 10485760,
+    "source": "internal/inspection/limits.go",
+    "boundary_evidence": "corpus/limits/archive-headers.json; corpus/limits/bounded-reads.json",
+    "qualification": "header accounting and bounded requested-entry reads; ZIP full payload CRC, 7z bounded selected reads without equivalent full pass; no decoded-pixel allocation bound claimed"
+  },
+  "query": {
+    "default_page": 24,
+    "max_page": 100,
+    "name_runes": 200,
+    "filter_groups": 50,
+    "values_per_filter": 100,
+    "anyof_nodes": 50,
+    "saved_payload_bytes": 262144,
+    "saved_version": 5,
+    "url_version": 3,
+    "collection_name_runes": 80,
+    "shelf_name_runes": 80,
+    "source": [
+      "internal/library/query.go",
+      "internal/library/story_query.go",
+      "internal/library/query_codec.go",
+      "internal/collectionquery/references.go",
+      "internal/collections/service.go",
+      "internal/shelves/service.go"
+    ],
+    "boundary_evidence": "corpus/limits/queries.json; corpus/saved-queries.json; corpus/url-queries.json"
+  },
+  "operations": {
+    "workers_min": 1,
+    "workers_max": 8,
+    "production_workers": 2,
+    "queue_capacity": "2 * workers",
+    "import_picker_max": 1000,
+    "export_scope_max": "not capped by import picker limit",
+    "broken_bulk_max": 1000,
+    "prepared_exports_max": 8,
+    "persistence_attempts": 3,
+    "persistence_retry_ms": 10,
+    "recovery_retry_ms": 1000,
+    "export_progress_step_bytes": 262144,
+    "one_active_metadata_sync": true,
+    "shutdown": "stop intake, safe cancel/drain and join; existing Go wait has no timeout; no deadline permits abandonment of durable work",
+    "source": [
+      "internal/operations/manager.go",
+      "main.go",
+      "internal/library/broken_flags.go",
+      "internal/app/import_runtime.go"
+    ]
+  },
+  "review": {
+    "ticket_lifetime_seconds": 900,
+    "max_tickets": 64,
+    "decision_rows_per_page": 25,
+    "linked_deletion_shelves_per_page": 1,
+    "initial_decision": "Not now; no implicit approval",
+    "source": [
+      "internal/shelves/review_tokens.go",
+      "frontend/src/ShelfReview.tsx",
+      "frontend/src/ShelfSources.tsx"
+    ]
+  },
+  "database": {
+    "busy_timeout_ms": 5000,
+    "read_connections_max": 4,
+    "writer_connections": 1,
+    "foreign_keys": true,
+    "journal_mode": "WAL",
+    "source": "internal/database/database.go"
+  },
+  "history_and_diagnostics": {
+    "history_page": 20,
+    "log_files": 5,
+    "log_bytes_each": 262144,
+    "source": [
+      "internal/operations/history.go",
+      "internal/diagnostics/logger.go"
+    ]
+  },
+  "http": {
+    "request_seconds": 30,
+    "dial_seconds": 10,
+    "tls_handshake_seconds": 10,
+    "response_header_seconds": 15,
+    "idle_seconds": 30,
+    "guest_token_bytes": 65536,
+    "catalog_bytes": 33554432,
+    "artwork_bytes": 10485760,
+    "redirects": "rejected",
+    "scope": "explicit public metadata refresh and lazy registered official artwork only; no production endpoint contacted in fixture generation",
+    "source": [
+      "internal/lunii/client.go",
+      "internal/artwork/catalog_cache.go"
+    ]
+  },
+  "performance": {
+    "storage_stories": 5000,
+    "ui_stories": 1000,
+    "query_samples": 20,
+    "ui_samples": 5,
+    "warmups": 1,
+    "artwork": {
+      "variants": 24,
+      "width": 320,
+      "height": 400,
+      "work": "load and fully decode all24 PNGs"
+    },
+    "p95_ms": {
+      "collectionQuery": 100,
+      "substringSearch": 120,
+      "combinedFilters": 150,
+      "collectionCounts": 250,
+      "deepPagination": 120,
+      "artworkLoad": 50,
+      "uiExpansion": 3000,
+      "inputDispatch": 100
+    },
+    "shelf_preview_and_apply_ms": 5000,
+    "shelf_distribution": {
+      "stories": 5000,
+      "broken": 1000,
+      "sources": 2,
+      "overlap": "all5000 plus moon2500",
+      "preview_samples": 4,
+      "approved_additions": 50,
+      "remaining_additions": 4950
+    },
+    "ui_review_candidates": 300,
+    "scheduler_diagnostic_ms": {
+      "frameGap": 50,
+      "timerDelay": 50
+    },
+    "source": [
+      "docs/performance/large-library.md",
+      "internal/performancefixture/budgets.go",
+      "internal/performancefixture/fixture.go",
+      "internal/shelves/performance_test.go",
+      "frontend/scripts/frontend-performance.mjs"
+    ],
+    "fixtures": [
+      "corpus/performance/stories.jsonl",
+      "corpus/performance/distribution.json",
+      "corpus/performance/review5000.json"
+    ],
+    "new_native_budgets": "startup/idleCPU/RSS/package-size and renderer-specific ceilings await measured section2 spike; do not invent values"
+  },
+  "intentional_hardening": "No compatibility exception approved here. Stronger 7z actual-read/image/Windows validation must retain prior inputs/outcomes and undergo explicit review."
+}

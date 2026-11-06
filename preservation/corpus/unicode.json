@@ -1,0 +1,102 @@
+[
+  {
+    "input": "  ÉTÉ\t100%_Magique  ",
+    "normalized": "ete 100%_magique"
+  },
+  {
+    "input": "ΟΣ",
+    "normalized": "οσ"
+  },
+  {
+    "input": "ος",
+    "normalized": "οσ"
+  },
+  {
+    "input": "Straße",
+    "normalized": "strasse"
+  },
+  {
+    "input": "STRASSE",
+    "normalized": "strasse"
+  },
+  {
+    "input": "İstanbul",
+    "normalized": "istanbul"
+  },
+  {
+    "input": "été",
+    "normalized": "ete"
+  },
+  {
+    "input": "Æsir ŒUVRE",
+    "normalized": "æsir œuvre"
+  },
+  {
+    "input": "ﬃ ① ＡＢＣ",
+    "normalized": "ffi 1 abc"
+  },
+  {
+    "input": "a   b",
+    "normalized": "a b"
+  },
+  {
+    "input": "́",
+    "normalized": ""
+  },
+  {
+    "input": "  ",
+    "normalized": ""
+  },
+  {
+    "input": "💫 Étoile",
+    "normalized": "💫 etoile"
+  },
+  {
+    "input": "中文故事",
+    "normalized": "中文故事"
+  },
+  {
+    "input": "ひらがな カタカナ",
+    "normalized": "ひらかな カタカナ"
+  },
+  {
+    "input": "한글",
+    "normalized": "한글"
+  },
+  {
+    "input": "العَرَبِيَّة",
+    "normalized": "العربية"
+  },
+  {
+    "input": "100%_\\literal",
+    "normalized": "100%_\\literal"
+  },
+  {
+    "input": "Kelvin Ångström",
+    "normalized": "kelvin angstrom"
+  },
+  {
+    "input": "I ı İ i",
+    "normalized": "i ı i i"
+  },
+  {
+    "input": "Σσς",
+    "normalized": "σσσ"
+  },
+  {
+    "input": "Cafe͏",
+    "normalized": "cafe"
+  },
+  {
+    "input": "a‍b",
+    "normalized": "a‍b"
+  },
+  {
+    "input": "Å Å",
+    "normalized": "a a"
+  },
+  {
+    "input": "\tMoon\r\n Forest\t",
+    "normalized": "moon forest"
+  }
+]

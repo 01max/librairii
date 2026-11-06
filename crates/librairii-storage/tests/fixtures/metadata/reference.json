@@ -1,0 +1,1289 @@
+{
+  "cases": [
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "baseline",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "requested-fr-FR",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "requested-en_US",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "requested-iw_IL",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "requested-und",
+      "valid": false
+    },
+    {
+      "name": "requested-not a locale",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "requested-EN-gb",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "requested-en-x-private",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-uuid-8",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "record-uuid-9",
+      "valid": false
+    },
+    {
+      "name": "record-uuid-10",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-authors-11",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "One, Two",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-authors-12",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "First, Last",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-authors-13",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "Named",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "record-authors-14",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-publisher-15",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-publisher-16",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Publisher",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-updated_at-17",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": null,
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-updated_at-18",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00.123456789Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-updated_at-19",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T01:00:00.5Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-updated_at-20",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-19T11:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "record-updated_at-21",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-updated_at-22",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "-0001-12-31T23:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "localized-title-23",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "ÉTÉ",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "localized-title-24",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "localized-description-25",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "localized-title-26",
+      "valid": false
+    },
+    {
+      "artworks": [],
+      "name": "localized-image-27",
+      "stories": [
+        {
+          "artworkId": "",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7d22962712d14feb701c8f5d615faad0da727c032c54c780a933264a41491595",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/cover.png"
+        }
+      ],
+      "name": "localized-image-28",
+      "stories": [
+        {
+          "artworkId": "7d22962712d14feb701c8f5d615faad0da727c032c54c780a933264a41491595",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "localized-minimum_age-29",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "localized-maximum_age-30",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": null,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "localized-minimum_age-31",
+      "valid": false
+    },
+    {
+      "name": "localized-duration_seconds-32",
+      "valid": false
+    },
+    {
+      "name": "localized-duration_seconds-33",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "localized-duration_seconds-34",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 9223372036854775807,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "localized-duration_seconds-35",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "e48534352a34eba2510baf5768c1a724823f5b1a941af9ff71c4cefdbc265bc5",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/"
+        }
+      ],
+      "name": "image-path-36",
+      "stories": [
+        {
+          "artworkId": "e48534352a34eba2510baf5768c1a724823f5b1a941af9ff71c4cefdbc265bc5",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "11c56a1c98985296bc11b5e2cad9c3ca716057c2d43a1ccb7d77c9004fcd3cf2",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/a b.png"
+        }
+      ],
+      "name": "image-path-37",
+      "stories": [
+        {
+          "artworkId": "11c56a1c98985296bc11b5e2cad9c3ca716057c2d43a1ccb7d77c9004fcd3cf2",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "a41fe0b16a9e041537ec6876e423c9a0055ebb4e4cf77bb2718f6b88deb318b2",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/été.png"
+        }
+      ],
+      "name": "image-path-38",
+      "stories": [
+        {
+          "artworkId": "a41fe0b16a9e041537ec6876e423c9a0055ebb4e4cf77bb2718f6b88deb318b2",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "a0d02b69dcdd0026eef3cc46f7bcaee9e1058f78cc696743b8d4464ecdb4f020",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/.png"
+        }
+      ],
+      "name": "image-path-39",
+      "stories": [
+        {
+          "artworkId": "a0d02b69dcdd0026eef3cc46f7bcaee9e1058f78cc696743b8d4464ecdb4f020",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "image-path-40",
+      "valid": false
+    },
+    {
+      "name": "image-path-41",
+      "valid": false
+    },
+    {
+      "name": "image-path-42",
+      "valid": false
+    },
+    {
+      "name": "image-path-43",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "0b33227b1e148367973191b792589a08d1812706d9a622c86c997e0b0a182c27",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.png"
+        }
+      ],
+      "name": "image-path-44",
+      "stories": [
+        {
+          "artworkId": "0b33227b1e148367973191b792589a08d1812706d9a622c86c997e0b0a182c27",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [],
+      "name": "fallback-en-GB",
+      "stories": [
+        {
+          "artworkId": "",
+          "author": "A. Example",
+          "description": "",
+          "duration": null,
+          "language": "en-US",
+          "maximumAge": null,
+          "minimumAge": null,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "English",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [],
+      "name": "fallback-fr-FR",
+      "stories": [
+        {
+          "artworkId": "",
+          "author": "A. Example",
+          "description": "",
+          "duration": null,
+          "language": "fr-FR",
+          "maximumAge": null,
+          "minimumAge": null,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "Français",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [],
+      "name": "fallback-it-IT",
+      "stories": [
+        {
+          "artworkId": "",
+          "author": "A. Example",
+          "description": "",
+          "duration": null,
+          "language": "en-US",
+          "maximumAge": null,
+          "minimumAge": null,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "English",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "name": "ambiguous-available",
+      "valid": false
+    },
+    {
+      "name": "availability-not-bool",
+      "valid": false
+    },
+    {
+      "name": "no-available",
+      "valid": false
+    },
+    {
+      "name": "duplicate-uuid",
+      "valid": false
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "unavailable-duplicate",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-case",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "envelope-case",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "publisher-fallback",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fallback",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "unused-publisher-invalid",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "record-age-alias",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 8,
+          "minimumAge": 6,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "invalid-utf8-repair",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. �",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "unpaired-surrogate-repair",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. �",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "deep-unknown-json",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "duplicate-object-key",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "ambiguous-struct-case",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    },
+    {
+      "artworks": [
+        {
+          "ID": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "SourceURL": "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+        }
+      ],
+      "name": "unknown-extreme-number",
+      "stories": [
+        {
+          "artworkId": "7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9",
+          "author": "A. Example",
+          "description": "A sanitized catalog fixture.",
+          "duration": 3240,
+          "language": "en-GB",
+          "maximumAge": 5,
+          "minimumAge": 3,
+          "provenance": "lunii_catalog",
+          "publisher": "Fixture Press",
+          "sourceId": "fixture-pack-001",
+          "title": "The Clockwork Mountain",
+          "updatedAt": "2026-07-20T12:00:00Z",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "valid": true
+    }
+  ],
+  "paths": [
+    {
+      "path": "/fixture/cover.png",
+      "url": "https://storage.googleapis.com/lunii-data-prod/fixture/cover.png",
+      "valid": true
+    },
+    {
+      "path": "/",
+      "url": "https://storage.googleapis.com/lunii-data-prod/",
+      "valid": true
+    },
+    {
+      "path": "/fixture/a b.png",
+      "url": "https://storage.googleapis.com/lunii-data-prod/fixture/a b.png",
+      "valid": true
+    },
+    {
+      "path": "/fixture/été.png",
+      "url": "https://storage.googleapis.com/lunii-data-prod/fixture/été.png",
+      "valid": true
+    },
+    {
+      "path": "/fixture/../escape",
+      "url": "",
+      "valid": false
+    },
+    {
+      "path": "/fixture/%2e%2e/escape",
+      "url": "",
+      "valid": false
+    },
+    {
+      "path": "//outside/cover.png",
+      "url": "",
+      "valid": false
+    }
+  ]
+}

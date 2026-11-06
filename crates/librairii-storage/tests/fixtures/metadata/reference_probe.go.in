@@ -1,0 +1,8 @@
+package metadata
+import("encoding/json";"encoding/hex";"os";"testing";"time";"github.com/01max/librairii/internal/lunii")
+func TestTask11FrozenReference(t *testing.T){
+ var inputs []struct{Name string;Locale string;Payload string};input,e:=os.ReadFile(os.Getenv("TASK11_CASES"));if e!=nil{t.Fatal(e)};if e=json.Unmarshal(input,&inputs);e!=nil{t.Fatal(e)}
+ cases:=[]any{};for _,c:=range inputs{raw,e:=hex.DecodeString(c.Payload);if e!=nil{t.Fatal(e)};catalog,e:=NormalizeCatalogSnapshot(raw,c.Locale);out:=map[string]any{"name":c.Name,"valid":e==nil};if e==nil{stories:=[]any{};for _,r:=range catalog.Stories{var updated any;if r.SourceUpdatedAt!=nil{updated=r.SourceUpdatedAt.Format(time.RFC3339Nano)};stories=append(stories,map[string]any{"uuid":r.StoryUUID,"title":r.Title,"description":r.Description,"author":r.Author,"publisher":r.Publisher,"language":r.Language,"duration":r.DurationSeconds,"minimumAge":r.MinimumAge,"maximumAge":r.MaximumAge,"artworkId":r.ArtworkID,"provenance":r.Provenance,"sourceId":r.SourceRecordID,"updatedAt":updated})};out["stories"]=stories;out["artworks"]=catalog.Artworks};cases=append(cases,out)}
+ paths:=[]any{};for _,path:=range []string{"/fixture/cover.png","/","/fixture/a b.png","/fixture/été.png","/fixture/../escape","/fixture/%2e%2e/escape","//outside/cover.png"}{url,e:=lunii.ResolveArtworkURL(path);paths=append(paths,map[string]any{"path":path,"url":url,"valid":e==nil})}
+ data,e:=json.MarshalIndent(map[string]any{"cases":cases,"paths":paths},"","  ");if e!=nil{t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK11_CAPTURE"),append(data,'\n'),0600);e!=nil{t.Fatal(e)}
+}

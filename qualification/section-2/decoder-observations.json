@@ -1,0 +1,2887 @@
+{
+  "scope": "qualification-only LinuxARM resource containment; not desktop/platform/product qualification",
+  "image": "rust@sha256:e12566d5abc17a0da741628782cdb504b68b8961f5bfcf677936bf3e8b32de29",
+  "binarySha256": "1cfa402e5aa50d0aac759c4b6489bd4a1755829d5278fa0742c2c76617fe719b",
+  "limits": {
+    "cgroupMemoryBytes": 134217728,
+    "swapBytes": 0,
+    "addressSpaceBytes": 268435456,
+    "cpuSeconds": 2,
+    "wallSeconds": 5
+  },
+  "controls": [
+    {
+      "mode": "smoke",
+      "file": null,
+      "exitCode": 0,
+      "signalFromExitStatus": null,
+      "oomKilled": false,
+      "wallWatchdog": false,
+      "memoryEventsAfter": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memoryEventsCapturedBeforeWatchdogKill": false,
+      "cgroupMemoryPeakAfter": 4870144,
+      "callbackCount": 0,
+      "hostElapsedSeconds": 0.1083,
+      "records": [
+        {
+          "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+          "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memoryMax": "134217728\n",
+          "stage": "boot",
+          "swapMax": "0\n"
+        },
+        {
+          "outcome": "smoke_ok"
+        }
+      ],
+      "stderr": "",
+      "dockerStateError": ""
+    },
+    {
+      "mode": "control-address",
+      "file": null,
+      "exitCode": 134,
+      "signalFromExitStatus": 6,
+      "oomKilled": false,
+      "wallWatchdog": false,
+      "memoryEventsAfter": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memoryEventsCapturedBeforeWatchdogKill": false,
+      "cgroupMemoryPeakAfter": 5685248,
+      "callbackCount": 0,
+      "hostElapsedSeconds": 0.1035,
+      "records": [
+        {
+          "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+          "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memoryMax": "134217728\n",
+          "stage": "boot",
+          "swapMax": "0\n"
+        }
+      ],
+      "stderr": "memory allocation of 536870912 bytes failed\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nqualification-launcher: line 1:     7 Aborted                 /probe \"$@\"\n",
+      "dockerStateError": ""
+    },
+    {
+      "mode": "control-memory",
+      "file": null,
+      "exitCode": 137,
+      "signalFromExitStatus": 9,
+      "oomKilled": true,
+      "wallWatchdog": false,
+      "memoryEventsAfter": {
+        "low": 0,
+        "high": 0,
+        "max": 44,
+        "oom": 1,
+        "oom_kill": 1,
+        "oom_group_kill": 0
+      },
+      "memoryEventsCapturedBeforeWatchdogKill": false,
+      "cgroupMemoryPeakAfter": 134217728,
+      "callbackCount": 0,
+      "hostElapsedSeconds": 0.1642,
+      "records": [
+        {
+          "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+          "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memoryMax": "134217728\n",
+          "stage": "boot",
+          "swapMax": "0\n"
+        }
+      ],
+      "stderr": "qualification-launcher: line 1:     7 Killed                  /probe \"$@\"\n",
+      "dockerStateError": ""
+    },
+    {
+      "mode": "control-wall",
+      "file": null,
+      "exitCode": 137,
+      "signalFromExitStatus": 9,
+      "oomKilled": false,
+      "wallWatchdog": true,
+      "memoryEventsAfter": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memoryEventsCapturedBeforeWatchdogKill": true,
+      "cgroupMemoryPeakAfter": null,
+      "callbackCount": 0,
+      "hostElapsedSeconds": 2.1788,
+      "records": [
+        {
+          "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+          "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memoryMax": "134217728\n",
+          "stage": "boot",
+          "swapMax": "0\n"
+        }
+      ],
+      "stderr": "host wall watchdog killed child",
+      "dockerStateError": ""
+    },
+    {
+      "mode": "control-cpu",
+      "file": null,
+      "exitCode": 137,
+      "signalFromExitStatus": 9,
+      "oomKilled": false,
+      "wallWatchdog": false,
+      "memoryEventsAfter": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memoryEventsCapturedBeforeWatchdogKill": false,
+      "cgroupMemoryPeakAfter": 4694016,
+      "callbackCount": 0,
+      "hostElapsedSeconds": 2.113,
+      "records": [
+        {
+          "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+          "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memoryMax": "134217728\n",
+          "stage": "boot",
+          "swapMax": "0\n"
+        }
+      ],
+      "stderr": "qualification-launcher: line 1:     7 Killed                  /probe \"$@\"\n",
+      "dockerStateError": ""
+    }
+  ],
+  "adversarialCases": [
+    {
+      "fixture": {
+        "name": "header-size-u64max",
+        "file": "header-size-u64max.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 32,
+        "sha256": "fc66e474eb986e56c3ee0244753a5db84b1ad9554e426a3e55022d2aad058212",
+        "expected": "library_error",
+        "scope": ""
+      },
+      "actual": "library_error",
+      "classification": "decoder_rejection",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "header-size-u64max.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4145152,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1157,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "4145152\n",
+            "details": {
+              "error": "Other(\"Cannot handle next_header_size 18446744073709551615\")",
+              "stage": "header"
+            },
+            "elapsedMicros": 438,
+            "outcome": "library_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2112 kB\nVmRSS:\t    2112 kB\nRssAnon:\t     128 kB\nRssFile:\t    1984 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      52 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t3\n",
+            "sourceBytesRead": 32
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "header-offset-u64max",
+        "file": "header-offset-u64max.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 32,
+        "sha256": "a0e184a83229e944109986e7de67bbfe323cf49ebecb7366e54d7e3646ebb0ec",
+        "expected": "library_error",
+        "scope": ""
+      },
+      "actual": "library_error",
+      "classification": "decoder_rejection",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "header-offset-u64max.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4890624,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1171,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "4890624\n",
+            "details": {
+              "error": "Other(\"next header offset out of range\")",
+              "stage": "header"
+            },
+            "elapsedMicros": 427,
+            "outcome": "library_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t2\n",
+            "sourceBytesRead": 32
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "files-count-u64max",
+        "file": "files-count-u64max.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 45,
+        "sha256": "2322878238b0b012df27c301e60d7525b149c58f54f42d670841f7c5fea6f866",
+        "expected": "library_error",
+        "scope": ""
+      },
+      "actual": "library_error",
+      "classification": "decoder_rejection",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "files-count-u64max.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5095424,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.092,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "5095424\n",
+            "details": {
+              "error": "Other(\"num files (18446744073709551615) exceeds the available input (12 bytes)\")",
+              "stage": "header"
+            },
+            "elapsedMicros": 1372,
+            "outcome": "library_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      40 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 45
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "files-count-allocation",
+        "file": "files-count-allocation.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 2097184,
+        "sha256": "1de99665b09c5a6209ad222a6be49825ef56cfa319246131a53b4c4f9a6b13f0",
+        "expected": "contained_process_refusal",
+        "scope": "before entry callback; no product refusal code"
+      },
+      "actual": "contained_process_refusal",
+      "classification": "decoder_resource_exhaustion_pre_callback",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "files-count-allocation.7z",
+        "exitCode": 137,
+        "signalFromExitStatus": 9,
+        "oomKilled": true,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 702,
+          "oom": 1,
+          "oom_kill": 1,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 134217728,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1781,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          }
+        ],
+        "stderr": "qualification-launcher: line 1:     7 Killed                  /probe \"$@\"\n",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "coders-count-allocation",
+        "file": "coders-count-allocation.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 2097184,
+        "sha256": "59330dbfed448114fc33f0c32da9bac05d439f27e47020b94c2d5700a1d2de8a",
+        "expected": "contained_process_refusal",
+        "scope": "before entry callback; no product refusal code"
+      },
+      "actual": "library_error",
+      "classification": "decoder_rejection",
+      "differences": [
+        {
+          "expected": "contained_process_refusal",
+          "actual": "library_error"
+        }
+      ],
+      "observation": {
+        "mode": "guarded",
+        "file": "coders-count-allocation.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 4,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 134217728,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1622,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "134217728\n",
+            "details": {
+              "error": "Io(Error { kind: UnexpectedEof, message: \"failed to fill whole buffer\" }, \"\")",
+              "stage": "header"
+            },
+            "elapsedMicros": 52413,
+            "outcome": "library_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t  162060 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t  129872 kB\nVmRSS:\t    2128 kB\nRssAnon:\t     136 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      40 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t27\nnonvoluntary_ctxt_switches:\t29\n",
+            "sourceBytesRead": 2097184
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "coders-count-allocation-larger",
+        "file": "coders-count-allocation-larger.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 8388640,
+        "sha256": "5acc6aa505a5f0aab9c6ed6437ce2ce86b999491ff5ba1ac6ef9769d5daf1ccb",
+        "expected": "contained_process_refusal",
+        "scope": "larger pre-callback reserve; independently contained"
+      },
+      "actual": "contained_process_refusal",
+      "classification": "allocation_refusal_with_os_signal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "coders-count-allocation-larger.7z",
+        "exitCode": 134,
+        "signalFromExitStatus": 6,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 19218432,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1085,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          }
+        ],
+        "stderr": "memory allocation of 512000000 bytes failed\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nqualification-launcher: line 1:     7 Aborted                 /probe \"$@\"\n",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "solid-ordered",
+        "file": "solid-ordered.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 214,
+        "sha256": "a7c1855fcb49e33fe9827a60e87454c8ed8942cb7f897350fe1cac32888e4988",
+        "expected": "decoded",
+        "scope": "both members fully read in order with CRC",
+        "expectedDecoded": [
+          {
+            "name": "first.bin",
+            "bytes": 4000,
+            "crc32": 2317222765
+          },
+          {
+            "name": "second.bin",
+            "bytes": 4600,
+            "crc32": 1607287452
+          }
+        ]
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "solid-ordered.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4874240,
+        "callbackCount": 2,
+        "hostElapsedSeconds": 0.1231,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 132,
+              "inputBytes": 214,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "name": "second.bin",
+            "ordinal": 2,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4874240\n",
+            "details": {
+              "callbackCount": 2,
+              "decoded": [
+                {
+                  "bytes": 4000,
+                  "declaredBytes": 4000,
+                  "hasCrc": true,
+                  "headerCrc": 2317222765,
+                  "name": "first.bin",
+                  "observedCrc32": 2317222765
+                },
+                {
+                  "bytes": 4600,
+                  "declaredBytes": 4600,
+                  "hasCrc": true,
+                  "headerCrc": 1607287452,
+                  "name": "second.bin",
+                  "observedCrc32": 1607287452
+                }
+              ],
+              "deliveredBytes": 8600,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 132,
+                "inputBytes": 214,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 1500,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2248 kB\nVmRSS:\t    2248 kB\nRssAnon:\t     256 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t4\n",
+            "sourceBytesRead": 213
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "cancel-before-header",
+        "file": "cancel-before-header.7z",
+        "mode": "cancel-before",
+        "extra": [],
+        "bytes": 214,
+        "sha256": "a7c1855fcb49e33fe9827a60e87454c8ed8942cb7f897350fe1cac32888e4988",
+        "expected": "qualification_cancelled",
+        "scope": ""
+      },
+      "actual": "qualification_cancelled",
+      "classification": "qualification_cancelled",
+      "differences": [],
+      "observation": {
+        "mode": "cancel-before",
+        "file": "cancel-before-header.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4833280,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1262,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "4833280\n",
+            "details": {
+              "stage": "before_header"
+            },
+            "elapsedMicros": 396,
+            "outcome": "qualification_cancelled",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t6\nNgid:\t0\nPid:\t6\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t6\nNSpid:\t6\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    1940 kB\nVmRSS:\t    1940 kB\nRssAnon:\t     128 kB\nRssFile:\t    1812 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t13\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 0
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "cancel-after-first-solid",
+        "file": "cancel-after-first-solid.7z",
+        "mode": "raw-cancel",
+        "extra": [],
+        "bytes": 214,
+        "sha256": "a7c1855fcb49e33fe9827a60e87454c8ed8942cb7f897350fe1cac32888e4988",
+        "expected": "qualification_cancelled",
+        "scope": "callback cancellation; not proof of interrupting header or a long Read",
+        "expectedDecoded": [
+          {
+            "name": "first.bin",
+            "bytes": 4000,
+            "crc32": 2317222765
+          }
+        ]
+      },
+      "actual": "qualification_cancelled",
+      "classification": "qualification_cancelled",
+      "differences": [],
+      "observation": {
+        "mode": "raw-cancel",
+        "file": "cancel-after-first-solid.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4337664,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1076,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 132,
+              "inputBytes": 214,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4337664\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 4000,
+                  "declaredBytes": 4000,
+                  "hasCrc": true,
+                  "headerCrc": 2317222765,
+                  "name": "first.bin",
+                  "observedCrc32": 2317222765
+                }
+              ],
+              "deliveredBytes": 4000,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 132,
+                "inputBytes": 214,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 5333,
+            "outcome": "qualification_cancelled",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2236 kB\nVmRSS:\t    2236 kB\nRssAnon:\t     256 kB\nRssFile:\t    1980 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 213
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "solid-corrupt-packed",
+        "file": "solid-corrupt-packed.7z",
+        "mode": "raw",
+        "extra": [],
+        "bytes": 214,
+        "sha256": "a505c64e8d7cdfae03bde920aa8a38aa6d5f038b4dba469e079a1f9d00b25b95",
+        "expected": "library_or_probe_read_error",
+        "scope": ""
+      },
+      "actual": "library_or_probe_read_error",
+      "classification": "decoder_rejection",
+      "differences": [],
+      "observation": {
+        "mode": "raw",
+        "file": "solid-corrupt-packed.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5197824,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1298,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 132,
+              "inputBytes": 214,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "5197824\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [],
+              "deliveredBytes": 0,
+              "deliveredCeiling": 2147483648,
+              "error": "Io(Custom { kind: Other, error: \"dist overflow\" }, \"\")",
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 132,
+                "inputBytes": 214,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 2086,
+            "outcome": "library_or_probe_read_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3824 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2248 kB\nVmRSS:\t    2248 kB\nRssAnon:\t     256 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     312 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t2\n",
+            "sourceBytesRead": 213
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "copy-read-baseline",
+        "file": "copy-read-baseline.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 8731,
+        "sha256": "ea431e95da621c1a1179664936233c76fe4ac97eb0bc5a5868001f4b9bbc5c00",
+        "expected": "decoded",
+        "scope": ""
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "copy-read-baseline.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4849664,
+        "callbackCount": 2,
+        "hostElapsedSeconds": 0.1267,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 131,
+              "inputBytes": 8731,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "name": "second.bin",
+            "ordinal": 2,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4849664\n",
+            "details": {
+              "callbackCount": 2,
+              "decoded": [
+                {
+                  "bytes": 4000,
+                  "declaredBytes": 4000,
+                  "hasCrc": true,
+                  "headerCrc": 2317222765,
+                  "name": "first.bin",
+                  "observedCrc32": 2317222765
+                },
+                {
+                  "bytes": 4600,
+                  "declaredBytes": 4600,
+                  "hasCrc": true,
+                  "headerCrc": 1607287452,
+                  "name": "second.bin",
+                  "observedCrc32": 1607287452
+                }
+              ],
+              "deliveredBytes": 8600,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 131,
+                "inputBytes": 8731,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 514,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 8731
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "delivered-exact",
+        "file": "delivered-exact.7z",
+        "mode": "guarded",
+        "extra": [
+          67108864,
+          8600
+        ],
+        "bytes": 8731,
+        "sha256": "ea431e95da621c1a1179664936233c76fe4ac97eb0bc5a5868001f4b9bbc5c00",
+        "expected": "decoded",
+        "scope": ""
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "delivered-exact.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4378624,
+        "callbackCount": 2,
+        "hostElapsedSeconds": 0.1042,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 131,
+              "inputBytes": 8731,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "name": "second.bin",
+            "ordinal": 2,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4378624\n",
+            "details": {
+              "callbackCount": 2,
+              "decoded": [
+                {
+                  "bytes": 4000,
+                  "declaredBytes": 4000,
+                  "hasCrc": true,
+                  "headerCrc": 2317222765,
+                  "name": "first.bin",
+                  "observedCrc32": 2317222765
+                },
+                {
+                  "bytes": 4600,
+                  "declaredBytes": 4600,
+                  "hasCrc": true,
+                  "headerCrc": 1607287452,
+                  "name": "second.bin",
+                  "observedCrc32": 1607287452
+                }
+              ],
+              "deliveredBytes": 8600,
+              "deliveredCeiling": 8600,
+              "error": null,
+              "metadata": {
+                "dictionaries": [],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 131,
+                "inputBytes": 8731,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 1523,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 8731
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "delivered-one-short",
+        "file": "delivered-one-short.7z",
+        "mode": "guarded",
+        "extra": [
+          67108864,
+          8599
+        ],
+        "bytes": 8731,
+        "sha256": "ea431e95da621c1a1179664936233c76fe4ac97eb0bc5a5868001f4b9bbc5c00",
+        "expected": "library_or_probe_read_error",
+        "scope": "one-byte detection sentinel; not exact hard output cap"
+      },
+      "actual": "library_or_probe_read_error",
+      "classification": "qualification_read_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "delivered-one-short.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5754880,
+        "callbackCount": 2,
+        "hostElapsedSeconds": 0.1192,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 2,
+              "expanded": 8600,
+              "headerSourceBytesRead": 131,
+              "inputBytes": 8731,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "first.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "name": "second.bin",
+            "ordinal": 2,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "5754880\n",
+            "details": {
+              "callbackCount": 2,
+              "decoded": [
+                {
+                  "bytes": 4000,
+                  "declaredBytes": 4000,
+                  "hasCrc": true,
+                  "headerCrc": 2317222765,
+                  "name": "first.bin",
+                  "observedCrc32": 2317222765
+                }
+              ],
+              "deliveredBytes": 8600,
+              "deliveredCeiling": 8599,
+              "error": "Io(Custom { kind: Other, error: \"qualification delivered-byte ceiling\" }, \"\")",
+              "metadata": {
+                "dictionaries": [],
+                "entries": 2,
+                "expanded": 8600,
+                "headerSourceBytesRead": 131,
+                "inputBytes": 8731,
+                "solid": true
+              }
+            },
+            "elapsedMicros": 614,
+            "outcome": "library_or_probe_read_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 8731
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "header-source-ceiling",
+        "file": "header-source-ceiling.7z",
+        "mode": "guarded",
+        "extra": [
+          31
+        ],
+        "bytes": 8731,
+        "sha256": "ea431e95da621c1a1179664936233c76fe4ac97eb0bc5a5868001f4b9bbc5c00",
+        "expected": "library_error",
+        "scope": ""
+      },
+      "actual": "library_error",
+      "classification": "qualification_read_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "header-source-ceiling.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4624384,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1087,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "cgroupMemoryPeak": "4624384\n",
+            "details": {
+              "error": "Io(Custom { kind: Other, error: \"qualification compressed-read ceiling\" }, \"\")",
+              "stage": "header"
+            },
+            "elapsedMicros": 339,
+            "outcome": "library_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 31
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "entries-10000",
+        "file": "entries-10000.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 177862,
+        "sha256": "f4759808e46fb146dd342cabe7c17ee54f4c5960d86fd79902951ee676fd94d4",
+        "expected": "qualification_metadata_allowed_only",
+        "scope": "metadata-only; not a complete 10000-entry decode"
+      },
+      "actual": "qualification_metadata_allowed_only",
+      "classification": "qualification_metadata_allowed_only",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "entries-10000.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5656576,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1142,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 10000,
+              "expanded": 10000,
+              "headerSourceBytesRead": 167862,
+              "inputBytes": 177862,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "5656576\n",
+            "details": {
+              "dictionaries": [],
+              "entries": 10000,
+              "expanded": 10000,
+              "headerSourceBytesRead": 167862,
+              "inputBytes": 177862,
+              "solid": true
+            },
+            "elapsedMicros": 9313,
+            "outcome": "qualification_metadata_allowed_only",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    6608 kB\nVmSize:\t    6344 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    5052 kB\nVmRSS:\t    4708 kB\nRssAnon:\t    2716 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t    2832 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      56 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t16\nnonvoluntary_ctxt_switches:\t5\n",
+            "sourceBytesRead": 167862
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "entries-10001",
+        "file": "entries-10001.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 177882,
+        "sha256": "27daea04fd561f39b6343d95075fcf93b0e7bd0f264dd651a0317c431dc2089a",
+        "expected": "qualification_metadata_refused",
+        "scope": "metadata-only; not a complete 10000-entry decode"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "frozen_declared_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "entries-10001.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 6017024,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1184,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 10001,
+              "expanded": 10001,
+              "headerSourceBytesRead": 167881,
+              "inputBytes": 177882,
+              "solid": true
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "6017024\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [],
+                "entries": 10001,
+                "expanded": 10001,
+                "headerSourceBytesRead": 167881,
+                "inputBytes": 177882,
+                "solid": true
+              },
+              "reason": "frozen_entry_limit"
+            },
+            "elapsedMicros": 2045,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    6608 kB\nVmSize:\t    6344 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    5052 kB\nVmRSS:\t    4708 kB\nRssAnon:\t    2716 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t    2832 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      52 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t2\n",
+            "sourceBytesRead": 167881
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "expanded-2147483648",
+        "file": "expanded-2147483648.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 11534336,
+        "sha256": "e2b7594f773daef8cd2600b287445738d2da6f222ae5ae39933be5ec1eb0aeef",
+        "expected": "qualification_metadata_allowed_only",
+        "scope": "declared size only; trailing padding isolates aggregate ratio; no multi-GiB decode"
+      },
+      "actual": "qualification_metadata_allowed_only",
+      "classification": "qualification_metadata_allowed_only",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "expanded-2147483648.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4608000,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1047,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 2147483648,
+              "headerSourceBytesRead": 104,
+              "inputBytes": 11534336,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4608000\n",
+            "details": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 2147483648,
+              "headerSourceBytesRead": 104,
+              "inputBytes": 11534336,
+              "solid": false
+            },
+            "elapsedMicros": 493,
+            "outcome": "qualification_metadata_allowed_only",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2116 kB\nVmRSS:\t    2116 kB\nRssAnon:\t     128 kB\nRssFile:\t    1988 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 104
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "expanded-2147483649",
+        "file": "expanded-2147483649.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 11534336,
+        "sha256": "beaabecdfb0ee166ccf8f181779c38669fe8e5d8630ab31ead45e41d68ace73f",
+        "expected": "qualification_metadata_refused",
+        "scope": "declared size only; trailing padding isolates aggregate ratio; no multi-GiB decode"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "frozen_declared_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "expanded-2147483649.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4608000,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1279,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 2147483649,
+              "headerSourceBytesRead": 104,
+              "inputBytes": 11534336,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4608000\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [],
+                "entries": 1,
+                "expanded": 2147483649,
+                "headerSourceBytesRead": 104,
+                "inputBytes": 11534336,
+                "solid": false
+              },
+              "reason": "frozen_expanded_limit"
+            },
+            "elapsedMicros": 666,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 104
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "expanded-18446744073709551615",
+        "file": "expanded-18446744073709551615.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 11534336,
+        "sha256": "ab0684e87c9e2957f39300bd8419b54fda32599a71eb089804574acc3eee0013",
+        "expected": "qualification_metadata_refused",
+        "scope": "declared size only; trailing padding isolates aggregate ratio; no multi-GiB decode"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "frozen_declared_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "expanded-18446744073709551615.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4759552,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.13,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 18446744073709551615,
+              "headerSourceBytesRead": 108,
+              "inputBytes": 11534336,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4759552\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [],
+                "entries": 1,
+                "expanded": 18446744073709551615,
+                "headerSourceBytesRead": 108,
+                "inputBytes": 11534336,
+                "solid": false
+              },
+              "reason": "frozen_expanded_limit"
+            },
+            "elapsedMicros": 423,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2108 kB\nVmRSS:\t    2108 kB\nRssAnon:\t     128 kB\nRssFile:\t    1980 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 108
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "ratio-200",
+        "file": "ratio-200.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 1024,
+        "sha256": "1cddc823020a1ef5d1d94e9e9bdc9e1c7378dbc92a69909d940eb378e25ec43c",
+        "expected": "qualification_metadata_allowed_only",
+        "scope": "aggregate declared bytes / whole container size, as frozen Go; no ratio waiver"
+      },
+      "actual": "qualification_metadata_allowed_only",
+      "classification": "qualification_metadata_allowed_only",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "ratio-200.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4984832,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1111,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 204800,
+              "headerSourceBytesRead": 102,
+              "inputBytes": 1024,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4984832\n",
+            "details": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 204800,
+              "headerSourceBytesRead": 102,
+              "inputBytes": 1024,
+              "solid": false
+            },
+            "elapsedMicros": 1317,
+            "outcome": "qualification_metadata_allowed_only",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t6\nNgid:\t0\nPid:\t6\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t6\nNSpid:\t6\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 102
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "ratio-201",
+        "file": "ratio-201.7z",
+        "mode": "metadata-only",
+        "extra": [],
+        "bytes": 1024,
+        "sha256": "2fc424e6197dcbd3a89127fc7c3570445e5465adfb5d138ca18a97fc1e5bd79c",
+        "expected": "qualification_metadata_refused",
+        "scope": "aggregate declared bytes / whole container size, as frozen Go; no ratio waiver"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "frozen_declared_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "metadata-only",
+        "file": "ratio-201.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4599808,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1053,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [],
+              "entries": 1,
+              "expanded": 205824,
+              "headerSourceBytesRead": 102,
+              "inputBytes": 1024,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4599808\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [],
+                "entries": 1,
+                "expanded": 205824,
+                "headerSourceBytesRead": 102,
+                "inputBytes": 1024,
+                "solid": false
+              },
+              "reason": "frozen_ratio_limit"
+            },
+            "elapsedMicros": 1875,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      40 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t3\n",
+            "sourceBytesRead": 102
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "actual-expansion-ratio-refused",
+        "file": "actual-expansion-ratio-refused.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 256,
+        "sha256": "bf1b789e33f428bdc65e526051ef4d9d71f7db9243ad6c094f537f62170b40af",
+        "expected": "qualification_metadata_refused",
+        "scope": "real 512KiB repeated payload; frozen aggregate ratio prevents decode"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "frozen_declared_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "actual-expansion-ratio-refused.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4210688,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1397,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 1,
+              "expanded": 524288,
+              "headerSourceBytesRead": 105,
+              "inputBytes": 256,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4210688\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 1,
+                "expanded": 524288,
+                "headerSourceBytesRead": 105,
+                "inputBytes": 256,
+                "solid": false
+              },
+              "reason": "frozen_ratio_limit"
+            },
+            "elapsedMicros": 421,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2112 kB\nVmRSS:\t    2112 kB\nRssAnon:\t     128 kB\nRssFile:\t    1984 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 105
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "actual-expansion-delivery-probe",
+        "file": "actual-expansion-delivery-probe.7z",
+        "mode": "raw",
+        "extra": [
+          67108864,
+          65536
+        ],
+        "bytes": 256,
+        "sha256": "bf1b789e33f428bdc65e526051ef4d9d71f7db9243ad6c094f537f62170b40af",
+        "expected": "library_or_probe_read_error",
+        "scope": "raw diagnostic bypasses policy inside containment only; stops at 64KiB plus one-byte detection sentinel"
+      },
+      "actual": "library_or_probe_read_error",
+      "classification": "qualification_read_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "raw",
+        "file": "actual-expansion-delivery-probe.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5124096,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1221,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 1,
+              "expanded": 524288,
+              "headerSourceBytesRead": 105,
+              "inputBytes": 256,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "expanded.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "5124096\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [],
+              "deliveredBytes": 65537,
+              "deliveredCeiling": 65536,
+              "error": "Io(Custom { kind: Other, error: \"qualification delivered-byte ceiling\" }, \"\")",
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 1,
+                "expanded": 524288,
+                "headerSourceBytesRead": 105,
+                "inputBytes": 256,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 1986,
+            "outcome": "library_or_probe_read_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2376 kB\nVmRSS:\t    2376 kB\nRssAnon:\t     384 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t6\n",
+            "sourceBytesRead": 255
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma2-dictionary-8388608-guarded",
+        "file": "lzma2-dictionary-8388608-guarded.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 150,
+        "sha256": "d122dc5e3f7756b5995923e7aa85d9374e193dbd3e971cd53a9312f5944f58a1",
+        "expected": "decoded",
+        "scope": "8MiB guard is experimental, absent from frozen product contract"
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "lzma2-dictionary-8388608-guarded.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4870144,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.107,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                8388608
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 107,
+              "inputBytes": 150,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4870144\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 540,
+                  "declaredBytes": 540,
+                  "hasCrc": false,
+                  "headerCrc": 0,
+                  "name": "dictionary.bin",
+                  "observedCrc32": 1349134008
+                }
+              ],
+              "deliveredBytes": 540,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  8388608
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 107,
+                "inputBytes": 150,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 914,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2248 kB\nVmRSS:\t    2248 kB\nRssAnon:\t     256 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 149
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma2-dictionary-12582912-guarded",
+        "file": "lzma2-dictionary-12582912-guarded.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 150,
+        "sha256": "143f864615c32c4d5ce62a3236e8dc113b526b786b9313c2ed09666bb80cb781",
+        "expected": "qualification_metadata_refused",
+        "scope": "8MiB guard is experimental, absent from frozen product contract"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "experimental_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "lzma2-dictionary-12582912-guarded.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4005888,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1217,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                12582912
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 107,
+              "inputBytes": 150,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4005888\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [
+                  12582912
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 107,
+                "inputBytes": 150,
+                "solid": false
+              },
+              "reason": "experimental_dictionary_limit_not_frozen_policy"
+            },
+            "elapsedMicros": 1381,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t2\n",
+            "sourceBytesRead": 107
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma2-dictionary-4294967295-guarded",
+        "file": "lzma2-dictionary-4294967295-guarded.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 150,
+        "sha256": "ba33c772c89b9ab532d5939399ee858e10b4e3c63f755b5056e6ba2400e05d81",
+        "expected": "qualification_metadata_refused",
+        "scope": "8MiB guard is experimental, absent from frozen product contract"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "experimental_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "lzma2-dictionary-4294967295-guarded.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4558848,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1098,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                4294967295
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 107,
+              "inputBytes": 150,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4558848\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [
+                  4294967295
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 107,
+                "inputBytes": 150,
+                "solid": false
+              },
+              "reason": "experimental_dictionary_limit_not_frozen_policy"
+            },
+            "elapsedMicros": 1565,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    1956 kB\nVmRSS:\t    1956 kB\nRssAnon:\t     128 kB\nRssFile:\t    1828 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 107
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma2-dictionary-4294967295-raw",
+        "file": "lzma2-dictionary-4294967295-raw.7z",
+        "mode": "raw",
+        "extra": [],
+        "bytes": 150,
+        "sha256": "ba33c772c89b9ab532d5939399ee858e10b4e3c63f755b5056e6ba2400e05d81",
+        "expected": "contained_process_refusal",
+        "scope": "unmodified decoder; kernel limits cover allocation"
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [
+        {
+          "expected": "contained_process_refusal",
+          "actual": "decoded"
+        }
+      ],
+      "observation": {
+        "mode": "raw",
+        "file": "lzma2-dictionary-4294967295-raw.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4063232,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1223,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                4294967295
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 107,
+              "inputBytes": 150,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4063232\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 540,
+                  "declaredBytes": 540,
+                  "hasCrc": false,
+                  "headerCrc": 0,
+                  "name": "dictionary.bin",
+                  "observedCrc32": 1349134008
+                }
+              ],
+              "deliveredBytes": 540,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  4294967295
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 107,
+                "inputBytes": 150,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 2464,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2248 kB\nVmRSS:\t    2248 kB\nRssAnon:\t     256 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t4\n",
+            "sourceBytesRead": 149
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma2-dictionary-4294967295-large-size-raw",
+        "file": "lzma2-dictionary-4294967295-large-size-raw.7z",
+        "mode": "raw",
+        "extra": [],
+        "bytes": 153,
+        "sha256": "f0ae9850de73072452238c76bb1a00fe7ac4a4febe949b453badc1781fb54522",
+        "expected": "contained_process_refusal",
+        "scope": "large declared output forces dictionary allocation path; not a valid multi-GiB payload"
+      },
+      "actual": "decoder_eof_with_size_mismatch",
+      "classification": "decoder_eof_with_size_mismatch",
+      "differences": [
+        {
+          "expected": "contained_process_refusal",
+          "actual": "decoder_eof_with_size_mismatch"
+        }
+      ],
+      "observation": {
+        "mode": "raw",
+        "file": "lzma2-dictionary-4294967295-large-size-raw.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4833280,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1109,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                4294967295
+              ],
+              "entries": 1,
+              "expanded": 2147483648,
+              "headerSourceBytesRead": 110,
+              "inputBytes": 153,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4833280\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 540,
+                  "declaredBytes": 2147483648,
+                  "hasCrc": false,
+                  "headerCrc": 0,
+                  "name": "dictionary.bin",
+                  "observedCrc32": 1349134008
+                }
+              ],
+              "deliveredBytes": 540,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  4294967295
+                ],
+                "entries": 1,
+                "expanded": 2147483648,
+                "headerSourceBytesRead": 110,
+                "inputBytes": 153,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 652,
+            "outcome": "decoder_eof_with_size_mismatch",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3900 kB\nVmSize:\t    3900 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2248 kB\nVmRSS:\t    2248 kB\nRssAnon:\t     256 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     388 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t0\n",
+            "sourceBytesRead": 153
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma1-dictionary-1048576-guarded",
+        "file": "lzma1-dictionary-1048576-guarded.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 154,
+        "sha256": "bed2714d1a19bcdc72314497fd2d05ce2fb496ffc4afb3b458f545162cc0ec37",
+        "expected": "decoded",
+        "scope": "8MiB guard is experimental, absent from frozen product contract"
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "lzma1-dictionary-1048576-guarded.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4964352,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1165,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                1048576
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 113,
+              "inputBytes": 154,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4964352\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 540,
+                  "declaredBytes": 540,
+                  "hasCrc": false,
+                  "headerCrc": 0,
+                  "name": "dictionary.bin",
+                  "observedCrc32": 1349134008
+                }
+              ],
+              "deliveredBytes": 540,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  1048576
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 113,
+                "inputBytes": 154,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 728,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      44 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 154
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma1-dictionary-2147483648-guarded",
+        "file": "lzma1-dictionary-2147483648-guarded.7z",
+        "mode": "guarded",
+        "extra": [],
+        "bytes": 154,
+        "sha256": "3f4f8dbd04f8168ed6fb93eb6eb5d11db63394b756f832917dea38df4bf56d85",
+        "expected": "qualification_metadata_refused",
+        "scope": "8MiB guard is experimental, absent from frozen product contract"
+      },
+      "actual": "qualification_metadata_refused",
+      "classification": "experimental_budget_refusal",
+      "differences": [],
+      "observation": {
+        "mode": "guarded",
+        "file": "lzma1-dictionary-2147483648-guarded.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4481024,
+        "callbackCount": 0,
+        "hostElapsedSeconds": 0.1163,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                2147483648
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 113,
+              "inputBytes": 154,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "cgroupMemoryPeak": "4481024\n",
+            "details": {
+              "metadata": {
+                "dictionaries": [
+                  2147483648
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 113,
+                "inputBytes": 154,
+                "solid": false
+              },
+              "reason": "experimental_dictionary_limit_not_frozen_policy"
+            },
+            "elapsedMicros": 922,
+            "outcome": "qualification_metadata_refused",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t14\nnonvoluntary_ctxt_switches:\t3\n",
+            "sourceBytesRead": 113
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma1-dictionary-2147483648-raw",
+        "file": "lzma1-dictionary-2147483648-raw.7z",
+        "mode": "raw",
+        "extra": [],
+        "bytes": 154,
+        "sha256": "3f4f8dbd04f8168ed6fb93eb6eb5d11db63394b756f832917dea38df4bf56d85",
+        "expected": "contained_process_refusal",
+        "scope": "unmodified decoder; kernel limits cover allocation"
+      },
+      "actual": "decoded",
+      "classification": "decoded",
+      "differences": [
+        {
+          "expected": "contained_process_refusal",
+          "actual": "decoded"
+        }
+      ],
+      "observation": {
+        "mode": "raw",
+        "file": "lzma1-dictionary-2147483648-raw.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 4886528,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1278,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                2147483648
+              ],
+              "entries": 1,
+              "expanded": 540,
+              "headerSourceBytesRead": 113,
+              "inputBytes": 154,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "4886528\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [
+                {
+                  "bytes": 540,
+                  "declaredBytes": 540,
+                  "hasCrc": false,
+                  "headerCrc": 0,
+                  "name": "dictionary.bin",
+                  "observedCrc32": 1349134008
+                }
+              ],
+              "deliveredBytes": 540,
+              "deliveredCeiling": 2147483648,
+              "error": null,
+              "metadata": {
+                "dictionaries": [
+                  2147483648
+                ],
+                "entries": 1,
+                "expanded": 540,
+                "headerSourceBytesRead": 113,
+                "inputBytes": 154,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 1590,
+            "outcome": "decoded",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t2\n",
+            "sourceBytesRead": 154
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    },
+    {
+      "fixture": {
+        "name": "lzma1-dictionary-2147483648-large-size-raw",
+        "file": "lzma1-dictionary-2147483648-large-size-raw.7z",
+        "mode": "raw",
+        "extra": [],
+        "bytes": 157,
+        "sha256": "3f4ff81c7d95669225444811471b66833348f93e05c1337fc0afb1a81c4cc1b6",
+        "expected": "contained_process_refusal",
+        "scope": "large declared output forces dictionary allocation path; not a valid multi-GiB payload"
+      },
+      "actual": "library_or_probe_read_error",
+      "classification": "decoder_rejection",
+      "differences": [
+        {
+          "expected": "contained_process_refusal",
+          "actual": "library_or_probe_read_error"
+        }
+      ],
+      "observation": {
+        "mode": "raw",
+        "file": "lzma1-dictionary-2147483648-large-size-raw.7z",
+        "exitCode": 0,
+        "signalFromExitStatus": null,
+        "oomKilled": false,
+        "wallWatchdog": false,
+        "memoryEventsAfter": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memoryEventsCapturedBeforeWatchdogKill": false,
+        "cgroupMemoryPeakAfter": 5136384,
+        "callbackCount": 1,
+        "hostElapsedSeconds": 0.1118,
+        "records": [
+          {
+            "limits": "Limit                     Soft Limit           Hard Limit           Units     \nMax cpu time              2                    2                    seconds   \nMax file size             unlimited            unlimited            bytes     \nMax data size             unlimited            unlimited            bytes     \nMax stack size            8388608              unlimited            bytes     \nMax core file size        0                    0                    bytes     \nMax resident set          unlimited            unlimited            bytes     \nMax processes             unlimited            unlimited            processes \nMax open files            1048576              1048576              files     \nMax locked memory         unlimited            unlimited            bytes     \nMax address space         268435456            268435456            bytes     \nMax file locks            unlimited            unlimited            locks     \nMax pending signals       31323                31323                signals   \nMax msgqueue size         819200               819200               bytes     \nMax nice priority         0                    0                    \nMax realtime priority     0                    0                    \nMax realtime timeout      unlimited            unlimited            us        \n",
+            "memoryEventsBefore": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+            "memoryMax": "134217728\n",
+            "stage": "boot",
+            "swapMax": "0\n"
+          },
+          {
+            "metadata": {
+              "dictionaries": [
+                2147483648
+              ],
+              "entries": 1,
+              "expanded": 2147483648,
+              "headerSourceBytesRead": 116,
+              "inputBytes": 157,
+              "solid": false
+            },
+            "stage": "metadata"
+          },
+          {
+            "callbackCount": 0,
+            "stage": "before_callbacks"
+          },
+          {
+            "name": "dictionary.bin",
+            "ordinal": 1,
+            "stage": "callback"
+          },
+          {
+            "cgroupMemoryPeak": "5136384\n",
+            "details": {
+              "callbackCount": 1,
+              "decoded": [],
+              "deliveredBytes": 0,
+              "deliveredCeiling": 2147483648,
+              "error": "Io(Custom { kind: Other, error: \"dist overflow\" }, \"\")",
+              "metadata": {
+                "dictionaries": [
+                  2147483648
+                ],
+                "entries": 1,
+                "expanded": 2147483648,
+                "headerSourceBytesRead": 116,
+                "inputBytes": 157,
+                "solid": false
+              }
+            },
+            "elapsedMicros": 671,
+            "outcome": "library_or_probe_read_error",
+            "processStatus": "Name:\tprobe\nUmask:\t0022\nState:\tR (running)\nTgid:\t7\nNgid:\t0\nPid:\t7\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t64\nGroups:\t0 \nNStgid:\t7\nNSpid:\t7\nNSpgid:\t1\nNSsid:\t1\nKthread:\t0\nVmPeak:\t    3752 kB\nVmSize:\t    3752 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    2120 kB\nVmRSS:\t    2120 kB\nRssAnon:\t     128 kB\nRssFile:\t    1992 kB\nRssShmem:\t       0 kB\nVmData:\t     240 kB\nVmStk:\t     132 kB\nVmExe:\t    1312 kB\nVmLib:\t    1824 kB\nVmPTE:\t      48 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t1\nuntag_mask:\t0xffffffffffffff\nThreads:\t1\nSigQ:\t0/31323\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000000001006\nSigCgt:\t0000000000000440\nCapInh:\t0000000000000000\nCapPrm:\t0000000000000000\nCapEff:\t0000000000000000\nCapBnd:\t0000000000000000\nCapAmb:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nSeccomp_filters:\t1\nSpeculation_Store_Bypass:\tvulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\tfff\nCpus_allowed_list:\t0-11\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t15\nnonvoluntary_ctxt_switches:\t1\n",
+            "sourceBytesRead": 157
+          }
+        ],
+        "stderr": "",
+        "dockerStateError": ""
+      }
+    }
+  ],
+  "status": "bounded LinuxARM observations only; decoder/platform/product qualification incomplete",
+  "observer": {
+    "session": "librairii-4",
+    "date": "2026-10-20",
+    "dockerServer": {
+      "Platform": {
+        "Name": "Docker Desktop 4.42.0 (195023)"
+      },
+      "Components": [
+        {
+          "Name": "Engine",
+          "Version": "28.2.2",
+          "Details": {
+            "ApiVersion": "1.50",
+            "Arch": "arm64",
+            "BuildTime": "Fri May 30 12:07:27 2025",
+            "Experimental": "false",
+            "GitCommit": "45873be",
+            "GoVersion": "go1.24.3",
+            "KernelVersion": "6.10.14-linuxkit",
+            "MinAPIVersion": "1.24",
+            "Os": "linux"
+          }
+        },
+        {
+          "Name": "containerd",
+          "Version": "1.7.27",
+          "Details": {
+            "GitCommit": "05044ec0a9a75232cad458027ca83437aae3f4da"
+          }
+        },
+        {
+          "Name": "runc",
+          "Version": "1.2.5",
+          "Details": {
+            "GitCommit": "v1.2.5-0-g59923ef"
+          }
+        },
+        {
+          "Name": "docker-init",
+          "Version": "0.19.0",
+          "Details": {
+            "GitCommit": "de40ad0"
+          }
+        }
+      ],
+      "Version": "28.2.2",
+      "ApiVersion": "1.50",
+      "MinAPIVersion": "1.24",
+      "GitCommit": "45873be",
+      "GoVersion": "go1.24.3",
+      "Os": "linux",
+      "Arch": "arm64",
+      "KernelVersion": "6.10.14-linuxkit",
+      "BuildTime": "2025-05-30T12:07:27.000000000+00:00"
+    },
+    "kernel": "6.10.14-linuxkit"
+  },
+  "producer": {
+    "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 17.0.0 (clang-1700.6.4.2)]",
+    "host": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "zlibRuntime": "1.2.12",
+    "lzmaModuleSha256": "c7451433538d186fbc1b78356036d03dd395c6370c367a9466199e649b0b315b",
+    "formatSource": "https://github.com/ip7z/7zip/blob/9128b80e3a471108678e2b3ec3c985861c8d7b0f/DOC/7zFormat.txt",
+    "fixtureBytes": "original deterministic synthetic_7z.py/adversarial_7z.py output, each length/hash recorded; regenerate without parsing for inspection"
+  },
+  "hypothesisComparisonScope": "Initial allocation hypotheses are retained even when disproved; differences are not Go parity failures or toolkit verdicts.",
+  "sourceSha256": {
+    "decoder_containment.py": "05f93063d109fface215e6bab2c4c44d8430af542639480d6e88e13fe3899c7b",
+    "adversarial_7z.py": "a5a27ffcab58d308219bb81d4f33d901a50a981c32aa6b17b18fe012a1336fe1",
+    "synthetic_7z.py": "3ec8d35ce9b40179bf9d085842770e0678d96a05786402ea5d9dd6f4653f0014",
+    "decoder-budget/src/main.rs": "046c429c269d30b18fa97db8720ee92183b529d41e10507e84063c1a541241ac",
+    "decoder-budget/Cargo.lock": "0453cc0715be5612c402c74a2a6f4d48adf9c87833e3eb6b397407541fae4c69"
+  },
+  "measuredDifferenceCount": 5
+}

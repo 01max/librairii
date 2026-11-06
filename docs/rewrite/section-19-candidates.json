@@ -1,0 +1,354 @@
+{
+  "format": "librairii.release-evidence-index",
+  "schema": 1,
+  "scope": "Merged-base unsigned/internal candidates. This is not the final signed release manifest or promotion approval.",
+  "integration_base": "4b7cd37cc6cbafdcdd4d86f35661018c9c7dd027",
+  "pr_head": "21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+  "package_build_source": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+  "package_source_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+  "package_source_ordered_parents": [
+    "0e3b67da0af8836af4b89e3079c38a9997d0e7d8",
+    "21f32ed968cd4e66bfde6817e0f77b4c93dac810"
+  ],
+  "package_source_tree_equals_integration_base": true,
+  "targets": [
+    {
+      "target": "aarch64-apple-darwin",
+      "provider_artifact_id": 13035889514,
+      "provider_zip_bytes": 20030867,
+      "provider_zip_sha256": "a597b64deb1f79e3401aec7c47c45c94fed08bf48726685f3889a6ebf18f9292",
+      "source_commit": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+      "source_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+      "package": {
+        "bytes": 21338361,
+        "name": "Librairii-0.5.0-aarch64-apple-darwin-unsigned.dmg",
+        "sha256": "13994141820cb2fec600837a7a734c2e9280d18239c959407cbcca4b0d850287"
+      },
+      "compiler_events": 765,
+      "compiled_package_ids": 400,
+      "cargo_lock_sha256": "28f514851a2d1a7625136d03d838afda0623ddad3d0084670ffe0f09afb08293",
+      "native_toolkit_pin_sha256": "53c5a40e2effef8fb70c01a9aa85f99f6aac671bda430ff740b08db3c9871a7e",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      },
+      "public_release_qualified": false,
+      "payload_inventory_entries": 893,
+      "stage_metadata_verified": true,
+      "actual_package_contents_inspected_offline": false
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "provider_artifact_id": 13036918245,
+      "provider_zip_bytes": 21161687,
+      "provider_zip_sha256": "c058a4a112d23dab2a62304e06e1108111a7915d18774c2636d3155f94c403e3",
+      "source_commit": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+      "source_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+      "package": {
+        "bytes": 22482396,
+        "name": "Librairii-0.5.0-x86_64-apple-darwin-unsigned.dmg",
+        "sha256": "978163d3d684b94afd37d5dc1d6111ba0454acc7582332972efb602a15fc8b9f"
+      },
+      "compiler_events": 765,
+      "compiled_package_ids": 400,
+      "cargo_lock_sha256": "28f514851a2d1a7625136d03d838afda0623ddad3d0084670ffe0f09afb08293",
+      "native_toolkit_pin_sha256": "53c5a40e2effef8fb70c01a9aa85f99f6aac671bda430ff740b08db3c9871a7e",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      },
+      "public_release_qualified": false,
+      "payload_inventory_entries": 893,
+      "stage_metadata_verified": true,
+      "actual_package_contents_inspected_offline": false
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "provider_artifact_id": 13036154292,
+      "provider_zip_bytes": 24335408,
+      "provider_zip_sha256": "5f48ac87a6a9daa13bf18f47d7e42a628526679e986ae08f62dba154008bc580",
+      "source_commit": "bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+      "source_tree": "7bab4be1c1869a286364b42260df648ae4305dbe",
+      "package": {
+        "bytes": 24345846,
+        "name": "Librairii-0.5.0-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "4ffcfcadffb4747bbebf2ef0d46516ff9faaee3efaa38e203f1df5e5db641595"
+      },
+      "compiler_events": 888,
+      "compiled_package_ids": 478,
+      "cargo_lock_sha256": "28f514851a2d1a7625136d03d838afda0623ddad3d0084670ffe0f09afb08293",
+      "native_toolkit_pin_sha256": "53c5a40e2effef8fb70c01a9aa85f99f6aac671bda430ff740b08db3c9871a7e",
+      "signing": {
+        "state": "not applicable (Linux portable archive)"
+      },
+      "public_release_qualified": false,
+      "payload_inventory_entries": 1009,
+      "stage_metadata_verified": true,
+      "actual_package_contents_inspected_offline": true,
+      "actual_payload_files": 1009,
+      "actual_compiled_dependencies": 478,
+      "spdx_packages": 490,
+      "spdx_sha256": "92e0f1c27b5ff011fab2d2835c0a5ea2264dc37665a457e9eff9ecf95e48bfb8",
+      "compiled_dependencies_sha256": "04809cfd96d4aa1450b376a50cf24569040c664d2dad85afb15ee5afa24ebe0c",
+      "native_notice_files": 13
+    }
+  ],
+  "provider_evidence_runs": [
+    {
+      "run_id": 41185064509,
+      "url": "https://github.com/01max/librairii/actions/runs/41185064509",
+      "artifact_metadata": [
+        {
+          "id": 13037965920,
+          "name": "native-installation-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 107585201,
+          "digest": "sha256:3ddee84bc0e13f0917af4b4180aa1bfe7990f134c8d503570926060141ef6660",
+          "created_at": "2026-10-31T09:09:54Z",
+          "expires_at": "2026-11-30T09:09:41Z"
+        },
+        {
+          "id": 13037866153,
+          "name": "native-installation-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 137942055,
+          "digest": "sha256:d45aebe98f33d612f1c5479e65f44db865a3793b6e0a41c99e7e600c6e2b0e57",
+          "created_at": "2026-10-31T09:10:10Z",
+          "expires_at": "2026-11-30T09:10:02Z"
+        },
+        {
+          "id": 13037242032,
+          "name": "native-installation-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 99953824,
+          "digest": "sha256:f0a27ad32b28ca6c6c5053269cf01f599b25ff1c3e7f65692dad1b1d54cf6c4d",
+          "created_at": "2026-10-31T09:06:17Z",
+          "expires_at": "2026-11-30T09:06:06Z"
+        },
+        {
+          "id": 13036918245,
+          "name": "native-candidate-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 21161687,
+          "digest": "sha256:c058a4a112d23dab2a62304e06e1108111a7915d18774c2636d3155f94c403e3",
+          "created_at": "2026-10-31T08:47:55Z",
+          "expires_at": "2026-11-30T08:47:48Z"
+        },
+        {
+          "id": 13036154292,
+          "name": "native-candidate-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 24335408,
+          "digest": "sha256:5f48ac87a6a9daa13bf18f47d7e42a628526679e986ae08f62dba154008bc580",
+          "created_at": "2026-10-31T08:39:13Z",
+          "expires_at": "2026-11-30T08:39:11Z"
+        },
+        {
+          "id": 13035889514,
+          "name": "native-candidate-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 20030867,
+          "digest": "sha256:a597b64deb1f79e3401aec7c47c45c94fed08bf48726685f3889a6ebf18f9292",
+          "created_at": "2026-10-31T08:54:27Z",
+          "expires_at": "2026-11-30T08:54:26Z"
+        }
+      ],
+      "scope": "Provider metadata indexed; per-artifact raw admission is stated separately."
+    },
+    {
+      "run_id": 41185064457,
+      "url": "https://github.com/01max/librairii/actions/runs/41185064457",
+      "artifact_metadata": [
+        {
+          "id": 13037068986,
+          "name": "rust-quality-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 168723372,
+          "digest": "sha256:a80905a8eef341466f117702f3340ea93c0d7d3df055be9c66cfdf7f2e38a872",
+          "created_at": "2026-10-31T09:17:08Z",
+          "expires_at": "2026-11-30T09:16:50Z"
+        },
+        {
+          "id": 13036804118,
+          "name": "rust-native-ui-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 43003645,
+          "digest": "sha256:c7dfa0f1dc4c5cf35e1b77dcd8bfa39b1cf487969035845467451de8dfa8019c",
+          "created_at": "2026-10-31T08:48:09Z",
+          "expires_at": "2026-11-30T08:48:00Z"
+        },
+        {
+          "id": 13036768935,
+          "name": "rust-native-ui-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 40491424,
+          "digest": "sha256:27f3f660320a30404c1011266fe11931242626b6ba907b7835fd133f22b86f80",
+          "created_at": "2026-10-31T08:45:37Z",
+          "expires_at": "2026-11-30T08:45:28Z"
+        },
+        {
+          "id": 13036684769,
+          "name": "rust-reader-shelf-diagnostic-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 6823515,
+          "digest": "sha256:280abeb4a04b42052df66c223cae3e2b09ca53f6c3f600205a229413f57e6bb4",
+          "created_at": "2026-10-31T08:51:11Z",
+          "expires_at": "2026-11-30T08:51:10Z"
+        },
+        {
+          "id": 13036644229,
+          "name": "rust-quality-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 70967152,
+          "digest": "sha256:4d3ad6a713a066737d208e176d865e76e54b5b37f6e75d75db673f50b14b5851",
+          "created_at": "2026-10-31T08:46:16Z",
+          "expires_at": "2026-11-30T08:46:05Z"
+        },
+        {
+          "id": 13036188909,
+          "name": "rust-quality-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 72391609,
+          "digest": "sha256:3c370314ff6abda8cc12f24ca8936c47c4fc496c9d3fded459b8a5eea0602f38",
+          "created_at": "2026-10-31T08:54:33Z",
+          "expires_at": "2026-11-30T08:54:19Z"
+        },
+        {
+          "id": 13035904307,
+          "name": "rust-native-ui-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 41020837,
+          "digest": "sha256:5e58e6eece265d942ab8c046c83c43792766b25e6c33e3cd0311887ed2e52a6a",
+          "created_at": "2026-10-31T08:53:30Z",
+          "expires_at": "2026-11-30T08:53:19Z"
+        }
+      ],
+      "scope": "Provider metadata indexed; per-artifact raw admission is stated separately."
+    },
+    {
+      "run_id": 41185064367,
+      "url": "https://github.com/01max/librairii/actions/runs/41185064367",
+      "artifact_metadata": [
+        {
+          "id": 13038061795,
+          "name": "rust-scale-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 110945252,
+          "digest": "sha256:49d66a21c70f27b2e8e222f904e66a326dfe707d2baf9382f52fe682c6431996",
+          "created_at": "2026-10-31T09:18:50Z",
+          "expires_at": "2026-11-30T09:18:35Z"
+        },
+        {
+          "id": 13037352299,
+          "name": "rust-scale-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 108148254,
+          "digest": "sha256:a9d60222e32395b1ec2abb94310c54125730a19521877a6432140194489dbae5",
+          "created_at": "2026-10-31T09:10:59Z",
+          "expires_at": "2026-11-30T09:10:49Z"
+        },
+        {
+          "id": 13037315788,
+          "name": "rust-scale-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 132048242,
+          "digest": "sha256:cd9343950d39bc331a779a1b4436878e8604acd43e68dbe962f19754d10fe8f0",
+          "created_at": "2026-10-31T08:57:19Z",
+          "expires_at": "2026-11-30T08:57:08Z"
+        },
+        {
+          "id": 13036974098,
+          "name": "rust-scale-backend-aarch64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 2469898,
+          "digest": "sha256:6c21add1e05b361a9e9f37998a31c1a4c1cd8be0a9b69a6e6d7f3601362f63ef",
+          "created_at": "2026-10-31T08:56:27Z",
+          "expires_at": "2026-11-30T08:56:25Z"
+        },
+        {
+          "id": 13036483422,
+          "name": "rust-scale-backend-x86_64-apple-darwin-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 2555163,
+          "digest": "sha256:61aaac6852b18045d6f0bc7ad6402f71a703eaabd686ac85e70bd7f22be72939",
+          "created_at": "2026-10-31T08:51:24Z",
+          "expires_at": "2026-11-30T08:51:22Z"
+        },
+        {
+          "id": 13036284472,
+          "name": "rust-scale-backend-x86_64-unknown-linux-gnu-bd7327b8b600f34b21c8a44bac803551b4e8e05b",
+          "size_in_bytes": 2843165,
+          "digest": "sha256:61864491caa1b16983ce6efbe04ca43cb426e125b2e60eb05d6c25959fd185e7",
+          "created_at": "2026-10-31T08:42:37Z",
+          "expires_at": "2026-11-30T08:42:35Z"
+        }
+      ],
+      "scope": "Provider metadata indexed; per-artifact raw admission is stated separately."
+    },
+    {
+      "run_id": 41185064444,
+      "url": "https://github.com/01max/librairii/actions/runs/41185064444",
+      "artifact_metadata": [
+        {
+          "id": 13037341426,
+          "name": "task2-x86_64-apple-darwin-21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+          "size_in_bytes": 30576079,
+          "digest": "sha256:e0e52ff90d93983c9f2565eb5e1a2110f7ad27ea8f8f0ef5599c4f7ac023c85a",
+          "created_at": "2026-10-31T09:04:42Z",
+          "expires_at": "2026-11-30T09:04:36Z"
+        },
+        {
+          "id": 13036902470,
+          "name": "task2-aarch64-apple-darwin-21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+          "size_in_bytes": 29186937,
+          "digest": "sha256:acdb5d62e08ce7b794fabda6eaa9c6eee8323ad8189c3e7075a91f55b47ea224",
+          "created_at": "2026-10-31T08:51:18Z",
+          "expires_at": "2026-11-30T08:51:15Z"
+        },
+        {
+          "id": 13036813414,
+          "name": "task2-native-linux-21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+          "size_in_bytes": 1457455,
+          "digest": "sha256:33aa923bf2ec4403285d8cd164269d5ffd5a3981f86b4b1ea9d899afe8d95c98",
+          "created_at": "2026-10-31T08:43:56Z",
+          "expires_at": "2026-11-30T08:43:54Z"
+        },
+        {
+          "id": 13036449366,
+          "name": "task2-x86_64-apple-darwin-21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+          "size_in_bytes": 30525527,
+          "digest": "sha256:f2923292ca8df15739f63c972161d28634e341fcb993662ad4303d7f4bbb9604",
+          "created_at": "2026-10-31T08:43:39Z",
+          "expires_at": "2026-11-30T08:43:32Z"
+        },
+        {
+          "id": 13035919076,
+          "name": "task2-x86_64-unknown-linux-gnu-21f32ed968cd4e66bfde6817e0f77b4c93dac810",
+          "size_in_bytes": 51762208,
+          "digest": "sha256:fbf9cf9fbfdf0f2310cf7e79d6022fa29599a8229b172f9033dbaae4fba94887",
+          "created_at": "2026-10-31T08:48:57Z",
+          "expires_at": "2026-11-30T08:48:52Z"
+        }
+      ],
+      "scope": "Provider metadata indexed; per-artifact raw admission is stated separately."
+    }
+  ],
+  "raw_admission_at_this_step": {
+    "all_three_candidates": "Provider/inner package custody, clean source/target/lock/toolkit binding and actual compiler graph audited offline. Mac DMG contents are not locally mounted.",
+    "linux_package": "All actual 1009 tar payload files/modes/hashes, 478 compiled dependency rows, SPDX coverage and original notice bytes audited offline.",
+    "arm_installed_gui": "Latest merged-base raw ZIP verified; fresh/upgraded22 checks each,1238/1234 sealed files, exact original candidate/source/target bound; public signatures excluded.",
+    "intel_linux_installed_gui_quality_scale_foundations": "Provider artifacts indexed here; current-base CI reported passing. This index makes no new raw semantic admission for these archives. Historical Task18 independent admissions retain their own actual source revisions."
+  },
+  "known_limitations": [
+    "Mac packages are ad-hoc internal candidates: Developer ID, notarization, stapling and final signed-byte install/linkage/workflow checks remain open.",
+    "All mandatory final parity rows and independent all-target clean/upgraded release review remain open.",
+    "VoiceOver execution is owner-excluded; no macOS spoken-screen-reader qualification claim.",
+    "Japanese/Chinese/Arabic-specific input, IME and shaping qualification is deferred; valid UTF-8 data/filenames remain lossless and unrestricted.",
+    "Windows and automatic general cross-OS migration wizard are outside the qualified product.",
+    "Unmodified Go binaries may ignore cooperative locks. Only isolated library/profile/recovery adoption is supported; manual legacy routing to the native candidate is unsupported.",
+    "Application trash has no in-app restore/purge; external copy and reimport does not restore removed manual tag assignments.",
+    "Provider artifact retention is finite. Preserve raw evidence and original failures before expiry.",
+    "Task19 source changes require their own CI results. Original candidate hashes must never be relabeled as new source or final signed bytes."
+  ],
+  "final_release_manifest_required": [
+    "exact_source_commit_and_tree",
+    "target_architecture_and_minimum_OS",
+    "final_package_filename_byte_count_SHA256",
+    "final_signature_notarization_stapling_Gatekeeper_evidence",
+    "provider_artifact_zip_custody",
+    "compiled_graph_features_lock_and_toolkit_fingerprints",
+    "SPDX_notices_provenance_and_license_advisory_review",
+    "installed_process_linkage_offline_native_adapters",
+    "clean_and_upgraded_packaged_workflows_reopen_recovery_uninstall_reinstall",
+    "storage_upgrade_rollback_lifetime_isolation_and_immutable_hashes",
+    "performance_resources_accessibility_and_owner_scope_decisions",
+    "every_P01_through_P60_subcase_platform_result_and_independent_review"
+  ],
+  "public_release_qualified": false
+}

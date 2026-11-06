@@ -1,0 +1,8 @@
+[
+  {"input": "  ÉTÉ\t100%_Magique  ", "normalized": "ete 100%_magique"},
+  {"input": "ΟΣ", "normalized": "οσ"},
+  {"input": "ος", "normalized": "οσ"},
+  {"input": "Straße", "normalized": "strasse"},
+  {"input": "STRASSE", "normalized": "strasse"},
+  {"input": "İstanbul", "normalized": "istanbul"}
+]

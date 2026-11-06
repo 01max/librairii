@@ -1,95 +1,30 @@
 SHELL := /bin/sh
 
-WAILS_VERSION := $(shell cat .wails-version)
-WAILS ?= $(shell go env GOPATH)/bin/wails
-GO_PACKAGES := . ./internal/... ./cmd/...
+# Rust-only application commands. Version pins live in rust-toolchain.toml and
+# .config/rust-tools.toml. GUI execution remains an explicit developer action.
+.PHONY: setup fmt check check-rust test build run package
 
-.PHONY: setup setup-wails check-wails fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build dmg linux build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux smoke-foundation smoke-first-story smoke-release
-
-setup: setup-wails
-	go mod download
-	npm --prefix frontend ci
-
-setup-wails:
-	GOBIN="$(shell go env GOPATH)/bin" go install github.com/wailsapp/wails/v2/cmd/wails@$(WAILS_VERSION)
-
-check-wails:
-	@installed="$$($(WAILS) version 2>/dev/null | head -n 1)"; \
-	if [ "$$installed" != "$(WAILS_VERSION)" ]; then \
-		printf 'Wails CLI at %s must be %s (found: %s). Run make setup-wails.\n' "$(WAILS)" "$(WAILS_VERSION)" "$${installed:-missing}" >&2; \
-		exit 1; \
-	fi
+setup:
+	cargo xtask tools
 
 fmt:
-	go fmt $(GO_PACKAGES)
+	cargo fmt --all
 
-fmt-check:
-	go fmt $(GO_PACKAGES)
-	git diff --exit-code -- '*.go'
+check:
+	cargo xtask check
 
-vet:
-	go vet $(GO_PACKAGES)
+check-rust: check
 
-test-go:
-	go test $(GO_PACKAGES)
+test:
+	cargo nextest run --locked --workspace --profile ci
 
-typecheck:
-	npm --prefix frontend run typecheck
+build:
+	cargo build --locked --release -p librairii-desktop
 
-lint-frontend:
-	npm --prefix frontend run lint
+run:
+	cargo run --locked -p librairii-desktop
 
-test-frontend:
-	npm --prefix frontend run test
-
-test-frontend-accessibility:
-	npm --prefix frontend run test:accessibility
-
-test-frontend-performance:
-	npm --prefix frontend run test:performance
-
-test-frontend-release:
-	go test . -run '^TestCanonicalPrototypeContract$$'
-	npm --prefix frontend run test:release
-
-test-frontend-responsive:
-	npm --prefix frontend run test:responsive
-
-test-frontend-visual:
-	npm --prefix frontend run test:visual
-
-build-frontend:
-	npm --prefix frontend run build
-
-check: build-frontend fmt-check vet test-go typecheck lint-frontend test-frontend-release test-frontend-performance
-
-build: check-wails build-frontend
-	$(WAILS) build -m -nocolour
-	find frontend/wailsjs/go -type f -exec chmod 644 {} +
-
-dmg: build-current-installer
-	$(MAKE) verify-current-installer
-
-linux:
-	scripts/build-linux
-
-build-current-installer: build-frontend
-	scripts/build-current-installer
-
-verify-current-installer:
-	scripts/verify-current-installer
-
-verify-packaged-acceptance: build-current-installer
-	scripts/verify-packaged-acceptance
-
-verify-platform-linux: build-frontend
-	scripts/verify-platform-linux
-
-smoke-foundation:
-	scripts/smoke-foundation
-
-smoke-first-story:
-	go test ./internal/app -run '^TestFirstStoryVerticalSliceThroughPickerAndApplication$$' -v
-
-smoke-release:
-	scripts/smoke-release
+# Preview only. Pass TARGET and NAME; add --execute to the printed helper
+# invocation yourself when you want a package built on its matching host.
+package:
+	python3 -I -B scripts/build-native-package.py --target "$(TARGET)" --name "$(NAME)"

@@ -1,0 +1,8 @@
+package artwork
+import("encoding/json";"encoding/hex";"os";"testing";"crypto/sha256";"github.com/01max/librairii/internal/metadata")
+func TestTask11FrozenArtwork(t *testing.T){
+ repository,_:=newTestRepository(t);var inputs []struct{Name,Media,Payload string;Repeat int};raw,e:=os.ReadFile(os.Getenv("TASK11_ARTWORK_CASES"));if e!=nil{t.Fatal(e)};if e=json.Unmarshal(raw,&inputs);e!=nil{t.Fatal(e)}
+ sum:=sha256.Sum256([]byte("https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"));id:=hex.EncodeToString(sum[:]);cases:=[]any{}
+ for _,c:=range inputs{bytes,e:=hex.DecodeString(c.Payload);if e!=nil{t.Fatal(e)};if c.Repeat>0{bytes=make([]byte,c.Repeat)};path,asset,e:=repository.PublishCatalog(id,c.Media,bytes,DefaultMaximumBytes);out:=map[string]any{"name":c.Name,"valid":e==nil};if e==nil{loaded,e:=repository.LoadCatalog(metadata.CatalogArtwork{ID:id,ManagedPath:path,ContentType:asset.ContentType,SHA256:asset.SHA256,ByteSize:int64(len(bytes))},DefaultMaximumBytes);if e!=nil{t.Fatal(e)};out["hash"]=loaded.SHA256;out["media"]=loaded.ContentType;out["size"]=len(loaded.Content);out["path"]=path};cases=append(cases,out)}
+ data,e:=json.MarshalIndent(cases,"","  ");if e!=nil{t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK11_ARTWORK_CAPTURE"),append(data,'\n'),0600);e!=nil{t.Fatal(e)}
+}
