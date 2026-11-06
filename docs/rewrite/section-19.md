@@ -1,10 +1,106 @@
-# Task 19: native documentation and release readiness
+# Task 19: final Rust release rehearsal
 
-**Current owner scope (2026-11-03):** [fresh Rust state and free ad-hoc Mac
-packages](fresh-rust-contract.md) supersede this report's Go migration/rollback,
-retained-runtime and mandatory paid-signing requirements. Task 20 implements the
-retirement. The remaining content records earlier work and evidence; failed
-measurements and unfinished applicable package checks remain explicit.
+The remaining work is **19.6 (final evidence manifests)** and **19.7 (independent
+release rehearsal)**. Earlier Task 19 implementation and diagnostic subtasks are
+complete. This report defines the current handoff; it is not a claim that this
+source's post-build evidence already exists. The final source-bound bundle and
+independent reviews belong with the selected CI artifacts.
+
+## Current delivery scope
+
+The [owner contract](fresh-rust-contract.md) is a fresh Rust app with functional
+parity. First launch creates fresh Rust state after confirmation. Reopen and
+recovery operate on that native state. Go libraries, profiles and browser state
+are ignored, and external files remain unchanged. Task 20 retired the old product
+runtime; data adoption and compatible rollback are outside this release.
+
+Default delivery is a free ad-hoc signed DMG for each Mac architecture and a
+Linux archive. Paid Apple signing/notarization is optional and human-operated.
+It does not block this rehearsal. [Build and install instructions](../native-build-and-sign.md)
+explain first-launch approval without an Apple developer membership.
+
+Required targets remain Apple-silicon macOS 15+, real Intel macOS 15+ and
+Ubuntu 24.04 x86-64. Both GPU-API and software renderer routes are required;
+Linux also covers X11 and Wayland. VoiceOver execution and Japanese/Chinese/
+Arabic-specific input, IME and shaping qualification retain their recorded
+deferrals. UTF-8 data remains unrestricted. Windows is a separate follow-up.
+
+## Final evidence — 19.6
+
+Follow [the offline evidence handoff](../native-release-evidence.md). Bind each
+inner distribution checksum to its actual embedded commit/tree, target, pins,
+features, compiled dependency graph, SPDX/notices and matching-host installation.
+Retain provider artifact IDs, run IDs, archive byte counts and provider SHA-256
+values separately from the inner package identities.
+
+The [Task 18 completion index](section-18-final-evidence.json) demonstrates the
+format and records its own qualified historical source. The earlier
+[`section-19-candidates.json`](section-19-candidates.json) and
+[`section-19-parity.json`](section-19-parity.json) remain historical indexes.
+None qualifies a later build. Use the current
+[sixty-row assertion mapping](section-19-parity-audit.json) for the selected
+source, including its actual executed tests and native/installed witnesses.
+
+The bundle must contain all three package archives and their full quality,
+scale and installed evidence, the assembler input/output, parity output,
+terminal CI statuses, source proof, independent Standards/Spec reviews,
+original failures and known limitations. The assembler's approval and provider
+authentication flags remain false: it is an index, not an independent reviewer.
+No post-build pass claim is committed into its own build source.
+
+## Independent rehearsal — 19.7
+
+Review these conditions against the exact selected bytes. Passing a summary
+status or finding a test name is insufficient.
+
+- All required PR checks finish successfully, with no missing required target,
+  unexpected skip or cancellation. Conditional focused/foundation checks follow
+  the actual changed paths documented in [CI](ci.md).
+- All three native dependency graphs pass the current policy. Review actual
+  compiled inputs, expiring exceptions, original notices and About Slint
+  attribution. Earlier dependency audits do not approve a later graph.
+- All eight installed configurations complete fresh setup, visible workflow,
+  same-library reopen, interrupted-operation recovery and reinstall with the
+  expected durable identities, memberships and original/exported bytes.
+- GPU-API/software and X11/Wayland evidence retains its actual scope. Verify
+  native pickers, reveal, menus, language changes, accessibility, display scale
+  and owned shutdown/cleanup. Preserve partial observations as limitations.
+- Reconcile every mandatory parity row with actual assertions and raw evidence.
+  Verify performance distributions and resource measurements against their
+  unchanged workload-specific limits; do not replace failed samples.
+- Keep both independent reviews and their corrections with the raw artifacts.
+  Resolve required findings and the P58 hold below before marking 19.7 complete.
+
+### P58 performance hold
+
+Source `3c24629d50b7a39297c9ed05c8e317f797d7e150` failed the Intel
+`collectionQuery` wall-clock p95 gate: **131.736887 ms > 100 ms**. Its one
+unchanged repeat measured 73.812746 ms and passed. Later paired query-plan and
+complete-request phase diagnostics did not establish a cause or repair. The
+original sample set still fails the current verifier.
+
+The [investigation record](query-performance-investigation.md) retains these
+limits. There is no evidence-backed production fix to adopt from those
+experiments. In particular, the tested first-page materialization alternative
+was slower in 18 of 20 Intel pairs; it is not a justified repair.
+
+The hold remains open until either a demonstrated fix or an explicit
+evidence-backed owner disposition. If final rehearsal passes while the cause
+remains unknown, present that exact candidate, the original failure, current
+measurements and independent reviews for the owner's decision. Do not infer
+consent from a passing rerun. Any disposition must preserve the original failed
+verdict and the **100 ms blocking gate on every PR**; it is not permission to
+raise thresholds, trim samples, retry until green or move qualification out of PRs.
+
+Release publication, merging this task PR and OpenSpec archival are separate
+actions. Completing the review does not perform them.
+
+## Historical Task 19 audit through PR 75
+
+The following records describe the earlier source and owner scope. Legacy
+adoption, retained Go-runtime and mandatory paid-signing language is historical;
+the current delivery contract above governs the final rehearsal. Counts and
+package hashes below retain their original source, not the latest build.
 
 Integration base: `4b7cd37cc6cbafdcdd4d86f35661018c9c7dd027`, after
 [PR69](https://github.com/01max/librairii/pull/69). This section separates the

@@ -136,3 +136,29 @@ command-error replies. No input is retried and no assertion or deadline is
 relaxed. This repairs observation handling; the original run stays failed,
 fresh installed-package evidence remains required, and no product-performance
 cause or fix is inferred.
+
+
+## Final-rehearsal disposition boundary — 2026-11-06
+
+Replaying the retained original `backend.json` through the unchanged
+`verify_queries` function in `scripts/verify-native-scale.py` still rejects
+`collectionQuery` at 131.736887 ms. This is a replay of measured evidence, not a
+new execution of the native application. The original 20 wall samples include
+135.599067, 131.736887 and 120.924527 ms; no sample was removed or rescored.
+
+The later corrected phase-diagnostic source
+`a533b1b50562b60465ca779de0e3ff56417dae56` recorded ordinary Intel
+median/p95 19.5467635/22.433303 ms. Observed request time was mostly count and
+cursor/row execution, with smaller summary and outside-worker intervals. Those
+phases were not captured in the original failing run. They cannot identify its
+hotspot or establish a historical fix. Process-wide CPU also cannot establish
+per-thread off-CPU time.
+
+No reliably reproducing live failure has been established by the retained
+unchanged repeat, paired page-plan experiment or complete-request phase
+experiment. Native execution remains on disposable CI hosts. Applying an
+unproven production optimization or repeating acceptance jobs until green
+would not resolve this evidence gap. Final rehearsal may record a new passing
+candidate, but the separate P58 hold requires the disposition described in
+[Task 19](section-19.md#p58-performance-hold). The original failure, diagnostics
+and all PR-blocking performance limits remain intact.
