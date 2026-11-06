@@ -34,6 +34,7 @@ SPECS = {
 HELPER_SHA = 'b3b43bbdd784c7b61ebeeb7f600326f2011954b763f0bd8a1d4714e8eda38fc9'
 ORDER = ('candidate', 'baseline', 'baseline', 'candidate',
          'baseline', 'candidate', 'candidate', 'baseline')
+PURGE_BEFORE = (True, True, False, False, True, True, False, False)
 BACKENDS = ('winit-skia', 'winit-skia-software')
 
 
@@ -78,6 +79,18 @@ def host_snapshot(path):
                             capture_output=True, check=True, timeout=5)
     require(len(result.stdout) <= 1048576, 'host process snapshot exceeds bound')
     path.write_bytes(result.stdout)
+
+
+def purge_disk_cache(path):
+    """Approximate cold disk buffers only on this disposable hosted runner."""
+    require(platform.system() == 'Darwin' and platform.machine() == 'x86_64'
+            and os.environ.get('GITHUB_ACTIONS') == 'true'
+            and os.environ.get('GITHUB_REPOSITORY') == '01max/librairii'
+            and os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted',
+            'disk-cache experiment requires the disposable GitHub-hosted Intel runner')
+    with path.open('wb') as log:
+        subprocess.run(['/usr/bin/sudo', '-n', '/usr/sbin/purge'],
+                       stdout=log, stderr=subprocess.STDOUT, check=True, timeout=30)
 
 
 def build_instrumented(output, source):
@@ -159,8 +172,11 @@ def main():
                         help='Profile the first owned app launch; perturbs timing and never qualifies it')
     parser.add_argument('--build-instrumented', action='store_true',
                         help='Build and identify this committed diagnostic source instead of executing the archived candidate app')
+    parser.add_argument('--cold-cache', action='store_true',
+                        help='Compare purged and unpurged disk buffers in a fixed balanced order on the disposable hosted runner')
     args = parser.parse_args()
-    require(not (args.sample_first and args.build_instrumented), 'use one instrumentation method at a time')
+    require(sum((args.sample_first, args.build_instrumented, args.cold_cache)) <= 1,
+            'use one instrumentation method at a time')
     roots = verify(args.input_root.absolute())
     if args.verify_only:
         print(json.dumps({'verified': list(roots), 'executed': False}))
@@ -184,6 +200,9 @@ def main():
         'original_failed_sample_replaced': False,
         'first_launch_profiled': args.sample_first,
         'profiling_perturbs_first_launch_timing': args.sample_first,
+        'disk_cache_experiment': args.cold_cache,
+        'purge_order_per_backend': PURGE_BEFORE if args.cold_cache else [False] * len(ORDER),
+        'cache_experiment_scope': 'Disk buffers only; fixture and observer preparation remain unchanged after purge. No claim that OS services or every cache are reset.',
         'candidate_override': None,
         'scope': 'Pinned archived baseline and explicitly identified candidate binary; fresh synthetic profile per launch; no qualification prelude or loaded-workload RSS claim.',
         'diagnostic_source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -197,10 +216,13 @@ def main():
             candidate_binary, report['candidate_override'] = build_instrumented(output, report['diagnostic_source'])
             destination.write_text(json.dumps(report, indent=2) + '\n')
         for backend in BACKENDS:
-            for label in ORDER:
+            for index, label in enumerate(ORDER):
                 number = len(report['samples'])
                 name = f'{number:02d}-{label}-{backend}'
                 host_snapshot(output / 'host' / (name + '-before.txt'))
+                purged = args.cold_cache and PURGE_BEFORE[index]
+                if purged:
+                    purge_disk_cache(output / 'host' / (name + '-purge.log'))
                 root = roots[label]
                 with startup_sample(resources, output) if args.sample_first and number == 0 else nullcontext():
                     quiet = resources.product_run(candidate_binary if label == 'candidate' else root / 'librairii-desktop', root / 'scale-native',
@@ -213,6 +235,7 @@ def main():
                     'number': number, 'label': label, 'backend': backend,
                     'profiled_timing': args.sample_first and number == 0,
                     'instrumented_binary': args.build_instrumented and label == 'candidate',
+                    'disk_cache_purged_before_trial': purged,
                     'startup_ms': quiet['launch_to_first_ui_timer_ms'],
                     'within_original_startup_limit': quiet['launch_to_first_ui_timer_ms'] <= 1000,
                     'idle_cpu_percent': quiet['idle_cpu_percent_one_core'],

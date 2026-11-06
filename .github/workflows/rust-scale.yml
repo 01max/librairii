@@ -1,4 +1,4 @@
-name: Instrumented startup comparison (diagnostic only)
+name: Cold disk-cache startup comparison (diagnostic only)
 
 on:
   workflow_dispatch:
@@ -41,20 +41,8 @@ jobs:
           merge-multiple: true
       - name: Verify manifests, source identities and executable hashes
         run: python3 -I -B scripts/diagnose-dependency-startup.py --input-root target/startup-comparison/inputs --verify-only
-      - name: Install the exact source-pinned compiler
-        shell: bash
-        run: |
-          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
-          rustup toolchain install "$pin" --profile minimal
-      - name: Restore only dependency downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          key: rust-release-sources-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
-          path: |
-            ~/.cargo/registry/
-            ~/.cargo/git/
       - name: Collect every ordered observation separately from qualification
-        run: python3 -I -B scripts/diagnose-dependency-startup.py --input-root target/startup-comparison/inputs --build-instrumented
+        run: python3 -I -B scripts/diagnose-dependency-startup.py --input-root target/startup-comparison/inputs --cold-cache
       - name: Preserve complete or partial diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
