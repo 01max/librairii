@@ -1,4 +1,4 @@
-name: Software pointer comparison (diagnostic only)
+name: Loaded software input profile (diagnostic only)
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   diagnostic:
-    name: Intel software input comparison; no acceptance verdict
+    name: Intel loaded input profile; perturbed timings
     runs-on: macos-15-intel
     timeout-minutes: 45
     steps:
@@ -38,8 +38,8 @@ jobs:
           merge-multiple: true
       - name: Verify input identity without execution
         run: python3 -I -B scripts/diagnose-dependency-pointer.py --input-root target/pointer-comparison/inputs --verify-only
-      - name: Collect four ordered software input workloads
-        run: python3 -I -B scripts/diagnose-dependency-pointer.py --input-root target/pointer-comparison/inputs
+      - name: Sample one already-loaded candidate input workload
+        run: python3 -I -B scripts/diagnose-dependency-pointer.py --input-root target/pointer-comparison/inputs --profile-input
       - name: Preserve complete or partial diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

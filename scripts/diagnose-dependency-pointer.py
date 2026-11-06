@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Four fixed software-input comparisons of sealed binaries; never qualification."""
+"""Fixed software-input diagnostics of sealed binaries; never qualification."""
 import argparse
+from contextlib import contextmanager, nullcontext
 import hashlib
 import importlib.util
 import json
@@ -81,6 +82,84 @@ def host_snapshot(path):
     path.write_bytes(result.stdout)
 
 
+@contextmanager
+def input_profile(native, destination, helper):
+    """Sample only the observed owned app while its input helper runs."""
+    require_host()
+    original = native.subprocess
+    sampler = None
+    owned_process = None
+    log = None
+    body_failed = False
+    profile = destination / 'input-profile.txt'
+
+    class ProcessCalls:
+        def __getattr__(self, name):
+            return getattr(original, name)
+
+        def Popen(self, command, *args, **kwargs):
+            nonlocal owned_process
+            if kwargs.get('start_new_session'):
+                require(owned_process is None, 'only one owned app session may be profiled')
+            process = original.Popen(command, *args, **kwargs)
+            if kwargs.get('start_new_session'):
+                owned_process = process
+            return process
+
+        def run(self, command, *args, **kwargs):
+            nonlocal sampler, log
+            require(isinstance(command, list) and len(command) == 3
+                    and command[0] == str(helper) and command[2] == str(destination),
+                    'profile requires the exact owned input helper invocation')
+            pid = int(command[1])
+            observed = json.loads((destination / 'state.json').read_text())
+            require(sampler is None and pid == observed['pid'] and pid > 1
+                    and owned_process is not None and owned_process.poll() is None
+                    and os.getpgid(pid) == owned_process.pid
+                    and owned_process.pid != os.getpgrp(), 'profile target is not the observed owned app')
+            log = (destination / 'input-profile-command.log').open('wb')
+            sampler = original.Popen(['/usr/bin/sample', str(pid), '15', '10', '-file', str(profile)],
+                                     stdout=log, stderr=original.STDOUT)
+            return original.run(command, *args, **kwargs)
+
+    native.subprocess = ProcessCalls()
+    try:
+        yield
+    except BaseException:
+        body_failed = True
+        raise
+    finally:
+        native.subprocess = original
+        error = None
+        try:
+            if sampler is not None:
+                try:
+                    sampler.wait(timeout=25)
+                except original.TimeoutExpired:
+                    sampler.terminate()
+                    try:
+                        sampler.wait(timeout=5)
+                    except original.TimeoutExpired:
+                        sampler.kill()
+                        sampler.wait(timeout=5)
+                    raise ValueError('owned input profiler exceeded its deadline')
+            require(sampler is not None and sampler.returncode == 0, 'owned input profiler did not complete')
+            require(profile.is_file() and 0 < profile.stat().st_size <= 16777216,
+                    'bounded input profile required')
+        except Exception as failure:
+            error = str(failure)
+            if not body_failed:
+                raise
+        finally:
+            if log is not None:
+                log.close()
+            if destination.is_dir():
+                (destination / 'profile-status.json').write_text(json.dumps({
+                    'complete': error is None, 'error': error, 'observation_failed': body_failed,
+                    'acceptance_evidence': False, 'profiling_perturbs_timings': True,
+                }, indent=2) + '\n')
+
+
 def observe(native, binary, destination, helper):
     error = None
     try:
@@ -113,6 +192,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-root', type=Path, required=True)
     parser.add_argument('--verify-only', action='store_true')
+    parser.add_argument('--profile-input', action='store_true',
+                        help='Sample one candidate input workload; perturbs timing and never qualifies it')
     args = parser.parse_args()
     roots = verify(args.input_root.absolute())
     if args.verify_only:
@@ -122,31 +203,37 @@ def main():
     output = ROOT / 'target/pointer-comparison/observations'
     output.mkdir(parents=True, exist_ok=False)
     (output / 'host').mkdir()
+    order = ('candidate',) if args.profile_input else ORDER
     report = {
         'format': 'librairii.dependency-pointer-diagnostic', 'schema': 1, 'complete': False,
         'acceptance_evidence': False, 'causal_fix_proven': False, 'original_failed_sample_replaced': False,
         'diagnostic_source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        'inputs': SPECS, 'shared_helper_sha256': HELPER_SHA, 'order': ORDER, 'samples': [],
+        'inputs': SPECS, 'shared_helper_sha256': HELPER_SHA, 'order': order, 'samples': [],
+        'input_profiled': args.profile_input, 'profiling_perturbs_timings': args.profile_input,
         'scope': 'Four fixed full loaded-library input workloads; same host and helper, fresh synthetic profile per trial. Software renderer only. Original GPU/ordinary-startup prelude omitted. Not full qualification or a cause/repair claim.',
         'retained_failures': [42229788963, 42273630563],
     }
+    if args.profile_input:
+        report['scope'] = 'One full loaded-library candidate software input workload with a 15-second, 10ms-interval sampling profile starting at input-helper invocation. Timings are perturbed and cannot qualify or compare performance. Original GPU/ordinary-startup prelude omitted.'
     destination = output / 'report.json'
     try:
         native = module()
         for root in roots.values():
             for name in ('scale-native', 'input-macos'):
                 (root / name).chmod(0o700)
-        for index, label in enumerate(ORDER):
+        for index, label in enumerate(order):
             name = f'{index:02d}-{label}'
             host_snapshot(output / 'host' / (name + '-before.txt'))
             trial = output / name
-            row = observe(native, roots[label] / 'scale-native', trial, roots['candidate'] / 'input-macos')
-            row.update(index=index, label=label, raw_report=name + '/report.json')
+            helper = roots['candidate'] / 'input-macos'
+            with input_profile(native, trial, helper) if args.profile_input else nullcontext():
+                row = observe(native, roots[label] / 'scale-native', trial, helper)
+            row.update(index=index, label=label, raw_report=name + '/report.json', profiled_timing=args.profile_input)
             report['samples'].append(row)
             destination.write_text(json.dumps(report, indent=2) + '\n')
             host_snapshot(output / 'host' / (name + '-after.txt'))
             print(json.dumps(row), flush=True)
-        require(len(report['samples']) == 4, 'all four predeclared trials required')
+        require(len(report['samples']) == len(order), 'all predeclared trials required')
         verify(args.input_root.absolute())
         report['complete'] = True
     finally:
