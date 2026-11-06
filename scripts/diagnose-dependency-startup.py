@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fixed-order startup observations of exact binaries; never qualification."""
 import argparse
+from contextlib import contextmanager, nullcontext
 import hashlib
 import importlib.util
 import json
@@ -30,8 +31,8 @@ SPECS = {
     },
 }
 HELPER_SHA = 'b3b43bbdd784c7b61ebeeb7f600326f2011954b763f0bd8a1d4714e8eda38fc9'
-ORDER = ('baseline', 'candidate', 'candidate', 'baseline',
-         'candidate', 'baseline', 'baseline', 'candidate')
+ORDER = ('candidate', 'baseline', 'baseline', 'candidate',
+         'baseline', 'candidate', 'candidate', 'baseline')
 BACKENDS = ('winit-skia', 'winit-skia-software')
 
 
@@ -78,10 +79,49 @@ def host_snapshot(path):
     path.write_bytes(result.stdout)
 
 
+@contextmanager
+def startup_sample(resources, output):
+    """Sample only the discovered owned product PID; these timings are perturbed."""
+    original = resources.child_pid
+    sampler = None
+    with (output / 'startup-profile-command.log').open('wb') as log:
+        def observed_child(parent):
+            nonlocal sampler
+            pid = original(parent)
+            if pid is not None and sampler is None:
+                require(os.getpgid(pid) == parent, 'profile target escaped owned product group')
+                sampler = subprocess.Popen(
+                    ['/usr/bin/sample', str(pid), '3', '1', '-file', str(output / 'startup-profile.txt')],
+                    stdout=log, stderr=subprocess.STDOUT)
+            return pid
+        resources.child_pid = observed_child
+        try:
+            yield
+        finally:
+            resources.child_pid = original
+            if sampler is not None:
+                try:
+                    sampler.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    sampler.terminate()
+                    try:
+                        sampler.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        sampler.kill()
+                        sampler.wait(timeout=5)
+                    raise ValueError('owned startup profiler exceeded its deadline')
+            require(sampler is not None and sampler.returncode == 0, 'startup profiler did not complete')
+            profile = output / 'startup-profile.txt'
+            require(profile.is_file() and 0 < profile.stat().st_size <= 16777216,
+                    'bounded startup profile required')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-root', type=Path, required=True)
     parser.add_argument('--verify-only', action='store_true')
+    parser.add_argument('--sample-first', action='store_true',
+                        help='Profile the first owned app launch; perturbs timing and never qualifies it')
     args = parser.parse_args()
     roots = verify(args.input_root.absolute())
     if args.verify_only:
@@ -104,6 +144,8 @@ def main():
         'format': 'librairii.dependency-startup-diagnostic', 'schema': 1,
         'acceptance_evidence': False, 'causal_fix_proven': False, 'complete': False,
         'original_failed_sample_replaced': False,
+        'first_launch_profiled': args.sample_first,
+        'profiling_perturbs_first_launch_timing': args.sample_first,
         'scope': 'Exact binaries on one host; fresh synthetic profile per launch; no qualification prelude or loaded-workload RSS claim.',
         'diagnostic_source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'inputs': SPECS, 'shared_helper_sha256': HELPER_SHA,
@@ -117,14 +159,16 @@ def main():
                 name = f'{number:02d}-{label}-{backend}'
                 host_snapshot(output / 'host' / (name + '-before.txt'))
                 root = roots[label]
-                quiet = resources.product_run(root / 'librairii-desktop', root / 'scale-native',
-                                              output / name, backend, helper, native)
+                with startup_sample(resources, output) if args.sample_first and number == 0 else nullcontext():
+                    quiet = resources.product_run(root / 'librairii-desktop', root / 'scale-native',
+                                                  output / name, backend, helper, native)
                 require(quiet['complete'] and quiet['workers_joined'] and quiet['fixture_retired'],
                         'positive shutdown and fixture retirement required before next trial')
                 host_snapshot(output / 'host' / (name + '-after.txt'))
                 log = (output / name / 'execution.log').read_text()
                 row = {
                     'number': number, 'label': label, 'backend': backend,
+                    'profiled_timing': args.sample_first and number == 0,
                     'startup_ms': quiet['launch_to_first_ui_timer_ms'],
                     'within_original_startup_limit': quiet['launch_to_first_ui_timer_ms'] <= 1000,
                     'idle_cpu_percent': quiet['idle_cpu_percent_one_core'],
