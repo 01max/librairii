@@ -1,5 +1,7 @@
 //! Current production worker/view/menu composition on an owned 1,000-story fixture.
 #![forbid(unsafe_code)]
+#[path = "scale-native/diagnostic_timing.rs"]
+mod diagnostic_timing;
 #[path = "scale-native/dispatch.rs"]
 mod dispatch;
 #[path = "scale-native/fixture.rs"]
@@ -27,6 +29,29 @@ fn atomic(path: &Path, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {
     fs::write(&tmp, bytes)?;
     fs::rename(tmp, path)
 }
+fn save_timing(
+    trace: &mut diagnostic_timing::Trace,
+    witnesses: &dispatch::Witnesses,
+    output: &Path,
+) -> Result {
+    if trace.freeze() {
+        atomic(
+            &output.join("observer-timing.json"),
+            serde_json::to_vec(&json!({
+                "format": "librairii.observer-timing-diagnostic", "schema": 1,
+                "acceptance_evidence": false, "instrumented": true,
+                "clock": "same relative monotonic nanoseconds as dispatch witnesses",
+                "columns": ["start", "clock_files", "resize_menus", "projection", "model_observation",
+                            "import_page_offers", "geometry_capture", "native_window", "state_publication", "end"],
+                "rows": trace.rows(), "overflowed": trace.overflowed,
+                "dispatch_events_before_shutdown": witnesses.events()?,
+                "workers_joined": false,
+                "scope": "Sealed before shutdown; zero intermediate timestamp means an early return. Joined witnesses and lifecycle must be verified separately."
+            }))?,
+        )?;
+    }
+    Ok(())
+}
 fn run(configuration: &Path, output: PathBuf) -> Result {
     let config = fixture::read(configuration)?;
     if !output.is_dir() || fs::read(output.join(".native-scale"))? != b"native-scale-16\n" {
@@ -46,6 +71,8 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let view = view::install(&ui, worker.clone(), first)?;
     let dispatch = dispatch::Witnesses::install(&ui);
     let dispatch_timer = dispatch.clone();
+    let timings = Rc::new(RefCell::new(diagnostic_timing::Trace::new()));
+    let timings_timer = timings.clone();
     let closing = worker.clone();
     ui.on_quit(move || closing.borrow().request_shutdown());
     let weak = ui.as_weak();
@@ -77,6 +104,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let mut last_projection = None;
     let mut clock_sequence = 0u64;
     timer.start(slint::TimerMode::Repeated,Duration::from_millis(16),move||{
+      let mut timing=[0;10];timing[0]=dispatch_timer.borrow().clock();
       // Quit is asynchronous. Preserve the first diagnostic if another timer
       // tick arrives before the native event loop actually returns.
       if failure.borrow().is_some(){
@@ -89,6 +117,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         // Stop admission before any further import/page offers. The real worker
         // still joins every owned job before this observer can report success.
         if output.join("finish").exists(){
+            save_timing(&mut timings_timer.borrow_mut(),&dispatch_timer.borrow(),&output)?;
             pending.borrow().request_shutdown();
             if pending.borrow().finished(){slint::quit_event_loop()?;}
             return Ok(())
@@ -102,13 +131,16 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
                 clock_sequence=sequence;
             }
         }
+        timing[1]=dispatch_timer.borrow().clock();
         stage="projection";
         view.borrow_mut().resize(&ui);menus.dispatch(&ui);
+        timing[2]=dispatch_timer.borrow().clock();
         if let Some(s)=pending.borrow().take_snapshot(){
             let revision=s.revision;let phase=s.phase;let expected=pending.borrow().revision();
             let accepted=view.borrow_mut().accept(&ui,s,expected);
             last_projection=Some((revision,phase,expected,accepted));
         }
+        timing[3]=dispatch_timer.borrow().clock();
         let snapshot=&view.borrow().snapshot;
         if snapshot.phase==Phase::Recovery{stage="recovery";return Err(format!("scale observer entered recovery: {}",snapshot.status).into())}
         if !ready && snapshot.phase==Phase::Library && snapshot.page.as_ref().is_some_and(|p|p.total==1000){
@@ -129,6 +161,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         }
         let active_imports=snapshot.workflows.operations.cards.iter().filter(|c|matches!(c.operation.state,OperationState::Running|OperationState::Queued)).count();
         let running=active_imports>0;
+        timing[4]=dispatch_timer.borrow().clock();
         let loading=output.join("start-load").exists();
         stage="import-offer";
         // An old projection can undercount work already offered. Await the
@@ -148,6 +181,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
                 pending.borrow().offer(Command::Request(request))?;last_page_command=Some(requested);
             }
         }
+        timing[5]=dispatch_timer.borrow().clock();
         stage="geometry";
         if let Ok(bytes)=fs::read(output.join("geometry")) {
             let request:serde_json::Value=serde_json::from_slice(&bytes)?;
@@ -170,15 +204,20 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             use image::ImageEncoder;
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
+        timing[6]=dispatch_timer.borrow().clock();
         stage="state";
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
+        timing[7]=dispatch_timer.borrow().clock();
         let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"dispatch":dispatch_timer.borrow().summary(),"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"active_imports":active_imports,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
         let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
+        timing[8]=dispatch_timer.borrow().clock();
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}
         if pending.borrow().finished(){slint::quit_event_loop()?;}
         Ok(())
       })();
+      timing[9]=dispatch_timer.borrow().clock();timings_timer.borrow_mut().record(timing);
       if let Err(e)=result{
+        if let Err(write)=save_timing(&mut timings_timer.borrow_mut(),&dispatch_timer.borrow(),&output){eprintln!("[DEBUG-dependency-input] timing retention failed: {write}");}
         let message=e.to_string();
         // Retain the triggering controller observation before worker shutdown
         // can replace it with a secondary close error. Diagnostics run only on
@@ -204,7 +243,15 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     });
     let shown = ui.run();
     timer.stop();
+    let timing_saved = save_timing(
+        &mut timings.borrow_mut(),
+        &dispatch.borrow(),
+        &failure_output,
+    );
     let joined = worker.borrow_mut().finish();
+    if let Err(write) = &timing_saved {
+        eprintln!("[DEBUG-dependency-input] timing retention failed: {write}");
+    }
     if shown.is_err() || joined.is_err() || error.borrow().is_some() {
         let receipt = json!({"window_error": shown.as_ref().err().map(ToString::to_string),
             "worker_shutdown_error": joined.as_ref().err(), "timer_error": &*error.borrow()});
@@ -224,6 +271,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         .into());
     }
     joined?;
+    timing_saved?;
     atomic(
         &failure_output.join("dispatch-events.json"),
         serde_json::to_vec(dispatch.borrow().events()?)?,

@@ -1,4 +1,4 @@
-name: Loaded software input profile (diagnostic only)
+name: In-memory loaded input timings (diagnostic only)
 
 on:
   workflow_dispatch:
@@ -13,13 +13,30 @@ concurrency:
 
 jobs:
   diagnostic:
-    name: Intel loaded input profile; perturbed timings
+    name: Intel observer phases; diagnostic only
     runs-on: macos-15-intel
-    timeout-minutes: 45
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: '0'
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Install the exact pinned compiler
+        run: |
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal
+      - name: Cache compiler inputs for the isolated diagnostic build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: dependency-input-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('rust-toolchain.toml', '**/Cargo.toml', '**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry/
+            ~/.cargo/git/
+            target/x86_64-apple-darwin/release/
+            target/release/
       - name: Download the exact retained main-branch observations
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -38,14 +55,14 @@ jobs:
           merge-multiple: true
       - name: Verify input identity without execution
         run: python3 -I -B scripts/diagnose-dependency-pointer.py --input-root target/pointer-comparison/inputs --verify-only
-      - name: Sample one already-loaded candidate input workload
-        run: python3 -I -B scripts/diagnose-dependency-pointer.py --input-root target/pointer-comparison/inputs --profile-input
+      - name: Collect two predeclared instrumented input workloads
+        run: python3 -I -B scripts/diagnose-dependency-input-timing.py --input-root target/pointer-comparison/inputs
       - name: Preserve complete or partial diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: dependency-pointer-comparison-${{ github.sha }}
-          path: target/pointer-comparison/observations/
+          name: dependency-input-timing-${{ github.sha }}
+          path: target/input-timing/observations/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
