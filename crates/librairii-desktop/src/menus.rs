@@ -20,6 +20,7 @@ pub fn prepare_process() -> Result {
 
 /// The production and fixture paths use exactly the same toolkit/menu composition.
 pub fn create_window() -> Result<(DesktopWindow, Menus)> {
+    let diagnostic_started = std::time::Instant::now();
     #[cfg(target_os = "macos")]
     {
         if std::env::var_os("SLINT_NO_MUDA").is_none() {
@@ -36,14 +37,26 @@ pub fn create_window() -> Result<(DesktopWindow, Menus)> {
                 .with_default_menu_bar(false)
                 .build()?,
         ))?;
+        eprintln!(
+            "native_startup_detail; stage=backend_created; elapsed_ms={:.3}",
+            diagnostic_started.elapsed().as_secs_f64() * 1000.
+        );
     }
     let ui = DesktopWindow::new()?;
+    eprintln!(
+        "native_startup_detail; stage=component_created; elapsed_ms={:.3}",
+        diagnostic_started.elapsed().as_secs_f64() * 1000.
+    );
     #[cfg(target_os = "linux")]
     // Slint initializes its context above; Winit reads this ID when showing
     // the window. Match the installed desktop entry for both X11 and Wayland.
     slint::set_xdg_app_id("io.github.librairii.native")?;
     ui.set_platform_menu(cfg!(target_os = "macos"));
     let menus = Menus::install(ui.as_weak())?;
+    eprintln!(
+        "native_startup_detail; stage=menus_installed; elapsed_ms={:.3}",
+        diagnostic_started.elapsed().as_secs_f64() * 1000.
+    );
     Ok((ui, menus))
 }
 

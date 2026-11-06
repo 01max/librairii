@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed-order startup observations of exact binaries; never qualification."""
+"""Fixed-order startup diagnostics with explicit binary identities; never qualification."""
 import argparse
 from contextlib import contextmanager, nullcontext
 import hashlib
@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +80,40 @@ def host_snapshot(path):
     path.write_bytes(result.stdout)
 
 
+def build_instrumented(output, source):
+    require(not subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT),
+            'instrumented build requires clean committed source')
+    lock = hashlib.sha256((ROOT / 'Cargo.lock').read_bytes()).hexdigest()
+    require(lock == SPECS['candidate']['lock'], 'instrumented build must retain the candidate lockfile')
+    folder = output / 'instrumented'
+    folder.mkdir()
+    command = ['cargo', 'build', '--locked', '--release', '--target', 'x86_64-apple-darwin',
+               '-p', 'librairii-desktop', '--bin', 'librairii-desktop', '--message-format=json']
+    with (folder / 'compiler-artifacts.jsonl').open('w') as out, (folder / 'build.log').open('w') as err:
+        subprocess.run(command, cwd=ROOT, stdout=out, stderr=err, check=True, timeout=5400)
+    events = [json.loads(line) for line in (folder / 'compiler-artifacts.jsonl').read_text().splitlines()]
+    matches = [e for e in events if e.get('reason') == 'compiler-artifact'
+               and e.get('target', {}).get('name') == 'librairii-desktop'
+               and e['target']['kind'] == ['bin'] and e.get('executable')]
+    require(len(matches) == 1 and matches[0]['profile']['opt_level'] == '3'
+            and not matches[0]['profile']['debug_assertions']
+            and not matches[0]['profile']['overflow_checks'], 'exact release binary required')
+    built = Path(matches[0]['executable'])
+    expected = ROOT / 'target/x86_64-apple-darwin/release/librairii-desktop'
+    require(built == expected and built.is_file() and not built.is_symlink(), 'unexpected build output')
+    binary = folder / 'librairii-desktop'
+    shutil.copy2(built, binary)
+    require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == source
+            and not subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT)
+            and hashlib.sha256((ROOT / 'Cargo.lock').read_bytes()).hexdigest() == lock,
+            'instrumented source changed during build')
+    return binary, {'kind': 'instrumented diagnostic build', 'source': source,
+                    'cargo_lock_sha256': lock, 'sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+                    'bytes': binary.stat().st_size, 'profile': matches[0]['profile'],
+                    'compiler': subprocess.check_output(['rustc', '-vV'], cwd=ROOT, text=True),
+                    'command': command, 'archived_observer_source': SPECS['candidate']['source']}
+
+
 @contextmanager
 def startup_sample(resources, output):
     """Sample only the discovered owned product PID; these timings are perturbed."""
@@ -122,7 +157,10 @@ def main():
     parser.add_argument('--verify-only', action='store_true')
     parser.add_argument('--sample-first', action='store_true',
                         help='Profile the first owned app launch; perturbs timing and never qualifies it')
+    parser.add_argument('--build-instrumented', action='store_true',
+                        help='Build and identify this committed diagnostic source instead of executing the archived candidate app')
     args = parser.parse_args()
+    require(not (args.sample_first and args.build_instrumented), 'use one instrumentation method at a time')
     roots = verify(args.input_root.absolute())
     if args.verify_only:
         print(json.dumps({'verified': list(roots), 'executed': False}))
@@ -146,13 +184,18 @@ def main():
         'original_failed_sample_replaced': False,
         'first_launch_profiled': args.sample_first,
         'profiling_perturbs_first_launch_timing': args.sample_first,
-        'scope': 'Exact binaries on one host; fresh synthetic profile per launch; no qualification prelude or loaded-workload RSS claim.',
+        'candidate_override': None,
+        'scope': 'Pinned archived baseline and explicitly identified candidate binary; fresh synthetic profile per launch; no qualification prelude or loaded-workload RSS claim.',
         'diagnostic_source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'inputs': SPECS, 'shared_helper_sha256': HELPER_SHA,
         'order_per_backend': ORDER, 'backends': BACKENDS, 'samples': [],
     }
     destination = output / 'report.json'
     try:
+        candidate_binary = roots['candidate'] / 'librairii-desktop'
+        if args.build_instrumented:
+            candidate_binary, report['candidate_override'] = build_instrumented(output, report['diagnostic_source'])
+            destination.write_text(json.dumps(report, indent=2) + '\n')
         for backend in BACKENDS:
             for label in ORDER:
                 number = len(report['samples'])
@@ -160,7 +203,7 @@ def main():
                 host_snapshot(output / 'host' / (name + '-before.txt'))
                 root = roots[label]
                 with startup_sample(resources, output) if args.sample_first and number == 0 else nullcontext():
-                    quiet = resources.product_run(root / 'librairii-desktop', root / 'scale-native',
+                    quiet = resources.product_run(candidate_binary if label == 'candidate' else root / 'librairii-desktop', root / 'scale-native',
                                                   output / name, backend, helper, native)
                 require(quiet['complete'] and quiet['workers_joined'] and quiet['fixture_retired'],
                         'positive shutdown and fixture retirement required before next trial')
@@ -169,10 +212,12 @@ def main():
                 row = {
                     'number': number, 'label': label, 'backend': backend,
                     'profiled_timing': args.sample_first and number == 0,
+                    'instrumented_binary': args.build_instrumented and label == 'candidate',
                     'startup_ms': quiet['launch_to_first_ui_timer_ms'],
                     'within_original_startup_limit': quiet['launch_to_first_ui_timer_ms'] <= 1000,
                     'idle_cpu_percent': quiet['idle_cpu_percent_one_core'],
                     'stages': re.findall(r'native_startup; stage=([^;]+);(?: phase=[^;]+;)? elapsed_ms=([\d.]+)', log),
+                    'window_stages': re.findall(r'native_startup_detail; stage=([^;]+); elapsed_ms=([\d.]+)', log),
                     'shader_compilation_errors': log.count('Shader compilation error'),
                     'raw_report': name + '/report.json',
                 }
@@ -180,6 +225,12 @@ def main():
                 destination.write_text(json.dumps(report, indent=2) + '\n')
                 print(json.dumps(row), flush=True)
         require(len(report['samples']) == 16, 'all sixteen ordered samples required')
+        verify(args.input_root.absolute())
+        if report['candidate_override'] is not None:
+            require(hashlib.sha256(candidate_binary.read_bytes()).hexdigest() == report['candidate_override']['sha256']
+                    and subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == report['diagnostic_source']
+                    and not subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT),
+                    'instrumented binary/source changed during observation')
         report['complete'] = True
     finally:
         report['files'] = {str(p.relative_to(output)): hashlib.sha256(p.read_bytes()).hexdigest()
