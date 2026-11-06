@@ -159,6 +159,7 @@ unchanged repeat, paired page-plan experiment or complete-request phase
 experiment. Native execution remains on disposable CI hosts. Applying an
 unproven production optimization or repeating acceptance jobs until green
 would not resolve this evidence gap. Final rehearsal may record a new passing
-candidate, but the separate P58 hold requires the disposition described in
-[Task 19](section-19.md#p58-performance-hold). The original failure, diagnostics
+candidate, but the separate P58 hold remains open. Accepting it without a demonstrated
+fix or changed budget would require the explicit owner-approved policy amendment
+proposed in [Task 19](section-19.md#p58-performance-hold). The original failure, diagnostics
 and all PR-blocking performance limits remain intact.

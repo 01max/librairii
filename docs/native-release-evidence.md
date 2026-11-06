@@ -145,9 +145,10 @@ negative controls: their presence does not qualify data adoption.
 
 Retain failed attempts and measurement limitations with the passing selection.
 In particular, the original P58 Intel query failure remains failed; a green
-current matrix alone cannot close its separate qualification hold. Record any
-evidence-backed owner disposition separately, without changing old samples,
-thresholds or the PR-blocking checks.
+current matrix alone cannot close its separate qualification hold. An unchanged-budget
+owner disposition would first require the explicit qualification-policy amendment
+described in Task 19. It is not already authorized. Retain any decision separately,
+without changing old samples, thresholds or the PR-blocking checks.
 
 Store the final bundle alongside the selected CI evidence, outside the source
 that was built. A subsequent tracked index may reference that historical

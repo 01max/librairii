@@ -84,13 +84,20 @@ limits. There is no evidence-backed production fix to adopt from those
 experiments. In particular, the tested first-page materialization alternative
 was slower in 18 of 20 Intel pairs; it is not a justified repair.
 
-The hold remains open until either a demonstrated fix or an explicit
-evidence-backed owner disposition. If final rehearsal passes while the cause
-remains unknown, present that exact candidate, the original failure, current
-measurements and independent reviews for the owner's decision. Do not infer
-consent from a passing rerun. Any disposition must preserve the original failed
-verdict and the **100 ms blocking gate on every PR**; it is not permission to
-raise thresholds, trim samples, retry until green or move qualification out of PRs.
+The current parity specification requires a demonstrated fix or an explicit
+evidence-backed product decision changing the budget. The owner has required
+the **100 ms blocking gate on every PR**, so no budget change is proposed.
+The existing policy therefore keeps this hold open while the cause is unknown.
+
+If final rehearsal passes, an alternative would be an explicit owner-approved
+amendment of the qualification policy: retain the historical failure and unknown
+cause, while accepting only the independently reviewed current candidate under
+the unchanged limits. This is a proposed policy change, not an existing Spec86
+closure route. Present the exact candidate, original failure, current measurements
+and independent reviews before requesting that decision. Until authorized and
+recorded in the specification, it cannot close 19.7. A passing rerun is not
+consent. Any such amendment must preserve the original failed verdict and must
+not raise thresholds, trim samples, retry until green or move gates out of PRs.
 
 Release publication, merging this task PR and OpenSpec archival are separate
 actions. Completing the review does not perform them.
