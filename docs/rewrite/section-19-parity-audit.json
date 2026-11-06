@@ -117,13 +117,13 @@
           "suite": "librairii-storage::database_workers",
           "name": "five_owned_connections_have_actual_required_pragmas_and_close_before_reuse",
           "source": "crates/librairii-storage/tests/database_workers.rs",
-          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+          "source_sha256": "d9d29ab0f8ebccdcf4fcb8b6bd612154a16f567d9c426dc629d75d0690ada8c1"
         },
         {
           "suite": "librairii-storage::database_workers",
           "name": "four_coherent_read_snapshots_run_concurrently_with_the_separate_writer",
           "source": "crates/librairii-storage/tests/database_workers.rs",
-          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+          "source_sha256": "d9d29ab0f8ebccdcf4fcb8b6bd612154a16f567d9c426dc629d75d0690ada8c1"
         }
       ],
       "native_callbacks": [
