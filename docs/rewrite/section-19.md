@@ -1,10 +1,11 @@
 # Task 19: final Rust release rehearsal
 
-The remaining work is **19.6 (final evidence manifests)** and **19.7 (independent
-release rehearsal)**. Earlier Task 19 implementation and diagnostic subtasks are
-complete. This report defines the current handoff; it is not a claim that this
-source's post-build evidence already exists. The final source-bound bundle and
-independent reviews belong with the selected CI artifacts.
+**19.6 (final evidence manifests) is complete.** The remaining work is
+**19.7 (independent release rehearsal)**, held by the P58 decision and current
+documentation PR checks. Earlier implementation and diagnostic subtasks are complete. The selected release candidate is the exact previously tested source
+`967f5fab7bb190646339333857f673d17793d342`, not this later documentation revision.
+Its new [Task 19 evidence index](section-19-final-evidence.json) records the
+assembled manifest, original artifacts, independent reviews and open holds.
 
 ## Current delivery scope
 
@@ -33,8 +34,13 @@ features, compiled dependency graph, SPDX/notices and matching-host installation
 Retain provider artifact IDs, run IDs, archive byte counts and provider SHA-256
 values separately from the inner package identities.
 
-The [Task 18 completion index](section-18-final-evidence.json) demonstrates the
-format and records its own qualified historical source. The earlier
+The [Task 18 completion index](section-18-final-evidence.json) retains the original
+packaging qualification. Only five documentation files changed between that
+selected source and Task 19 selection head `fde6fde`; the app, build inputs,
+fixtures and checks are unchanged. Both independent reviewers verified all
+twelve original archives and three inner distributions before selecting those
+same bytes for this release rehearsal. No new build inherits their verdicts.
+The earlier
 [`section-19-candidates.json`](section-19-candidates.json) and
 [`section-19-parity.json`](section-19-parity.json) remain historical indexes.
 None qualifies a later build. Use the current
@@ -47,6 +53,25 @@ terminal CI statuses, source proof, independent Standards/Spec reviews,
 original failures and known limitations. The assembler's approval and provider
 authentication flags remain false: it is an index, not an independent reviewer.
 No post-build pass claim is committed into its own build source.
+
+The selected source's fourteen required checks passed. Its evidence reconciles
+all sixty parity rows across three targets, eight installed configurations,
+176 checkpoints and forty retired product processes. Current documentation PR
+checks remain separately required. The retained draft evidence release is
+provider release ID `435830089` (tag `task18-pr77-evidence`); the new index maps
+its twelve assets to the original workflow artifacts and their exact digests.
+This task has not published or changed that draft release.
+
+The portable local bundle is
+`target/task19-release-rehearsal/selected-967f5fab/`: `task19-input.json`,
+`task19-manifest.json` and `task19-parity.json` lead to the unchanged raw ZIPs,
+reviews and retained P58 failure/diagnostics. Keep this bundle intact. The
+assembler and parity reader both passed; their approval flags remain false.
+Both independent release-manifest reviews have zero required findings. The
+current dependency-policy assessment reconciles all three compiled graphs,
+shipped notices and 47 unexpired exceptions (earliest expiry 2027-01-21), using
+retained passing native policy scans. It does not claim a new advisory-database
+scan. Review receipts are attached after assembly to avoid circular self-hashes.
 
 ## Independent rehearsal — 19.7
 
@@ -78,6 +103,13 @@ Source `3c24629d50b7a39297c9ed05c8e317f797d7e150` failed the Intel
 unchanged repeat measured 73.812746 ms and passed. Later paired query-plan and
 complete-request phase diagnostics did not establish a cause or repair. The
 original sample set still fails the current verifier.
+
+The selected source's Intel query p95 is **39.533841 ms**, with Apple-silicon
+**21.551750 ms** and Linux **15.631979 ms**, against the same **100 ms** budget.
+All selected workload-specific p95/resource gates pass. Those measurements
+support this candidate's observations; they do not establish a repair to the
+historical failure. The exact selection and decision proposal are retained in
+the final index, including all fourteen original measurement/scope limitations.
 
 The [investigation record](query-performance-investigation.md) retains these
 limits. There is no evidence-backed production fix to adopt from those
