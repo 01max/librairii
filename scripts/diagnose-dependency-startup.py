@@ -30,8 +30,8 @@ SPECS = {
     },
 }
 HELPER_SHA = 'b3b43bbdd784c7b61ebeeb7f600326f2011954b763f0bd8a1d4714e8eda38fc9'
-ORDER = ('candidate', 'baseline', 'baseline', 'candidate',
-         'baseline', 'candidate', 'candidate', 'baseline')
+ORDER = ('baseline', 'candidate', 'candidate', 'baseline',
+         'candidate', 'baseline', 'baseline', 'candidate')
 BACKENDS = ('winit-skia', 'winit-skia-software')
 
 
