@@ -31,6 +31,13 @@ pub fn create_window() -> Result<(DesktopWindow, Menus)> {
         if !matches!(renderer, "skia" | "skia-software") {
             return Err("the qualified Skia renderer is required".into());
         }
+        // Diagnostic-only: Winit immediately performs this same idempotent call.
+        let thread = objc2::MainThreadMarker::new().ok_or("main thread required")?;
+        let _application = objc2_app_kit::NSApplication::sharedApplication(thread);
+        eprintln!(
+            "native_startup_detail; stage=appkit_initialized; elapsed_ms={:.3}",
+            diagnostic_started.elapsed().as_secs_f64() * 1000.
+        );
         slint::platform::set_platform(Box::new(
             i_slint_backend_winit::Backend::builder()
                 .with_renderer_name(renderer)

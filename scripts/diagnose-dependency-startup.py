@@ -218,6 +218,7 @@ def main():
                     'idle_cpu_percent': quiet['idle_cpu_percent_one_core'],
                     'stages': re.findall(r'native_startup; stage=([^;]+);(?: phase=[^;]+;)? elapsed_ms=([\d.]+)', log),
                     'window_stages': re.findall(r'native_startup_detail; stage=([^;]+); elapsed_ms=([\d.]+)', log),
+                    'backend_stages': re.findall(r'native_backend_detail; stage=([^;]+); elapsed_ms=([\d.]+)', log),
                     'shader_compilation_errors': log.count('Shader compilation error'),
                     'raw_report': name + '/report.json',
                 }

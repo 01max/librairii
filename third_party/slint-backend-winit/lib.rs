@@ -483,6 +483,8 @@ impl SharedBackendData {
     ) -> Result<Self, PlatformError> {
         #[cfg(not(target_arch = "wasm32"))]
         use raw_window_handle::HasDisplayHandle;
+        #[cfg(target_os = "macos")]
+        let diagnostic_started = std::time::Instant::now();
 
         #[cfg(all(unix, not(target_vendor = "apple")))]
         {
@@ -515,9 +517,19 @@ impl SharedBackendData {
 
         let event_loop =
             builder.build().map_err(|e| format!("Error initializing winit event loop: {e}"))?;
+        #[cfg(target_os = "macos")]
+        eprintln!(
+            "native_backend_detail; stage=event_loop_created; elapsed_ms={:.3}",
+            diagnostic_started.elapsed().as_secs_f64() * 1000.
+        );
 
         #[cfg(target_os = "macos")]
         Self::disable_macos_automatic_shortcut_localization();
+        #[cfg(target_os = "macos")]
+        eprintln!(
+            "native_backend_detail; stage=shortcuts_configured; elapsed_ms={:.3}",
+            diagnostic_started.elapsed().as_secs_f64() * 1000.
+        );
 
         cfg_if::cfg_if! {
             if #[cfg(all(unix, not(target_vendor = "apple"), feature = "wayland"))] {
@@ -544,6 +556,11 @@ impl SharedBackendData {
             &event_loop
                 .display_handle()
                 .map_err(|display_err| PlatformError::OtherError(display_err.into()))?,
+        );
+        #[cfg(target_os = "macos")]
+        eprintln!(
+            "native_backend_detail; stage=clipboard_created; elapsed_ms={:.3}",
+            diagnostic_started.elapsed().as_secs_f64() * 1000.
         );
         Ok(Self {
             context: Default::default(),
