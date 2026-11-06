@@ -142,6 +142,7 @@
     "test_linux_input_admission.LinuxInputAdmission.test_linux_inspection_requires_matching_events_after_worker_join",
     "test_installed_x11_activation.InstalledX11Activation.test_absent_ambiguous_or_foreign_window_never_receives_activation",
     "test_installed_x11_activation.InstalledX11Activation.test_background_owned_window_receives_one_native_activation",
-    "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed"
+    "test_installed_x11_activation.InstalledX11Activation.test_failed_or_ineffective_activation_is_not_replayed",
+    "test_packages.PlatformPackages.test_successful_detach_requires_independent_device_and_mount_absence"
   ]
 }

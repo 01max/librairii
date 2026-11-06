@@ -47,12 +47,17 @@ class PlatformPackages(unittest.TestCase):
                 destination.mkdir()
                 image = {'image-path': str(artifact), 'system-entities': [{'mount-point': str(destination/'mount')}]}
                 info = subprocess.CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b'')
-                with patch('native_release.install.subprocess.run', side_effect=[failure, info, subprocess.CompletedProcess([], 0)]) as run:
+                absent = subprocess.CompletedProcess([], 0, plistlib.dumps({'images': []}), b'')
+                with patch('native_release.install.subprocess.run', side_effect=[failure, info, subprocess.CompletedProcess([], 0), absent]) as run:
                     with self.assertRaises((ValueError, subprocess.TimeoutExpired, plistlib.InvalidFileException)):
                         with install.mounted(artifact, destination):
                             self.fail('invalid receipt cannot grant installation')
-                self.assertEqual(run.call_args_list[-1].args[0], ['/usr/bin/hdiutil', 'detach', str(destination/'mount')])
+                self.assertEqual(run.call_args_list[-2].args[0], ['/usr/bin/hdiutil', 'detach', str(destination/'mount')])
+                self.assertEqual(run.call_args_list[-1].args[0], ['/usr/bin/hdiutil', 'info', '-plist'])
                 self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'detached owned image')
+                self.assertTrue(json.loads((destination/'mount-cleanup.json').read_text())['absence_verified'])
+                self.assertEqual(json.loads((destination/'mount-retirement.json').read_text()),
+                                 {'matching_images': [], 'mount_owners': [], 'mount_present': False})
             destination = root / 'foreign'
             destination.mkdir()
             image = {'image-path': str(root/'unrelated.dmg'), 'system-entities': [{'mount-point': str(destination/'mount')}]}
@@ -75,19 +80,73 @@ class PlatformPackages(unittest.TestCase):
             self.assertEqual(json.loads((destination/'mount-cleanup.json').read_text())['state'], 'uncertain')
             self.assertEqual(json.loads((destination/'mount-reconciliation.json').read_text())['matching_images'], [image])
 
+    def test_successful_detach_requires_independent_device_and_mount_absence(self):
+        from subprocess import CompletedProcess, TimeoutExpired
+        with tempfile.TemporaryDirectory(prefix='librairii-mount-retirement-') as temporary:
+            root = Path(temporary).resolve()
+            artifact = root/'owned.dmg'
+            artifact.write_bytes(b'synthetic image')
+            for name in ('owned-device', 'foreign-mount', 'mount-only', 'missing-inventory',
+                         'unidentified-image', 'empty-path', 'missing-entities', 'malformed-entity', 'timeout', 'absent'):
+                with self.subTest(name=name):
+                    destination = root/name
+                    destination.mkdir()
+                    mount = destination/'mount'
+                    entity = {'mount-point': str(mount)}
+                    image = {'image-path': str(artifact), 'system-entities': [entity]}
+                    remaining = {
+                        'owned-device': [{'image-path': str(artifact), 'system-entities': [{'dev-entry': '/dev/disk123'}]}],
+                        'foreign-mount': [{'image-path': str(root/'unrelated.dmg'), 'system-entities': [entity]}],
+                        'unidentified-image': [{}],
+                        'empty-path': [{'image-path': '', 'system-entities': []}],
+                        'missing-entities': [{'image-path': str(artifact)}],
+                        'malformed-entity': [{'image-path': str(artifact), 'system-entities': ['invalid']}],
+                    }.get(name, [])
+                    inventory = {} if name == 'missing-inventory' else {'images': remaining}
+                    final = (TimeoutExpired('hdiutil', 15) if name == 'timeout'
+                             else CompletedProcess([], 0, plistlib.dumps(inventory), b''))
+                    responses = [CompletedProcess([], 0, plistlib.dumps({'system-entities': [entity]}), b''),
+                                 CompletedProcess([], 0, plistlib.dumps({'images': [image]}), b''),
+                                 CompletedProcess([], 0), final]
+                    with patch('native_release.install.subprocess.run', side_effect=responses) as run, \
+                         patch.object(Path, 'is_mount', side_effect=[True, name == 'mount-only']):
+                        if name == 'absent':
+                            with install.mounted(artifact, destination) as installed:
+                                self.assertEqual(installed, mount)
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'cleanup remains uncertain'):
+                                with install.mounted(artifact, destination):
+                                    pass
+                    cleanup = json.loads((destination/'mount-cleanup.json').read_text())
+                    self.assertEqual(cleanup['state'], 'detached owned image' if name == 'absent' else 'uncertain')
+                    self.assertEqual(cleanup.get('absence_verified', False), name == 'absent')
+                    # No repeat detach, especially when a foreign owner appears.
+                    self.assertEqual(sum(call.args[0][1] == 'detach' for call in run.call_args_list), 1)
+
     def test_installed_intel_host_check_refuses_rosetta_and_needs_no_development_tools(self):
         from subprocess import CompletedProcess
         with patch('native_release.identity.platform.system', return_value='Darwin'), \
-             patch('native_release.identity.platform.machine', return_value='x86_64'), \
+             patch('native_release.identity.platform.machine', return_value='x86_64') as machine, \
              patch('native_release.identity.platform.mac_ver', return_value=('15.7', (), '')), \
              patch('native_release.identity.output', return_value='Intel(R) Core(TM) processor') as output, \
              patch('native_release.identity.subprocess.run', return_value=CompletedProcess([], 1, stdout='', stderr='')) as run:
             observed = runtime_host(Path('/unused'), 'x86_64-apple-darwin')
             self.assertIn('Intel', observed['cpu'])
+            self.assertEqual(observed['macos_version'], '15.7')
+            self.assertEqual(observed['translation_probe'], {'returncode': 1, 'stdout': '', 'stderr': ''})
             self.assertEqual(output.call_args.args[1], ['sysctl', '-n', 'machdep.cpu.brand_string'])
             self.assertEqual(run.call_args.args[0], ['sysctl', '-in', 'sysctl.proc_translated'])
             run.return_value = CompletedProcess([], 0, stdout='1\n', stderr='')
             with self.assertRaisesRegex(ValueError, 'actual Intel hardware'):
+                runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+            run.return_value = CompletedProcess([], 0, stdout='0\n', stderr='')
+            self.assertEqual(runtime_host(Path('/unused'), 'x86_64-apple-darwin')['translation_probe'],
+                             {'returncode': 0, 'stdout': '0', 'stderr': ''})
+            output.return_value = 'Apple M1'
+            with self.assertRaisesRegex(ValueError, 'actual Intel hardware'):
+                runtime_host(Path('/unused'), 'x86_64-apple-darwin')
+            machine.return_value = 'arm64'
+            with self.assertRaisesRegex(ValueError, 'matching native host'):
                 runtime_host(Path('/unused'), 'x86_64-apple-darwin')
 
     def test_installer_refuses_wrong_source_changed_final_bytes_and_escaping_archive_members(self):

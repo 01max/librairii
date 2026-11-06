@@ -2,19 +2,25 @@
 
 **Current owner scope (2026-11-03):** [fresh Rust state and free ad-hoc Mac
 packages](fresh-rust-contract.md) supersede this report's Go migration/rollback,
-retained-runtime and mandatory paid-signing requirements. Task 20 implements the
-retirement. The remaining content records earlier work and evidence; failed
-measurements and unfinished applicable package checks remain explicit.
+retained-runtime and mandatory paid-signing requirements. Task 20 completed the
+retirement in PR #76. Historical diagnostics below keep their original outcomes.
 
-Integration base: `0e3b67da0af8836af4b89e3079c38a9997d0e7d8`.
-Branch `codex/rewrite-18-platform-packages` targets
+Current integration base: `9b34e26298850cb6ced764e5c3e3e8a687aa30b2`.
+Branch `codex/rewrite-18-final-packages` targets
 `rewrite-in-rust-native-desktop`.
 
-Task 18 is in progress. A staged payload, unsigned application or successful
-build does not qualify an installed distribution. Package, GUI, clean-host,
-reopen/recovery, final-byte signature and independent review gates remain
-explicit until their actual reports pass. Existing Go release commands remain
-available during the rewrite.
+Task 18 package qualification passed for the exact source-bound package set
+described in the [final evidence index](section-18-final-evidence.json). Independent
+Standards and Spec reviews found no required issues in 18.2, 18.3, 18.10 or
+18.11. The index records the reviewed PR head, actual CI checkout source, all
+three inner distribution hashes, twelve provider artifact IDs and ZIP digests,
+and the hashes of the independent review receipts. The raw ZIPs and review
+records are retained in the [draft Task 18 evidence release](https://github.com/01max/librairii/releases/tag/untagged-483e90ef4c09c7d427e5),
+separately from the 30-day Actions copies and ignored local `target/` directory.
+This is an internal ad-hoc package qualification. Task 19 release promotion and
+its historical performance hold remain open; current passing measurements do
+not explain or relabel historical failures. A later source revision needs its
+own source-bound evidence before inheriting this verdict.
 
 ## Release entry point
 
@@ -93,11 +99,12 @@ against system paths. It builds and verifies a compressed read-only DMG with
 Apple's `hdiutil`. The final artifact inventory follows application assembly
 and the internal ad-hoc signature.
 
-The `-unsigned.dmg` suffix and signing record deliberately distinguish these
-internal candidates from Developer ID distribution. An ad-hoc integrity check
-does not establish notarization, stapling or Gatekeeper acceptance. Both macOS
-public-release gates remain incomplete until the final signed bytes pass those
-checks and installed clean-host GUI acceptance.
+The `-unsigned.dmg` suffix and signing record distinguish the default free
+ad-hoc channel from Developer ID distribution. Ad-hoc signing establishes
+integrity, not Apple notarization or automatic Gatekeeper acceptance. Both Mac
+targets require exact-byte integrity and installed clean-host GUI acceptance;
+paid signing is optional. See [build and installation instructions](../native-build-and-sign.md)
+for the human-operated build and first-launch approval steps.
 
 `cargo xtask release inspect-package --directory <artifact-directory>
 --expected-source <externally-selected-commit> --target <triple> --output
@@ -115,6 +122,18 @@ job. Installed-host validation needs no Rust toolchain and refuses an Intel
 result running through Rosetta. The installation job also runs the checksum-keyed
 production GUI workflow; byte inspection and GUI qualification remain separate
 receipts and gates.
+The installed-host record includes the macOS product version as well as the
+kernel version. Intel records retain the actual CPU brand and translation-probe
+status/output; an absent sysctl key is not reported as a successful probe.
+The gate requires the native x86-64 host and Intel CPU and refuses an affirmative
+Rosetta result. The installed Mach-O must separately declare x86-64 and macOS15.0.
+After detaching an owned Mac image, inspection reads a new OS image inventory
+and checks the mountpoint independently. `mount-retirement.json` must show no
+matching image, mount owner or mounted directory before `mount-cleanup.json`
+can report verified retirement. A successful detach command alone is insufficient.
+An uncertain inventory fails qualification without retrying a detach against
+potentially changed ownership. This applies to both Mac architectures and to
+cleanup after failed or timed-out attachment.
 The pinned official download-artifact6.0.0 commit
 `018cc2cf5baa6db3ef3c5f8a56943fffe632ef53` was checked against its official tag
 and GitHub's valid release-commit signature before use; existing checkout,
@@ -134,21 +153,18 @@ The SPDX field contract follows the official
 [relationship](https://spdx.github.io/spdx-spec/v2.3.1/relationships-between-SPDX-elements/)
 specifications.
 
-## Credentials and remaining gates
+## Optional credentials and remaining gates
 
-The initial read-only capability check found zero repository secret names and
-zero valid local codesigning identities. No secret value was requested or read.
-Public Mac signing/notarization/stapling remains incomplete. Unsigned build and
-qualification work proceeds independently. Signing execution must isolate
-credentials from untrusted pull-request builds and verify the final distributed
-bytes, following Apple's
+Default ad-hoc Mac packages require no paid Apple credentials. If the owner
+later chooses Developer ID distribution, signing execution must isolate
+credentials from untrusted pull-request builds and verify the resulting bytes,
+following Apple's
 [notarization workflow](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
 
-The intended baselines remain macOS15+ on ARM and real Intel hardware, and
-Ubuntu24.04 x86-64 with declared glibc/system dependencies. These are qualification
-targets until actual installed-package reports establish support. Windows is
-outside this change. Task19 release-readiness and Task20 runtime retirement do
-not become complete through packaging alone.
+The qualified baselines are macOS15+ on ARM and real Intel hardware, and
+Ubuntu24.04 x86-64 with declared glibc/system dependencies. Windows is
+outside this change. Task19 release-readiness does not become complete through
+packaging alone; Task20 runtime retirement is already complete.
 
 ## Installed GUI isolation
 
@@ -178,7 +194,7 @@ Screenshots, control observations, SQLite results, managed/exported hashes,
 native file-manager location/retirement and process shutdown evidence are
 retained against the artifact checksum. Missing checkpoints fail qualification.
 
-Each target runs fresh English/GPU-API and upgraded French/forced-CPU cases;
+Each target runs fresh English/GPU-API and fresh French/forced-CPU cases;
 Linux repeats both under private X11 and Wayland desktops. The Linux observer
 image contains runtime libraries, the GTK portal and Thunar, with no build or
 archive tools. It runs read-only with no external network and no source checkout
@@ -188,18 +204,34 @@ owned launches cover the complete workflow, ordinary reopen, a real in-flight
 catalog SIGKILL/reopen, missing-location recovery and application-only
 uninstall/reinstall with retained library/profile bytes.
 
-The driver implementation and its custody checks are prepared. These commands
-do not count as passing installed evidence until their actual native CI reports
-pass. All Task18 GUI and public-signing checkboxes remain open at this point.
+The French/software fixture includes old Go files and verifies their bytes are
+ignored and unchanged. Both lanes create new Rust state; neither adopts a Go
+library or transfers browser preferences.
+
+For 18.10, review the package's embedded source/target identity and native
+dependency report together with each installed lane's `launch.json`, runtime
+mapping capture, sandbox/container configuration and offline-startup checkpoint.
+The Mac sandbox excludes checkout reads and permits only the installed product
+and the OS reveal launcher as executable children. Linux's runtime container
+has no mounted checkout, build tools or external network. Observers and package
+inspection tools run outside the product's isolation boundary. The launch
+directory is unrelated to the checkout, and the offline reopen requires the
+local catalog listener to be closed with durable library state unchanged.
+These observations qualify the tested runtime isolation; a hosted runner itself
+is not claimed to have no development tools installed.
+
+Commands and headless tests alone do not count as installed evidence. The
+source-bound native CI reports, raw observations and independent reviews indexed
+above cover every required lane for the reviewed package set.
 
 ## Verification
 
-The three required Rust integration tests execute the actual product's identity
+The initial package implementation added three Rust integration tests for the product's identity
 commands with no display or normal profile environment and deliberately invalid
 startup configuration, including missing packaged-acceptance roots. Three
 additional Rust checks exercise fixture/catalog admission, persisted foreign
-roots and picker substitution before controller execution. Eighteen additional
-Python checks, plus five packaged-GUI custody checks, cover compiler aliases
+roots and picker substitution before controller execution. The cumulative
+Python and packaged-GUI custody checks cover compiler aliases
 and inherited configuration, no-clobber paths,
 link refusal, exact architecture/profile/embedded identity, stable archive bytes,
 final-byte records and actual compiled-graph selection. They are registered in
@@ -214,15 +246,50 @@ bounded fixture authority check.
 
 Each export freezes its independently selected UUIDs, original filenames,
 managed hashes/sizes, group provenance and eligible/skipped item outcomes before
-starting. Completion requires the exact new durable operation and exact output
-set, including the expected Broken-story skip in the upgraded fixture. Partial
-copies or a different scope cannot qualify. Reopen also runs with the catalog
+starting. Completion requires the exact new durable operation, output set and
+eligibility outcomes. The fresh workflow restores eligibility through Undo
+before exporting. Partial copies or a different scope cannot qualify. Reopen also runs with the catalog
 listener stopped and connection refusal observed, at an actual native display
 scale of 1.25 after the initial scale 1 launch. Native scale/geometry diagnostics,
 visible controls and screenshots must agree. SIGKILL recovery requires the
 actual signal exit status and positive output-reader retirement.
 
-## Protected Mac signing
+## Independent package review
+
+Task18.11 reviews one source-bound package set, separately from Task19's final
+release-promotion decision. Preserve the provider artifact IDs, run/job/source
+identities, ZIP sizes and digests before reading reports directly from the ZIPs.
+Use the exact packages inspected by the installed jobs; a newer successful
+build cannot replace missing or failed installed evidence.
+
+| Target | Required installed lanes | Host and package observations |
+| --- | --- | --- |
+| ARM Mac | English/GPU-API, French/software | ARM Mach-O, macOS15.0 deployment, native ARM host, ad-hoc code/resource integrity, final DMG checksum |
+| Intel Mac | English/GPU-API, French/software | x86-64 Mach-O, macOS15.0 deployment, actual Intel CPU/host, ad-hoc code/resource integrity, final DMG checksum |
+| Linux x86-64 | Both lanes under X11 and Wayland | ELF architecture, Ubuntu24.04/glibc2.39 dependency ceiling, declared runtime libraries, final archive checksum |
+
+For each target, independently join the artifact manifest, embedded executable
+identity, installed payload hashes/modes, notices/SBOM, native linkage, observer
+method and actual host. Inspect raw native actions, accessibility trees and
+screenshots alongside the durable SQLite/profile and managed/export byte
+observations. All 22 workflow checkpoints and five retired processes per lane
+must agree, including offline reopen, forced interruption, identity-verified
+recovery and application-only uninstall/reinstall. Mac image retirement also
+requires the independent post-detach absence receipt described above.
+
+The review retains accessibility's accepted scope: Mac AX semantics and Linux
+AT-SPI/Orca evidence; VoiceOver execution remains deferred by owner decision.
+Reports must distinguish the final installed checks from supporting quality,
+scale and adapter evidence on the selected source. A summary boolean, a copied
+test name or headless test success cannot replace those raw observations.
+
+Standards and Spec reviews retain separate findings and receipts. Missing
+hardware, incomplete captures, failed commands and uncertain cleanup remain
+explicit; close a requirement only when the available evidence establishes it.
+Record limitations without changing earlier verdicts or claiming release
+promotion, notarization or a historical performance fix.
+
+## Optional protected Mac signing
 
 For owner-operated setup and command previews, use the
 [manual build and signing guide](../native-build-and-sign.md). Public signing

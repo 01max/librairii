@@ -70,6 +70,25 @@ def extract(artifact, destination, release):
         raise ValueError('installed archive bytes differ from the sealed payload')
 
 
+def image_custody(artifact, mount):
+    observed = subprocess.run(['/usr/bin/hdiutil', 'info', '-plist'],
+                              capture_output=True, check=True, timeout=15)
+    images = plistlib.loads(observed.stdout)['images']
+    if not isinstance(images, list) or any(
+            not isinstance(image, dict)
+            or not isinstance(image.get('image-path'), str) or not image['image-path']
+            or not isinstance(image.get('system-entities'), list)
+            or any(not isinstance(entity, dict) for entity in image['system-entities'])
+            for image in images):
+        raise ValueError('invalid disk image inventory')
+    return {'matching_images': [image for image in images
+                               if Path(image.get('image-path', '')).resolve() == artifact.resolve()],
+            'mount_owners': [image for image in images
+                             if any(entity.get('mount-point') == str(mount)
+                                    for entity in image.get('system-entities', []))],
+            'mount_present': mount.is_mount()}
+
+
 @contextmanager
 def mounted(artifact, destination):
     mount = destination / 'mount'
@@ -106,27 +125,26 @@ def mounted(artifact, destination):
         # retiring anything; never detach an unrelated image at this path.
         cleanup = {'mountpoint': str(mount), 'state': 'uncertain'}
         try:
-            observed = subprocess.run(['/usr/bin/hdiutil', 'info', '-plist'],
-                                      capture_output=True, check=True, timeout=15)
-            images = plistlib.loads(observed.stdout).get('images', [])
-            devices = [image for image in images
-                       if Path(image.get('image-path', '')).resolve() == artifact.resolve()]
-            owners = [image for image in images
-                      if any(entity.get('mount-point') == str(mount)
-                             for entity in image.get('system-entities', []))]
-            write_json(destination / 'mount-reconciliation.json', {'matching_images': devices, 'mount_owners': owners})
+            custody = image_custody(artifact, mount)
+            write_json(destination / 'mount-reconciliation.json', custody)
+            devices, owners = custody['matching_images'], custody['mount_owners']
             if not owners:
                 if devices:
                     raise ValueError('image device remains attached without its expected owned mount')
-                if mount.is_mount():
+                if custody['mount_present']:
                     raise ValueError('mount exists without an image ownership receipt')
                 cleanup['state'] = 'not mounted'
             elif len(owners) == 1 and Path(owners[0].get('image-path', '')).resolve() == artifact.resolve():
                 subprocess.run(['/usr/bin/hdiutil', 'detach', str(mount)], check=True, timeout=60)
+                retired = image_custody(artifact, mount)
+                write_json(destination / 'mount-retirement.json', retired)
+                if retired['matching_images'] or retired['mount_owners'] or retired['mount_present']:
+                    raise ValueError('image device or mount remains after successful detach')
                 cleanup['state'] = 'detached owned image'
+                cleanup['absence_verified'] = True
             else:
                 raise ValueError('mounted image ownership differs or is ambiguous')
-        except (OSError, ValueError, subprocess.SubprocessError) as error:
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
             cleanup['error'] = str(error)
             raise ValueError('disk image cleanup remains uncertain; preserve mount and receipt') from error
         finally:

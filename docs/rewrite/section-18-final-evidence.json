@@ -1,0 +1,392 @@
+{
+  "format": "librairii.task18-evidence-index",
+  "schema": 1,
+  "reviewed_head_commit": "10c7900cde2623b6f8eba41d90380d8a271dd460",
+  "actual_package_source_commit": "967f5fab7bb190646339333857f673d17793d342",
+  "source_tree": "152151fa3cce8ceda0ddb6a13cecb0dfcfee2f5b",
+  "integration_base": "9b34e26298850cb6ced764e5c3e3e8a687aa30b2",
+  "task18_verdict": {
+    "18.2": "passed",
+    "18.3": "passed",
+    "18.10": "passed",
+    "18.11": "passed",
+    "standards_required_findings": 0,
+    "spec_required_findings": 0,
+    "task19_release_promotion": "open",
+    "public_release_qualified": false
+  },
+  "workflow_runs": [
+    {
+      "id": 42063552339,
+      "name": "Rust quality",
+      "conclusion": "success"
+    },
+    {
+      "id": 42063552433,
+      "name": "Rust scale and resilience",
+      "conclusion": "success"
+    },
+    {
+      "id": 42063552722,
+      "name": "Rust native packages",
+      "conclusion": "success"
+    }
+  ],
+  "workflow_check_count": 14,
+  "installed_observations": {
+    "lanes": 8,
+    "checkpoints": 176,
+    "product_process_lifecycles": 40
+  },
+  "inner_distributions": [
+    {
+      "target": "aarch64-apple-darwin",
+      "bytes": 21234350,
+      "name": "Librairii-0.5.0-aarch64-apple-darwin-unsigned.dmg",
+      "sha256": "e1517932bcca2b0e26460d2437bcbb2a229820fc601d98bb717f483ccc0a56f3",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "bytes": 22441358,
+      "name": "Librairii-0.5.0-x86_64-apple-darwin-unsigned.dmg",
+      "sha256": "f43690d4358af78e4217f086c574826657b3fbba5e2674f69d0bbe834456d366",
+      "signing": {
+        "developer_id": false,
+        "notarized": false,
+        "stapled": false,
+        "state": "ad-hoc internal candidate"
+      }
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "bytes": 24251688,
+      "name": "Librairii-0.5.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "694d44ef9e3f19b2996a463e6e91af6bec37893a05a2de368a7aef77ac920e84",
+      "signing": {
+        "state": "not applicable (Linux portable archive)"
+      }
+    }
+  ],
+  "provider_archives": [
+    {
+      "path": "final-candidate-arm.zip",
+      "artifact_id": 13435783191,
+      "run_id": 42063552722,
+      "bytes": 19957475,
+      "sha256": "11b0adc8bd6f6cb5d42969fdb8d16a3263031c975a44f640e85342ee99c7b7f9",
+      "target": "aarch64-apple-darwin",
+      "kind": "candidate",
+      "provider_name": "native-candidate-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-arm.zip",
+      "artifact_id": 13439574342,
+      "run_id": 42063552722,
+      "bytes": 99564885,
+      "sha256": "2534039fe2d4110d47c82e102ad0fc95fb12e3b16d38ba7ebfdf3c5b62d472de",
+      "target": "aarch64-apple-darwin",
+      "kind": "installed",
+      "provider_name": "native-installation-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-arm.zip",
+      "artifact_id": 13439629808,
+      "run_id": 42063552339,
+      "bytes": 43073237,
+      "sha256": "5bbc0f0d5452b6cd4199ab663462f5a7a4cb2ea27c21392676965773150b1396",
+      "target": "aarch64-apple-darwin",
+      "kind": "quality",
+      "provider_name": "rust-quality-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-arm.zip",
+      "artifact_id": 13440205582,
+      "run_id": 42063552433,
+      "bytes": 107782979,
+      "sha256": "630c854c43a44638016b9f734b59acbfce783cf0b8d815d52a48759b35b6815f",
+      "target": "aarch64-apple-darwin",
+      "kind": "scale",
+      "provider_name": "rust-scale-aarch64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-candidate-intel.zip",
+      "artifact_id": 13435923619,
+      "run_id": 42063552722,
+      "bytes": 21092411,
+      "sha256": "b90865a336a05e06ecbf2bf3eb134d51f78ad46a34d8dbd2fba82f876809d8c7",
+      "target": "x86_64-apple-darwin",
+      "kind": "candidate",
+      "provider_name": "native-candidate-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-intel.zip",
+      "artifact_id": 13441421332,
+      "run_id": 42063552722,
+      "bytes": 107213045,
+      "sha256": "41382273f239decc46d42df202f5980ad9459bf100cd53c7a4a83bd4285e6d36",
+      "target": "x86_64-apple-darwin",
+      "kind": "installed",
+      "provider_name": "native-installation-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-intel.zip",
+      "artifact_id": 13439896461,
+      "run_id": 42063552339,
+      "bytes": 43588549,
+      "sha256": "0eac5836e32be1696d605a7761245fe97350873c329af0cbde713deb51a13e22",
+      "target": "x86_64-apple-darwin",
+      "kind": "quality",
+      "provider_name": "rust-quality-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-intel.zip",
+      "artifact_id": 13441118344,
+      "run_id": 42063552433,
+      "bytes": 110624847,
+      "sha256": "2de0768d85689a77e10ad0afff9ce541e4b1ffae6047777748095af616bc3893",
+      "target": "x86_64-apple-darwin",
+      "kind": "scale",
+      "provider_name": "rust-scale-x86_64-apple-darwin-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-candidate-linux.zip",
+      "artifact_id": 13432644416,
+      "run_id": 42063552722,
+      "bytes": 24250663,
+      "sha256": "e183e0d74cf74a5fc6da66bf55854cd33bf013fd12217469290087486eb73d95",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "candidate",
+      "provider_name": "native-candidate-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-installed-linux.zip",
+      "artifact_id": 13438211297,
+      "run_id": 42063552722,
+      "bytes": 137431747,
+      "sha256": "cf529157c87e5443b23dfa95a40d3c4012b0db0f48d0c30093d25bb71a45f2ab",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "installed",
+      "provider_name": "native-installation-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-quality-linux.zip",
+      "artifact_id": 13435761487,
+      "run_id": 42063552339,
+      "bytes": 138653133,
+      "sha256": "c5572921f4fe3f5363cf8ec7bbc89350fb168508cce875d802bf56766dad63b5",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "quality",
+      "provider_name": "rust-quality-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    },
+    {
+      "path": "final-scale-linux.zip",
+      "artifact_id": 13433738736,
+      "run_id": 42063552433,
+      "bytes": 132405344,
+      "sha256": "d842cd744ef8ae3db59372137dd0df12c38dc874d024d2e9bfcca2e4500f6ce3",
+      "target": "x86_64-unknown-linux-gnu",
+      "kind": "scale",
+      "provider_name": "rust-scale-x86_64-unknown-linux-gnu-967f5fab7bb190646339333857f673d17793d342"
+    }
+  ],
+  "review_receipts": [
+    {
+      "name": "final-candidate-arm.standards.json",
+      "bytes": 4416,
+      "sha256": "40a902ec8eeb1bca03cb757cbaa9c3d8a62a10542ac5bae284600f2333f77033"
+    },
+    {
+      "name": "final-candidate-intel.standards.json",
+      "bytes": 4628,
+      "sha256": "111ea6500fe9c8cc6f8d5f55d111c8739f9475d3842e1cbda335a1871289115f"
+    },
+    {
+      "name": "final-candidate-linux.standards.json",
+      "bytes": 2996,
+      "sha256": "5849713deb8a8c7e74aeb7a53c2fc6f8c4be3971d018c89ba6c472325acc9325"
+    },
+    {
+      "name": "final-installed-arm.spec.json",
+      "bytes": 29495,
+      "sha256": "167584851e01cc1f5358617d1c0e2f6093b97947e3ecffd397761a2cb5dea305"
+    },
+    {
+      "name": "final-installed-arm.standards.json",
+      "bytes": 10103,
+      "sha256": "430325c0bfd1aa4a7996b690902eb5c5180f6b5578a545f59ece19600cf0917a"
+    },
+    {
+      "name": "final-installed-intel.spec.json",
+      "bytes": 30366,
+      "sha256": "3ff1474d4f3a1057f1a95e2ebe1801bda7b451d129d372030761283bdb09b6ce"
+    },
+    {
+      "name": "final-installed-intel.standards.json",
+      "bytes": 11754,
+      "sha256": "8d9b1a50ff213de99d8eee27a811045ccec01b82467579b31ca27eaff4a5ff5d"
+    },
+    {
+      "name": "final-installed-linux.spec.json",
+      "bytes": 41564,
+      "sha256": "565189b8cd68feebf5a53b0ecbfba1b2eb6b889dcae56480bbb0139c3e110f94"
+    },
+    {
+      "name": "final-installed-linux.standards.json",
+      "bytes": 15471,
+      "sha256": "a2cf96a87e4fd6486d801a5083f2905417bd84c95743ece56678e6ccd3623a66"
+    },
+    {
+      "name": "final-quality-arm.spec.json",
+      "bytes": 9659,
+      "sha256": "f6be7bb011ce652efc6f9868e644d89d12e12249be01806f39da6318abe01ae1"
+    },
+    {
+      "name": "final-quality-arm.standards.json",
+      "bytes": 3212,
+      "sha256": "fc6d78cf440d926193b4a89c1bb86458951716782e17b3cbb325a336d6fa3f62"
+    },
+    {
+      "name": "final-quality-intel.spec.json",
+      "bytes": 9570,
+      "sha256": "35ec8004e49a97ceae76ae68b87c8ce9af593200e0d14f28765b24434f3051a7"
+    },
+    {
+      "name": "final-quality-intel.standards.json",
+      "bytes": 3214,
+      "sha256": "b8d0ecb6e1d0ea2bd07f17559242f4feaeead1bfda63fce8b4c168114922072a"
+    },
+    {
+      "name": "final-quality-linux.spec.json",
+      "bytes": 14246,
+      "sha256": "da2a3139af45e4f9951f33d1e4222ff0cf37c3f9b400975f772211cf749ee878"
+    },
+    {
+      "name": "final-quality-linux.standards.json",
+      "bytes": 4510,
+      "sha256": "85c62cff99962edbecd65ca85fddac2de94ef90c94fc0dc9a5ebf96e16101e84"
+    },
+    {
+      "name": "final-scale-arm.spec.json",
+      "bytes": 4494,
+      "sha256": "198db1d64a18454841333360e05b9e870e390f62c55a2979b58ec1a841b41001"
+    },
+    {
+      "name": "final-scale-arm.standards.json",
+      "bytes": 13231,
+      "sha256": "36da14ac94a3000ff58882851639ae8bfc0d1e12f15c9587aa645c72f502b5fc"
+    },
+    {
+      "name": "final-scale-intel.spec.json",
+      "bytes": 9959,
+      "sha256": "7336e1e00cb8bf617c33a1710ea3b35b678f641ca9fa8380a2c98a9cf368e1cf"
+    },
+    {
+      "name": "final-scale-intel.standards.json",
+      "bytes": 13998,
+      "sha256": "f98157063bb1cb20c008190b96d52940ae195574547200ddef4446248788c813"
+    },
+    {
+      "name": "final-scale-linux.spec.json",
+      "bytes": 3896,
+      "sha256": "51587e838cbbb9f9b35b668001ea4d1f04fac9fddd86c8dd80e4e0d4377415b6"
+    },
+    {
+      "name": "final-scale-linux.standards.json",
+      "bytes": 12506,
+      "sha256": "4b6ede96a4df3eb505b305142767eef03ca6819957a81f3d1a7d8f661aa4b424"
+    },
+    {
+      "name": "source-10c7900-standards.json",
+      "bytes": 9505,
+      "sha256": "bac32aef2821443eb8857b0981887b057d29f22ab3e993343a7637ab26447fc0"
+    },
+    {
+      "name": "source-spec-final-10c7900.json",
+      "bytes": 6448,
+      "sha256": "ebf4d7e8d32269f7aded9218ce41a854f2e06415b2a8654b0a13c4d15c036354"
+    }
+  ],
+  "supporting_records": [
+    {
+      "name": "final-archive-inventory.json",
+      "bytes": 5159,
+      "sha256": "bef31a5d9ebcaae7e0f752f3327afaf752f322d606fb38eca59c3d80376f8033"
+    },
+    {
+      "name": "final-terminal-ci.json",
+      "bytes": 66336,
+      "sha256": "4b41a06a0c11b10bc3a6e92193410cedeff296469aa6bc80808686eb3e472713"
+    },
+    {
+      "name": "final-checks.json",
+      "bytes": 6787,
+      "sha256": "51af1a08d25984e09cb74944a5fa2c0e3a13fc505c927d68c6f7a86a3dbecae8"
+    },
+    {
+      "name": "final-evidence-input.json",
+      "bytes": 17807,
+      "sha256": "45e832940c1e96ab5e4e0cd21cc6be77d0ccc11b03942616c69bc368a685f803"
+    },
+    {
+      "name": "final-evidence.json",
+      "bytes": 29755,
+      "sha256": "fd4c8290640fa262c39191e575832ac42820569a83ba5e93e2367615f4f7886e"
+    },
+    {
+      "name": "final-parity.json",
+      "bytes": 472182,
+      "sha256": "443dcce6ccf1c0b85a35300f2699b228c6a41b12503b076426e0f65d1e9d3f23"
+    },
+    {
+      "name": "completion.json",
+      "bytes": 1742,
+      "sha256": "356d6f1b259c7d4728c899b9960c48a234ddd4cf00074d12980df37088f50654"
+    }
+  ],
+  "raw_evidence": {
+    "release_tag": "task18-pr77-evidence",
+    "draft_release_url": "https://github.com/01max/librairii/releases/tag/untagged-483e90ef4c09c7d427e5",
+    "review_bundle": {
+      "name": "task18-review-records.zip",
+      "bytes": 566100,
+      "sha256": "794c69b2762567e4fcbe56b02ec7ecb0ea411ee2cd1aba0a4282cfff142d6522"
+    },
+    "zip_asset_names": [
+      "final-candidate-arm.zip",
+      "final-installed-arm.zip",
+      "final-quality-arm.zip",
+      "final-scale-arm.zip",
+      "final-candidate-intel.zip",
+      "final-installed-intel.zip",
+      "final-quality-intel.zip",
+      "final-scale-intel.zip",
+      "final-candidate-linux.zip",
+      "final-installed-linux.zip",
+      "final-quality-linux.zip",
+      "final-scale-linux.zip"
+    ]
+  },
+  "limits": [
+    "Task18 packaging qualification for this exact reviewed source; Task19 final release qualification, historical P58 disposition and publication remain separate and incomplete.",
+    "Free ad-hoc Mac integrity signatures are selected. No Developer ID, notarization, automatic Gatekeeper acceptance or public-release authorization is claimed.",
+    "The Rust app starts fresh; prior Go/browser data is not adopted. Original external fixture bytes remain preserved.",
+    "Native matching-architecture hosted runners exercised these exact candidates. Product sandbox/container restrictions establish runtime isolation; the hosted Mac itself is not claimed to lack development tools.",
+    "All unchanged p95 and resource limits pass. Three Intel individual callback upper bounds exceed100ms; two lower bounds also exceed100ms, and one pointer interval crosses100ms. No sample is trimmed and no historical cause, repair or waiver is inferred.",
+    "The startup gate is first UI timer delivery; later loaded-story accessibility readiness is retained separately. Successful Mac pointer receipts lack an independent complete accessibility geometry tree; exact positive callbacks/effects and joined events remain verified.",
+    "Linux speech evidence retains three partial after-action trees with four unavailable-object observations corroborated by positive product state. Targeted Shelf diagnostics do not claim full-matrix speech coverage.",
+    "Named workflow frames can precede terminal completion. Per-lane receipts preserve actual export/relocation/recovery presentation and rely on later positive History, durable data and reopen observations where required.",
+    "Thunar exact exported folders and owned foreground identities are observed; individual-file selection and independent post-close trees are not claimed. Mac Finder owned-window absence is distinguished from unrelated unresolved title windows.",
+    "Owned Linux container removal is proven by the checked source-bound operation, without a separately retained post-removal inventory. Cache and cleanup proofs remain bounded to recorded owned identities, not a global absence claim.",
+    "Both Mac image-retirement records independently observe empty matching-image/owner inventories and an unmounted owned directory after exact non-forced detach. Intel translation probes return0 with empty stdout/stderr; native architecture and actual Intel CPU are separately verified, and the empty output is not relabeled as a positive0 observation.",
+    "SQLite compatibility adaptation occurred only in memory after actual source-bound checkpoint/join/successful-exit proof; retained database and archive bytes remain unchanged.",
+    "Offline reader assumptions corrected during review are preserved with their prior bytes and correction receipts. Per-archive boundaries remain scoped; source-only or candidate-only receipts do not alone certify later installed behavior.",
+    "No native product execution, package mounting, full archive extraction or full Rust suite ran locally. Raw native observations came from the retained disposable CI jobs."
+  ],
+  "source_binding_rule": "A later PR head or merge source needs its own reviewed archive set; these verdicts are not relabeled."
+}
