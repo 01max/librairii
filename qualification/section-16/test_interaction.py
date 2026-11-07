@@ -45,7 +45,7 @@ class InputBudgets(unittest.TestCase):
                 else:
                     measured[key][0] = invalid
                 with self.subTest(key=key, invalid=invalid), self.assertRaisesRegex(ValueError, 'complete finite'):
-                    interaction.native.verify_input_timings(measured)
+                    interaction.native.verify_input_samples(measured)
 
 
 class RendererOutcomes(unittest.TestCase):

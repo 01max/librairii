@@ -27,7 +27,7 @@
     },
     "qualification/section-16/native.py": {
       "historical_sha256": "8713273dc0040a91748bd1886aab391f28852a1fc1bb7e198514cb0346161f2a",
-      "current_sha256": "3e5f0837556499d5d5dbc5a68640b458f0485f60d9ef859aa4ada9e2a4bd1b5c",
+      "current_sha256": "018626409682dd5ce23297cd4d2fc82a59a56a477f0e7257cc80ce0c277b21d3",
       "reason": "2026-11-07 owner decision raises every 100 ms acceptance ceiling to 300 ms. Native keyboard/pointer gates retain finite complete samples, conservative p95 calculation, callbacks and cleanup; boundary tests cover rejection above 300 ms."
     },
     "xtask/tests/test_linux_input_admission.py": {
