@@ -1,5 +1,7 @@
 # Task 2 toolkit selection
 
+Current policy: the [2026-11-07 owner decision](../../docs/rewrite/performance-budget-decision.md) raises the input acceptance ceiling to 300 ms. This historical toolkit-selection record retains its original observations and verdicts.
+
 2026-10-24: **Task 2 is complete. Slint is selected for the scoped Linux/macOS rewrite.**
 
 Implementation `e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda` passes [native run 70](https://github.com/01max/librairii/actions/runs/40127878713), including ARM macOS, real

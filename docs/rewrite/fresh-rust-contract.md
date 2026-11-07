@@ -32,8 +32,9 @@ must each pass installed-package, fresh-library, reopen and recovery checks.
 Functional parity, custody of newly imported archives, offline/privacy behavior,
 accessibility within the recorded platform scope, dependencies/notices and
 source-bound package checks remain required. Performance stays blocking on
-every PR with the existing budgets, including 100 ms input dispatch and 3000 ms
-navigation completion. Historical failed measurements keep their verdicts;
+every PR with the current budgets, including 300 ms collection-query/input
+dispatch and 3000 ms navigation completion, under the
+[2026-11-07 owner decision](performance-budget-decision.md). Historical failed measurements keep their verdicts;
 removing legacy code or signing requirements does not establish a performance fix.
 
 Task 20 retires the tracked legacy runtime and updates the maintained commands,

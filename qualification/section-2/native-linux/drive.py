@@ -468,7 +468,7 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     wait_for(lambda: geometry()['working'])
     report['native_input_performance'] = measure_native_input(desktop, app_dir, report['app_pid'])
     assert geometry()['working'], 'background load ended before input measurement'
-    assert report['native_input_performance']['p95_ms'] <= 100
+    assert report['native_input_performance']['p95_ms'] <= 300
     report['checks']['native_input_under_load_budget'] = True
     def wait_fast(predicate):
         deadline = time.monotonic() + 1

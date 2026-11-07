@@ -1,5 +1,6 @@
 """Exercise renderer orchestration without starting any native application."""
 import importlib.util
+import copy
 import json
 from pathlib import Path
 import tempfile
@@ -9,6 +10,42 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('interaction', Path(__file__).resolve().parents[2] / 'scripts/verify-native-interaction.py')
 interaction = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(interaction)
+
+
+class InputBudgets(unittest.TestCase):
+    def measured(self, dispatch=300, completion=3000):
+        return {'input_ms': [dispatch] * 64, 'pointer_ms': [dispatch] * 64,
+                'navigation_ms': [completion] * 20, 'input_p95_ms': dispatch,
+                'pointer_p95_ms': dispatch, 'navigation_p95_ms': completion}
+
+    def test_current_dispatch_boundary_and_unchanged_completion_boundary(self):
+        for dispatch in (100, 147.391, 299.999, 300):
+            interaction.native.verify_input_timings(self.measured(dispatch))
+        for prefix, limit in [('input', 300), ('pointer', 300), ('navigation', 3000)]:
+            measured = self.measured()
+            measured[prefix + '_ms'] = [limit + .001] * len(measured[prefix + '_ms'])
+            measured[prefix + '_p95_ms'] = limit + .001
+            with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'gate failed'):
+                interaction.native.verify_input_timings(measured)
+
+    def test_reported_percentile_cannot_hide_over_budget_samples(self):
+        for prefix in ('input', 'pointer', 'navigation'):
+            measured = self.measured()
+            measured[prefix + '_ms'][-4:] = [4000] * 4
+            with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'gate failed'):
+                interaction.native.verify_input_timings(measured)
+
+    def test_complete_finite_cohorts_remain_required(self):
+        original = self.measured()
+        for key in ('input_ms', 'pointer_ms', 'navigation_ms'):
+            for invalid in (None, float('nan'), float('inf'), -1):
+                measured = copy.deepcopy(original)
+                if invalid is None:
+                    measured[key].pop()
+                else:
+                    measured[key][0] = invalid
+                with self.subTest(key=key, invalid=invalid), self.assertRaisesRegex(ValueError, 'complete finite'):
+                    interaction.native.verify_input_timings(measured)
 
 
 class RendererOutcomes(unittest.TestCase):

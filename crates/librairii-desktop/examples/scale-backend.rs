@@ -88,7 +88,7 @@ fn main() -> Result {
     let mut payload = json!({
         "format": "librairii.scale-backend", "version": 1,
         "stories": count, "fixture_generation_ms": fixture_ms, "workload":workload,
-        "method": "retained warmed wall samples and exact frozen outcomes; original budgets; no sample replacement",
+        "method": "retained warmed wall samples and exact frozen outcomes; current approved budgets; no sample replacement",
         "fixture_retired": true, "database_closed": true
     });
     payload[workload] = report;

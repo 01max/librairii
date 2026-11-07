@@ -37,7 +37,7 @@ class NativeLinux(unittest.TestCase):
 
     def test_input_times_real_post_and_acknowledgment_after_foreground_preflight(self):
         for session in ('x11', 'wayland'):
-            for posting in (0.005, 0.125):
+            for posting in (0.005, 0.125, 0.279, 0.281, 0.325):
                 now, query = [0.0], ['']
                 desktop = mock.Mock(session=session)
                 def foreground():
@@ -64,7 +64,7 @@ class NativeLinux(unittest.TestCase):
                     self.assertAlmostEqual(posted, posting * 1000)
                     self.assertAlmostEqual(ack, 20)
                     self.assertAlmostEqual(sample, posted + ack)
-                self.assertEqual(result['p95_ms'] <= 100, posting < 0.1)
+                self.assertEqual(result['p95_ms'] <= 300, posting + 0.02 < 0.3)
                 for total in result['total_with_foreground_ms']:
                     self.assertAlmostEqual(total, 200 + posting * 1000 + 20)
         desktop.active_pid.side_effect = lambda: 124

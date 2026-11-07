@@ -1,5 +1,7 @@
 # Task 2 native operator checks
 
+The current input ceiling follows the [2026-11-07 owner decision](../../docs/rewrite/performance-budget-decision.md); historical qualification reports are not rescored.
+
 Task2 automated qualification is complete; no checks are assigned to the owner.
 This is an optional manual observation template for additional configurations,
 not a list of pending merge gates. See [selection-gate.md](selection-gate.md).
@@ -118,7 +120,7 @@ Developer ID signature or Apple notarization. Public release signing is later.
   Gatekeeper admission; Developer ID signing/notarization remains open.
 - Record identified hardware, renderer, sample count/distribution, startup,
   sustained idle CPU, peak RSS and final package size. Native 1,000-story
-  completion must be ≤3,000 ms and actual input dispatch p95 ≤100 ms under
+  completion must be ≤3,000 ms and actual input dispatch p95 ≤300 ms under
   background/thumbnail activity. Run the binary with `--thumbnail-smoke` to
   capture the bounded 1,000-PNG/cache workload and component-dispatch diagnostics.
   This uses original tiny synthetic PNGs and a 64-entry shared LRU; visible

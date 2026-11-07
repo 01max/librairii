@@ -20,8 +20,9 @@ it requires the exact package run, source and independent checksum. CI wiring
 changes exercise the affected lanes before merge. Integration pushes keep
 focused checks active while the rewrite is developed separately from `main`.
 
-Performance remains blocking on every PR, including the unchanged 100 ms native
-dispatch and 3000 ms completion limits. A slower shared runner does not waive a
+Performance remains blocking on every PR, including the owner-approved 300 ms collection-query and native
+dispatch limits and the 3000 ms completion limit. See the
+[2026-11-07 budget decision](performance-budget-decision.md). A slower shared runner does not waive a
 failure. Passing later observations do not rescore retained failures.
 
 Native quality, scale and package workflows do not cancel an active run when a
