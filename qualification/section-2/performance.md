@@ -1,5 +1,7 @@
 # Automated resource measurement continuation (2.9, 2026-10-23)
 
+Current policy: the [2026-11-07 owner decision](../../docs/rewrite/performance-budget-decision.md) raises collection-query and native keyboard/pointer acceptance ceilings from 100 ms to 300 ms, including foundation qualification. Other limits and blocking PR checks remain unchanged. The original budgets, measurements and verdicts below are historical and are not rescored.
+
 Task 2.9 is complete at `e9ab1ba` / native run 70, independently reviewed. Artwork
 method v3 reuses compressed/output scratch with a fresh full CRC-checked decode
 for every actual read. Run 68 remains failed; its mixed CPU/wall cause is unknown.

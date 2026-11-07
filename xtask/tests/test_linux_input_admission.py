@@ -68,7 +68,7 @@ class LinuxInputAdmission(unittest.TestCase):
         return observe
 
     def test_linux_entrypoint_keeps_walls_and_gates_actual_dispatch(self):
-        for callback, publication, posting in [(5, 200, 1), (205, 10, 1), (125, 10, 120)]:
+        for callback, publication, posting in [(5, 200, 1), (205, 10, 1), (125, 10, 120), (305, 10, 1)]:
             raw = self.helper(callback, publication, posting)
             with self.subTest(callback=callback), tempfile.TemporaryDirectory() as directory:
                 with patch.object(native, 'linux_input_cohort', side_effect=self.cohort(raw)):
@@ -77,8 +77,13 @@ class LinuxInputAdmission(unittest.TestCase):
                 self.assertEqual(measured['input_observer_wall_ms'], raw['input_ms'])
                 self.assertEqual(measured['pointer_observer_wall_ms'], raw['pointer_ms'])
                 self.assertEqual(measured['navigation_ms'], raw['navigation_ms'])
-                self.assertEqual(measured['input_p95_ms'] <= 100, callback <= 100)
-                self.assertEqual(measured['pointer_p95_ms'] <= 100, callback <= 100)
+                self.assertEqual(measured['input_p95_ms'] <= 300, callback <= 300)
+                self.assertEqual(measured['pointer_p95_ms'] <= 300, callback <= 300)
+                if callback <= 300:
+                    native.verify_input_timings(measured)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'gate failed'):
+                        native.verify_input_timings(measured)
                 self.assertEqual(json.loads((Path(directory) / 'linux-dispatch-raw.json').read_text()), raw)
         with patch.object(native.platform, 'system', return_value='Linux'):
             self.assertEqual(native.input_method_version(), 3)

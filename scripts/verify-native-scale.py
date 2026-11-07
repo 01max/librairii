@@ -15,7 +15,7 @@ DESTINATION = ROOT / 'target/quality/native-scale'
 TARGETS = {'aarch64-apple-darwin': ('Darwin', 'arm64'),
            'x86_64-apple-darwin': ('Darwin', 'x86_64'),
            'x86_64-unknown-linux-gnu': ('Linux', 'x86_64')}
-BUDGETS = {'collectionQuery': 100, 'substringSearch': 120, 'combinedFilters': 150,
+BUDGETS = {'collectionQuery': 300, 'substringSearch': 120, 'combinedFilters': 150,
            'collectionCounts': 250, 'deepPagination': 120, 'artworkLoad': 50}
 
 

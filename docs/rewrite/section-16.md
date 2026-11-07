@@ -1,5 +1,7 @@
 # Scale, resilience and resource qualification
 
+Current policy: the [2026-11-07 owner decision](performance-budget-decision.md) raises collection-query and native keyboard/pointer acceptance ceilings from 100 ms to 300 ms, including foundation qualification. Other limits and blocking PR checks remain unchanged. The original budgets, measurements and verdicts below are historical and are not rescored.
+
 Task16 starts from integration `a22dd5bb61741472b7ce80ac5aabb057e3edbb82`
 (merged Task15). The dedicated branch is `codex/rewrite-16-scale-resilience`;
 its PR targets `rewrite-in-rust-native-desktop`. P58 numerical requirements

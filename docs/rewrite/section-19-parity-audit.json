@@ -24,6 +24,16 @@
       "historical_sha256": "58295fd10a882fbf0f2aa9c934ae47eed802dd667f027c1edbc52cd70672a75c",
       "current_sha256": "9f3f2146723d370a989c5b102a364572d8671ec269d1c229b6ced23de67ac814",
       "reason": "Task18.2/18.3: retain prior package assertions and add independent image-retirement refusal cases plus observed native Intel host facts."
+    },
+    "qualification/section-16/native.py": {
+      "historical_sha256": "8713273dc0040a91748bd1886aab391f28852a1fc1bb7e198514cb0346161f2a",
+      "current_sha256": "018626409682dd5ce23297cd4d2fc82a59a56a477f0e7257cc80ce0c277b21d3",
+      "reason": "2026-11-07 owner decision raises every 100 ms acceptance ceiling to 300 ms. Native keyboard/pointer gates retain finite complete samples, conservative p95 calculation, callbacks and cleanup; boundary tests cover rejection above 300 ms."
+    },
+    "xtask/tests/test_linux_input_admission.py": {
+      "historical_sha256": "06d2775a60aca3f09e5b40ad947ca3d12a977bfb2567027fbde51074f0e3dbbd",
+      "current_sha256": "b1dabac1cc897f23a7e74504a498e336af04434513cc05b82ffcb4365e414347",
+      "reason": "2026-11-07 budget decision: exercise the actual 300 ms gate with passing 205 ms and failing 305 ms callbacks while retaining raw-wall, conservative-bound, joined-witness and cleanup assertions."
     }
   },
   "scope": "Reviewed functional assertions and actual observed cases for the fresh Rust app. Exact final package evidence and independent release review remain separate; paid Apple signing is optional.",
@@ -32,7 +42,8 @@
     "script-input-deferred": "Owner decision 2026-10-24: Japanese/Chinese/Arabic-specific input/IME/shaping deferred; valid UTF-8 data/filenames remain unrestricted.",
     "windows-deferred": "Owner decision 2026-10-21: Windows qualification deferred to a separate change; historical Windows evidence is not production support.",
     "fresh-rust": "Owner decision: fresh Rust app with functional parity. Go data/profile adoption, browser preference transfer and compatible Go rollback are out of scope. Old personal files remain untouched; Rust-created state retains recovery.",
-    "free-mac": "Owner declined paid Apple membership. Ad-hoc signed Mac DMGs are the default; Developer ID signing/notarization is optional."
+    "free-mac": "Owner declined paid Apple membership. Ad-hoc signed Mac DMGs are the default; Developer ID signing/notarization is optional.",
+    "performance-budget-2026-11-07": "Owner instruction: raise all 100 ms acceptance limits to 300 ms for collection query and native keyboard/pointer dispatch, including foundation qualification. Other budgets and blocking checks on every PR remain; historical records are not rescored. See docs/rewrite/performance-budget-decision.md."
   },
   "release_holds": {
     "final-candidate-and-independent-review": {
@@ -117,13 +128,13 @@
           "suite": "librairii-storage::database_workers",
           "name": "five_owned_connections_have_actual_required_pragmas_and_close_before_reuse",
           "source": "crates/librairii-storage/tests/database_workers.rs",
-          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+          "source_sha256": "d9d29ab0f8ebccdcf4fcb8b6bd612154a16f567d9c426dc629d75d0690ada8c1"
         },
         {
           "suite": "librairii-storage::database_workers",
           "name": "four_coherent_read_snapshots_run_concurrently_with_the_separate_writer",
           "source": "crates/librairii-storage/tests/database_workers.rs",
-          "source_sha256": "abcb36e8a13298fb1644188a066600990a10a2eedf7ffa334a1c36d27f9e0625"
+          "source_sha256": "d9d29ab0f8ebccdcf4fcb8b6bd612154a16f567d9c426dc629d75d0690ada8c1"
         }
       ],
       "native_callbacks": [
@@ -2339,7 +2350,9 @@
       "release_holds": [
         "final-candidate-and-independent-review"
       ],
-      "scope_decisions": []
+      "scope_decisions": [
+        "performance-budget-2026-11-07"
+      ]
     },
     {
       "id": "P59",

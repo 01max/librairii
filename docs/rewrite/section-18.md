@@ -134,10 +134,12 @@ can report verified retirement. A successful detach command alone is insufficien
 An uncertain inventory fails qualification without retrying a detach against
 potentially changed ownership. This applies to both Mac architectures and to
 cleanup after failed or timed-out attachment.
-The pinned official download-artifact6.0.0 commit
-`018cc2cf5baa6db3ef3c5f8a56943fffe632ef53` was checked against its official tag
-and GitHub's valid release-commit signature before use; existing checkout,
-cache and upload revisions remain the previously reviewed pins.
+The pinned official download-artifact 8.0.2 commit
+`9000827ccba6bdab643e8b6fd33ac0654aef8333` was checked against its official
+release and GitHub's valid commit signature before use. It uses Node 24 and
+rejects artifact digest mismatches by default. Existing checkout, cache and
+upload revisions remain the previously reviewed pins. Historical evidence
+using download-artifact 6.0.0 retains its original action identity.
 
 Portable archive assembly sorts paths, rejects links/special files, normalizes
 UID/GID/names/modes and uses the source commit epoch with a fixed gzip header.

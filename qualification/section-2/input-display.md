@@ -1,5 +1,7 @@
 # Input / display gate (2.5, P14/P53/P56)
 
+Current policy: the [2026-11-07 owner decision](../../docs/rewrite/performance-budget-decision.md) raises the input acceptance ceiling to 300 ms. Historical observations below retain their original limits and verdicts.
+
 Task2.5 is complete: native French dead keys, full selection/Delete, NFC/NFD
 caret/Undo/Redo, long clipboard text and source restoration pass. Native resizing,
 localized modals, compact Review reachability, contrast and reduced-motion checks

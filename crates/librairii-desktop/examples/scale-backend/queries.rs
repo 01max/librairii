@@ -62,7 +62,7 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
         "collectionQuery",
         Query::default(),
         1,
-        100.,
+        300.,
         expected(rows, |_| true, 1),
     ));
     requests.push((
